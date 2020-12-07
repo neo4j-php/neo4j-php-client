@@ -1,0 +1,74 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * This file is part of the Laudis Neo4j package.
+ *
+ * (c) Laudis technologies <http://laudis.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Laudis\Neo4j\Network\Bolt;
+
+use Bolt\Bolt;
+use Bolt\connection\StreamSocket;
+use Ds\Vector;
+use Exception;
+use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\BoltCypherFormatter;
+
+final class BoltDriver implements DriverInterface
+{
+    /** @var array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} */
+    private array $parsedUrl;
+    private ?SessionInterface $session = null;
+    private BoltInjections $injections;
+    public const DEFAULT_TCP_PORT = 7687;
+
+    /**
+     * BoltConnection constructor.
+     *
+     * @param array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} $parsedUrl
+     */
+    public function __construct(array $parsedUrl, BoltInjections $injections)
+    {
+        $this->parsedUrl = $parsedUrl;
+        $this->injections = $injections;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function aquireSession(): SessionInterface
+    {
+        if ($this->session) {
+            return $this->session;
+        }
+
+        $url = $this->parsedUrl['host'];
+        $isIP = (bool) ip2long($url);
+        if (!$isIP) {
+            $ip = gethostbyname($url);
+        } else {
+            $ip = $url;
+        }
+        $this->parsedUrl['host'] = $ip;
+        try {
+            $sock = new StreamSocket($this->parsedUrl['host'], $this->parsedUrl['port'] ?? self::DEFAULT_TCP_PORT);
+            $bolt = new Bolt($sock);
+            $bolt->init('LaudisNeo4j/'.ClientInterface::VERSION, $this->parsedUrl['user'], $this->parsedUrl['pass']);
+        } catch (Exception $e) {
+            throw new Neo4jException(new Vector([new Neo4jError($e->getMessage(), '')]), $e);
+        }
+        $this->session = new BoltSession($this->parsedUrl, $bolt, new BoltCypherFormatter(), $this->injections);
+
+        return $this->session;
+    }
+}

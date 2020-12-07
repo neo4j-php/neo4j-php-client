@@ -1,0 +1,11 @@
+.php_cs.cache
+bin/*
+cache/
+neoclient.yml
+test.php
+tests/_reports
+tests/database_settings.yml
+vendor/
+phpunit.xml
+.phpunit.result.cache
+.idea/

@@ -1,0 +1,98 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * This file is part of the Laudis Neo4j package.
+ *
+ * (c) Laudis technologies <http://laudis.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Laudis\Neo4j;
+
+use BadMethodCallException;
+use Ds\Map;
+use InvalidArgumentException;
+use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Network\Bolt\BoltDriver;
+use Laudis\Neo4j\Network\Bolt\BoltInjections;
+use Laudis\Neo4j\Network\Http\HttpDriver;
+use Laudis\Neo4j\Network\Http\HttpInjections;
+use Laudis\Neo4j\Network\VersionDiscovery;
+
+final class ClientBuilder
+{
+    private ?string $default = null;
+
+    /** @var Map<string, DriverInterface> */
+    private Map $connectionPool;
+
+    public function __construct()
+    {
+        $this->connectionPool = new Map();
+    }
+
+    public static function create(): ClientBuilder
+    {
+        return new self();
+    }
+
+    /**
+     * Adds a new bolt connection with the given alias and over the provided url. The configuration will be merged with the one in the client, if provided.
+     */
+    public function addBoltConnection(string $alias, string $url, BoltInjections $provider = null): ClientBuilder
+    {
+        $parse = parse_url($url);
+        if (!isset($parse['host'], $parse['user'], $parse['pass'])) {
+            throw new InvalidArgumentException('The provided url must have a parsed host, user and pass value');
+        }
+        $this->connectionPool->put($alias, new BoltDriver($parse, $provider ?? new BoltInjections()));
+
+        return $this;
+    }
+
+    /**
+     * Adds a new http connection with the given alias and over the provided url. The configuration will be merged with the one in the client, if provided.
+     */
+    public function addHttpConnection(string $alias, string $url, HttpInjections $injections = null): ClientBuilder
+    {
+        $parse = parse_url($url);
+        if (!isset($parse['host'], $parse['user'], $parse['pass'])) {
+            throw new InvalidArgumentException('The provided url must have a parsed host, user and pass value');
+        }
+        $conneciton = new HttpDriver($parse, new VersionDiscovery(), $injections ?? new HttpInjections());
+        $this->connectionPool->put($alias, $conneciton);
+
+        return $this;
+    }
+
+    /**
+     * Sets the default connection to the given alias.
+     */
+    public function setDefaultConnection(string $alias): self
+    {
+        $this->default = $alias;
+
+        return $this;
+    }
+
+    public function build(): ClientInterface
+    {
+        if ($this->connectionPool->isEmpty()) {
+            throw new BadMethodCallException('Client cannot be built with an empty connectionpool');
+        }
+        if ($this->default === null) {
+            $this->default = $this->connectionPool->first()->key;
+        }
+        if (!$this->connectionPool->hasKey($this->default)) {
+            $format = 'Client cannot be built with a default connection "%s" that is not in the connection pool';
+            throw new BadMethodCallException(sprintf($format, $this->default));
+        }
+
+        return new Client($this->connectionPool, $this->default);
+    }
+}

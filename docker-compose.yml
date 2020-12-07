@@ -1,0 +1,34 @@
+version: '3.2'
+
+networks:
+    neo4j:
+        driver: bridge
+
+services:
+    client:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                - WITH_XDEBUG=true
+        networks:
+            - neo4j
+        volumes:
+            - .:/opt/project
+        depends_on:
+            - neo4j
+        expose:
+            - 9000
+    neo4j:
+        networks:
+            - neo4j
+        image: neo4j:4.2
+        ports:
+            - "7474:7474"
+            - "7687:7687"
+        expose:
+            - 7474
+            - 7687
+            - 6362
+        environment:
+            - NEO4J_AUTH=neo4j/test

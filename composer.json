@@ -1,0 +1,57 @@
+{
+    "name": "laudis/neo4j-php-client",
+    "type": "library",
+    "description": "Neo4j-PHP-Client is the most advanced PHP Client for Neo4j",
+    "keywords": [
+        "graph",
+        "database",
+        "neo4j",
+        "cluster",
+        "client",
+        "bolt",
+        "http",
+        "high-availability"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ghlen Nagels",
+            "email": "ghlen@pm.me"
+        }
+    ],
+    "require": {
+        "php": "^7.4 || ^8.0",
+        "youngsource/typed-enum": "^1.1",
+        "php-http/discovery": "^1.13",
+        "psr/http-message": "^1.0",
+        "psr/http-factory": "^1.0",
+        "php-http/message": "^1.0",
+        "php-ds/php-ds": "1.*",
+        "psr/http-client": "^1.0",
+        "php-http/message-factory": "^1.0",
+        "stefanak-michal/bolt": "^2.0"
+    },
+    "suggest": {
+        "ext-sockets": "Needed to implement bolt protocol",
+        "ext-bcmath": "Needed to implement bolt protocol",
+        "ext-ds": "Needed for optimal performance",
+        "ext-json": "Needed to implement http protocol"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0",
+        "guzzlehttp/guzzle": "7.*",
+        "guzzlehttp/psr7": "1.*",
+        "http-interop/http-factory-guzzle": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Laudis\\Neo4j\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Laudis\\Neo4j\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "stable"
+}
