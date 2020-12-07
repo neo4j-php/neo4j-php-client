@@ -1,8 +1,6 @@
 # Laudis Neo4j PHP Client
 
-## Installation and basic usage
-
-### installing
+## Installation
 
 Install via composer:
 
@@ -10,11 +8,13 @@ Install via composer:
 composer require laudis/neo4j-php-client
 ```
 
-If you want to use the http protocol but haven't installed any of the psr7, psr17 and psr18 implementations yet:
+The HTTP protocol requires [psr-7](https://www.php-fig.org/psr/psr-7/), [psr-17](https://www.php-fig.org/psr/psr-17/) and [psr-18](https://www.php-fig.org/psr/psr-18/) implementations. If there are not any available, composer can install them.
 
 ```bash
 composer require guzzlehttp/guzzle guzzlehttp/psr7 http-interop/http-factory-guzzle
 ```
+
+## General usage
 
 ### Initializing client
 
@@ -26,11 +26,11 @@ $client = Laudis\Neo4j\ClientBuilder::create()
     ->build();
 ```
 
-The default connection is the first registered connection, unless it is overridden with the `setDefaultConnection` method.
+The default connection is the first registered connection. `setDefaultConnection` overrides this behaviour.
 
 ### Sending a Cypher Query
 
-Sending a query is done by sending the cypher with optional parameters and a connection alias
+Sending a query is done by sending the cypher with optional parameters and a connection alias.
 
 ```php
 $client->run(
@@ -40,10 +40,11 @@ $client->run(
 );
 ```
 
-Or by using a statement object
+Or by using a statement object.
 
 ```php
 use Laudis\Neo4j\Databags\Statement;
+
 $statement = new Statement('MERGE (user {email: $email})', ['email' => 'abc@hotmail.com']);
 $client->runStatement($statement, 'default');
 ```
@@ -57,7 +58,7 @@ foreach ($client->run('UNWIND range(1, 9) as x RETURN x') as $item) {
     echo $item->get('x');
 }
 ```
-will echo `123456789`
+will echo `123456789`.
 
 The Map representing the Record can only contain null, scalar or array values. Each array can then only contain null, scalar or array values, ad infinitum.
 
@@ -65,7 +66,7 @@ The Map representing the Record can only contain null, scalar or array values. E
 
 ### Running multiple queries at once
 
-You can run multiple statements at once by simple wrapping a bunch of statements in an iterable object and passing it to the `runStatements` method.
+The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database calls.
 
 ```php
 use Laudis\Neo4j\Databags\Statement;
@@ -76,7 +77,7 @@ $results = $client->runStatements([
 ]);
 ```
 
-The results of each query will be wrapped in another vector:
+The returned value is a vector containing result vectors.
 
 ```php
 $results->first(); //Contain the first result vector
@@ -86,7 +87,8 @@ $result->get(1); //Contains the second result vector
 
 ### Opening a transaction
 
-Transactions can be started by opening one with the client.
+The `openTransaction` method will start a transaction with over the relevant connection.
+
 ```php
 use Laudis\Neo4j\Databags\Statement;
 
@@ -97,12 +99,12 @@ $tsx = $client->openTransaction(
 );
 ```
 
-**Note that the optional set of statements will not have their result returned to you, as the transaction will be returned instead**
+**Note that `openTransaction` only returns the transaction object, not the results of the provided statements.**
 
-You can then further execute statements on the transaction.
+The transaction can run statements just like the client object as long as it is still open.
 
 ```php
-$result = $tsx->runStatement('MATCH (x) RETURN x LIMIT 100');
+$result = $tsx->run('MATCH (x) RETURN x LIMIT 100');
 $result = $tsx->runStatement(Statement::create('MATCH (x) RETURN x LIMIT 100'));
 $results = $tsx->runStatements([Statement::create('MATCH (x) RETURN x LIMIT 100')]);
 ```
@@ -117,11 +119,10 @@ $tsx->rollback();
 $tsx->commit([Statement::create('MATCH (x) RETURN x LIMIT 100')]);
 ```
 
-*Note that the optional set of statements provided while comitting the transaction will not return the results.
 
 ### Providing custom injections
 
-Each connection can be configured with custom injections.
+`addHttpConnection` and `addBoltConnection` each accept their respective injections.
 
 ```php
 use GuzzleHttp\Client;
@@ -140,17 +141,17 @@ $client = Laudis\Neo4j\ClientBuilder::create()
     ->build();
 ```
 
-Custom injections can be wrapped around a callable for lazy initialization as can be found in the example above.
+Wrapping the injections in a callable will enforce lazy initialization.
 
 ## Final Remarks
 
 ### Filosophy
 
-This client tries to strike a balance between extensibility, performance and clean code. All classes are marked final but where there is an interface, injections and decorators can be used.
+This client tries to strike a balance between extensibility, performance and clean code. All elementary classes have an interface. These provide infinite options to extend or change the implementation.
 
-I also chose not to implement custom resultsets but use the php-ds extension or polyfill instead. This is because these datastructures are a lot more capable than I will ever be able to make them. Php ds has a consistent interface, works nicely with psalm, has all features you can really want from a simple container and is incredibly fast.
+This library does use any custom result classes but uses php-ds instead. These data structures are competent, flexible and fast. It furthermore provides a consistent interface and works seamlessly with other iterables.
 
-Flexibility is maintained where possible by making all parameters iterables if they are a container of sorts. This means you can pass parameters as an array, \Ds\Map or any other object which implements the \Iterator or \IteratorAggregate. These are all valid:
+Flexibility is maintained where possible by making all parameters iterables if they are a container of sorts. This means you can pass parameters as an array, \Ds\Map or any other object which implements the \Iterator or \IteratorAggregate. These examples are all valid:
 
 ```php
 // Vanilla flavour
@@ -199,9 +200,9 @@ $client->run('MATCH (x {slug: $slug})', collect(['slug' => 'a']));
 
 ### Cluster support
 
-Version 2.0 will have cluster support. The interface for this is not yet set in stone.
+Version 2.0 will have cluster support. There is no concrete API yet.
 
-### Support for graph representation instead of simple records.
+### Support for graph representation instead of simple records
 
 Version 2.0 will have graph representation suppport. The inteface for this is not yet set in stone, but will be somthing akin to this:
 
