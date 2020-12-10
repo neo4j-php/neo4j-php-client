@@ -12,7 +12,9 @@ services:
         networks:
             - neo4j
         depends_on:
-            -   neo4j
+            - neo4j
+        volumes:
+            - ../:/opt/project
     neo4j:
         networks:
             - neo4j

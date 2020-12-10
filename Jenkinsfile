@@ -23,11 +23,16 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'docker-compose -f docker/docker-compose-4.2.yml run client php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose-4.2.yml down'
                 sh 'docker-compose -f docker/docker-compose-4.1.yml run client php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose-4.1.yml down'
                 sh 'docker-compose -f docker/docker-compose-4.0.yml run client php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose-4.0.yml down'
                 sh 'docker-compose -f docker/docker-compose-3.5.yml run client php vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose-2.3.yml run client php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose-3.5.yml down'
+//                 sh 'docker-compose -f docker/docker-compose-2.3.yml run client php vendor/bin/phpunit'
                 sh 'docker-compose -f docker/docker-compose-php-7.4.yml run client php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose-php-7.4.yml down'
             }
         }
     }

@@ -40,7 +40,7 @@ final class RequestFactory
         return $this->createRequest($data, 'POST');
     }
 
-    private function createRequest(RequestData $data, string $method, string $body = ''): RequestInterface
+    public function createRequest(RequestData $data, string $method, string $body = ''): RequestInterface
     {
         $combo = base64_encode($data->getUser().':'.$data->getPassword());
 
