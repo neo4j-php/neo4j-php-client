@@ -37,14 +37,11 @@ final class BoltCypherFormatter
                 /** @var mixed $value */
                 $value = $result[$i];
                 if (is_object($value)) {
-                    if (method_exists($value, 'properties')) {
-                        /** @var array $properties */
-                        $properties = $value->properties();
-                        $map->put($column, $properties);
-                    } else {
-                        throw new UnexpectedValueException('Cannot handle objects without a properties method. Class given: '.get_class($value));
-                    }
-                } elseif ($value === null || is_scalar($value) || is_array($value)) {
+                    $map->put($column, $this->objectToProperty($value));
+                } elseif ($value === null || is_scalar($value)) {
+                    $map->put($column, $value);
+                } elseif (is_array($value)) {
+                    $value = $this->remapObjectsInArray($value);
                     $map->put($column, $value);
                 } else {
                     throw new UnexpectedValueException('Did not expect to receive value of type: '.gettype($value));
@@ -54,5 +51,31 @@ final class BoltCypherFormatter
         }
 
         return $tbr;
+    }
+
+    private function objectToProperty(object $object): array
+    {
+        if (!method_exists($object, 'properties')) {
+            throw new UnexpectedValueException('Cannot handle objects without a properties method. Class given: '.get_class($object));
+        }
+
+        /** @var array $properties */
+        $properties = $object->properties();
+
+        return $properties;
+    }
+
+    private function remapObjectsInArray(array $value): array
+    {
+        /**
+         * @psalm-var mixed $variable
+         */
+        foreach ($value as $key => $variable) {
+            if (is_object($variable)) {
+                $value[$key] = $this->objectToProperty($variable);
+            }
+        }
+
+        return $value;
     }
 }

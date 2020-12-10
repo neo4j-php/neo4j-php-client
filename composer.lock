@@ -545,26 +545,30 @@
         },
         {
             "name": "youngsource/typed-enum",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
-                "url": "https://gitlab.com/transitive/typed-enum.git",
-                "reference": "62277207eae330cdefd4bbb1cd07b2f9089e0d7e"
+                "url": "https://github.com/laudis-technologies/typed-enum.git",
+                "reference": "39a60a5d077dace56640b6dec6cfe14881f723a1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/transitive%2Ftyped-enum/repository/archive.zip?sha=62277207eae330cdefd4bbb1cd07b2f9089e0d7e",
-                "reference": "62277207eae330cdefd4bbb1cd07b2f9089e0d7e",
+                "url": "https://api.github.com/repos/laudis-technologies/typed-enum/zipball/39a60a5d077dace56640b6dec6cfe14881f723a1",
+                "reference": "39a60a5d077dace56640b6dec6cfe14881f723a1",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.4"
+                "php": "^7.4 || ^8.0"
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^2.16",
+                "php-ds/php-ds": "^1.3",
                 "phpbench/phpbench": "^0.17.1",
                 "phpunit/phpunit": "9.*",
-                "vimeo/psalm": "^3.16"
+                "vimeo/psalm": "^4.0"
+            },
+            "suggest": {
+                "ext-ds": "Needed for optimal performance"
             },
             "type": "library",
             "autoload": {
@@ -584,9 +588,10 @@
             ],
             "description": "A small class allowing for typed enumerations.",
             "support": {
-                "issues": "https://gitlab.com/api/v4/projects/8107655/issues"
+                "issues": "https://github.com/laudis-technologies/typed-enum/issues",
+                "source": "https://github.com/laudis-technologies/typed-enum/tree/v1.2.0"
             },
-            "time": "2020-10-11T15:09:42+00:00"
+            "time": "2020-12-10T12:16:08+00:00"
         }
     ],
     "packages-dev": [
