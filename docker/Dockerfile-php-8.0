@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 ARG WITH_XDEBUG=false
 
 RUN if [ $WITH_XDEBUG = "true" ] ; then \
-        pecl install xdebug-3; \
+        pecl install xdebug; \
         docker-php-ext-enable xdebug; \
 fi;
 
