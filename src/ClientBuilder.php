@@ -18,6 +18,8 @@ use Ds\Map;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Formatter\HttpCypherFormatter;
+use Laudis\Neo4j\HttpDriver\RequestFactory;
 use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use Laudis\Neo4j\Network\Bolt\BoltInjections;
 use Laudis\Neo4j\Network\Http\HttpDriver;
@@ -64,7 +66,10 @@ final class ClientBuilder
         if (!isset($parse['host'], $parse['user'], $parse['pass'])) {
             throw new InvalidArgumentException('The provided url must have a parsed host, user and pass value');
         }
-        $conneciton = new HttpDriver($parse, new VersionDiscovery(), $injections ?? new HttpInjections());
+        $injections = $injections ?? new HttpInjections();
+        $factory = $injections->requestFactory();
+        $requestFactory = new RequestFactory($factory, $injections->streamFactory(), new HttpCypherFormatter());
+        $conneciton = new HttpDriver($parse, new VersionDiscovery($requestFactory, $injections->client()), $injections);
         $this->connectionPool->put($alias, $conneciton);
 
         return $this;

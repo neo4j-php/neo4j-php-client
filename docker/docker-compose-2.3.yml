@@ -9,10 +9,14 @@ services:
         build:
             context: ../
             dockerfile: docker/Dockerfile-php-8.0
+            args:
+                - WITH_XDEBUG=true
         networks:
             - neo4j
         depends_on:
             - neo4j
+        volumes:
+            - ../:/opt/project
     neo4j:
         networks:
             - neo4j

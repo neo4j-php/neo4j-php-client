@@ -12,7 +12,6 @@ declare(strict_types=1);
  */
 
 use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Exception\Neo4jException;
 
 include __DIR__.'/vendor/autoload.php';
 
@@ -27,6 +26,7 @@ while ($retriesLeft >= 0) {
 
         return;
     } catch (Throwable $e) {
+        error_log($e->getMessage()."\n");
         --$retriesLeft;
         sleep(5);
     }

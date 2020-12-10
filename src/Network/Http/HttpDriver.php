@@ -59,19 +59,22 @@ final class HttpDriver implements DriverInterface
             $this->parsedUrl['port'] ?? self::DEFAULT_PORT,
             $this->parsedUrl['path'] ?? ''
         );
-        $tsx = $this->decorator->discoverTransactionUrl($url, $this->injections);
+
+        $requestData = new RequestData(
+            $url,
+            $this->parsedUrl['user'],
+            $this->parsedUrl['pass'],
+            false
+        );
+        $tsx = $this->decorator->discoverTransactionUrl($requestData, $this->injections->database());
+        $requestData = $requestData->withEndpoint($tsx);
 
         $formatter = new HttpCypherFormatter();
         $this->session = new HttpSession(
             new RequestFactory($this->injections->requestFactory(), $this->injections->streamFactory(), $formatter),
             $this->injections->client(),
             $formatter,
-            new RequestData(
-                $tsx,
-                $this->parsedUrl['user'],
-                $this->parsedUrl['pass'],
-                false
-            )
+            $requestData
         );
 
         return $this->session;
