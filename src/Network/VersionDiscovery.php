@@ -14,10 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Network;
 
 use JsonException;
-use Laudis\Neo4j\Network\Http\HttpInjections;
+use Laudis\Neo4j\Databags\RequestData;
+use Laudis\Neo4j\HttpDriver\RequestFactory;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestFactoryInterface;
 
 /**
  * @psalm-type DiscoveryResult = array{
@@ -46,21 +46,30 @@ use Psr\Http\Message\RequestFactoryInterface;
  */
 final class VersionDiscovery
 {
+    private RequestFactory $requestFactory;
+    private ClientInterface $client;
+
+    public function __construct(RequestFactory $requestFactory, ClientInterface $client)
+    {
+        $this->requestFactory = $requestFactory;
+        $this->client = $client;
+    }
+
     /**
      * @throws ClientExceptionInterface
      * @throws JsonException
      */
-    public function discoverTransactionUrl(string $url, HttpInjections $injections): string
+    public function discoverTransactionUrl(RequestData $data, string $database): string
     {
-        $discovery = $this->discovery($injections->client(), $injections->requestFactory(), $url);
+        $discovery = $this->discovery($data);
         $version = $discovery['neo4j_version'] ?? null;
 
         if ($version === null) {
-            $discovery = $this->discovery($injections->client(), $injections->requestFactory(), $url.'/db/data');
+            $discovery = $this->discovery($data->withEndpoint($discovery['data'] ?? $data->getEndpoint().'/db/data'));
         }
         $tsx = $discovery['transaction'];
 
-        return str_replace('{databaseName}', $injections->database(), $tsx);
+        return str_replace('{databaseName}', $database, $tsx);
     }
 
     /**
@@ -69,9 +78,9 @@ final class VersionDiscovery
      *
      * @return DiscoveryResult|DiscoveryResultLegacy $discovery
      */
-    private function discovery(ClientInterface $client, RequestFactoryInterface $factory, string $uri): array
+    private function discovery(RequestData $data): array
     {
-        $response = $client->sendRequest($factory->createRequest('GET', $uri));
+        $response = $this->client->sendRequest($this->requestFactory->createRequest($data, 'GET'));
 
         /** @var DiscoveryResultLegacy|DiscoveryResult $result */
         $result = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
