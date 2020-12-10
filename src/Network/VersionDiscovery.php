@@ -25,7 +25,8 @@ use Psr\Http\Client\ClientInterface;
  *      transaction: string,
  *      bolt_direct: string,
  *      neo4j_version: string,
- *      neo4j_edition: string
+ *      neo4j_edition: string,
+ *      data?: string
  * }
  * @psalm-type DiscoveryResultLegacy = array{
  *     extensions: array,
