@@ -30,10 +30,5 @@ pipeline {
                 sh 'docker-compose -f docker/docker-compose-php-7.4.yml run client php vendor/bin/phpunit'
             }
         }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying....'
-            }
-        }
     }
 }
