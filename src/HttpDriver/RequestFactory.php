@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\HttpDriver;
 
-use function json_encode;
-use const JSON_THROW_ON_ERROR;
 use JsonException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\RequestData;
@@ -23,7 +21,6 @@ use Laudis\Neo4j\Formatter\HttpCypherFormatter;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
-use stdClass;
 
 final class RequestFactory
 {
