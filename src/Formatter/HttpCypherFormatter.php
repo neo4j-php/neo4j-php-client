@@ -16,8 +16,12 @@ namespace Laudis\Neo4j\Formatter;
 use Ds\Map;
 use Ds\Vector;
 use InvalidArgumentException;
+use JsonException;
 use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Databags\RequestData;
+use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\StatementStatistics;
+use stdClass;
 
 /**
  * @psalm-type CypherStats = array{
@@ -129,5 +133,29 @@ final class HttpCypherFormatter
         }
 
         return $tbr;
+    }
+
+    /**
+     * @param iterable<Statement> $statements
+     *
+     * @throws JsonException
+     */
+    public function prepareBody(iterable $statements, RequestData $config): string
+    {
+        $tbr = [];
+        foreach ($statements as $statement) {
+            $st = [
+                'statement' => $statement->getText(),
+                'resultDataContents' => ['ROW'],
+                'includeStats' => $config->includeStats(),
+            ];
+            $parameters = $statement->getParameters();
+            $st['parameters'] = $parameters === [] ? new stdClass() : $parameters;
+            $tbr[] = $st;
+        }
+
+        return json_encode([
+            'statements' => $tbr,
+        ], JSON_THROW_ON_ERROR);
     }
 }
