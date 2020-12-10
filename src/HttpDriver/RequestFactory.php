@@ -62,7 +62,7 @@ final class RequestFactory
      */
     public function pushToTransaction(RequestData $data, int $transactionId, iterable $statements): RequestInterface
     {
-        $body = $this->prepareBody($statements, $data);
+        $body = $this->formatter->prepareBody($statements, $data);
         $endpoint = $data->getEndpoint().'/'.$transactionId;
 
         return $this->createRequest($data->withEndpoint($endpoint), 'POST', $body);
@@ -75,7 +75,7 @@ final class RequestFactory
      */
     public function post(RequestData $data, iterable $statements): RequestInterface
     {
-        $body = $this->prepareBody($statements, $data);
+        $body = $this->formatter->prepareBody($statements, $data);
 
         return $this->createRequest($data, 'POST', $body);
     }
@@ -83,29 +83,5 @@ final class RequestFactory
     public function delete(RequestData $data): RequestInterface
     {
         return $this->createRequest($data, 'DELETE');
-    }
-
-    /**
-     * @param iterable<Statement> $statements
-     *
-     * @throws JsonException
-     */
-    private function prepareBody(iterable $statements, RequestData $config): string
-    {
-        $tbr = [];
-        foreach ($statements as $statement) {
-            $st = [
-                'statement' => $statement->getText(),
-                'resultDataContents' => ['ROW'],
-                'includeStats' => $config->includeStats(),
-            ];
-            $parameters = $statement->getParameters();
-            $st['parameters'] = $parameters === [] ? new stdClass() : $parameters;
-            $tbr[] = $st;
-        }
-
-        return json_encode([
-            'statements' => $tbr,
-        ], JSON_THROW_ON_ERROR);
     }
 }
