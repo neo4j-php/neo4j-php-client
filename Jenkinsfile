@@ -1,16 +1,21 @@
 pipeline {
     agent any
 
+    environment {
+        BRANCH_NAME = "${GIT_BRANCH.split("/").size() > 1 ? GIT_BRANCH.split("/")[1] : GIT_BRANCH}"
+    }
+
     stages {
+        stage('Pull') {
+            steps {
+                sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose.yml pull'
+            }
+        }
         stage('Build') {
             steps {
                 sh 'docker build -t php-neo4j:static-analysis .'
-                sh 'docker-compose -f docker/docker-compose-4.2.yml build'
-                sh 'docker-compose -f docker/docker-compose-4.1.yml build'
-                sh 'docker-compose -f docker/docker-compose-4.0.yml build'
-                sh 'docker-compose -f docker/docker-compose-3.5.yml build'
-                sh 'docker-compose -f docker/docker-compose-2.3.yml build'
-                sh 'docker-compose -f docker/docker-compose-php-7.4.yml build'
+                sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose.yml build --parallel'
+                sh 'docker-compose -p $BRANCH_NAME build'
                 sh 'docker build -t php-neo4j:static-analysis .'
             }
         }
@@ -22,33 +27,27 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh 'docker-compose -f docker/docker-compose-4.2.yml down --volumes'
-                sh 'docker-compose -f docker/docker-compose-4.2.yml up -d --force-recreate'
-                sh 'docker-compose -f docker/docker-compose-4.2.yml run client php vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose-4.2.yml down'
-
-
-                sh 'docker-compose -f docker/docker-compose-4.1.yml down --volumes'
-                sh 'docker-compose -f docker/docker-compose-4.1.yml up -d --force-recreate'
-                sh 'docker-compose -f docker/docker-compose-4.1.yml run client php vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose-4.1.yml down'
-
-
-                sh 'docker-compose -f docker/docker-compose-4.0.yml down --volumes'
-                sh 'docker-compose -f docker/docker-compose-4.0.yml up -d --force-recreate'
-                sh 'docker-compose -f docker/docker-compose-4.0.yml run client php vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose-4.0.yml down'
-
-
-                sh 'docker-compose -f docker/docker-compose-3.5.yml down --volumes'
-                sh 'docker-compose -f docker/docker-compose-3.5.yml up -d --force-recreate'
-                sh 'docker-compose -f docker/docker-compose-3.5.yml run client php vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose-3.5.yml down'
-
-//                 sh 'docker-compose -f docker/docker-compose-2.3.yml run client php vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose-php-7.4.yml run client php vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose-php-7.4.yml down'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes --remove-orphans'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME up -d --force-recreate --remove-orphans'
+                sh 'sleep 10' // Wait for the servers to complete booting
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-80 php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-74 php vendor/bin/phpunit'
             }
+        }
+        stage ('Coverage') {
+            steps {
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client bash -c "\
+                    cc-test-reporter before-build && \
+                    vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M && \
+                    cp out/phpunit/clover.xml clover.xml && \
+                    cc-test-reporter after-build --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28 --exit-code 0"'
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes'
         }
     }
 }

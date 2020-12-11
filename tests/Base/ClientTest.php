@@ -25,7 +25,7 @@ abstract class ClientTest extends TestCase
     abstract public function createClient(): ClientInterface;
 
     /**
-     * @return iterable<string>
+     * @return iterable<int, string>
      */
     abstract public function connectionAliases(): iterable;
 
@@ -174,5 +174,13 @@ CYPHER,
             $y = $this->client->openTransaction(null, $alias);
             self::assertNotSame($x, $y);
         }
+    }
+
+    public function testInvalidConnection(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the connection pool');
+
+        $this->client->run('RETURN 1 AS x', [], 'ghqkneq;tr');
     }
 }

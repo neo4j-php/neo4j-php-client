@@ -1,0 +1,87 @@
+version: '3.2'
+
+networks:
+    neo4j:
+        driver: bridge
+
+services:
+    client:
+        build:
+            context: ../
+            dockerfile: Dockerfile
+            args:
+                - WITH_XDEBUG=true
+        working_dir: /opt/project
+        networks:
+            - neo4j
+        depends_on:
+            - neo4j-42
+        expose:
+            - 9000
+        environment:
+            - XDEBUG_MODE=coverage
+    client-80:
+        build:
+            context: ../
+            dockerfile: docker/Dockerfile-php-8.0
+            args:
+                - WITH_XDEBUG=false
+        working_dir: /opt/project
+        networks:
+            - neo4j
+        depends_on:
+            - neo4j-42
+            - neo4j-41
+            - neo4j-40
+            - neo4j-35
+    client-74:
+        build:
+            context: ../
+            dockerfile: docker/Dockerfile-php-7.4
+            args:
+                - WITH_XDEBUG=false
+        working_dir: /opt/project
+        networks:
+            - neo4j
+        depends_on:
+            - neo4j-42
+            - neo4j-41
+            - neo4j-40
+            - neo4j-35
+    neo4j-42:
+        networks:
+            - neo4j
+        image: neo4j:4.2
+        expose:
+            - 7474
+            - 7687
+        environment:
+            - NEO4J_AUTH=neo4j/test
+    neo4j-41:
+        networks:
+            - neo4j
+        image: neo4j:4.1
+        expose:
+            - 7474
+            - 7687
+        environment:
+            - NEO4J_AUTH=neo4j/test
+    neo4j-40:
+        networks:
+            - neo4j
+        image: neo4j:4.0
+        expose:
+            - 7474
+            - 7687
+        environment:
+            - NEO4J_AUTH=neo4j/test
+    neo4j-35:
+        networks:
+            - neo4j
+        image: neo4j:3.5
+        expose:
+            - 7474
+            - 7687
+        environment:
+            - NEO4J_AUTH=neo4j/test
+

@@ -20,7 +20,9 @@ fi;
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-COPY composer.json composer.lock phpunit.xml.dist phpunit-bootstrap.php ./
+WORKDIR /opt/project
+
+COPY composer.json composer.lock phpunit.xml.dist ./
 COPY src/ src/
 COPY tests/ tests/
 

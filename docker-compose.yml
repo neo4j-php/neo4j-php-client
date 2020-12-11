@@ -11,24 +11,23 @@ services:
             dockerfile: Dockerfile
             args:
                 - WITH_XDEBUG=true
+        working_dir: /opt/project
         networks:
             - neo4j
         volumes:
             - .:/opt/project
         depends_on:
-            - neo4j
+            - neo4j-42
         expose:
             - 9000
-    neo4j:
+        environment:
+            - XDEBUG_MODE=coverage
+    neo4j-42:
         networks:
             - neo4j
         image: neo4j:4.2
-        ports:
-            - "7474:7474"
-            - "7687:7687"
         expose:
             - 7474
             - 7687
-            - 6362
         environment:
             - NEO4J_AUTH=neo4j/test
