@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
         zip \
         unzip \
     && docker-php-ext-install -j$(nproc) gd sockets bcmath \
-    && pecl install ds \
+    && pecl install ds pcov \
     && docker-php-ext-enable ds
 
 ARG WITH_XDEBUG=false

@@ -1,5 +1,9 @@
 # Laudis Neo4j PHP Client
 
+[![Code Climate](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/badges/gpa.svg)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client)
+[![CodeCov](https://codecov.io/gh/tterb/yt2mp3/branch/master/graph/badge.svg)](https://codecov.io/gh/tterb/yt2mp3)
+[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/laudis-technologies/neo4j-php-client/blob/main/LICENSE)
+
 ## Installation
 
 Install via composer:
