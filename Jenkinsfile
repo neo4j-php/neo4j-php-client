@@ -37,7 +37,7 @@ pipeline {
         stage ('Coverage') {
             steps {
                 sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client bash -c "\
-                    git checkout $BRANCH_NAME && \
+                    git checkout -B $BRANCH_NAME && \
                     cc-test-reporter before-build && \
                     vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M && \
                     cp out/phpunit/clover.xml clover.xml && \
