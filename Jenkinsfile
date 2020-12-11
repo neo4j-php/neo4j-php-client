@@ -7,7 +7,9 @@ pipeline {
 
     stages {
         stage('Pull') {
-            sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose.yml pull'
+            steps {
+                sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose.yml pull'
+            }
         }
         stage('Build') {
             steps {
@@ -34,10 +36,12 @@ pipeline {
             }
         }
         stage ('Coverage') {
-            sh 'docker-compose -p $BRANCH_NAME down --volumes'
-            sh 'docker-compose -p $BRANCH_NAME up -d --force-recreate --remove-orphans'
-            sh 'docker-compose -p $BRANCH_NAME run client vendor/bin/phpunit -d memory_limit=1024M'
-            sh 'docker-compose -p $BRANCH_NAME down'
+            steps {
+                sh 'docker-compose -p $BRANCH_NAME down --volumes'
+                sh 'docker-compose -p $BRANCH_NAME up -d --force-recreate --remove-orphans'
+                sh 'docker-compose -p $BRANCH_NAME run client vendor/bin/phpunit -d memory_limit=1024M'
+                sh 'docker-compose -p $BRANCH_NAME down'
+            }
         }
         stage('Publish') {
             steps {
