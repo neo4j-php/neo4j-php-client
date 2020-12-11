@@ -175,4 +175,12 @@ CYPHER,
             self::assertNotSame($x, $y);
         }
     }
+
+    public function testInvalidConnection(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the connection pool');
+
+        $this->client->run('RETURN 1 AS x', [], 'ghqkneq;tr');
+    }
 }

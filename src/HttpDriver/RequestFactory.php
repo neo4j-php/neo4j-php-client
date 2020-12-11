@@ -57,19 +57,6 @@ final class RequestFactory
      *
      * @throws JsonException
      */
-    public function pushToTransaction(RequestData $data, int $transactionId, iterable $statements): RequestInterface
-    {
-        $body = $this->formatter->prepareBody($statements, $data);
-        $endpoint = $data->getEndpoint().'/'.$transactionId;
-
-        return $this->createRequest($data->withEndpoint($endpoint), 'POST', $body);
-    }
-
-    /**
-     * @param iterable<Statement> $statements
-     *
-     * @throws JsonException
-     */
     public function post(RequestData $data, iterable $statements): RequestInterface
     {
         $body = $this->formatter->prepareBody($statements, $data);

@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Databags;
 
 /**
  * @psalm-immutable
+ * @codeCoverageIgnore Not used yet
  */
 final class StatementStatistics
 {

@@ -51,6 +51,8 @@ final class HttpCypherFormatter
      * @param CypherResponseSet $responseSet
      *
      * @return Vector<StatementStatistics>
+     *
+     * @codeCoverageIgnore Still dead code
      */
     public function formatStats(array $responseSet): Vector
     {
