@@ -36,17 +36,17 @@ pipeline {
         }
         stage ('Coverage') {
             steps {
-                sh 'docker-compose -p $BRANCH_NAME down --volumes --remove-orphans'
-                sh 'docker-compose -p $BRANCH_NAME up -d --force-recreate --remove-orphans'
-                sh 'docker-compose -p $BRANCH_NAME run client vendor/bin/phpunit -d memory_limit=1024M'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client bash -c "vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M && \
+                    cc-test-reporter format-coverage out/phpunit/clover.xml --input-type clover --output out/cc-test-reporter/report.json && \
+                    cc-test-reporter sum-coverage -o out/cc-test-reporter/report.total.json -p 1 out/cc-test-reporter/report.json && \
+                    cc-test-reporter upload-coverage --input out/cc-test-reporter/report.json --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28"'
             }
         }
         stage('Publish') {
             steps {
-                sh 'cp /usr/bin/cc-test-reporter ./cc-test-reporter'
-                sh 'docker-compose run client ./cc-test-reporter format-coverage out/phpunit/clover.xml --input-type clover --output out/cc-test-reporter/report.json'
-                sh 'docker-compose run client ./cc-test-reporter sum-coverage -o out/cc-test-reporter/report.total.json -p 1 out/cc-test-reporter/report.json'
-                sh 'docker-compose run client ./cc-test-reporter upload-coverage --input out/cc-test-reporter/report.json --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client cc-test-reporter format-coverage out/phpunit/clover.xml --input-type clover --output out/cc-test-reporter/report.json'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client cc-test-reporter sum-coverage -o out/cc-test-reporter/report.total.json -p 1 out/cc-test-reporter/report.json'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client cc-test-reporter upload-coverage --input out/cc-test-reporter/report.json --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28'
             }
         }
     }

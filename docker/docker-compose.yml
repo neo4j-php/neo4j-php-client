@@ -5,6 +5,21 @@ networks:
         driver: bridge
 
 services:
+    client:
+        build:
+            context: ../
+            dockerfile: Dockerfile
+            args:
+                - WITH_XDEBUG=true
+        working_dir: /opt/project
+        networks:
+            - neo4j
+        depends_on:
+            - neo4j-42
+        expose:
+            - 9000
+        environment:
+            - XDEBUG_MODE=coverage
     client-80:
         build:
             context: ../
