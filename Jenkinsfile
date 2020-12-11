@@ -29,25 +29,25 @@ pipeline {
             steps {
                 sh 'docker-compose -f docker/docker-compose-4.2.yml -p $BRANCH_NAME down --volumes'
                 sh 'docker-compose -f docker/docker-compose-4.2.yml -p $BRANCH_NAME up -d --force-recreate'
-                sh 'docker-compose -f docker/docker-compose-4.2.yml -p $BRANCH_NAME run client php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose-4.2.yml -p $BRANCH_NAME run client php vendor/bin/phpunit -d memory_limit=1024M'
                 sh 'docker-compose -f docker/docker-compose-4.2.yml -p $BRANCH_NAME down'
 
 
                 sh 'docker-compose -f docker/docker-compose-4.1.yml -p $BRANCH_NAME down --volumes'
                 sh 'docker-compose -f docker/docker-compose-4.1.yml -p $BRANCH_NAME up -d --force-recreate'
-                sh 'docker-compose -f docker/docker-compose-4.1.yml -p $BRANCH_NAME run client php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose-4.1.yml -p $BRANCH_NAME run client php vendor/bin/phpunit -d memory_limit=1024M'
                 sh 'docker-compose -f docker/docker-compose-4.1.yml -p $BRANCH_NAME down'
 
 
                 sh 'docker-compose -f docker/docker-compose-4.0.yml -p $BRANCH_NAME down --volumes'
                 sh 'docker-compose -f docker/docker-compose-4.0.yml -p $BRANCH_NAME up -d --force-recreate'
-                sh 'docker-compose -f docker/docker-compose-4.0.yml -p $BRANCH_NAME run client php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose-4.0.yml -p $BRANCH_NAME run client php vendor/bin/phpunit -d memory_limit=1024M'
                 sh 'docker-compose -f docker/docker-compose-4.0.yml -p $BRANCH_NAME down'
 
 
                 sh 'docker-compose -f docker/docker-compose-3.5.yml -p $BRANCH_NAME down --volumes'
                 sh 'docker-compose -f docker/docker-compose-3.5.yml -p $BRANCH_NAME up -d --force-recreate'
-                sh 'docker-compose -f docker/docker-compose-3.5.yml -p $BRANCH_NAME run client php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose-3.5.yml -p $BRANCH_NAME run client php vendor/bin/phpunit -d memory_limit=1024M'
                 sh 'docker-compose -f docker/docker-compose-3.5.yml -p $BRANCH_NAME down'
 
 //                 sh 'docker-compose -f docker/docker-compose-2.3.yml run client php vendor/bin/phpunit'
@@ -60,6 +60,7 @@ pipeline {
             steps {
                 sh 'cp /usr/bin/cc-test-reporter ./cc-test-reporter'
                 sh 'docker-compose run client ./cc-test-reporter format-coverage out/phpunit/clover.xml --input-type clover --output out/cc-test-reporter/report.json'
+                sh 'docker-compose run client ./cc-test-reporter sum-coverage -o out/cc-test-reporter/report.total.json -p 1 out/cc-test-reporter/report.json '
                 sh 'docker-compose run client ./cc-test-reporter upload-coverage --input out/cc-test-reporter/report.json --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28'
             }
         }
