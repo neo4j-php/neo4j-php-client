@@ -22,7 +22,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 WORKDIR /opt/project
 
-COPY composer.json composer.lock phpunit.xml.dist phpunit-bootstrap.php psalm.xml .php_cs ./
+COPY composer.json composer.lock phpunit.xml.dist psalm.xml .php_cs ./
 COPY src/ src/
 COPY tests/ tests/
 COPY tools/ tools/

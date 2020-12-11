@@ -25,7 +25,7 @@ abstract class ClientTest extends TestCase
     abstract public function createClient(): ClientInterface;
 
     /**
-     * @return iterable<string>
+     * @return iterable<int, string>
      */
     abstract public function connectionAliases(): iterable;
 

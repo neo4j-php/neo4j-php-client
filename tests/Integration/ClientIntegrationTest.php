@@ -21,16 +21,29 @@ final class ClientIntegrationTest extends ClientTest
 {
     public function createClient(): ClientInterface
     {
-        return ClientBuilder::create()
-            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
-            ->addHttpConnection('http', 'http://neo4j:test@neo4j')
-            ->build();
+        $builder = ClientBuilder::create();
+        foreach ($this->connectionAliases() as $index => $alias) {
+            if ($index % 2 === 0) {
+                $explosition = explode('-', $alias);
+                $version = $explosition[count($explosition) - 1];
+                $builder->addBoltConnection('bolt-'.$version, 'bolt://neo4j:test@neo4j-'.$version);
+                $builder->addBoltConnection('http-'.$version, 'http://neo4j:test@neo4j-'.$version);
+            }
+        }
+
+        return $builder->build();
     }
 
     public function connectionAliases(): iterable
     {
-        /** @var iterable<string> $tbr */
-        $tbr = ['http', 'bolt', null];
+        $tbr = [];
+        foreach (['42', '41', '40', '35'] as $version) {
+            $hostname = 'neo4j-'.$version.'.';
+            if (gethostbyname($hostname) !== $hostname) {
+                $tbr[] = 'bolt-'.$version;
+                $tbr[] = 'http-'.$version;
+            }
+        }
 
         return $tbr;
     }

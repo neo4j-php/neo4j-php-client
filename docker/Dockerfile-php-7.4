@@ -14,13 +14,15 @@ RUN apt-get update && apt-get install -y \
 ARG WITH_XDEBUG=false
 
 RUN if [ $WITH_XDEBUG = "true" ] ; then \
-        pecl install xdebug-2.9.8; \
+        pecl install xdebug; \
         docker-php-ext-enable xdebug; \
 fi;
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-COPY composer.json composer.lock phpunit.xml.dist phpunit-bootstrap.php ./
+WORKDIR /opt/project
+
+COPY composer.json composer.lock phpunit.xml.dist ./
 COPY src/ src/
 COPY tests/ tests/
 
