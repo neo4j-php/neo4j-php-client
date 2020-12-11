@@ -27,7 +27,7 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes --remove-orphans'
                 sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME up -d --force-recreate --remove-orphans'
                 sh 'sleep 10' // Wait for the servers to complete booting
                 sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-80 php vendor/bin/phpunit'
