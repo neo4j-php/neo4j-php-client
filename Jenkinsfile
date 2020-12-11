@@ -50,7 +50,9 @@ pipeline {
                 sh 'docker-compose -f docker/docker-compose-3.5.yml -p $BRANCH_NAME down'
 
 //                 sh 'docker-compose -f docker/docker-compose-2.3.yml run client php vendor/bin/phpunit'
+                sh 'docker-compose down'
                 sh 'docker-compose run client vendor/bin/phpunit --coverage-clover out/clover --config phpunit.xml.dist -d memory_limit=1024M'
+                sh 'cc-test-reporter upload-coverage out/clover'
                 sh 'docker-compose -f docker/docker-compose-php-7.4.yml down'
             }
         }
