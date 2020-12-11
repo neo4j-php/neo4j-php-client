@@ -52,13 +52,15 @@ pipeline {
 
 //                 sh 'docker-compose -f docker/docker-compose-2.3.yml run client php vendor/bin/phpunit'
                 sh 'docker-compose -p $BRANCH_NAME down'
-                sh 'docker-compose -p $BRANCH_NAME run client vendor/bin/phpunit --coverage-clover out/clover --config phpunit.xml.dist -d memory_limit=1024M'
+                sh 'docker-compose -p $BRANCH_NAME run client vendor/bin/phpunit -d memory_limit=1024M'
                 sh 'docker-compose -p $BRANCH_NAME down'
             }
         }
         stage('Publish') {
             steps {
-                sh 'cc-test-reporter upload-coverage --input=out/clover --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28'
+                sh 'cp /usr/bin/cc-test-reporter ./cc-test-reporter'
+                sh 'docker-compose run client ./cc-test-reporter format-coverage out/phpunit/clover.xml --input-type clover --output out/cc-test-reporter/report.json'
+                sh 'docker-compose run client ./cc-test-reporter upload-coverage --input out/cc-test-reporter/report.json --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28'
             }
         }
     }
