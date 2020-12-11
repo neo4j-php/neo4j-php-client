@@ -15,6 +15,7 @@ pipeline {
                 sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose-3.5.yml build'
                 sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose-2.3.yml build'
                 sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose-php-7.4.yml build'
+                sh 'docker-compose build'
                 sh 'docker build -t php-neo4j:static-analysis .'
             }
         }
@@ -52,8 +53,12 @@ pipeline {
 //                 sh 'docker-compose -f docker/docker-compose-2.3.yml run client php vendor/bin/phpunit'
                 sh 'docker-compose down'
                 sh 'docker-compose run client vendor/bin/phpunit --coverage-clover out/clover --config phpunit.xml.dist -d memory_limit=1024M'
-                sh 'cc-test-reporter upload-coverage out/clover'
                 sh 'docker-compose -f docker/docker-compose-php-7.4.yml down'
+            }
+        }
+        stage('Publish') {
+            steps {
+                sh 'cc-test-reporter upload-coverage --input=out/clover --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28'
             }
         }
     }
