@@ -48,7 +48,6 @@ pipeline {
     post {
         always {
             sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes'
-            sh 'docker-compose -p $BRANCH_NAME down'
         }
     }
 }
