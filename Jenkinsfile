@@ -9,12 +9,12 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'docker build -t php-neo4j:static-analysis .'
-                sh 'docker-compose -f docker/docker-compose-4.2.yml build'
-                sh 'docker-compose -f docker/docker-compose-4.1.yml build'
-                sh 'docker-compose -f docker/docker-compose-4.0.yml build'
-                sh 'docker-compose -f docker/docker-compose-3.5.yml build'
-                sh 'docker-compose -f docker/docker-compose-2.3.yml build'
-                sh 'docker-compose -f docker/docker-compose-php-7.4.yml build'
+                sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose-4.2.yml build'
+                sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose-4.1.yml build'
+                sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose-4.0.yml build'
+                sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose-3.5.yml build'
+                sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose-2.3.yml build'
+                sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose-php-7.4.yml build'
                 sh 'docker build -t php-neo4j:static-analysis .'
             }
         }
