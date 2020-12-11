@@ -30,8 +30,8 @@ pipeline {
                 sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes --remove-orphans'
                 sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME up -d --force-recreate --remove-orphans'
                 sh 'sleep 10' // Wait for the servers to complete booting
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-80 php /opt/project/vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-74 php /opt/project/vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-80 php vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-74 php vendor/bin/phpunit'
             }
         }
         stage ('Coverage') {
