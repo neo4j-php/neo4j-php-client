@@ -30,9 +30,8 @@ pipeline {
                 sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes --remove-orphans'
                 sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME up -d --force-recreate --remove-orphans'
                 sh 'sleep 10' // Wait for the servers to complete booting
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-80 php vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-74 php vendor/bin/phpunit'
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-80 php /opt/project/vendor/bin/phpunit'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-74 php /opt/project/vendor/bin/phpunit'
             }
         }
         stage ('Coverage') {
@@ -40,7 +39,6 @@ pipeline {
                 sh 'docker-compose -p $BRANCH_NAME down --volumes --remove-orphans'
                 sh 'docker-compose -p $BRANCH_NAME up -d --force-recreate --remove-orphans'
                 sh 'docker-compose -p $BRANCH_NAME run client vendor/bin/phpunit -d memory_limit=1024M'
-                sh 'docker-compose -p $BRANCH_NAME down'
             }
         }
         stage('Publish') {
@@ -50,6 +48,13 @@ pipeline {
                 sh 'docker-compose run client ./cc-test-reporter sum-coverage -o out/cc-test-reporter/report.total.json -p 1 out/cc-test-reporter/report.json'
                 sh 'docker-compose run client ./cc-test-reporter upload-coverage --input out/cc-test-reporter/report.json --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28'
             }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes'
+            sh 'docker-compose -p $BRANCH_NAME down'
         }
     }
 }
