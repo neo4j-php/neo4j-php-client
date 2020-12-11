@@ -36,17 +36,11 @@ pipeline {
         }
         stage ('Coverage') {
             steps {
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client bash -c "vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M && \
-                    cc-test-reporter format-coverage out/phpunit/clover.xml --input-type clover --output out/cc-test-reporter/report.json && \
-                    cc-test-reporter sum-coverage -o out/cc-test-reporter/report.total.json -p 1 out/cc-test-reporter/report.json && \
-                    cc-test-reporter upload-coverage --input out/cc-test-reporter/report.json --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28"'
-            }
-        }
-        stage('Publish') {
-            steps {
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client cc-test-reporter format-coverage out/phpunit/clover.xml --input-type clover --output out/cc-test-reporter/report.json'
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client cc-test-reporter sum-coverage -o out/cc-test-reporter/report.total.json -p 1 out/cc-test-reporter/report.json'
-                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client cc-test-reporter upload-coverage --input out/cc-test-reporter/report.json --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28'
+                sh 'docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client bash -c "\
+                    cc-test-reporter before-build && \
+                    vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M && \
+                    cp out/phpunit/clover.xml clover.xml && \
+                    cc-test-reporter after-build --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28 --exit-code 0"'
             }
         }
     }
