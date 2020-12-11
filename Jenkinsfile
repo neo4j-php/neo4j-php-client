@@ -37,7 +37,7 @@ pipeline {
         }
         stage ('Coverage') {
             steps {
-                sh 'docker-compose -p $BRANCH_NAME down --volumes'
+                sh 'docker-compose -p $BRANCH_NAME down --volumes --remove-orphans'
                 sh 'docker-compose -p $BRANCH_NAME up -d --force-recreate --remove-orphans'
                 sh 'docker-compose -p $BRANCH_NAME run client vendor/bin/phpunit -d memory_limit=1024M'
                 sh 'docker-compose -p $BRANCH_NAME down'
