@@ -25,32 +25,54 @@ final class BoltCypherFormatter
      *
      * @return Vector<Map<string, scalar|array|null>>
      */
-    public function formatResult(array $meta, array $results): Vector
+    public function formatResult(array $meta, iterable $results): Vector
     {
         $results = array_slice($results, 0, count($results) - 1);
 
         $tbr = new Vector();
         foreach ($results as $result) {
-            /** @var Map<string, scalar|array|null> $map */
-            $map = new Map();
-            foreach ($meta['fields'] as $i => $column) {
-                /** @var mixed $value */
-                $value = $result[$i];
-                if (is_object($value)) {
-                    $map->put($column, $this->objectToProperty($value));
-                } elseif ($value === null || is_scalar($value)) {
-                    $map->put($column, $value);
-                } elseif (is_array($value)) {
-                    $value = $this->remapObjectsInArray($value);
-                    $map->put($column, $value);
-                } else {
-                    throw new UnexpectedValueException('Did not expect to receive value of type: '.gettype($value));
-                }
-            }
-            $tbr->push($map);
+            $tbr->push($this->formatRow($meta, $result));
         }
 
         return $tbr;
+    }
+
+    /**
+     * @param array{fields: array<int, string>} $meta
+     *
+     * @return Map<string, scalar|array|null>
+     */
+    private function formatRow(array $meta, array $result): Map
+    {
+        /** @var Map<string, scalar|array|null> $map */
+        $map = new Map();
+        foreach ($meta['fields'] as $i => $column) {
+            $map->put($column, $this->mapValue($result[$i]));
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param mixed $value
+     *
+     * @return scalar|array|null
+     */
+    private function mapValue($value)
+    {
+        if (is_object($value)) {
+            return $this->objectToProperty($value);
+        }
+
+        if ($value === null || is_scalar($value)) {
+            return $value;
+        }
+
+        if (is_array($value)) {
+            return $this->remapObjectsInArray($value);
+        }
+
+        throw new UnexpectedValueException('Did not expect to receive value of type: '.gettype($value));
     }
 
     private function objectToProperty(object $object): array
