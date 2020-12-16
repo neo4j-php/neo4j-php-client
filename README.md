@@ -66,6 +66,10 @@ will echo `123456789`.
 
 The Map representing the Record can only contain null, scalar or array values. Each array can then only contain null, scalar or array values, ad infinitum.
 
+## Example project
+
+An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an api for the classic movies example of neo4j.
+
 ## Diving Deeper
 
 ### Running multiple queries at once
