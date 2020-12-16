@@ -15,7 +15,7 @@ composer require laudis/neo4j-php-client
 The HTTP protocol requires [psr-7](https://www.php-fig.org/psr/psr-7/), [psr-17](https://www.php-fig.org/psr/psr-17/) and [psr-18](https://www.php-fig.org/psr/psr-18/) implementations. If there are not any available, composer can install them.
 
 ```bash
-composer require guzzlehttp/guzzle guzzlehttp/psr7 http-interop/http-factory-guzzle
+composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 ```
 
 ## General usage
@@ -65,6 +65,10 @@ foreach ($client->run('UNWIND range(1, 9) as x RETURN x') as $item) {
 will echo `123456789`.
 
 The Map representing the Record can only contain null, scalar or array values. Each array can then only contain null, scalar or array values, ad infinitum.
+
+## Example project
+
+An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an api for the classic movies example of neo4j.
 
 ## Diving Deeper
 

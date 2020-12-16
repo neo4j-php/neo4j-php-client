@@ -13,16 +13,15 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh 'docker build -t php-neo4j:static-analysis .'
+                sh 'docker build -t php-neo4j:static-analysis-$BRANCH_NAME .'
                 sh 'docker-compose -p $BRANCH_NAME -f docker/docker-compose.yml build --parallel'
                 sh 'docker-compose -p $BRANCH_NAME build'
-                sh 'docker build -t php-neo4j:static-analysis .'
             }
         }
         stage('Static Analysis') {
             steps {
-                sh 'docker run php-neo4j:static-analysis tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run'
-                sh 'docker run php-neo4j:static-analysis tools/psalm/vendor/bin/psalm --show-info=true'
+                sh 'docker run php-neo4j:static-analysis-$BRANCH_NAME tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run'
+                sh 'docker run php-neo4j:static-analysis-$BRANCH_NAME tools/psalm/vendor/bin/psalm --show-info=true'
             }
         }
         stage('Test') {
