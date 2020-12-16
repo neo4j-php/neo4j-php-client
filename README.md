@@ -15,7 +15,7 @@ composer require laudis/neo4j-php-client
 The HTTP protocol requires [psr-7](https://www.php-fig.org/psr/psr-7/), [psr-17](https://www.php-fig.org/psr/psr-17/) and [psr-18](https://www.php-fig.org/psr/psr-18/) implementations. If there are not any available, composer can install them.
 
 ```bash
-composer require guzzlehttp/guzzle guzzlehttp/psr7 http-interop/http-factory-guzzle
+composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 ```
 
 ## General usage

@@ -39,9 +39,9 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^9.0",
-        "guzzlehttp/guzzle": "7.*",
-        "guzzlehttp/psr7": "1.*",
-        "http-interop/http-factory-guzzle": "*"
+        "nyholm/psr7": "^1.3",
+        "nyholm/psr7-server": "^1.0",
+        "kriswallsmith/buzz": "^1.2"
     },
     "autoload": {
         "psr-4": {
