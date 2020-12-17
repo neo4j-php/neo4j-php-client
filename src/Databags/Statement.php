@@ -13,11 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Ds\Map;
+
 final class Statement
 {
     private string $text;
-    /** @var iterable<string, scalar|iterable|null> */
-    private iterable $parameters;
+    /** @var array<string, scalar|iterable|null> */
+    private array $parameters;
 
     /**
      * @param iterable<string, scalar|iterable|null> $parameters
@@ -25,7 +27,7 @@ final class Statement
     public function __construct(string $text, iterable $parameters)
     {
         $this->text = $text;
-        $this->parameters = $parameters;
+        $this->parameters = (new Map($parameters))->toArray();
     }
 
     /**
