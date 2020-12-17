@@ -44,9 +44,9 @@ final class Statement
     }
 
     /**
-     * @return iterable<string, scalar|iterable|null>
+     * @return array<string, scalar|iterable|null>
      */
-    public function getParameters(): iterable
+    public function getParameters(): array
     {
         return $this->parameters;
     }
