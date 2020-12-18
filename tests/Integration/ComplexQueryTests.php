@@ -13,8 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Generator;
+use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\ParameterHelper;
 use PHPUnit\Framework\TestCase;
 
 final class ComplexQueryTests extends TestCase
@@ -25,9 +29,104 @@ final class ComplexQueryTests extends TestCase
     {
         parent::setUp();
         $this->client = ClientBuilder::create()
-            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
-            ->addHttpConnection('http', 'http://neo4j:test@neo4j')
+            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42')
+            ->addHttpConnection('http', 'http://neo4j:test@neo4j-42')
             ->build();
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testListParameterHelper(string $alias): void
+    {
+        $result = $this->client->run(<<<'CYPHER'
+MATCH (x) WHERE x.slug in $listOrMap RETURN x
+CYPHER, ['listOrMap' => ParameterHelper::asList([])], $alias);
+        self::assertEquals(0, $result->count());
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testValidListParameterHelper(string $alias): void
+    {
+        $result = $this->client->run(<<<'CYPHER'
+RETURN $listOrMap AS x
+CYPHER, ['listOrMap' => ParameterHelper::asList([1, 2, 3])], $alias);
+        self::assertEquals(1, $result->count());
+        self::assertEquals([1, 2, 3], $result->first()->get('x'));
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testValidMapParameterHelper(string $alias): void
+    {
+        $result = $this->client->run(<<<'CYPHER'
+RETURN $listOrMap AS x
+CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b', 'c' => 'd'])], $alias);
+        self::assertEquals(1, $result->count());
+        self::assertEquals(['a' => 'b', 'c' => 'd'], $result->first()->get('x'));
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testMapParameterHelper(string $alias): void
+    {
+        $this->expectException(Neo4jException::class);
+
+        $this->client->run(<<<'CYPHER'
+MERGE (x:Node {slug: 'a'})
+WITH x
+MATCH (x) WHERE x.slug in $listOrMap RETURN x
+CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b'])], $alias);
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testArrayParameterHelper(string $alias): void
+    {
+        $this->expectException(Neo4jException::class);
+        $this->client->run(<<<'CYPHER'
+MERGE (x:Node {slug: 'a'})
+WITH x
+MATCH (x) WHERE x.slug in $listOrMap RETURN x
+CYPHER, ['listOrMap' => []], $alias);
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testInvalidParameter(string $alias): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->client->run(<<<'CYPHER'
+MERGE (x:Node {slug: 'a'})
+WITH x
+MATCH (x) WHERE x.slug in $listOrMap RETURN x
+CYPHER, ['listOrMap' => self::generate()], $alias);
+    }
+
+    private static function generate(): Generator
+    {
+        foreach (range(1, 3) as $x) {
+            yield true => $x;
+        }
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testInvalidParameters(string $alias): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->client->run(<<<'CYPHER'
+MERGE (x:Node {slug: 'a'})
+WITH x
+MATCH (x) WHERE x.slug in $listOrMap RETURN x
+CYPHER, self::generate(), $alias);
     }
 
     /**

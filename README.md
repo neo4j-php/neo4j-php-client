@@ -127,6 +127,21 @@ $tsx->rollback();
 $tsx->commit([Statement::create('MATCH (x) RETURN x LIMIT 100')]);
 ```
 
+### Differentiating between parameter type
+
+Cypher has lists and maps. This notion can be problematic as the standard php arrays encapsulate both. When you provide an empty array as a parameter, it will be impossible to determine if it is an empty list or map.
+
+The `ParameterHelper` class is the ideal companion for this:
+
+```php
+use Laudis\Neo4j\ParameterHelper;
+
+$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asList([])]); // will return an empty set
+$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asMap([])]); // will error
+$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []]); // will error
+```
+
+This helper can also be used to make intent explicit.
 
 ### Providing custom injections
 
@@ -163,9 +178,9 @@ Flexibility is maintained where possible by making all parameters iterables if t
 
 ```php
 // Vanilla flavour
-$client->run('MATCH (x {slug: $slug})', ['slug' => 'a']);
+use Ds\Map;$client->run('MATCH (x {slug: $slug})', ['slug' => 'a']);
 // php-ds implementation
-$client->run('MATCH (x {slug: $slug})', new \Ds\Map(['slug' => 'a']));
+$client->run('MATCH (x {slug: $slug})', new Map(['slug' => 'a']));
 // laravel style
 $client->run('MATCH (x {slug: $slug})', collect(['slug' => 'a']));
 ```
