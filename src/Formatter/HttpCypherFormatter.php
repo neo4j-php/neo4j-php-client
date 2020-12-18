@@ -21,6 +21,7 @@ use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\RequestData;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\StatementStatistics;
+use Laudis\Neo4j\ParameterHelper;
 use stdClass;
 
 /**
@@ -151,8 +152,8 @@ final class HttpCypherFormatter
                 'resultDataContents' => ['ROW'],
                 'includeStats' => $config->includeStats(),
             ];
-            $parameters = $statement->getParameters();
-            $st['parameters'] = $parameters === [] ? new stdClass() : $parameters;
+            $parameters = ParameterHelper::formatParameters($statement->getParameters());
+            $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
             $tbr[] = $st;
         }
 

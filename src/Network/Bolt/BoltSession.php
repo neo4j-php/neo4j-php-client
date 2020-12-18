@@ -26,6 +26,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BoltCypherFormatter;
 use Laudis\Neo4j\HttpDriver\Transaction;
+use Laudis\Neo4j\ParameterHelper;
 use Throwable;
 
 final class BoltSession implements SessionInterface
@@ -117,20 +118,19 @@ final class BoltSession implements SessionInterface
      */
     private function runStatements(iterable $statements, Bolt $bolt): Vector
     {
-        try {
-            $tbr = new Vector();
-            foreach ($statements as $statement) {
-                $extra = ['db' => $this->injections->database()];
-                /** @var array $parameters */
-                $parameters = $statement->getParameters();
+        $tbr = new Vector();
+        foreach ($statements as $statement) {
+            $extra = ['db' => $this->injections->database()];
+            $parameters = ParameterHelper::formatParameters($statement->getParameters());
+            try {
                 /** @var array{fields: array<int, string>} $meta */
-                $meta = $bolt->run($statement->getText(), $parameters, $extra);
+                $meta = $bolt->run($statement->getText(), $parameters->toArray(), $extra);
                 /** @var array<array> $results */
                 $results = $bolt->pullAll();
-                $tbr->push($this->formatter->formatResult($meta, $results));
+            } catch (Throwable $e) {
+                throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
             }
-        } catch (Throwable $e) {
-            throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
+            $tbr->push($this->formatter->formatResult($meta, $results));
         }
 
         return $tbr;

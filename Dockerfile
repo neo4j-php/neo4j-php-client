@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
 ARG WITH_XDEBUG=false
 
 RUN if [ $WITH_XDEBUG = "true" ] ; then \
-        pecl install channel://pecl.php.net/xdebug-3.0.1; \
+        pecl install channel://pecl.php.net/xdebug-2.9.3; \
         docker-php-ext-enable xdebug; \
 fi;
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
