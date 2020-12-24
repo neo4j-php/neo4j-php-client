@@ -28,7 +28,7 @@ composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 ```php
 $client = Laudis\Neo4j\ClientBuilder::create()
     ->addHttpConnection('backup', 'http://neo4j:password@localhost')
-    ->addBoltConnection('default', 'neo4j:password@localhost')
+    ->addBoltConnection('default', 'bolt://neo4j:password@localhost')
     ->setDefaultConnection('default')
     ->build();
 ```
@@ -180,8 +180,10 @@ This library does not use any custom result classes but uses php-ds instead. The
 Flexibility is maintained where possible by making all parameters iterables if they are a container of sorts. This means you can pass parameters as an array, \Ds\Map or any other object which implements the \Iterator or \IteratorAggregate. These examples are all valid:
 
 ```php
+use Ds\Map;
+
 // Vanilla flavour
-use Ds\Map;$client->run('MATCH (x {slug: $slug})', ['slug' => 'a']);
+$client->run('MATCH (x {slug: $slug})', ['slug' => 'a']);
 // php-ds implementation
 $client->run('MATCH (x {slug: $slug})', new Map(['slug' => 'a']));
 // laravel style
@@ -192,7 +194,6 @@ $client->run('MATCH (x {slug: $slug})', collect(['slug' => 'a']));
 
 | **Version** | **Tested**  |
 |-------------|-------------|
-| 2.3         |   Yes       |
 | 3.0 +       |   Yes       |
 | 4.0 +       |   Yes       |
 

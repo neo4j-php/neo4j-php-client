@@ -14,8 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use BadMethodCallException;
+use Buzz\Exception\NetworkException;
 use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Network\Bolt\BoltInjections;
+use Laudis\Neo4j\Network\Http\HttpInjections;
 use PHPUnit\Framework\TestCase;
 
 final class ClientBuilderTest extends TestCase
@@ -41,7 +45,7 @@ final class ClientBuilderTest extends TestCase
     public function testBadHttpUrl(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The provided url must have a parsed host, user and pass value');
+        $this->expectExceptionMessage('The provided url must have a parsed host, user, pass and scheme value');
 
         ClientBuilder::create()
             ->addHttpConnection('temp', 'neoj:test');
@@ -50,9 +54,107 @@ final class ClientBuilderTest extends TestCase
     public function testBadBoltUrl(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The provided url must have a parsed host, user and pass value');
+        $this->expectExceptionMessage('The provided url must have a parsed host, user, pass and scheme value');
 
         ClientBuilder::create()
             ->addBoltConnection('temp', 'neoj:test');
+    }
+
+    public function testBoltSetupNoScheme(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'neo4j:test@neo4j-42:7687')->build();
+        $client->openTransaction();
+    }
+
+    public function testBoltSetupWithScheme(): void
+    {
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42:7687')->build();
+        $client->openTransaction();
+        self::assertTrue(true);
+    }
+
+    public function testBoltSetupWithoutPort(): void
+    {
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42')->build();
+        $client->openTransaction();
+        self::assertTrue(true);
+    }
+
+    public function testBoltSetupWithoutUserAndPass(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://@neo4j-42')->build();
+        $client->openTransaction();
+    }
+
+    public function testBoltEmpty(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $client = ClientBuilder::create()->addBoltConnection('bolt', '')->build();
+        $client->openTransaction();
+    }
+
+    public function testBoltSetupWrongScheme(): void
+    {
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'neo4j://neo4j:test@neo4j-42:7687')->build();
+        $client->openTransaction();
+        self::assertTrue(true);
+    }
+
+    public function testHttpSetupNoScheme(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $client = ClientBuilder::create()->addHttpConnection('http', 'test:neo4j@neo4j-42:7474')->build();
+        $client->openTransaction();
+    }
+
+    public function testHttpSetupWithScheme(): void
+    {
+        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@neo4j-42:7474')->build();
+        $client->openTransaction();
+        self::assertTrue(true);
+    }
+
+    public function testHttpSetupWrongScheme(): void
+    {
+        $client = ClientBuilder::create()->addHttpConnection('http', 'neo4j://neo4j:test@neo4j-42:7474')->build();
+        $this->expectException(NetworkException::class);
+        $client->openTransaction();
+    }
+
+    public function testHttpSetupWithoutPort(): void
+    {
+        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@neo4j-42')->build();
+        $client->openTransaction();
+        self::assertTrue(true);
+    }
+
+    public function testHttpSetupWithoutUserAndPass(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $client = ClientBuilder::create()->addHttpConnection('http', 'http://@neo4j-42')->build();
+        $client->openTransaction();
+    }
+
+    public function testHttpEmpty(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $client = ClientBuilder::create()->addHttpConnection('http', '')->build();
+        $client->openTransaction();
+    }
+
+    public function testHttpWithDatabase(): void
+    {
+        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@neo4j-42', HttpInjections::create()->withDatabase('abc'))->build();
+        $this->expectException(Neo4jException::class);
+        $client->openTransaction();
+    }
+
+    public function testBoltWithDatabase(): void
+    {
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42', BoltInjections::create()->withDatabase('abc'))->build();
+        $this->expectException(Neo4jException::class);
+        $client->openTransaction();
     }
 }
