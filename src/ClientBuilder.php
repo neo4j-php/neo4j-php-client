@@ -48,10 +48,7 @@ final class ClientBuilder
      */
     public function addBoltConnection(string $alias, string $url, BoltInjections $provider = null): ClientBuilder
     {
-        $parse = parse_url($url);
-        if (!isset($parse['host'], $parse['user'], $parse['pass'])) {
-            throw new InvalidArgumentException('The provided url must have a parsed host, user and pass value');
-        }
+        $parse = $this->assertCorrectUrl($url);
         $this->connectionPool->put($alias, new BoltDriver($parse, $provider ?? new BoltInjections()));
 
         return $this;
@@ -62,10 +59,7 @@ final class ClientBuilder
      */
     public function addHttpConnection(string $alias, string $url, HttpInjections $injections = null): ClientBuilder
     {
-        $parse = parse_url($url);
-        if (!isset($parse['host'], $parse['user'], $parse['pass'])) {
-            throw new InvalidArgumentException('The provided url must have a parsed host, user and pass value');
-        }
+        $parse = $this->assertCorrectUrl($url);
         $injections = $injections ?? new HttpInjections();
         $factory = $injections->requestFactory();
         $requestFactory = new RequestFactory($factory, $injections->streamFactory(), new HttpCypherFormatter());
@@ -99,5 +93,18 @@ final class ClientBuilder
         }
 
         return new Client($this->connectionPool, $this->default);
+    }
+
+    /**
+     * @return array{host:string, user:string, pass:string, scheme:string}
+     */
+    private function assertCorrectUrl(string $url): array
+    {
+        $parse = parse_url($url);
+        if (!isset($parse['host'], $parse['user'], $parse['pass'], $parse['scheme'])) {
+            throw new InvalidArgumentException('The provided url must have a parsed host, user, pass and scheme value');
+        }
+
+        return $parse;
     }
 }
