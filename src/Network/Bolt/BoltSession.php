@@ -92,7 +92,8 @@ final class BoltSession implements SessionInterface
             $sock = new StreamSocket($this->parsedUrl['host'], $this->parsedUrl['port'] ?? self::DEFAULT_TCP_PORT);
             $bolt = new Bolt($sock);
             $bolt->init($userAgent, $this->parsedUrl['user'], $this->parsedUrl['pass']);
-            if (!$bolt->begin()) {
+            $extra = ['db' => $this->injections->database()];
+            if (!$bolt->begin($extra)) {
                 throw new Neo4jException(new Vector([new Neo4jError('', 'Cannot open new transaction')]));
             }
         } catch (Exception $e) {
