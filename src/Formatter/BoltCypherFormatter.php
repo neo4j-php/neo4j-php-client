@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use Bolt\structures\Path;
 use Ds\Map;
 use Ds\Vector;
 use UnexpectedValueException;
@@ -53,6 +54,26 @@ final class BoltCypherFormatter
         return $map;
     }
 
+    private function mapPath(Path $path): array
+    {
+        $rels = $path->rels();
+        $nodes = $path->nodes();
+        $tbr = [];
+        /**
+         * @var mixed $node
+         */
+        foreach ($nodes as $i => $node) {
+            /** @var mixed */
+            $tbr[] = $node;
+            if (isset($rels[$i])) {
+                /** @var mixed */
+                $tbr[] = $rels[$i];
+            }
+        }
+
+        return $tbr;
+    }
+
     /**
      * @param mixed $value
      *
@@ -60,6 +81,10 @@ final class BoltCypherFormatter
      */
     private function mapValue($value)
     {
+        if ($value instanceof Path) {
+            $value = $this->mapPath($value);
+        }
+
         if (is_object($value)) {
             return $this->objectToProperty($value);
         }
@@ -77,8 +102,13 @@ final class BoltCypherFormatter
 
     private function objectToProperty(object $object): array
     {
+        if ($object instanceof Path) {
+            return $this->mapPath($object);
+        }
+
         if (!method_exists($object, 'properties')) {
-            throw new UnexpectedValueException('Cannot handle objects without a properties method. Class given: '.get_class($object));
+            $message = 'Cannot handle objects without a properties method. Class given: '.get_class($object);
+            throw new UnexpectedValueException($message);
         }
 
         /** @var array $properties */
