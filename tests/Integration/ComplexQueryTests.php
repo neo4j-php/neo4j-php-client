@@ -40,7 +40,7 @@ final class ComplexQueryTests extends TestCase
     public function testListParameterHelper(string $alias): void
     {
         $result = $this->client->run(<<<'CYPHER'
-MATCH (x) WHERE x.slug in $listOrMap RETURN x
+MATCH (x) WHERE x.slug IN $listOrMap RETURN x
 CYPHER, ['listOrMap' => ParameterHelper::asList([])], $alias);
         self::assertEquals(0, $result->count());
     }
@@ -79,7 +79,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b', 'c' => 'd'])], $alia
         $this->client->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
-MATCH (x) WHERE x.slug in $listOrMap RETURN x
+MATCH (x) WHERE x.slug IN $listOrMap RETURN x
 CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b'])], $alias);
     }
 
@@ -92,7 +92,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b'])], $alias);
         $this->client->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
-MATCH (x) WHERE x.slug in $listOrMap RETURN x
+MATCH (x) WHERE x.slug IN $listOrMap RETURN x
 CYPHER, ['listOrMap' => []], $alias);
     }
 
@@ -105,7 +105,7 @@ CYPHER, ['listOrMap' => []], $alias);
         $this->client->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
-MATCH (x) WHERE x.slug in $listOrMap RETURN x
+MATCH (x) WHERE x.slug IN $listOrMap RETURN x
 CYPHER, ['listOrMap' => self::generate()], $alias);
     }
 
@@ -125,7 +125,7 @@ CYPHER, ['listOrMap' => self::generate()], $alias);
         $this->client->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
-MATCH (x) WHERE x.slug in $listOrMap RETURN x
+MATCH (x) WHERE x.slug IN $listOrMap RETURN x
 CYPHER, self::generate(), $alias);
     }
 
@@ -170,7 +170,7 @@ CYPHER
     public function testNullListAndMap(string $alias): void
     {
         $results = $this->client->run(<<<'CYPHER'
-RETURN null as x, [1, 2, 3] as y, {x: 'x', y: 'y', z: 'z'} as z
+RETURN null AS x, [1, 2, 3] AS y, {x: 'x', y: 'y', z: 'z'} AS z
 CYPHER
             , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
 
@@ -201,6 +201,36 @@ CYPHER
         self::assertEquals(2, $result->count());
         self::assertEquals(['x' => 'x'], $result->get('x'));
         self::assertEquals(['list' => [1, 2, 3]], $result->get('y'));
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testPathRetunType(string $alias): void
+    {
+        $this->client->run(<<<'CYPHER'
+MERGE (:Node {x: 'x'}) - [:Rel] -> (x:Node {x: 'y'})
+WITH x
+MERGE (x) - [:Rel] -> (:Node {x: 'z'})
+CYPHER
+            , [], $alias);
+
+        $results = $this->client->run(<<<'CYPHER'
+MATCH (a:Node {x: 'x'}), (b:Node {x: 'z'}), p = shortestPath((a)-[*]-(b))
+RETURN p
+CYPHER
+            , [], $alias);
+
+        self::assertEquals(1, $results->count());
+        $result = $results->first();
+        self::assertEquals(1, $result->count());
+        self::assertEquals([
+            ['x' => 'x'],
+            [],
+            ['x' => 'y'],
+            [],
+            ['x' => 'z'],
+        ], $result->get('p'));
     }
 
     /**
