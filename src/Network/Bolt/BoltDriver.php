@@ -24,6 +24,9 @@ use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BoltCypherFormatter;
 
+/**
+ * @psalm-type ParsedUrl = array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string}
+ */
 final class BoltDriver implements DriverInterface
 {
     /** @var array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} */
@@ -35,7 +38,7 @@ final class BoltDriver implements DriverInterface
     /**
      * BoltConnection constructor.
      *
-     * @param array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} $parsedUrl
+     * @param ParsedUrl $parsedUrl
      */
     public function __construct(array $parsedUrl, BoltInjections $injections)
     {
