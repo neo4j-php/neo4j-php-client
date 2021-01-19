@@ -21,7 +21,7 @@
     ],
     "require": {
         "php": "^7.4 || ^8.0",
-        "youngsource/typed-enum": "^1.1",
+        "laudis/typed-enum": "^1.1",
         "php-http/discovery": "^1.13",
         "psr/http-message": "^1.0",
         "psr/http-factory": "^1.0",
