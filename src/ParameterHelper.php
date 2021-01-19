@@ -32,25 +32,68 @@ final class ParameterHelper
     }
 
     /**
-     * @param iterable|scalar|null $value
+     * @param mixed $value
      *
      * @return iterable|scalar|stdClass|null
      */
     public static function asParameter($value)
     {
+        return self::emptySequenceToArray($value) ??
+            self::emptyDictionaryToStdClass($value) ??
+            self::filledIterableToArray($value) ??
+            self::filterInvalidType($value);
+    }
+
+    /**
+     * @param mixed $value
+     *
+     * @return scalar|null
+     */
+    private static function filterInvalidType($value)
+    {
+        if ($value !== null && !is_scalar($value)) {
+            throw new InvalidArgumentException('Parameters must be iterable, scalar or null');
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private static function emptySequenceToArray($value): ?array
+    {
         if ($value instanceof Sequence && $value->count() === 0) {
             return [];
         }
+
+        return null;
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private static function emptyDictionaryToStdClass($value): ?stdClass
+    {
         if (($value instanceof Map && $value->count() === 0) ||
             (is_array($value) && count($value) === 0)
         ) {
             return new stdClass();
         }
+
+        return null;
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private static function filledIterableToArray($value): ?array
+    {
         if (is_iterable($value)) {
             return self::iterableToArray($value);
         }
 
-        return $value;
+        return null;
     }
 
     /**
@@ -82,7 +125,6 @@ final class ParameterHelper
          */
         foreach ($value as $key => $val) {
             if (is_int($key) || is_string($key)) {
-                /** @psalm-suppress MixedAssignment */
                 $tbr[$key] = self::asParameter($val);
             } else {
                 $msg = 'Iterable parameters must have an integer or string as key values, '.gettype($key).' received.';
