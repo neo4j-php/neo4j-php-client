@@ -55,7 +55,7 @@ final class ClientBuilder
     }
 
     /**
-     * Adds a new http connection with the given alias and over the provided url. The configuration will be merged with the one in the client, if provided.
+     * Adds a new http connection with the given alias and over t he provided url. The configuration will be merged with the one in the client, if provided.
      */
     public function addHttpConnection(string $alias, string $url, HttpInjections $injections = null): ClientBuilder
     {
