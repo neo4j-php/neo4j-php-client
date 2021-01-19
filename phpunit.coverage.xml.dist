@@ -2,8 +2,11 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
 >
+    <php>
+        <ini name="memory_limit" value="512M" />
+    </php>
     <testsuites>
-        <testsuite name="Neo4j php test suite">
+         <testsuite name="Neo4j php test suite">
             <directory>./tests</directory>
         </testsuite>
     </testsuites>
