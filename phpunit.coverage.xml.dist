@@ -14,6 +14,10 @@
         <report>
             <clover outputFile="out/phpunit/clover.xml" />
             <html outputDirectory="out/phpunit/html" />
+            <xml outputDirectory="out/phpunit/xml"/>
+            <text outputFile="out/phpunit/out.txt"/>
+            <php outputFile="out/phpunit/out.php"/>
+            <crap4j outputFile="out/phpunit/crap4j.xml"/>
         </report>
         <include>
             <directory suffix=".php">src</directory>

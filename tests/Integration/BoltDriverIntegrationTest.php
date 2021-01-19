@@ -23,7 +23,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @psalm-import-type ParsedUrl from BoltDriver
  */
-final class BoltDriverIntegration extends TestCase
+final class BoltDriverIntegrationTest extends TestCase
 {
     /**
      * @throws Exception
@@ -32,8 +32,7 @@ final class BoltDriverIntegration extends TestCase
     {
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@neo4j-42');
-        $driver = new BoltDriver($parsedUrl, BoltInjections::create());
-        $session = $driver->aquireSession();
+        $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession();
         $results = $session->run([new Statement(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER, [])]);
@@ -48,8 +47,7 @@ CYPHER, [])]);
         $ip = gethostbyname('neo4j-42');
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@'.$ip);
-        $driver = new BoltDriver($parsedUrl, BoltInjections::create());
-        $session = $driver->aquireSession();
+        $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession();
         $results = $session->run([new Statement(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER, [])]);
@@ -59,7 +57,19 @@ CYPHER, [])]);
     /**
      * @throws Exception
      */
-    public function testInvalid(): void
+    public function testInvalidIp(): void
+    {
+        /** @var ParsedUrl $parsedUrl */
+        $parsedUrl = parse_url('bolt://neo4j:test@127.0.0.0');
+        $driver = new BoltDriver($parsedUrl, BoltInjections::create());
+        $this->expectException(Neo4jException::class);
+        $driver->aquireSession();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testInvalidSocket(): void
     {
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@127.0.0.0');
