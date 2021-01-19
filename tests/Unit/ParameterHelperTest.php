@@ -29,6 +29,7 @@ final class ParameterHelperTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
+        /** @psalm-suppress MixedPropertyTypeCoercion */
         self::$invalidIterable = new class() implements Iterator {
             private bool $initial = true;
 
