@@ -21,7 +21,7 @@ use stdClass;
 
 final class ParameterHelper
 {
-    public static function asList(iterable $iterable): Sequence
+    public static function asList(iterable $iterable): Vector
     {
         return new Vector($iterable);
     }
@@ -58,7 +58,7 @@ final class ParameterHelper
      *
      * @return Map<array-key, iterable|scalar|stdClass|null>
      */
-    public static function formatParameters(iterable $parameters): iterable
+    public static function formatParameters(iterable $parameters): Map
     {
         /** @var Map<array-key, iterable|scalar|stdClass|null> $tbr */
         $tbr = new Map();
@@ -83,7 +83,7 @@ final class ParameterHelper
         foreach ($value as $key => $val) {
             if (is_int($key) || is_string($key)) {
                 /** @psalm-suppress MixedAssignment */
-                $tbr[$key] = $val;
+                $tbr[$key] = self::asParameter($val);
             } else {
                 $msg = 'Iterable parameters must have an integer or string as key values, '.gettype($key).' received.';
                 throw new InvalidArgumentException($msg);
