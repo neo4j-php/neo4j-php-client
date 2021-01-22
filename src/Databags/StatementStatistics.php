@@ -13,11 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use ArrayIterator;
+use IteratorAggregate;
+
 /**
  * @psalm-immutable
- * @codeCoverageIgnore Not used yet
+ *
+ * @implements IteratorAggregate<string, int|bool>
  */
-final class StatementStatistics
+final class StatementStatistics implements IteratorAggregate
 {
     private int $nodesCreated;
 
@@ -149,7 +153,7 @@ final class StatementStatistics
         return $this->systemUpdates;
     }
 
-    public function mergeStats(StatementStatistics $resultStats): StatementStatistics
+    public function merge(StatementStatistics $resultStats): StatementStatistics
     {
         return new StatementStatistics(
             $this->nodesCreated + $resultStats->nodesCreated,
@@ -167,5 +171,25 @@ final class StatementStatistics
             $this->containsSystemUpdates || $resultStats->containsSystemUpdates,
             $this->systemUpdates + $resultStats->systemUpdates
         );
+    }
+
+    public function getIterator(): ArrayIterator
+    {
+        return new ArrayIterator([
+            'nodesCreated' => $this->nodesCreated,
+            'nodesDeleted' => $this->nodesDeleted,
+            'relationshipsCreated' => $this->relationshipsCreated,
+            'relationshipsDeleted' => $this->relationshipsDeleted,
+            'propertiesSet' => $this->propertiesSet,
+            'labelsAdded' => $this->labelsAdded,
+            'labelsRemoved' => $this->labelsRemoved,
+            'indexesAdded' => $this->indexesAdded,
+            'indexesRemoved' => $this->indexesRemoved,
+            'constraintsAdded' => $this->constraintsAdded,
+            'constraintsRemoved' => $this->constraintsRemoved,
+            'containsUpdates' => $this->containsUpdates,
+            'containsSystemUpdates' => $this->containsSystemUpdates,
+            'systemUpdates' => $this->systemUpdates,
+        ]);
     }
 }

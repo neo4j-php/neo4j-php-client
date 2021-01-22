@@ -31,4 +31,17 @@ final class BoltInjectionsTest extends TestCase
         $injections = new BoltInjections('abc');
         self::assertEquals('test', $injections->withDatabase('test')->database());
     }
+
+    public function testWithSslContext(): void
+    {
+        $injections = new BoltInjections('abc', ['passphrase' => 'test']);
+        self::assertEquals(['passphrase' => 'test'], $injections->sslContextOptions());
+        self::assertNull(BoltInjections::create()->sslContextOptions());
+
+        self::assertEquals(['passphrase' => 'x'], $injections->withSslContextOptions(['passphrase' => 'x'])->sslContextOptions());
+        self::assertEquals(
+            ['passphrase' => 'y'],
+            $injections->withSslContextOptions(static fn () => ['passphrase' => 'y'])->sslContextOptions()
+        );
+    }
 }
