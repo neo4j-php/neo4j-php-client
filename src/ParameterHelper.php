@@ -41,7 +41,20 @@ final class ParameterHelper
         return self::emptySequenceToArray($value) ??
             self::emptyDictionaryToStdClass($value) ??
             self::filledIterableToArray($value) ??
+            self::stringableToString($value) ??
             self::filterInvalidType($value);
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private static function stringableToString($value): ?string
+    {
+        if (is_object($value) && method_exists($value, '__toString')) {
+            return (string) $value;
+        }
+
+        return null;
     }
 
     /**
@@ -52,7 +65,7 @@ final class ParameterHelper
     private static function filterInvalidType($value)
     {
         if ($value !== null && !is_scalar($value)) {
-            throw new InvalidArgumentException('Parameters must be iterable, scalar or null');
+            throw new InvalidArgumentException('Parameters must be iterable, scalar, null or stringable');
         }
 
         return $value;

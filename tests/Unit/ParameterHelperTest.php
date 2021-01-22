@@ -135,4 +135,15 @@ final class ParameterHelperTest extends TestCase
         $result = ParameterHelper::asParameter([]);
         self::assertInstanceOf(stdClass::class, $result);
     }
+
+    public function testStringable(): void
+    {
+        $result = ParameterHelper::asParameter(new class() {
+            public function __toString(): string
+            {
+                return 'abc';
+            }
+        });
+        self::assertEquals('abc', $result);
+    }
 }
