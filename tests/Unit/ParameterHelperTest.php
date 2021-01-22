@@ -146,7 +146,7 @@ final class ParameterHelperTest extends TestCase
         });
         self::assertEquals('abc', $result);
     }
-    
+
     public function testInvalidType(): void
     {
         $this->expectException(InvalidArgumentException::class);
