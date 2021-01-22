@@ -20,6 +20,8 @@ use IteratorAggregate;
  * @psalm-immutable
  *
  * @implements IteratorAggregate<string, int|bool>
+ *
+ * @codeCoverageIgnore
  */
 final class StatementStatistics implements IteratorAggregate
 {
