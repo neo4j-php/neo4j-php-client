@@ -65,11 +65,16 @@ final class BoltDriver implements DriverInterface
         $this->parsedUrl['host'] = $ip;
         try {
             $sock = new StreamSocket($this->parsedUrl['host'], $this->parsedUrl['port'] ?? self::DEFAULT_TCP_PORT);
+            $options = $this->injections->sslContextOptions();
+            if ($options) {
+                $sock->setSslContextOptions($options);
+            }
             $bolt = new Bolt($sock);
             $bolt->init('LaudisNeo4j/'.ClientInterface::VERSION, $this->parsedUrl['user'], $this->parsedUrl['pass']);
         } catch (Exception $e) {
             throw new Neo4jException(new Vector([new Neo4jError($e->getMessage(), '')]), $e);
         }
+
         $this->session = new BoltSession($this->parsedUrl, $bolt, new BoltCypherFormatter(), $this->injections);
 
         return $this->session;
