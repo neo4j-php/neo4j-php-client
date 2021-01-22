@@ -146,4 +146,11 @@ final class ParameterHelperTest extends TestCase
         });
         self::assertEquals('abc', $result);
     }
+
+    public function testInvalidType(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Parameters must be iterable, scalar, null or stringable');
+        ParameterHelper::asParameter(new stdClass());
+    }
 }

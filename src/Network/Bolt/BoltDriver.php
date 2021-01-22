@@ -55,14 +55,6 @@ final class BoltDriver implements DriverInterface
             return $this->session;
         }
 
-        $url = $this->parsedUrl['host'];
-        $isIP = (bool) ip2long($url);
-        if (!$isIP) {
-            $ip = gethostbyname($url);
-        } else {
-            $ip = $url;
-        }
-        $this->parsedUrl['host'] = $ip;
         try {
             $sock = new StreamSocket($this->parsedUrl['host'], $this->parsedUrl['port'] ?? self::DEFAULT_TCP_PORT);
             $options = $this->injections->sslContextOptions();
