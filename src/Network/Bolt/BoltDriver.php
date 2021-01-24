@@ -67,7 +67,12 @@ final class BoltDriver implements DriverInterface
             throw new Neo4jException(new Vector([new Neo4jError($e->getMessage(), '')]), $e);
         }
 
-        $this->session = new BoltSession($this->parsedUrl, $bolt, new BoltCypherFormatter(), $this->injections);
+        if ($this->injections->isCasualCluster()) {
+            $routingTable = new RoutingTable($bolt, new BoltCypherFormatter);
+            $this->session = new CasualClusterSession($routingTable, $this->parsedUrl, $bolt, new BoltCypherFormatter, $this->injections);
+        } else {
+            $this->session = new BoltSession($this->parsedUrl, $bolt, new BoltCypherFormatter(), $this->injections);
+        }
 
         return $this->session;
     }

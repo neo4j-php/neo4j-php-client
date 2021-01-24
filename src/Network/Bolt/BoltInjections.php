@@ -42,15 +42,18 @@ final class BoltInjections
     private $database;
     /** @var LazySSLContextOptions */
     private $sslContextOptions;
+    /** @var bool */
+    private bool $isCasualCluster;
 
     /**
      * @param callable():string|?string $database
      * @param LazySSLContextOptions     $sslContextOptions
      */
-    public function __construct($database = null, $sslContextOptions = null)
+    public function __construct($database = null, $sslContextOptions = null, $isCasualCluster = false)
     {
         $this->database = $database ?? static function (): string { return 'neo4j'; };
         $this->sslContextOptions = $sslContextOptions;
+        $this->isCasualCluster = $isCasualCluster;
     }
 
     /**
@@ -81,6 +84,11 @@ final class BoltInjections
         return new self($this->database, $options);
     }
 
+    public function withCasualCluster(bool $isCasualCluster): self
+    {
+        return new self($this->database, $this->sslContextOptions, $isCasualCluster);
+    }
+
     public function database(): string
     {
         if (is_callable($this->database)) {
@@ -101,5 +109,10 @@ final class BoltInjections
         }
 
         return $this->sslContextOptions;
+    }
+
+    public function isCasualCluster(): bool
+    {
+        return $this->isCasualCluster;
     }
 }
