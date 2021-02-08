@@ -251,10 +251,6 @@ $client->run('MATCH (x {slug: $slug})', collect(['slug' => 'a']));
 
 ## Roadmap
 
-### Cluster support
-
-Version 2.0 will have cluster support. There is no concrete API yet.
-
 ### Support for graph representation instead of simple records
 
 Version 2.0 will have graph representation suppport. The inteface for this is not yet set in stone, but will be somthing akin to this:
