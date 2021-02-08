@@ -31,6 +31,7 @@ final class ComplexQueryTests extends TestCase
         $this->client = ClientBuilder::create()
             ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42')
             ->addHttpConnection('http', 'http://neo4j:test@neo4j-42')
+            ->addBoltConnection('cluster', 'http://neo4j:test@core1')
             ->build();
     }
 
@@ -241,6 +242,7 @@ CYPHER
         return [
             ['http'],
             ['bolt'],
+            ['cluster'],
         ];
     }
 }

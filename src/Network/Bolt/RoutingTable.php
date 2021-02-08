@@ -13,64 +13,44 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Network\Bolt;
 
-use Bolt\Bolt;
-use Ds\Map;
-use Laudis\Neo4j\Formatter\BoltCypherFormatter;
+use Ds\Vector;
+use Laudis\Neo4j\Enum\RoutingRoles;
 
-class RoutingTable
+final class RoutingTable
 {
-    private $roles = [
-        'leader' => 'WRITE',
-        'follower' => 'READ',
-        'router' => 'ROUTE',
-    ];
+    /** @var iterable<array{addresses: list<string>, role:string}> */
+    private iterable $servers;
+    private int $ttl;
 
-    private Map $routingTable;
-    private ?int $ttl = null;
-    private Bolt $bolt;
-
-    public function __construct(Bolt $bolt, BoltCypherFormatter $formatter)
+    /**
+     * @param iterable<array{addresses: list<string>, role:string}> $servers
+     */
+    public function __construct(iterable $servers, int $ttl)
     {
-        $this->bolt = $bolt;
-        $this->formatter = $formatter;
-        $this->loadRoutingTable();
+        $this->servers = $servers;
+        $this->ttl = $ttl;
     }
 
-    public function getLeaders(): ?Server
+    public function getTtl(): int
     {
-        foreach ($this->getServers() as $server) {
-            if ($server['role'] === $this->roles['leader']) {
-                return new Server($server['addresses'], $server['role']);
+        return $this->ttl;
+    }
+
+    /**
+     * @return Vector<string>
+     */
+    public function getWithRole(RoutingRoles $role): Vector
+    {
+        /** @psalm-var Vector<string> $tbr */
+        $tbr = new Vector();
+        foreach ($this->servers as $server) {
+            if ($server['role'] === $role->getValue()) {
+                foreach ($server['addresses'] as $address) {
+                    $tbr->push($address);
+                }
             }
         }
 
-        return null;
-    }
-
-    public function getFollowers(): ?Server
-    {
-        foreach ($this->getServers() as $server) {
-            if ($server['role'] === $this->roles['follower']) {
-                return new Server($server['addresses'], $server['roler']);
-            }
-        }
-    }
-
-    private function getServers(): array
-    {
-        return $this->loadRoutingTable()->get('servers');
-    }
-
-    private function loadRoutingTable(): Map
-    {
-        if (is_null($this->ttl) || $this->ttl > time()) {
-            $meta = $this->bolt->run('CALL dbms.routing.getRoutingTable({})');
-            $results = $this->bolt->pull();
-            $response = $this->formatter->formatResult($meta, $results)->first();
-            $this->ttl = time() + $response->get('ttl');
-            $this->routingTable = $response;
-        }
-
-        return $this->routingTable;
+        return $tbr;
     }
 }

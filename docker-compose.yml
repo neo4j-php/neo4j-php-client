@@ -18,6 +18,10 @@ services:
             - .:/opt/project
         depends_on:
             - neo4j-42
+            - core1
+            - core2
+            - core3
+            - readreplica1
         expose:
             - 9000
         environment:
@@ -26,8 +30,97 @@ services:
         networks:
             - neo4j
         image: neo4j:4.2
+        healthcheck:
+            test: neo4j status
         expose:
             - 7474
             - 7687
         environment:
             - NEO4J_AUTH=neo4j/test
+    core1:
+        image: neo4j:4.2-enterprise
+        healthcheck:
+            test: neo4j status
+        networks:
+            - neo4j
+        expose:
+            - 7474
+            - 7686
+            - 5000
+            - 6000
+            - 7000
+        environment:
+            - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+            - NEO4J_AUTH=neo4j/test
+            - NEO4J_dbms_mode=CORE
+            - NEO4J_causalClustering_discoveryAdvertisedAddress=core1:5000
+            - NEO4J_causalClustering_transactionAdvertisedAddress=core1:6000
+            - NEO4J_causalClustering_raftAdvertisedAddress=core1:7000
+            - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
+            - NEO4J_causal__clustering_disable__middleware__logging=false
+            - NEO4J_dbms_connectors_default__advertised__address=core1
+    core2:
+        image: neo4j:4.2-enterprise
+        healthcheck:
+            test: neo4j status
+        networks:
+            - neo4j
+        expose:
+            - 7474
+            - 7686
+            - 5000
+            - 6000
+            - 7000
+        environment:
+            - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+            - NEO4J_AUTH=neo4j/test
+            - NEO4J_dbms_mode=CORE
+            - NEO4J_causalClustering_discoveryAdvertisedAddress=core2:5000
+            - NEO4J_causalClustering_transactionAdvertisedAddress=core2:6000
+            - NEO4J_causalClustering_raftAdvertisedAddress=core2:7000
+            - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
+            - NEO4J_dbms_connectors_default__advertised__address=core2
+
+    core3:
+        image: neo4j:4.2-enterprise
+        healthcheck:
+            test: neo4j status
+        networks:
+            - neo4j
+        expose:
+            - 7474
+            - 7686
+            - 5000
+            - 6000
+            - 7000
+        environment:
+            - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+            - NEO4J_AUTH=neo4j/test
+            - NEO4J_dbms_mode=CORE
+            - NEO4J_causalClustering_discoveryAdvertisedAddress=core3:5000
+            - NEO4J_causalClustering_transactionAdvertisedAddress=core3:6000
+            - NEO4J_causalClustering_raftAdvertisedAddress=core3:7000
+            - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
+            - NEO4J_dbms_connectors_default__advertised__address=core3
+
+    readreplica1:
+        image: neo4j:4.2-enterprise
+        healthcheck:
+            test: neo4j status
+        networks:
+            - neo4j
+        expose:
+            - 7474
+            - 7686
+            - 5000
+            - 6000
+            - 7000
+        environment:
+            - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+            - NEO4J_AUTH=neo4j/test
+            - NEO4J_dbms_mode=READ_REPLICA
+            - NEO4J_causalClustering_discoveryAdvertisedAddress=readreplica1:5000
+            - NEO4J_causalClustering_transactionAdvertisedAddress=readreplica1:6000
+            - NEO4J_causalClustering_raftAdvertisedAddress=readreplica1:7000
+            - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
+            - NEO4J_dbms_connectors_default__advertised__address=readreplica1

@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Network\Bolt;
 
+use function call_user_func;
+use function is_callable;
+
 /**
  * @psalm-type SSLContextOptions = null|array{
  *     peer_name?: string,
@@ -42,18 +45,19 @@ final class BoltInjections
     private $database;
     /** @var LazySSLContextOptions */
     private $sslContextOptions;
-    /** @var bool */
-    private bool $isCasualCluster;
+    /** @var callable():bool|bool */
+    private $autoRouting;
 
     /**
      * @param callable():string|?string $database
      * @param LazySSLContextOptions     $sslContextOptions
+     * @param callable():bool|bool      $autoRouting
      */
-    public function __construct($database = null, $sslContextOptions = null, $isCasualCluster = false)
+    public function __construct($database = null, $sslContextOptions = null, $autoRouting = false)
     {
         $this->database = $database ?? static function (): string { return 'neo4j'; };
         $this->sslContextOptions = $sslContextOptions;
-        $this->isCasualCluster = $isCasualCluster;
+        $this->autoRouting = $autoRouting;
     }
 
     /**
@@ -63,9 +67,9 @@ final class BoltInjections
      *
      * @return static
      */
-    public static function create(?string $database = null, ?array $sslContextOptions = null): self
+    public static function create(?string $database = null, ?array $sslContextOptions = null, bool $autoRouting = false): self
     {
-        return new self($database, $sslContextOptions);
+        return new self($database, $sslContextOptions, $autoRouting);
     }
 
     /**
@@ -73,7 +77,7 @@ final class BoltInjections
      */
     public function withDatabase($database): self
     {
-        return new self($database);
+        return new self($database, $this->sslContextOptions, $this->autoRouting);
     }
 
     /**
@@ -81,12 +85,17 @@ final class BoltInjections
      */
     public function withSslContextOptions($options): self
     {
-        return new self($this->database, $options);
+        return new self($this->database, $options, $this->autoRouting);
     }
 
-    public function withCasualCluster(bool $isCasualCluster): self
+    /**
+     * @param callable():bool|bool $routing
+     *
+     * @return $this
+     */
+    public function withAutoRouting($routing): self
     {
-        return new self($this->database, $this->sslContextOptions, $isCasualCluster);
+        return new self($this->database, $this->sslContextOptions, $routing);
     }
 
     public function database(): string
@@ -96,6 +105,15 @@ final class BoltInjections
         }
 
         return $this->database;
+    }
+
+    public function hasAutoRouting(): bool
+    {
+        if (is_callable($this->autoRouting)) {
+            $this->autoRouting = call_user_func($this->autoRouting);
+        }
+
+        return $this->autoRouting;
     }
 
     /**
@@ -109,10 +127,5 @@ final class BoltInjections
         }
 
         return $this->sslContextOptions;
-    }
-
-    public function isCasualCluster(): bool
-    {
-        return $this->isCasualCluster;
     }
 }

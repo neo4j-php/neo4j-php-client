@@ -25,7 +25,7 @@ abstract class ClientTest extends TestCase
     abstract public function createClient(): ClientInterface;
 
     /**
-     * @return iterable<int, string>
+     * @return iterable<array-key, array<array-key, string>>
      */
     abstract public function connectionAliases(): iterable;
 
@@ -35,10 +35,12 @@ abstract class ClientTest extends TestCase
         $this->client = $this->createClient();
     }
 
-    public function testValidRun(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testValidRun(string $alias): void
     {
-        foreach ($this->connectionAliases() as $alias) {
-            $response = $this->client->run(<<<'CYPHER'
+        $response = $this->client->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
@@ -46,134 +48,139 @@ WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
 CYPHER, ['test' => 'a', 'otherTest' => 'b'], $alias);
 
-            self::assertEquals(1, $response->count());
-            $map = $response->first();
-            self::assertEquals(5, $map->count());
-            self::assertEquals(['test' => 'a'], $map->get('x'));
-            self::assertEquals(['test' => 'b'], $map->get('y'));
-            self::assertEquals('a', $map->get('test'));
-            self::assertEquals(['c' => 'd'], $map->get('map'));
-            self::assertEquals([1, 2, 3], $map->get('list'));
-        }
+        self::assertEquals(1, $response->count());
+        $map = $response->first();
+        self::assertEquals(5, $map->count());
+        self::assertEquals(['test' => 'a'], $map->get('x'));
+        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals('a', $map->get('test'));
+        self::assertEquals(['c' => 'd'], $map->get('map'));
+        self::assertEquals([1, 2, 3], $map->get('list'));
     }
 
-    public function testInvalidRun(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testInvalidRun(string $alias): void
     {
-        foreach ($this->connectionAliases() as $alias) {
-            $exception = false;
-            try {
-                $this->client->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b'], $alias);
-            } catch (Neo4jException $e) {
-                $exception = true;
-            }
-            self::assertTrue($exception);
+        $exception = false;
+        try {
+            $this->client->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b'], $alias);
+        } catch (Neo4jException $e) {
+            $exception = true;
         }
+        self::assertTrue($exception);
     }
 
-    public function testValidStatement(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testValidStatement(string $alias): void
     {
-        foreach ($this->connectionAliases() as $alias) {
-            $response = $this->client->runStatement(
-                Statement::create(<<<'CYPHER'
+        $response = $this->client->runStatement(
+            Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
 WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
 CYPHER, ['test' => 'a', 'otherTest' => 'b']),
-                $alias
-            );
+            $alias
+        );
 
-            self::assertEquals(1, $response->count());
-            $map = $response->first();
-            self::assertEquals(5, $map->count());
-            self::assertEquals(['test' => 'a'], $map->get('x'));
-            self::assertEquals(['test' => 'b'], $map->get('y'));
-            self::assertEquals('a', $map->get('test'));
-            self::assertEquals(['c' => 'd'], $map->get('map'));
-            self::assertEquals([1, 2, 3], $map->get('list'));
-        }
+        self::assertEquals(1, $response->count());
+        $map = $response->first();
+        self::assertEquals(5, $map->count());
+        self::assertEquals(['test' => 'a'], $map->get('x'));
+        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals('a', $map->get('test'));
+        self::assertEquals(['c' => 'd'], $map->get('map'));
+        self::assertEquals([1, 2, 3], $map->get('list'));
     }
 
-    public function testInvalidStatement(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testInvalidStatement(string $alias): void
     {
-        foreach ($this->connectionAliases() as $alias) {
-            $exception = false;
-            try {
-                $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
-                $this->client->runStatement($statement, $alias);
-            } catch (Neo4jException $e) {
-                $exception = true;
-            }
-            self::assertTrue($exception);
+        $exception = false;
+        try {
+            $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
+            $this->client->runStatement($statement, $alias);
+        } catch (Neo4jException $e) {
+            $exception = true;
         }
+        self::assertTrue($exception);
     }
 
-    public function testStatements(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testStatements(string $alias): void
     {
-        foreach ($this->connectionAliases() as $alias) {
-            $params = ['test' => 'a', 'otherTest' => 'b'];
-            $response = $this->client->runStatements([
-                Statement::create(<<<'CYPHER'
+        $params = ['test' => 'a', 'otherTest' => 'b'];
+        $response = $this->client->runStatements([
+            Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 CYPHER,
-                    $params
-                ),
-                Statement::create(<<<'CYPHER'
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
 MERGE (x:OtherTestNode {test: $otherTest})
 CYPHER,
-                    $params
-                ),
-                Statement::create(<<<'CYPHER'
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER,
-                    []
-                ),
-            ],
-                $alias
-            );
+                []
+            ),
+        ],
+            $alias
+        );
 
-            self::assertEquals(3, $response->count());
-            self::assertEquals(0, $response->get(0)->count());
-            self::assertEquals(0, $response->get(1)->count());
-            self::assertEquals(1, $response->get(2)->count());
-            self::assertEquals(1, $response->get(2)->first()->get('x'));
-        }
+        self::assertEquals(3, $response->count());
+        self::assertEquals(0, $response->get(0)->count());
+        self::assertEquals(0, $response->get(1)->count());
+        self::assertEquals(1, $response->get(2)->count());
+        self::assertEquals(1, $response->get(2)->first()->get('x'));
     }
 
-    public function testInvalidStatements(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testInvalidStatements(string $alias): void
     {
-        foreach ($this->connectionAliases() as $alias) {
-            $exception = false;
-            try {
-                $params = ['test' => 'a', 'otherTest' => 'b'];
-                $this->client->runStatements([
-                    Statement::create(<<<'CYPHER'
+        $exception = false;
+        try {
+            $params = ['test' => 'a', 'otherTest' => 'b'];
+            $this->client->runStatements([
+                Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 CYPHER,
-                        $params
-                    ),
-                    Statement::create(<<<'CYPHER'
+                    $params
+                ),
+                Statement::create(<<<'CYPHER'
 MERGE (x:OtherTestNode {test: $otherTest})
 CYPHER,
-                        $params
-                    ),
-                    Statement::create('1 AS x;erns', []),
-                ], $alias);
-            } catch (Neo4jException $e) {
-                $exception = true;
-            }
-            self::assertTrue($exception);
+                    $params
+                ),
+                Statement::create('1 AS x;erns', []),
+            ], $alias);
+        } catch (Neo4jException $e) {
+            $exception = true;
         }
+        self::assertTrue($exception);
     }
 
-    public function testMultipleTransactions(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testMultipleTransactions(string $alias): void
     {
-        foreach ($this->connectionAliases() as $alias) {
-            $x = $this->client->openTransaction(null, $alias);
-            $y = $this->client->openTransaction(null, $alias);
-            self::assertNotSame($x, $y);
-        }
+        $x = $this->client->openTransaction(null, $alias);
+        $y = $this->client->openTransaction(null, $alias);
+        self::assertNotSame($x, $y);
     }
 
     public function testInvalidConnection(): void
