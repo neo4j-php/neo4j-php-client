@@ -63,8 +63,8 @@ final class ClientBuilder
         $injections = $injections ?? new HttpInjections();
         $factory = $injections->requestFactory();
         $requestFactory = new RequestFactory($factory, $injections->streamFactory(), new HttpCypherFormatter());
-        $conneciton = new HttpDriver($parse, new VersionDiscovery($requestFactory, $injections->client()), $injections);
-        $this->connectionPool->put($alias, $conneciton);
+        $connection = new HttpDriver($parse, new VersionDiscovery($requestFactory, $injections->client()), $injections);
+        $this->connectionPool->put($alias, $connection);
 
         return $this;
     }

@@ -29,7 +29,7 @@ use Laudis\Neo4j\Formatter\BoltCypherFormatter;
  */
 final class BoltDriver implements DriverInterface
 {
-    /** @var array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} */
+    /** @var ParsedUrl */
     private array $parsedUrl;
     private ?SessionInterface $session = null;
     private BoltInjections $injections;
@@ -68,6 +68,9 @@ final class BoltDriver implements DriverInterface
         }
 
         $this->session = new BoltSession($this->parsedUrl, $bolt, new BoltCypherFormatter(), $this->injections);
+        if ($this->injections->hasAutoRouting()) {
+            $this->session = new AutoRoutedSession($this->session, $this->injections, $this->parsedUrl);
+        }
 
         return $this->session;
     }
