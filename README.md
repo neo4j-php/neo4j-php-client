@@ -231,8 +231,10 @@ $client->run('MATCH (x {slug: $slug})', collect(['slug' => 'a']));
 | Transactions         |  Yes           |
 | Http Protocol        |  Yes           |
 | Bolt Protocol        |  Yes           |
-| Cluster              |  Roadmap       |
+| Cluster              |  Yes*          |
 | Graph Representation |  Roadmap       |
+
+* Auto routing for clusters is only available for bolt at the moment.
 
 ## Requirements
 
