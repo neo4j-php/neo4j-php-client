@@ -58,7 +58,7 @@ final class AutoRoutedSession implements SessionInterface
 
         $index = 0;
         foreach ($statements as $statement) {
-            if (preg_match('/(CREATE|SET|MERGE|DELETE)/m', $statement->getText())) {
+            if (preg_match('/(CREATE|SET|MERGE|DELETE|CALL)/m', $statement->getText())) {
                 $writeStatements->put($index, $statement);
             } else {
                 $readStatements->put($index, $statement);
