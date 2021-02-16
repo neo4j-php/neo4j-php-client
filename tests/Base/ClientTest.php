@@ -20,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 
 abstract class ClientTest extends TestCase
 {
-    private ClientInterface $client;
+    protected ClientInterface $client;
 
     abstract public function createClient(): ClientInterface;
 

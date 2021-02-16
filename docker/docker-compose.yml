@@ -171,4 +171,3 @@ services:
             - NEO4J_causalClustering_raftAdvertisedAddress=readreplica1:7000
             - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
             - NEO4J_dbms_connectors_default__advertised__address=readreplica1
-
