@@ -11,17 +11,20 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\Network\Bolt;
+namespace Laudis\Neo4j\Network;
 
 use Ds\Map;
 use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\Injections;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Enum\RoutingRoles;
+use Laudis\Neo4j\Network\Bolt\BoltInjections;
+use Laudis\Neo4j\Network\Http\HttpInjections;
 use function parse_url;
 use function preg_match;
 use function random_int;
@@ -32,12 +35,16 @@ final class AutoRoutedSession implements SessionInterface
     private SessionInterface $referenceSession;
     private ?ClientInterface $client = null;
     private ?RoutingTable $table = null;
-    private BoltInjections $injections;
+    /** @var BoltInjections|HttpInjections */
+    private Injections $injections;
     private int $maxLeader = 0;
     private int $maxFollower = 0;
     private array $parsedUrl;
 
-    public function __construct(SessionInterface $referenceSession, BoltInjections $injections, array $parsedUrl)
+    /**
+     * @param BoltInjections|HttpInjections $injections
+     */
+    public function __construct(SessionInterface $referenceSession, Injections $injections, array $parsedUrl)
     {
         $this->referenceSession = $referenceSession;
         $this->injections = $injections;
@@ -81,6 +88,9 @@ final class AutoRoutedSession implements SessionInterface
             $values = $response->get('servers');
             /** @var int $ttl */
             $ttl = $response->get('ttl');
+            if ($this->injections instanceof HttpInjections) {
+                $values = $this->translateTableToHttp($values);
+            }
             $this->table = new RoutingTable($values, time() + $ttl);
 
             $builder = ClientBuilder::create();
@@ -88,13 +98,10 @@ final class AutoRoutedSession implements SessionInterface
             $followers = $this->table->getWithRole(RoutingRoles::FOLLOWER());
             $injections = $this->injections->withAutoRouting(false);
 
-            foreach ($leaders as $i => $leader) {
-                $builder = $builder->addBoltConnection('leader-'.$i, $this->rebuildUrl($leader), $injections);
-                $this->maxLeader = $i;
-            }
-            foreach ($followers as $i => $follower) {
-                $builder = $builder->addBoltConnection('follower-'.$i, $this->rebuildUrl($follower), $injections);
-                $this->maxFollower = $i;
+            if ($injections instanceof BoltInjections) {
+                $builder = $this->buildBoltConnections($leaders, $builder, $injections, $followers);
+            } else {
+                $builder = $this->buildHttpConnections($leaders, $builder, $injections, $followers);
             }
 
             $this->client = $builder->build();
@@ -183,9 +190,9 @@ final class AutoRoutedSession implements SessionInterface
         return $transaction->commit($statements);
     }
 
-    private function rebuildUrl(string $url): string
+    private function rebuildUrl(array $parsedUrl): string
     {
-        $parts = array_merge($this->parsedUrl, parse_url($url));
+        $parts = array_merge($this->parsedUrl, $parsedUrl);
 
         return (isset($parts['scheme']) ? "{$parts['scheme']}:" : '').
             ((isset($parts['user']) || isset($parts['host'])) ? '//' : '').
@@ -197,5 +204,70 @@ final class AutoRoutedSession implements SessionInterface
             (isset($parts['path']) ? (string) ($parts['path']) : '').
             (isset($parts['query']) ? "?{$parts['query']}" : '').
             (isset($parts['fragment']) ? "#{$parts['fragment']}" : '');
+    }
+
+    /**
+     * @param Vector<string> $leaders
+     * @param Vector<string> $followers
+     */
+    private function buildBoltConnections(
+        Vector $leaders,
+        ClientBuilder $builder,
+        BoltInjections $injections,
+        Vector $followers
+    ): ClientBuilder {
+        foreach ($leaders as $i => $leader) {
+            $builder = $builder->addBoltConnection('leader-'.$i, $this->rebuildUrl(parse_url($leader)), $injections);
+            $this->maxLeader = $i;
+        }
+        foreach ($followers as $i => $follower) {
+            $builder = $builder->addBoltConnection('follower-'.$i, $this->rebuildUrl(parse_url($follower)), $injections);
+            $this->maxFollower = $i;
+        }
+
+        return $builder;
+    }
+
+    /**
+     * @param Vector<string> $leaders
+     * @param Vector<string> $followers
+     */
+    private function buildHttpConnections(
+        Vector $leaders,
+        ClientBuilder $builder,
+        HttpInjections $injections,
+        Vector $followers
+    ): ClientBuilder {
+        foreach ($leaders as $i => $leader) {
+            $builder = $builder->addHttpConnection('leader-'.$i, $this->rebuildUrl(parse_url($leader)), $injections);
+            $this->maxLeader = $i;
+        }
+        foreach ($followers as $i => $follower) {
+            $builder = $builder->addHttpConnection('follower-'.$i, $this->rebuildUrl(parse_url($follower)), $injections);
+            $this->maxFollower = $i;
+        }
+
+        return $builder;
+    }
+
+    /**
+     * @param iterable<array{addresses: list<string>, role:string}> $servers
+     *
+     * @return iterable<array{addresses: list<string>, role:string}>
+     */
+    private function translateTableToHttp(iterable $servers): iterable
+    {
+        /** @var list<array{addresses: list<string>, role:string}> */
+        $tbr = [];
+
+        foreach ($servers as $server) {
+            $row = ['addresses' => [], 'role' => $server['role']];
+            foreach ($server['addresses'] as $address) {
+                $row['addresses'][] = $this->rebuildUrl(['host' => parse_url($address, PHP_URL_HOST)]);
+            }
+            $tbr[] = $row;
+        }
+
+        return $tbr;
     }
 }

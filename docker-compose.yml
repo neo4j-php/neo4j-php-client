@@ -29,18 +29,28 @@ services:
     neo4j-42:
         networks:
             - neo4j
-        image: neo4j:4.2
+        image: neo4j:4.2-enterprise
         healthcheck:
-            test: neo4j status
+            test: [ "CMD", "neo4j status" ]
+            interval: 30s
+            timeout: 10s
+            retries: 5
         expose:
             - 7474
             - 7687
+        ports:
+            - "7474:7474"
+            - "7687:7687"
         environment:
+            - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
             - NEO4J_AUTH=neo4j/test
     core1:
         image: neo4j:4.2-enterprise
         healthcheck:
-            test: neo4j status
+            test: [ "CMD", "neo4j status" ]
+            interval: 30s
+            timeout: 10s
+            retries: 5
         networks:
             - neo4j
         expose:
@@ -49,6 +59,9 @@ services:
             - 5000
             - 6000
             - 7000
+        ports:
+            - "7475:7474"
+            - "7688:7687"
         environment:
             - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
             - NEO4J_AUTH=neo4j/test
@@ -62,7 +75,10 @@ services:
     core2:
         image: neo4j:4.2-enterprise
         healthcheck:
-            test: neo4j status
+            test: [ "CMD", "neo4j status" ]
+            interval: 30s
+            timeout: 10s
+            retries: 5
         networks:
             - neo4j
         expose:
@@ -84,7 +100,10 @@ services:
     core3:
         image: neo4j:4.2-enterprise
         healthcheck:
-            test: neo4j status
+            test: [ "CMD", "neo4j status" ]
+            interval: 30s
+            timeout: 10s
+            retries: 5
         networks:
             - neo4j
         expose:
@@ -106,7 +125,10 @@ services:
     readreplica1:
         image: neo4j:4.2-enterprise
         healthcheck:
-            test: neo4j status
+            test: [ "CMD", "neo4j status" ]
+            interval: 30s
+            timeout: 10s
+            retries: 5
         networks:
             - neo4j
         expose:

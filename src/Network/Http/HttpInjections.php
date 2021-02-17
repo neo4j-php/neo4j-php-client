@@ -15,11 +15,12 @@ namespace Laudis\Neo4j\Network\Http;
 
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
+use Laudis\Neo4j\Contracts\Injections;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
-final class HttpInjections
+final class HttpInjections implements Injections
 {
     /** @var ClientInterface|callable():ClientInterface */
     private $client;
@@ -29,6 +30,8 @@ final class HttpInjections
     private $requestFactory;
     /** @var string|callable():string */
     private $database;
+    /** @var bool|callable():bool */
+    private $autoRouting;
 
     /**
      * Injector constructor.
@@ -37,8 +40,9 @@ final class HttpInjections
      * @param ClientInterface|callable():ClientInterface|null                 $client
      * @param StreamFactoryInterface|callable():StreamFactoryInterface|null   $streamFactory
      * @param RequestFactoryInterface|callable():RequestFactoryInterface|null $requestFactory
+     * @param bool|callable():bool                                            $autoRouting
      */
-    public function __construct($database = null, $client = null, $streamFactory = null, $requestFactory = null)
+    public function __construct($database = null, $client = null, $streamFactory = null, $requestFactory = null, $autoRouting = null)
     {
         $this->database = $database ?? static function (): string {
             return 'neo4j';
@@ -52,6 +56,7 @@ final class HttpInjections
         $this->requestFactory = $requestFactory ?? static function (): RequestFactoryInterface {
             return Psr17FactoryDiscovery::findRequestFactory();
         };
+        $this->autoRouting = $autoRouting ?? false;
     }
 
     public static function create(): self
@@ -73,7 +78,7 @@ final class HttpInjections
      */
     public function withClient($client): self
     {
-        return new self($this->database, $client, $this->streamFactory, $this->requestFactory);
+        return new self($this->database, $client, $this->streamFactory, $this->requestFactory, $this->autoRouting);
     }
 
     /**
@@ -81,7 +86,7 @@ final class HttpInjections
      */
     public function withStreamFactory($factory): self
     {
-        return new self($this->database, $this->client, $factory, $this->requestFactory);
+        return new self($this->database, $this->client, $factory, $this->requestFactory, $this->autoRouting);
     }
 
     /**
@@ -89,7 +94,7 @@ final class HttpInjections
      */
     public function withRequestFactory($factory): self
     {
-        return new self($this->database, $this->client, $this->streamFactory, $factory);
+        return new self($this->database, $this->client, $this->streamFactory, $factory, $this->autoRouting);
     }
 
     /**
@@ -97,7 +102,7 @@ final class HttpInjections
      */
     public function withDatabase($database): self
     {
-        return new self($database, $this->client, $this->streamFactory, $this->requestFactory);
+        return new self($database, $this->client, $this->streamFactory, $this->requestFactory, $this->autoRouting);
     }
 
     public function streamFactory(): StreamFactoryInterface
@@ -125,5 +130,25 @@ final class HttpInjections
         }
 
         return $this->database;
+    }
+
+    public function withAutoRouting($routing): Injections
+    {
+        return new self(
+            $this->database,
+            $this->client,
+            $this->streamFactory,
+            $this->requestFactory,
+            $routing
+        );
+    }
+
+    public function hasAutoRouting(): bool
+    {
+        if (is_callable($this->autoRouting)) {
+            $this->autoRouting = call_user_func($this->autoRouting);
+        }
+
+        return $this->autoRouting;
     }
 }

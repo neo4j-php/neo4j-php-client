@@ -17,6 +17,7 @@ use Ds\Vector;
 use JsonException;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\RequestData;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\HttpCypherFormatter;
@@ -24,7 +25,7 @@ use Laudis\Neo4j\HttpDriver\RequestFactory;
 use Laudis\Neo4j\HttpDriver\Transaction;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Formatter\HttpCypherFormatter
@@ -52,7 +53,7 @@ final class HttpSession implements SessionInterface
     {
         $request = $this->factory->post($this->data, $statements);
         $response = $this->client->sendRequest($request);
-        $data = $this->interpretResponse($response->getBody());
+        $data = $this->interpretResponse($response);
 
         return $this->formatter->formatResponse($data);
     }
@@ -66,7 +67,7 @@ final class HttpSession implements SessionInterface
         $request = $this->factory->openTransaction($this->data);
         $response = $this->client->sendRequest($request);
         /** @var array{commit: string} $data */
-        $data = $this->interpretResponse($response->getBody());
+        $data = $this->interpretResponse($response);
 
         return new Transaction($this, preg_replace('/\/commit/u', '', $data['commit']));
     }
@@ -81,7 +82,7 @@ final class HttpSession implements SessionInterface
         $commit = $transaction->getDomainIdentifier().'/commit';
         $request = $this->factory->post($this->data->withEndpoint($commit), $statements);
         $response = $this->client->sendRequest($request);
-        $data = $this->interpretResponse($response->getBody());
+        $data = $this->interpretResponse($response);
 
         return $this->formatter->formatResponse($data);
     }
@@ -95,7 +96,7 @@ final class HttpSession implements SessionInterface
     {
         $request = $this->factory->delete($this->data->withEndpoint($transaction->getDomainIdentifier()));
         $response = $this->client->sendRequest($request);
-        $this->interpretResponse($response->getBody());
+        $this->interpretResponse($response);
     }
 
     /**
@@ -104,10 +105,14 @@ final class HttpSession implements SessionInterface
      *
      * @return CypherResponseSet
      */
-    private function interpretResponse(StreamInterface $stream): array
+    private function interpretResponse(ResponseInterface $response): array
     {
+        $contents = $response->getBody()->getContents();
+        if ($response->getStatusCode() >= 400) {
+            throw new Neo4jException(new Vector([new Neo4jError((string) $response->getStatusCode(), $contents)]));
+        }
         /** @var CypherResponseSet $body */
-        $body = json_decode($stream->getContents(), true, 512, JSON_THROW_ON_ERROR);
+        $body = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
         $errors = $this->formatter->filterError($body);
         if (!$errors->isEmpty()) {
             throw new Neo4jException($errors);
@@ -124,7 +129,7 @@ final class HttpSession implements SessionInterface
     {
         $request = $this->factory->post($this->data, $statements);
         $response = $this->client->sendRequest($request);
-        $data = $this->interpretResponse($response->getBody());
+        $data = $this->interpretResponse($response);
 
         return $this->formatter->formatResponse($data);
     }
