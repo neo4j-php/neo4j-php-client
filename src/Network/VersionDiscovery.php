@@ -13,8 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Network;
 
+use Ds\Vector;
 use JsonException;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\RequestData;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\HttpDriver\RequestFactory;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
@@ -26,6 +29,8 @@ use Psr\Http\Client\ClientInterface;
  *      bolt_direct: string,
  *      neo4j_version: string,
  *      neo4j_edition: string,
+ *      db/cluster?: string,
+ *      dbms/cluster?: string,
  *      data?: string
  * }
  * @psalm-type DiscoveryResultLegacy = array{
@@ -66,7 +71,7 @@ final class VersionDiscovery
         $version = $discovery['neo4j_version'] ?? null;
 
         if ($version === null) {
-            $discovery = $this->discovery($data->withEndpoint($discovery['data'] ?? $data->getEndpoint().'/db/data'));
+            $discovery = $this->discovery($data->withEndpoint($discovery['data'] ?? ($data->getEndpoint().'/db/data')));
         }
         $tsx = $discovery['transaction'];
 
@@ -77,15 +82,18 @@ final class VersionDiscovery
      * @throws ClientExceptionInterface
      * @throws JsonException
      *
-     * @return DiscoveryResult|DiscoveryResultLegacy $discovery
+     * @return DiscoveryResult|DiscoveryResultLegacy
      */
     private function discovery(RequestData $data): array
     {
         $response = $this->client->sendRequest($this->requestFactory->createRequest($data, 'GET'));
 
-        /** @var DiscoveryResultLegacy|DiscoveryResult $result */
-        $result = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
+        $contents = $response->getBody()->getContents();
+        if ($response->getStatusCode() >= 400) {
+            throw new Neo4jException(new Vector([new Neo4jError((string) $response->getStatusCode(), $contents)]));
+        }
 
-        return $result;
+        /** @var DiscoveryResultLegacy|DiscoveryResult */
+        return json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
     }
 }

@@ -23,6 +23,7 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BoltCypherFormatter;
+use Laudis\Neo4j\Network\AutoRoutedSession;
 
 /**
  * @psalm-type ParsedUrl = array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string}

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Laudis Neo4j package.
  *
@@ -14,6 +16,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Network\Bolt\BoltInjections;
+use Laudis\Neo4j\Network\Http\HttpInjections;
 use PHPUnit\Framework\TestCase;
 
 final class ClusterIntegrationTest extends TestCase
@@ -23,19 +26,38 @@ final class ClusterIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $injections = BoltInjections::create()->withAutoRouting(true);
+        $boltInjections = BoltInjections::create()->withAutoRouting(true);
+        $httpInjections = HttpInjections::create()->withAutoRouting(true);
         $this->client = ClientBuilder::create()
-            ->addBoltConnection('cluster', 'bolt://neo4j:test@core1', $injections)
+            ->addBoltConnection('cluster-bolt', 'bolt://neo4j:test@core1', $boltInjections)
+            ->addHttpConnection('cluster-http', 'http://neo4j:test@core1', $httpInjections)
             ->build();
     }
 
-    public function testAcceptance(): void
+    /**
+     * @dataProvider aliasProvider
+     */
+    public function testAcceptance(string $connection): void
     {
-        self::assertEquals(1, $this->client->run('RETURN 1 as x')->first()->get('x'));
+        self::assertEquals(1, $this->client->run('RETURN 1 as x', [], $connection)->first()->get('x'));
     }
 
-    public function testWrite(): void
+    /**
+     * @dataProvider aliasProvider
+     */
+    public function testWrite(string $connection): void
     {
-        self::assertEquals([], $this->client->run('MERGE (x:X) RETURN x')->first()->get('x'));
+        self::assertEquals([], $this->client->run('MERGE (x:X) RETURN x', [], $connection)->first()->get('x'));
+    }
+
+    /**
+     * @return list<array{0: string}>
+     */
+    public function aliasProvider(): array
+    {
+        return [
+            ['cluster-bolt'],
+            ['cluster-http'],
+        ];
     }
 }

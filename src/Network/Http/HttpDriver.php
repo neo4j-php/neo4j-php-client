@@ -19,6 +19,7 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\RequestData;
 use Laudis\Neo4j\Formatter\HttpCypherFormatter;
 use Laudis\Neo4j\HttpDriver\RequestFactory;
+use Laudis\Neo4j\Network\AutoRoutedSession;
 use Laudis\Neo4j\Network\VersionDiscovery;
 use Psr\Http\Client\ClientExceptionInterface;
 
@@ -76,6 +77,9 @@ final class HttpDriver implements DriverInterface
             $formatter,
             $requestData
         );
+        if ($this->injections->hasAutoRouting()) {
+            $this->session = new AutoRoutedSession($this->session, $this->injections, $this->parsedUrl);
+        }
 
         return $this->session;
     }
