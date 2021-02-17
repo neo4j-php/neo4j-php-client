@@ -172,18 +172,24 @@ Wrapping the injections in a callable will enforce lazy initialization.
 
 ### Clusters and routing
 
-Cluster support is always available when directly connecting to the responsible servers. If you do not need to fine tune these connections, autorouting is available for bolt connections:
+Cluster support is always available when directly connecting to the responsible servers. If you do not need to fine tune these connections, autorouting is available for all connections:
 
 ```php
 use Laudis\Neo4j\Network\Bolt\BoltInjections;
+use Laudis\Neo4j\Network\Http\HttpInjections;
 
 $client = Laudis\Neo4j\ClientBuilder::create()
     ->addBoltConnection(
         'main',
-        'http://neo4j:password@any-server-with-routing-information',
+        'bolt://neo4j:password@any-server-with-routing-information',
          BoltInjections::create()->withAutoRouting(true)
      )
-    ->addBoltConnection('backup', 'http://neo4j:password@non-replicated-server')
+    ->addHttpConnection(
+        'http',
+        'http://neo4j:password@any-server-with-routing-information',
+         HttpInjections::create()->withAutoRouting(true)
+     )
+    ->addBoltConnection('backup', 'bolt://neo4j:password@non-replicated-server')
     ->setDefaultConnection('main')
     ->build();
 
@@ -191,9 +197,8 @@ $client->run('RETURN 1'); // will run over a random follower found in the routin
 $client->run('MERGE (x:Y {z: 0)'); //will run over a random leader found in the routing table
 $client->run('RETURN 1', [], 'backup'); //will run over the non replicated server
 $client->run('RETURN 1', [], 'main'); //will be autorouted
+$client->run('RETURN 1', [], 'http'); //will be autorouted
 ```
-
-NOTE: http cluster support will be available in the next minor release and will have practically the same api.
 
 ## Final Remarks
 
