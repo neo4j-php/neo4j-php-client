@@ -68,10 +68,10 @@ final class RequestFactory
         foreach ($statements as $statement) {
             $st = [
                 'statement' => $statement->getText(),
-                'resultDataContents' => ['ROW'],
+                'resultDataContents' => [],
                 'includeStats' => false,
             ];
-            $st = array_merge($st, $this->formatter->statementConfigOverride());
+            $st = array_merge_recursive($st, $this->formatter->statementConfigOverride());
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
             $tbr[] = $st;

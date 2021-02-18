@@ -37,7 +37,7 @@ final class BasicFormatter implements FormatterInterface
      *
      * @return Vector<Map<string, scalar|array|null>>
      */
-    public function formatBoltResult(array $meta, iterable $results, Bolt $bolt): Vector
+    public function formatBoltResult(array $meta, array $results, Bolt $bolt): Vector
     {
         $results = array_slice($results, 0, count($results) - 1);
 
@@ -184,6 +184,8 @@ final class BasicFormatter implements FormatterInterface
 
     public function statementConfigOverride(): array
     {
-        return [];
+        return [
+            'resultDataContents' => ['ROW'],
+        ];
     }
 }

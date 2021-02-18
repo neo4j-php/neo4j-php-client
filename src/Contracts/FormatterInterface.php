@@ -35,10 +35,28 @@ use Psr\Http\Message\ResponseInterface;
  *     contains_system_updates?: bool,
  *     system_updates?: int
  * }
+ * @psalm-type BoltCypherStats = array{
+ *     nodes-created?: int,
+ *     nodes-deleted?: int,
+ *     relationships-created?: int,
+ *     relationships-deleted?: int,
+ *     properties-set?: int,
+ *     labels-added?: int,
+ *     labels-removed?: int,
+ *     indexes-added?: int,
+ *     indexes-removed?: int,
+ *     constraints-added?: int,
+ *     constraints-removed?: int,
+ *     contains-updates?: bool,
+ *     contains-system-updates?: bool,
+ *     system-updates?: int
+ * }
  * @psalm-type CypherError = array{code: string, message: string}
  * @psalm-type CypherRowResponse = array{row: list<scalar|null|array<array-key,scalar|null|array>>}
  * @psalm-type CypherResponse = array{columns:list<string>, data:list<CypherRowResponse>, stats?:CypherStats}
  * @psalm-type CypherResponseSet = array{results: list<CypherResponse>, errors: list<CypherError>}
+ *
+ * @psalm-type
  *
  * @template T
  */
@@ -50,12 +68,10 @@ interface FormatterInterface
      *
      * @return T
      */
-    public function formatBoltResult(array $meta, iterable $results, Bolt $bolt);
+    public function formatBoltResult(array $meta, array $results, Bolt $bolt);
 
     /**
      * @param CypherResponseSet $body
-     *
-     * @return \Ds\Vector<T>
      */
     public function formatHttpResult(ResponseInterface $response, array $body): Vector;
 
