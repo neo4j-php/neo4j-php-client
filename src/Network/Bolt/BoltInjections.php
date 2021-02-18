@@ -15,7 +15,7 @@ namespace Laudis\Neo4j\Network\Bolt;
 
 use function call_user_func;
 use function is_callable;
-use Laudis\Neo4j\Contracts\Injections;
+use Laudis\Neo4j\Contracts\InjectionInterface;
 
 /**
  * @psalm-type SSLContextOptions = null|array{
@@ -40,7 +40,7 @@ use Laudis\Neo4j\Contracts\Injections;
  *
  * @psalm-type LazySSLContextOptions = callable():SSLContextOptions|SSLContextOptions
  */
-final class BoltInjections implements Injections
+final class BoltInjections implements InjectionInterface
 {
     /** @var callable():string|string */
     private $database;

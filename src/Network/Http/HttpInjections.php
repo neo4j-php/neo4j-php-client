@@ -15,12 +15,12 @@ namespace Laudis\Neo4j\Network\Http;
 
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
-use Laudis\Neo4j\Contracts\Injections;
+use Laudis\Neo4j\Contracts\InjectionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
-final class HttpInjections implements Injections
+final class HttpInjections implements InjectionInterface
 {
     /** @var ClientInterface|callable():ClientInterface */
     private $client;
@@ -132,7 +132,7 @@ final class HttpInjections implements Injections
         return $this->database;
     }
 
-    public function withAutoRouting($routing): Injections
+    public function withAutoRouting($routing): InjectionInterface
     {
         return new self(
             $this->database,

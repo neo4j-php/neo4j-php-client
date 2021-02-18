@@ -18,7 +18,7 @@ use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Contracts\Injections;
+use Laudis\Neo4j\Contracts\InjectionInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
@@ -36,7 +36,7 @@ final class AutoRoutedSession implements SessionInterface
     private ?ClientInterface $client = null;
     private ?RoutingTable $table = null;
     /** @var BoltInjections|HttpInjections */
-    private Injections $injections;
+    private InjectionInterface $injections;
     private int $maxLeader = 0;
     private int $maxFollower = 0;
     private array $parsedUrl;
@@ -44,7 +44,7 @@ final class AutoRoutedSession implements SessionInterface
     /**
      * @param BoltInjections|HttpInjections $injections
      */
-    public function __construct(SessionInterface $referenceSession, Injections $injections, array $parsedUrl)
+    public function __construct(SessionInterface $referenceSession, InjectionInterface $injections, array $parsedUrl)
     {
         $this->referenceSession = $referenceSession;
         $this->injections = $injections;

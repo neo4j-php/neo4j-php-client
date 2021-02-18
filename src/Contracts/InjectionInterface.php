@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-interface Injections
+interface InjectionInterface
 {
     /**
      * @param string|callable():string $database
