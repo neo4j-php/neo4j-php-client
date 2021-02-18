@@ -37,16 +37,18 @@ final class ClientBuilder
     private Map $connectionPool;
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
+    private string $userAgent;
 
     /**
      * @param Map<string, DriverInterface> $connectionPool
      * @param FormatterInterface<T>        $formatter
      */
-    private function __construct(Map $connectionPool, ?string $default, FormatterInterface $formatter)
+    private function __construct(Map $connectionPool, ?string $default, FormatterInterface $formatter, string $userAgent)
     {
         $this->connectionPool = $connectionPool;
         $this->default = $default;
         $this->formatter = $formatter;
+        $this->userAgent = $userAgent;
     }
 
     /**
@@ -54,7 +56,7 @@ final class ClientBuilder
      */
     public static function create(): ClientBuilder
     {
-        return new self(new Map(), null, new BasicFormatter());
+        return new self(new Map(), null, new BasicFormatter(), 'LaudisNeo4j/'.ClientInterface::VERSION);
     }
 
     /**
@@ -67,10 +69,10 @@ final class ClientBuilder
         $parse = $this->assertCorrectUrl($url);
         $pool = new Map(array_merge(
                 $this->connectionPool->toArray(),
-                [$alias => new BoltDriver($parse, $provider ?? new BoltInjections())])
+                [$alias => new BoltDriver($parse, $provider ?? new BoltInjections(), $this->userAgent)])
         );
 
-        return new self($pool, $this->default, $this->formatter);
+        return new self($pool, $this->default, $this->formatter, $this->userAgent);
     }
 
     /**
@@ -83,13 +85,13 @@ final class ClientBuilder
         $parse = $this->assertCorrectUrl($url);
 
         $injections = $injections ?? new HttpInjections();
-        $connection = new HttpDriver($parse, $injections);
+        $connection = new HttpDriver($parse, $injections, $this->userAgent);
         $pool = new Map(array_merge(
             $this->connectionPool->toArray(),
             [$alias => $connection]
         ));
 
-        return new self($pool, $this->default, $this->formatter);
+        return new self($pool, $this->default, $this->formatter, $this->userAgent);
     }
 
     /**
@@ -99,7 +101,7 @@ final class ClientBuilder
      */
     public function setDefaultConnection(string $alias): self
     {
-        return new self($this->connectionPool->copy(), $alias, $this->formatter);
+        return new self($this->connectionPool->copy(), $alias, $this->formatter, $this->userAgent);
     }
 
     /**
@@ -111,7 +113,15 @@ final class ClientBuilder
      */
     public function setFormatter(FormatterInterface $formatter): self
     {
-        return new self($this->connectionPool->copy(), $this->default, $formatter);
+        return new self($this->connectionPool->copy(), $this->default, $formatter, $this->userAgent);
+    }
+
+    /**
+     * @return self<T>
+     */
+    public function setUserAgent(string $userAgent): self
+    {
+        return new self($this->connectionPool->copy(), $this->default, $this->formatter, $userAgent);
     }
 
     /**

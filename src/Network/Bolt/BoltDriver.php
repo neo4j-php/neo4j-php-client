@@ -17,7 +17,6 @@ use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
 use Ds\Vector;
 use Exception;
-use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
@@ -36,16 +35,16 @@ final class BoltDriver implements DriverInterface
     private ?SessionInterface $session = null;
     private BoltInjections $injections;
     public const DEFAULT_TCP_PORT = 7687;
+    private string $userAgent;
 
     /**
-     * BoltConnection constructor.
-     *
      * @param ParsedUrl $parsedUrl
      */
-    public function __construct(array $parsedUrl, BoltInjections $injections)
+    public function __construct(array $parsedUrl, BoltInjections $injections, string $userAgent)
     {
         $this->parsedUrl = $parsedUrl;
         $this->injections = $injections;
+        $this->userAgent = $userAgent;
     }
 
     /**
@@ -64,7 +63,7 @@ final class BoltDriver implements DriverInterface
                 $sock->setSslContextOptions($options);
             }
             $bolt = new Bolt($sock);
-            $bolt->init('LaudisNeo4j/'.ClientInterface::VERSION, $this->parsedUrl['user'], $this->parsedUrl['pass']);
+            $bolt->init($this->userAgent, $this->parsedUrl['user'], $this->parsedUrl['pass']);
         } catch (Exception $e) {
             throw new Neo4jException(new Vector([new Neo4jError($e->getMessage(), '')]), $e);
         }

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\HttpDriver;
 
 use JsonException;
-use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\RequestData;
 use Laudis\Neo4j\Databags\Statement;
@@ -29,12 +28,14 @@ final class RequestFactory
     private RequestFactoryInterface $factory;
     private StreamFactoryInterface $streamFactory;
     private FormatterInterface $formatter;
+    private string $userAgent;
 
-    public function __construct(RequestFactoryInterface $factory, StreamFactoryInterface $streamFactory, FormatterInterface $formatter)
+    public function __construct(RequestFactoryInterface $factory, StreamFactoryInterface $streamFactory, FormatterInterface $formatter, string $userAgent)
     {
         $this->factory = $factory;
         $this->streamFactory = $streamFactory;
         $this->formatter = $formatter;
+        $this->userAgent = $userAgent;
     }
 
     public function openTransaction(RequestData $data): RequestInterface
@@ -50,7 +51,7 @@ final class RequestFactory
             ->withBody($this->streamFactory->createStream($body))
             ->withHeader('Accept', 'application/json;charset=UTF-8')
             ->withHeader('Content-Type', 'application/json')
-            ->withHeader('User-Agent', 'LaudisNeo4j/'.ClientInterface::VERSION)
+            ->withHeader('User-Agent', $this->userAgent)
             ->withHeader('Authorization', 'Basic '.$combo);
 
         return $this->formatter->decorateRequest($tbr);

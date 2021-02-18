@@ -31,16 +31,18 @@ final class HttpDriver implements DriverInterface
     private ?SessionInterface $session = null;
     public const DEFAULT_PORT = '7474';
     private HttpInjections $injections;
+    private string $userAgent;
 
     /**
      * HttpConnection constructor.
      *
      * @param array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} $parsedUrl $parsedUrl
      */
-    public function __construct(array $parsedUrl, HttpInjections $injector)
+    public function __construct(array $parsedUrl, HttpInjections $injector, string $userAgent)
     {
         $this->parsedUrl = $parsedUrl;
         $this->injections = $injector;
+        $this->userAgent = $userAgent;
     }
 
     /**
@@ -65,25 +67,22 @@ final class HttpDriver implements DriverInterface
             $this->parsedUrl['user'],
             $this->parsedUrl['pass']
         );
-        $tsx = (new VersionDiscovery(
-            new RequestFactory(
-                $this->injections->requestFactory(),
-                $this->injections->streamFactory(),
-                new BasicFormatter()
-            ),
-            $this->injections->client())
-        )->discoverTransactionUrl($requestData, $this->injections->database());
-        $requestData = $requestData->withEndpoint($tsx);
+        $factory = $this->injections->requestFactory();
         $streamFactory = $this->injections->streamFactory();
+        $requestFactory = new RequestFactory($factory, $streamFactory, new BasicFormatter(), $this->userAgent);
+        $tsx = (new VersionDiscovery($requestFactory, $this->injections->client()))
+            ->discoverTransactionUrl($requestData, $this->injections->database());
+
+        $requestData = $requestData->withEndpoint($tsx);
 
         if ($this->injections->hasAutoRouting()) {
             $basicFormatter = new BasicFormatter();
-            $requestFactory = new RequestFactory($this->injections->requestFactory(), $streamFactory, $basicFormatter);
+            $requestFactory = new RequestFactory($factory, $streamFactory, $basicFormatter, $this->userAgent);
             $basicSession = new HttpSession($requestFactory, $this->injections->client(), $basicFormatter, $requestData);
             $this->session = new AutoRoutedSession($formatter, $basicSession, $this->injections, $this->parsedUrl);
         } else {
             $this->session = new HttpSession(
-                new RequestFactory($this->injections->requestFactory(), $streamFactory, $formatter),
+                new RequestFactory($factory, $streamFactory, $formatter, $this->userAgent),
                 $this->injections->client(),
                 $formatter,
                 $requestData

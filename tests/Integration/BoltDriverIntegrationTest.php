@@ -33,7 +33,7 @@ final class BoltDriverIntegrationTest extends TestCase
     {
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@neo4j-42');
-        $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession(new BasicFormatter());
+        $session = (new BoltDriver($parsedUrl, BoltInjections::create(), 'ua'))->aquireSession(new BasicFormatter());
         $results = $session->run([new Statement(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER, [])]);
@@ -48,7 +48,7 @@ CYPHER, [])]);
         $ip = gethostbyname('neo4j-42');
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@'.$ip);
-        $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession(new BasicFormatter());
+        $session = (new BoltDriver($parsedUrl, BoltInjections::create(), 'ua'))->aquireSession(new BasicFormatter());
         $results = $session->run([new Statement(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER, [])]);
@@ -62,7 +62,7 @@ CYPHER, [])]);
     {
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@127.0.0.0');
-        $driver = new BoltDriver($parsedUrl, BoltInjections::create());
+        $driver = new BoltDriver($parsedUrl, BoltInjections::create(), 'ua');
         $this->expectException(Neo4jException::class);
         $driver->aquireSession(new BasicFormatter());
     }
@@ -74,7 +74,7 @@ CYPHER, [])]);
     {
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@127.0.0.0');
-        $driver = new BoltDriver($parsedUrl, BoltInjections::create());
+        $driver = new BoltDriver($parsedUrl, BoltInjections::create(), 'ua');
         $this->expectException(Neo4jException::class);
         $driver->aquireSession(new BasicFormatter());
     }

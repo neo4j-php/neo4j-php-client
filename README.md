@@ -200,6 +200,17 @@ $client->run('RETURN 1', [], 'main'); //will be autorouted
 $client->run('RETURN 1', [], 'http'); //will be autorouted
 ```
 
+### Setting the user agen
+
+The user agent can be manipulated with the ClientBuilder. This value will be sent to the neo4j servers.
+
+```php
+$client = \Laudis\Neo4j\ClientBuilder::create()
+    ->addBoltConnection('main', 'bolt://neo4j:password@core')
+    ->setUserAgent('MyApp/2.0 (X11; Linux x86_64)')
+    ->build();
+```
+
 ## Final Remarks
 
 ### Filosophy
