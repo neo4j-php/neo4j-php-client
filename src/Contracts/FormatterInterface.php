@@ -1,0 +1,65 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * This file is part of the Laudis Neo4j package.
+ *
+ * (c) Laudis technologies <http://laudis.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Laudis\Neo4j\Contracts;
+
+use Bolt\Bolt;
+use Ds\Vector;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+
+/**
+ * @psalm-type CypherStats = array{
+ *     nodes_created: int,
+ *     nodes_deleted: int,
+ *     relationships_created: int,
+ *     relationships_deleted: int,
+ *     properties_set: int,
+ *     labels_added: int,
+ *     labels_removed: int,
+ *     indexes_added: int,
+ *     indexes_removed: int,
+ *     constraints_added: int,
+ *     constraints_removed: int,
+ *     contains_updates: bool,
+ *     contains_system_updates?: bool,
+ *     system_updates?: int
+ * }
+ * @psalm-type CypherError = array{code: string, message: string}
+ * @psalm-type CypherRowResponse = array{row: list<scalar|null|array<array-key,scalar|null|array>>}
+ * @psalm-type CypherResponse = array{columns:list<string>, data:list<CypherRowResponse>, stats?:CypherStats}
+ * @psalm-type CypherResponseSet = array{results: list<CypherResponse>, errors: list<CypherError>}
+ *
+ * @template T
+ */
+interface FormatterInterface
+{
+    /**
+     * @param array{fields: array<int, string>} $meta
+     * @param array<array-key, array>           $results
+     *
+     * @return T
+     */
+    public function formatBoltResult(array $meta, iterable $results, Bolt $bolt);
+
+    /**
+     * @param CypherResponseSet $body
+     *
+     * @return \Ds\Vector<T>
+     */
+    public function formatHttpResult(ResponseInterface $response, array $body): Vector;
+
+    public function decorateRequest(RequestInterface $request): RequestInterface;
+
+    public function statementConfigOverride(): array;
+}

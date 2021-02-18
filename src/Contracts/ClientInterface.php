@@ -13,14 +13,16 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Ds\Map;
 use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 
+/**
+ * @template T
+ */
 interface ClientInterface
 {
-    public const VERSION = '1.0.0-rc1';
+    public const VERSION = '2.0.0';
 
     /**
      * Runs a one off transaction with the provided query and parameters over the connection with the provided alias or the master alias othwerise.
@@ -29,18 +31,18 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return Vector<Map<string, scalar|array|null>>
+     * @return T
      */
-    public function run(string $query, iterable $parameters = [], ?string $alias = null): Vector;
+    public function run(string $query, iterable $parameters = [], ?string $alias = null);
 
     /**
      * Runs a one off transaction with the provided statement over the connection with the provided alias or the master alias othwerise.
      *
      * @throws Neo4jException
      *
-     * @return Vector<Map<string, scalar|array|null>>
+     * @return T
      */
-    public function runStatement(Statement $statement, ?string $alias = null): Vector;
+    public function runStatement(Statement $statement, ?string $alias = null);
 
     /**
      * Runs a one off transaction with the provided statements over the connection with the provided alias or the master alias othwerise.
@@ -49,7 +51,7 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return Vector<Vector<Map<string, scalar|array|null>>>
+     * @return Vector<T>
      */
     public function runStatements(iterable $statements, ?string $alias = null): Vector;
 
@@ -59,6 +61,22 @@ interface ClientInterface
      * @param iterable<Statement>|null $statements
      *
      * @throws Neo4jException
+     *
+     * @return TransactionInterface<T>
      */
     public function openTransaction(?iterable $statements = null, ?string $connectionAlias = null): TransactionInterface;
+
+    /**
+     * @template U
+     *
+     * @param FormatterInterface<U> $formatter
+     *
+     * @return ClientInterface<U>
+     */
+    public function withFormatter(FormatterInterface $formatter): ClientInterface;
+
+    /**
+     * @return FormatterInterface<T>
+     */
+    public function getFormatter(): FormatterInterface;
 }

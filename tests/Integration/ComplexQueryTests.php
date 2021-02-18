@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Ds\Map;
+use Ds\Vector;
 use Generator;
 use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
@@ -23,6 +25,7 @@ use PHPUnit\Framework\TestCase;
 
 final class ComplexQueryTests extends TestCase
 {
+    /** @var ClientInterface<Vector<Map<string, scalar|array|null>>> */
     private ClientInterface $client;
 
     protected function setUp(): void

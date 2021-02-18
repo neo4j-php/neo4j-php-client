@@ -15,84 +15,120 @@ namespace Laudis\Neo4j;
 
 use BadMethodCallException;
 use Ds\Map;
+use Ds\Vector;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Formatter\HttpCypherFormatter;
-use Laudis\Neo4j\HttpDriver\RequestFactory;
+use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use Laudis\Neo4j\Network\Bolt\BoltInjections;
 use Laudis\Neo4j\Network\Http\HttpDriver;
 use Laudis\Neo4j\Network\Http\HttpInjections;
-use Laudis\Neo4j\Network\VersionDiscovery;
 
+/**
+ * @template T
+ * @psalm-immutable
+ */
 final class ClientBuilder
 {
-    private ?string $default = null;
-
+    private ?string $default;
     /** @var Map<string, DriverInterface> */
     private Map $connectionPool;
+    /** @var FormatterInterface<T> */
+    private FormatterInterface $formatter;
 
-    public function __construct()
+    /**
+     * @param Map<string, DriverInterface> $connectionPool
+     * @param FormatterInterface<T>        $formatter
+     */
+    private function __construct(Map $connectionPool, ?string $default, FormatterInterface $formatter)
     {
-        $this->connectionPool = new Map();
+        $this->connectionPool = $connectionPool;
+        $this->default = $default;
+        $this->formatter = $formatter;
     }
 
+    /**
+     * @return ClientBuilder<Vector<Map<string, scalar|array|null>>>
+     */
     public static function create(): ClientBuilder
     {
-        return new self();
+        return new self(new Map(), null, new BasicFormatter());
     }
 
     /**
      * Adds a new bolt connection with the given alias and over the provided url. The configuration will be merged with the one in the client, if provided.
+     *
+     * @return self<T>
      */
-    public function addBoltConnection(string $alias, string $url, BoltInjections $provider = null): ClientBuilder
+    public function addBoltConnection(string $alias, string $url, BoltInjections $provider = null): self
     {
         $parse = $this->assertCorrectUrl($url);
-        $this->connectionPool->put($alias, new BoltDriver($parse, $provider ?? new BoltInjections()));
+        $pool = new Map(array_merge(
+                $this->connectionPool->toArray(),
+                [$alias => new BoltDriver($parse, $provider ?? new BoltInjections())])
+        );
 
-        return $this;
+        return new self($pool, $this->default, $this->formatter);
     }
 
     /**
-     * Adds a new http connection with the given alias and over t he provided url. The configuration will be merged with the one in the client, if provided.
+     * Adds a new http connection with the given alias and over the provided url. The configuration will be merged with the one in the client, if provided.
+     *
+     * @return self<T>
      */
-    public function addHttpConnection(string $alias, string $url, HttpInjections $injections = null): ClientBuilder
+    public function addHttpConnection(string $alias, string $url, HttpInjections $injections = null): self
     {
         $parse = $this->assertCorrectUrl($url);
-        $injections = $injections ?? new HttpInjections();
-        $factory = $injections->requestFactory();
-        $requestFactory = new RequestFactory($factory, $injections->streamFactory(), new HttpCypherFormatter());
-        $connection = new HttpDriver($parse, new VersionDiscovery($requestFactory, $injections->client()), $injections);
-        $this->connectionPool->put($alias, $connection);
 
-        return $this;
+        $injections = $injections ?? new HttpInjections();
+        $connection = new HttpDriver($parse, $injections);
+        $pool = new Map(array_merge(
+            $this->connectionPool->toArray(),
+            [$alias => $connection]
+        ));
+
+        return new self($pool, $this->default, $this->formatter);
     }
 
     /**
      * Sets the default connection to the given alias.
+     *
+     * @return self<T>
      */
     public function setDefaultConnection(string $alias): self
     {
-        $this->default = $alias;
-
-        return $this;
+        return new self($this->connectionPool->copy(), $alias, $this->formatter);
     }
 
+    /**
+     * @template U
+     *
+     * @param FormatterInterface<U> $formatter
+     *
+     * @return ClientBuilder<U>
+     */
+    public function setFormatter(FormatterInterface $formatter): self
+    {
+        return new self($this->connectionPool->copy(), $this->default, $formatter);
+    }
+
+    /**
+     * @return ClientInterface<T>
+     */
     public function build(): ClientInterface
     {
         if ($this->connectionPool->isEmpty()) {
             throw new BadMethodCallException('Client cannot be built with an empty connectionpool');
         }
-        if ($this->default === null) {
-            $this->default = $this->connectionPool->first()->key;
-        }
-        if (!$this->connectionPool->hasKey($this->default)) {
+        $default = $this->default ?? $this->connectionPool->first()->key;
+        if (!$this->connectionPool->hasKey($default)) {
             $format = 'Client cannot be built with a default connection "%s" that is not in the connection pool';
-            throw new BadMethodCallException(sprintf($format, $this->default));
+            throw new BadMethodCallException(sprintf($format, $default));
         }
 
-        return new Client($this->connectionPool, $this->default);
+        return new Client($this->connectionPool, $default, $this->formatter);
     }
 
     /**

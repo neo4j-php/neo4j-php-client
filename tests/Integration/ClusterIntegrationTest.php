@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Ds\Map;
+use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Network\Bolt\BoltInjections;
@@ -21,6 +23,7 @@ use PHPUnit\Framework\TestCase;
 
 final class ClusterIntegrationTest extends TestCase
 {
+    /** @var ClientInterface<Vector<Map<string, scalar|array|null>>> */
     private ClientInterface $client;
 
     protected function setUp(): void

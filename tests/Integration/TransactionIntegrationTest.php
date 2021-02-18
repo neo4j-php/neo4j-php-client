@@ -25,8 +25,8 @@ final class TransactionIntegrationTest extends TransactionTest
         foreach ($versions as $version) {
             $hostname = 'neo4j-'.$version;
             if (gethostbyname($hostname) !== $hostname) {
-                $builder->addBoltConnection('bolt-'.$version, 'bolt://neo4j:test@'.$hostname);
-                $builder->addHttpConnection('http-'.$version, 'http://neo4j:test@'.$hostname);
+                $builder = $builder->addBoltConnection('bolt-'.$version, 'bolt://neo4j:test@'.$hostname);
+                $builder = $builder->addHttpConnection('http-'.$version, 'http://neo4j:test@'.$hostname);
             }
         }
         $client = $builder->build();

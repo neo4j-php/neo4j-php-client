@@ -1,6 +1,10 @@
 {
     "require": {
-        "vimeo/psalm": "^4.3",
+        "vimeo/psalm": "^4.6",
         "psalm/plugin-phpunit": "^0.13.0"
+    }
+    ,
+    "require-dev": {
+        "roave/security-advisories": "dev-master"
     }
 }

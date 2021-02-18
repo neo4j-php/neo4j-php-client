@@ -19,10 +19,11 @@ use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Formatter\BoltCypherFormatter;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Network\AutoRoutedSession;
 
 /**
@@ -50,7 +51,7 @@ final class BoltDriver implements DriverInterface
     /**
      * @throws Exception
      */
-    public function aquireSession(): SessionInterface
+    public function aquireSession(FormatterInterface $formatter): SessionInterface
     {
         if ($this->session) {
             return $this->session;
@@ -68,9 +69,11 @@ final class BoltDriver implements DriverInterface
             throw new Neo4jException(new Vector([new Neo4jError($e->getMessage(), '')]), $e);
         }
 
-        $this->session = new BoltSession($this->parsedUrl, $bolt, new BoltCypherFormatter(), $this->injections);
         if ($this->injections->hasAutoRouting()) {
-            $this->session = new AutoRoutedSession($this->session, $this->injections, $this->parsedUrl);
+            $basicSession = new BoltSession($this->parsedUrl, $bolt, new BasicFormatter(), $this->injections);
+            $this->session = new AutoRoutedSession($formatter, $basicSession, $this->injections, $this->parsedUrl);
+        } else {
+            $this->session = new BoltSession($this->parsedUrl, $bolt, $formatter, $this->injections);
         }
 
         return $this->session;

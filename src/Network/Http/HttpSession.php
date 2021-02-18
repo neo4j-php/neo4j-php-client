@@ -15,12 +15,12 @@ namespace Laudis\Neo4j\Network\Http;
 
 use Ds\Vector;
 use JsonException;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\RequestData;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Formatter\HttpCypherFormatter;
 use Laudis\Neo4j\HttpDriver\RequestFactory;
 use Laudis\Neo4j\HttpDriver\Transaction;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -28,16 +28,23 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Formatter\HttpCypherFormatter
+ * @template T
+ *
+ * @implements SessionInterface<T>
+ *
+ * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
  */
 final class HttpSession implements SessionInterface
 {
     private ClientInterface $client;
-    private HttpCypherFormatter $formatter;
+    private FormatterInterface $formatter;
     private RequestFactory $factory;
     private RequestData $data;
 
-    public function __construct(RequestFactory $factory, ClientInterface $client, HttpCypherFormatter $formatter, RequestData $data)
+    /**
+     * @param FormatterInterface<T> $formatter
+     */
+    public function __construct(RequestFactory $factory, ClientInterface $client, FormatterInterface $formatter, RequestData $data)
     {
         $this->factory = $factory;
         $this->client = $client;
@@ -55,7 +62,7 @@ final class HttpSession implements SessionInterface
         $response = $this->client->sendRequest($request);
         $data = $this->interpretResponse($response);
 
-        return $this->formatter->formatResponse($data);
+        return $this->formatter->formatHttpResult($response, $data);
     }
 
     /**
@@ -84,7 +91,7 @@ final class HttpSession implements SessionInterface
         $response = $this->client->sendRequest($request);
         $data = $this->interpretResponse($response);
 
-        return $this->formatter->formatResponse($data);
+        return $this->formatter->formatHttpResult($response, $data);
     }
 
     /**
@@ -111,9 +118,15 @@ final class HttpSession implements SessionInterface
         if ($response->getStatusCode() >= 400) {
             throw new Neo4jException(new Vector([new Neo4jError((string) $response->getStatusCode(), $contents)]));
         }
+
         /** @var CypherResponseSet $body */
         $body = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
-        $errors = $this->formatter->filterError($body);
+
+        $errors = new Vector();
+        foreach ($body['errors'] as $error) {
+            $errors->push(new Neo4jError($error['code'], $error['message']));
+        }
+
         if (!$errors->isEmpty()) {
             throw new Neo4jException($errors);
         }
@@ -131,6 +144,6 @@ final class HttpSession implements SessionInterface
         $response = $this->client->sendRequest($request);
         $data = $this->interpretResponse($response);
 
-        return $this->formatter->formatResponse($data);
+        return $this->formatter->formatHttpResult($response, $data);
     }
 }

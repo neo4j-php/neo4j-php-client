@@ -66,6 +66,8 @@ final class BoltInjections implements InjectionInterface
      *
      * @see https://www.php.net/manual/en/context.ssl.php for ssl connections
      *
+     * @psalm-immutable
+     *
      * @return static
      */
     public static function create(?string $database = null, ?array $sslContextOptions = null, bool $autoRouting = false): self

@@ -18,30 +18,38 @@ use Ds\Vector;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 
+/**
+ * @template T
+ * @implements ClientInterface<T>
+ */
 final class Client implements ClientInterface
 {
     /** @var Map<string, DriverInterface> */
     private Map $connectionPool;
     private string $defaultConnectionAlias;
+    private FormatterInterface $formatter;
 
     /**
+     * @param FormatterInterface<T>        $formatter
      * @param Map<string, DriverInterface> $connectionPool
      */
-    public function __construct(Map $connectionPool, string $defaultConnectionAlias)
+    public function __construct(Map $connectionPool, string $defaultConnectionAlias, FormatterInterface $formatter)
     {
         $this->connectionPool = $connectionPool;
         $this->defaultConnectionAlias = $defaultConnectionAlias;
+        $this->formatter = $formatter;
     }
 
-    public function run(string $query, iterable $parameters = [], ?string $alias = null): Vector
+    public function run(string $query, iterable $parameters = [], ?string $alias = null)
     {
         return $this->runStatement(new Statement($query, $parameters), $alias);
     }
 
-    public function runStatement(Statement $statement, ?string $alias = null): Vector
+    public function runStatement(Statement $statement, ?string $alias = null)
     {
         return $this->runStatements([$statement], $alias)->first();
     }
@@ -49,7 +57,7 @@ final class Client implements ClientInterface
     public function runStatements(iterable $statements, ?string $alias = null): Vector
     {
         $connection = $this->getConnection($alias);
-        $session = $connection->aquireSession();
+        $session = $connection->aquireSession($this->formatter);
 
         return $session->run($statements);
     }
@@ -58,7 +66,7 @@ final class Client implements ClientInterface
     {
         $connection = $this->getConnection($connectionAlias);
 
-        return $connection->aquireSession()->openTransaction($statements);
+        return $connection->aquireSession($this->formatter)->openTransaction($statements);
     }
 
     /**
@@ -73,5 +81,15 @@ final class Client implements ClientInterface
         }
 
         return $this->connectionPool->get($key);
+    }
+
+    public function withFormatter(FormatterInterface $formatter): ClientInterface
+    {
+        return new self($this->connectionPool, $this->defaultConnectionAlias, $formatter);
+    }
+
+    public function getFormatter(): FormatterInterface
+    {
+        return $this->formatter;
     }
 }

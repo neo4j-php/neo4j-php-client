@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Base;
 
+use Ds\Map;
+use Ds\Vector;
+use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -20,8 +23,12 @@ use PHPUnit\Framework\TestCase;
 
 abstract class ClientTest extends TestCase
 {
+    /** @var ClientInterface<Vector<Map<string, scalar|array|null>>> */
     protected ClientInterface $client;
 
+    /**
+     * @return ClientInterface<Vector<Map<string, scalar|array|null>>>
+     */
     abstract public function createClient(): ClientInterface;
 
     /**
@@ -185,7 +192,7 @@ CYPHER,
 
     public function testInvalidConnection(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the connection pool');
 
         $this->client->run('RETURN 1 AS x', [], 'ghqkneq;tr');

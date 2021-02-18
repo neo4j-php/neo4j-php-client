@@ -18,11 +18,18 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 
+/**
+ * @template T
+ * @implements TransactionInterface<T>
+ */
 final class Transaction implements TransactionInterface
 {
     private SessionInterface $session;
     private string $endpoint;
 
+    /**
+     * @param SessionInterface<T> $session
+     */
     public function __construct(SessionInterface $session, string $endpoint)
     {
         $this->session = $session;
@@ -39,12 +46,12 @@ final class Transaction implements TransactionInterface
         $this->session->rollbackTransaction($this);
     }
 
-    public function run(string $statement, iterable $parameters = []): Vector
+    public function run(string $statement, iterable $parameters = [])
     {
         return $this->runStatement(Statement::create($statement, $parameters));
     }
 
-    public function runStatement(Statement $statement): Vector
+    public function runStatement(Statement $statement)
     {
         return $this->runStatements([$statement])->first();
     }

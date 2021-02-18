@@ -15,5 +15,12 @@ namespace Laudis\Neo4j\Contracts;
 
 interface DriverInterface
 {
-    public function aquireSession(): SessionInterface;
+    /**
+     * @template T
+     *
+     * @param FormatterInterface<T> $formatter
+     *
+     * @return SessionInterface<T>
+     */
+    public function aquireSession(FormatterInterface $formatter): SessionInterface;
 }

@@ -13,12 +13,23 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use Bolt\Bolt;
 use Bolt\structures\Path;
 use Ds\Map;
 use Ds\Vector;
+use Laudis\Neo4j\Contracts\FormatterInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use UnexpectedValueException;
 
-final class BoltCypherFormatter
+/**
+ * @psalm-import-type CypherError from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type CypherRowResponse from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @implements FormatterInterface<Vector<Map<string, scalar|array|null>>>
+ */
+final class BasicFormatter implements FormatterInterface
 {
     /**
      * @param array{fields: array<int, string>} $meta
@@ -26,13 +37,48 @@ final class BoltCypherFormatter
      *
      * @return Vector<Map<string, scalar|array|null>>
      */
-    public function formatResult(array $meta, iterable $results): Vector
+    public function formatBoltResult(array $meta, iterable $results, Bolt $bolt): Vector
     {
         $results = array_slice($results, 0, count($results) - 1);
 
         $tbr = new Vector();
         foreach ($results as $result) {
             $tbr->push($this->formatRow($meta, $result));
+        }
+
+        return $tbr;
+    }
+
+    public function formatHttpResult(ResponseInterface $response, array $body): Vector
+    {
+        $tbr = new Vector();
+
+        foreach ($body['results'] as $results) {
+            $tbr->push($this->buildResult($results));
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @psalm-param CypherResponse $result
+     *
+     * @return Vector<Map<string, scalar|array|null>>
+     */
+    private function buildResult(array $result): Vector
+    {
+        $tbr = new Vector();
+
+        $columns = $result['columns'];
+        foreach ($result['data'] as $dataRow) {
+            $row = $dataRow['row'];
+            /** @psalm-var Map<string,null|scalar|array> $map */
+            $map = new Map();
+            $vector = new Vector($row);
+            foreach ($columns as $index => $key) {
+                $map->put($key, $vector->get($index));
+            }
+            $tbr->push($map);
         }
 
         return $tbr;
@@ -129,5 +175,15 @@ final class BoltCypherFormatter
         }
 
         return $value;
+    }
+
+    public function decorateRequest(RequestInterface $request): RequestInterface
+    {
+        return $request;
+    }
+
+    public function statementConfigOverride(): array
+    {
+        return [];
     }
 }

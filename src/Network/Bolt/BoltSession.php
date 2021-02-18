@@ -19,31 +19,38 @@ use Ds\Map;
 use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Formatter\BoltCypherFormatter;
 use Laudis\Neo4j\HttpDriver\Transaction;
 use Laudis\Neo4j\ParameterHelper;
 use Throwable;
 
+/**
+ * @template T
+ * @implements SessionInterface<T>
+ *
+ * @psalm-import-type ParsedUrl from BoltDriver
+ */
 final class BoltSession implements SessionInterface
 {
     private Bolt $bolt;
     private const DEFAULT_TCP_PORT = 7687;
-    private BoltCypherFormatter $formatter;
+    private FormatterInterface $formatter;
     private BoltInjections $injections;
     /** @var Map<string, Bolt> */
     private Map $transactions;
-    /** @var array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} */
+    /** @var ParsedUrl */
     private array $parsedUrl;
 
     /**
-     * @param array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} $parsedUrl
+     * @param FormatterInterface<T> $formatter
+     * @param ParsedUrl             $parsedUrl
      */
-    public function __construct(array $parsedUrl, Bolt $bolt, BoltCypherFormatter $formatter, BoltInjections $injections)
+    public function __construct(array $parsedUrl, Bolt $bolt, FormatterInterface $formatter, BoltInjections $injections)
     {
         $this->bolt = $bolt;
         $this->formatter = $formatter;
@@ -115,7 +122,7 @@ final class BoltSession implements SessionInterface
     /**
      * @param iterable<Statement> $statements
      *
-     * @return Vector<Vector<Map<string, scalar|array|null>>>
+     * @return Vector<T>
      */
     private function runStatements(iterable $statements, Bolt $bolt): Vector
     {
@@ -131,7 +138,7 @@ final class BoltSession implements SessionInterface
             } catch (Throwable $e) {
                 throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
             }
-            $tbr->push($this->formatter->formatResult($meta, $results));
+            $tbr->push($this->formatter->formatBoltResult($meta, $results, $this->bolt));
         }
 
         return $tbr;

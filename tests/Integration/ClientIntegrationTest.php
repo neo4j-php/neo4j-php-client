@@ -32,12 +32,12 @@ final class ClientIntegrationTest extends ClientTest
             if ($index % 2 === 0) {
                 $explosion = explode('-', $alias);
                 $version = $explosion[count($explosion) - 1];
-                $builder->addBoltConnection('bolt-'.$version, 'bolt://neo4j:test@neo4j-'.$version);
-                $builder->addBoltConnection('http-'.$version, 'http://neo4j:test@neo4j-'.$version);
+                $builder = $builder->addBoltConnection('bolt-'.$version, 'bolt://neo4j:test@neo4j-'.$version);
+                $builder = $builder->addBoltConnection('http-'.$version, 'http://neo4j:test@neo4j-'.$version);
             }
         }
 
-        $builder->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltInjections::create()->withAutoRouting(true));
+        $builder = $builder->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltInjections::create()->withAutoRouting(true));
 
         return $builder->build();
     }

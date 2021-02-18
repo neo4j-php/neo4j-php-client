@@ -13,22 +13,24 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use Bolt\Bolt;
+use Bolt\connection\IConnection;
 use Bolt\structures\Node;
 use Bolt\structures\Path;
 use Bolt\structures\UnboundRelationship;
-use Laudis\Neo4j\Formatter\BoltCypherFormatter;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use UnexpectedValueException;
 
 final class BoltCypherFormatterTest extends TestCase
 {
-    private BoltCypherFormatter $formatter;
+    private BasicFormatter $formatter;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->formatter = new BoltCypherFormatter();
+        $this->formatter = new BasicFormatter();
     }
 
     public function testFormatPath(): void
@@ -46,7 +48,7 @@ final class BoltCypherFormatterTest extends TestCase
             [
             ],
         ];
-        $result = $this->formatter->formatResult(['fields' => ['a']], $results);
+        $result = $this->formatter->formatBoltResult(['fields' => ['a']], $results, new Bolt($this->getMockBuilder(IConnection::class)->getMock()));
 
         self::assertEquals(1, $result->count());
         self::assertEquals(1, $result->first()->count());
@@ -63,7 +65,7 @@ final class BoltCypherFormatterTest extends TestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Cannot handle objects without a properties method. Class given: '.stdClass::class);
-        $this->formatter->formatResult(['fields' => ['a']], [[new stdClass()], []]);
+        $this->formatter->formatBoltResult(['fields' => ['a']], [[new stdClass()], []], new Bolt($this->getMockBuilder(IConnection::class)->getMock()));
     }
 
     public function testResource(): void
@@ -71,6 +73,6 @@ final class BoltCypherFormatterTest extends TestCase
         $resource = fopen('php://temp', 'b');
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Did not expect to receive value of type: resource');
-        $this->formatter->formatResult(['fields' => ['a']], [[$resource], []]);
+        $this->formatter->formatBoltResult(['fields' => ['a']], [[$resource], []], new Bolt($this->getMockBuilder(IConnection::class)->getMock()));
     }
 }

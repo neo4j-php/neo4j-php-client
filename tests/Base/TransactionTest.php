@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Base;
 
+use Ds\Map;
+use Ds\Vector;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -20,11 +22,11 @@ use PHPUnit\Framework\TestCase;
 
 abstract class TransactionTest extends TestCase
 {
-    /** @var iterable<TransactionInterface> */
+    /** @var iterable<TransactionInterface<Vector<Map<string, scalar|array|null>>>> */
     private iterable $transactions;
 
     /**
-     * @return iterable<TransactionInterface>
+     * @return iterable<TransactionInterface<Vector<Map<string, scalar|array|null>>>>
      */
     abstract protected function makeTransactions(): iterable;
 

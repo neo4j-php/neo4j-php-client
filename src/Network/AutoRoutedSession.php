@@ -18,6 +18,7 @@ use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\InjectionInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
@@ -30,9 +31,13 @@ use function preg_match;
 use function random_int;
 use function time;
 
+/**
+ * @template T
+ * @implements SessionInterface<T>
+ */
 final class AutoRoutedSession implements SessionInterface
 {
-    private SessionInterface $referenceSession;
+    /** @var ClientInterface<T>|null */
     private ?ClientInterface $client = null;
     private ?RoutingTable $table = null;
     /** @var BoltInjections|HttpInjections */
@@ -40,15 +45,26 @@ final class AutoRoutedSession implements SessionInterface
     private int $maxLeader = 0;
     private int $maxFollower = 0;
     private array $parsedUrl;
+    /** @var SessionInterface<Vector<Map<string, scalar|array|null>>> */
+    private SessionInterface $basicSession;
+    /** @var FormatterInterface<T> */
+    private FormatterInterface $formatter;
 
     /**
-     * @param BoltInjections|HttpInjections $injections
+     * @param FormatterInterface<T>                                    $formatter
+     * @param BoltInjections|HttpInjections                            $injections
+     * @param SessionInterface<Vector<Map<string, scalar|array|null>>> $basicSession
      */
-    public function __construct(SessionInterface $referenceSession, InjectionInterface $injections, array $parsedUrl)
-    {
-        $this->referenceSession = $referenceSession;
+    public function __construct(
+        FormatterInterface $formatter,
+        SessionInterface $basicSession,
+        InjectionInterface $injections,
+        array $parsedUrl
+    ) {
         $this->injections = $injections;
         $this->parsedUrl = $parsedUrl;
+        $this->basicSession = $basicSession;
+        $this->formatter = $formatter;
     }
 
     /**
@@ -83,7 +99,7 @@ final class AutoRoutedSession implements SessionInterface
                 'context' => [],
                 'database' => $this->injections->database(),
             ]);
-            $response = $this->referenceSession->run([$statement])->first()->first();
+            $response = $this->basicSession->run([$statement])->first()->first();
             /** @var iterable<array{addresses: list<string>, role:string}> $values */
             $values = $response->get('servers');
             /** @var int $ttl */
@@ -104,7 +120,7 @@ final class AutoRoutedSession implements SessionInterface
                 $builder = $this->buildHttpConnections($leaders, $builder, $injections, $followers);
             }
 
-            $this->client = $builder->build();
+            $this->client = $builder->build()->withFormatter($this->formatter);
         }
 
         return $this->client;
@@ -117,7 +133,7 @@ final class AutoRoutedSession implements SessionInterface
     {
         $client = $this->setupClient();
         [$toRead, $toWrite] = $this->sortStatements($statements);
-        /** @psalm-var Vector<Vector<Map<string, array|scalar|null>>|null> */
+        /** @psalm-var Vector<T|null> */
         $tbr = new Vector();
         $capacity = $toRead->count() + $toWrite->count();
         for ($i = 0; $i < $capacity; ++$i) {
@@ -133,7 +149,6 @@ final class AutoRoutedSession implements SessionInterface
             $this->weaveResults($toWrite, $tbr, $results);
         }
 
-        /** @psalm-var Vector<Vector<Map<string, array|scalar|null>>> */
         return $tbr;
     }
 
@@ -162,9 +177,9 @@ final class AutoRoutedSession implements SessionInterface
     }
 
     /**
-     * @param Map<int, Statement>                                 $reference
-     * @param Vector<Vector<Map<string, array|scalar|null>>|null> $tbr
-     * @param Vector<Vector<Map<string, array|scalar|null>>>      $results
+     * @param Map<int, Statement> $reference
+     * @param Vector<T|null>      $tbr
+     * @param Vector<T>           $results
      */
     private function weaveResults(Map $reference, Vector $tbr, Vector $results): void
     {

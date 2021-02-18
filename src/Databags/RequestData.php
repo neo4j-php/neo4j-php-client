@@ -21,19 +21,17 @@ final class RequestData
     private string $endpoint;
     private string $user;
     private string $password;
-    private bool $includeStats;
 
-    public function __construct(string $transactionEndpoint, string $user, string $password, bool $includeStats)
+    public function __construct(string $transactionEndpoint, string $user, string $password)
     {
         $this->endpoint = $transactionEndpoint;
         $this->user = $user;
         $this->password = $password;
-        $this->includeStats = $includeStats;
     }
 
     public function withEndpoint(string $tsx): RequestData
     {
-        return new RequestData($tsx, $this->user, $this->password, $this->includeStats);
+        return new RequestData($tsx, $this->user, $this->password);
     }
 
     public function getEndpoint(): string
@@ -49,10 +47,5 @@ final class RequestData
     public function getPassword(): string
     {
         return $this->password;
-    }
-
-    public function includeStats(): bool
-    {
-        return $this->includeStats;
     }
 }

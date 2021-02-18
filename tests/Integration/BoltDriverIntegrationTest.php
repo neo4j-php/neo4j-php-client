@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 use Exception;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use Laudis\Neo4j\Network\Bolt\BoltInjections;
 use PHPUnit\Framework\TestCase;
@@ -32,7 +33,7 @@ final class BoltDriverIntegrationTest extends TestCase
     {
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@neo4j-42');
-        $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession();
+        $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession(new BasicFormatter());
         $results = $session->run([new Statement(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER, [])]);
@@ -47,7 +48,7 @@ CYPHER, [])]);
         $ip = gethostbyname('neo4j-42');
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@'.$ip);
-        $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession();
+        $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession(new BasicFormatter());
         $results = $session->run([new Statement(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER, [])]);
@@ -63,7 +64,7 @@ CYPHER, [])]);
         $parsedUrl = parse_url('bolt://neo4j:test@127.0.0.0');
         $driver = new BoltDriver($parsedUrl, BoltInjections::create());
         $this->expectException(Neo4jException::class);
-        $driver->aquireSession();
+        $driver->aquireSession(new BasicFormatter());
     }
 
     /**
@@ -75,6 +76,6 @@ CYPHER, [])]);
         $parsedUrl = parse_url('bolt://neo4j:test@127.0.0.0');
         $driver = new BoltDriver($parsedUrl, BoltInjections::create());
         $this->expectException(Neo4jException::class);
-        $driver->aquireSession();
+        $driver->aquireSession(new BasicFormatter());
     }
 }

@@ -13,11 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Ds\Map;
 use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 
+/**
+ * @template T
+ */
 interface SessionInterface
 {
     /**
@@ -25,7 +27,7 @@ interface SessionInterface
      *
      * @throws Neo4jException
      *
-     * @return Vector<Vector<Map<string, scalar|array|null>>>
+     * @return Vector<T>
      */
     public function run(iterable $statements): Vector;
 
@@ -34,7 +36,7 @@ interface SessionInterface
      *
      * @throws Neo4jException
      *
-     * @return Vector<Vector<Map<string, scalar|array|null>>>
+     * @return Vector<T>
      */
     public function runOverTransaction(TransactionInterface $transaction, iterable $statements): Vector;
 
@@ -48,7 +50,7 @@ interface SessionInterface
      *
      * @throws Neo4jException
      *
-     * @return Vector<Vector<Map<string, scalar|array|null>>>
+     * @return Vector<T>
      */
     public function commitTransaction(TransactionInterface $transaction, iterable $statements): Vector;
 

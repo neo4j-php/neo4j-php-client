@@ -15,9 +15,10 @@ namespace Laudis\Neo4j\Network\Http;
 
 use JsonException;
 use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\RequestData;
-use Laudis\Neo4j\Formatter\HttpCypherFormatter;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\HttpDriver\RequestFactory;
 use Laudis\Neo4j\Network\AutoRoutedSession;
 use Laudis\Neo4j\Network\VersionDiscovery;
@@ -28,7 +29,6 @@ final class HttpDriver implements DriverInterface
     /** @var array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} */
     private array $parsedUrl;
     private ?SessionInterface $session = null;
-    private VersionDiscovery $decorator;
     public const DEFAULT_PORT = '7474';
     private HttpInjections $injections;
 
@@ -37,10 +37,9 @@ final class HttpDriver implements DriverInterface
      *
      * @param array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} $parsedUrl $parsedUrl
      */
-    public function __construct(array $parsedUrl, VersionDiscovery $decorator, HttpInjections $injector)
+    public function __construct(array $parsedUrl, HttpInjections $injector)
     {
         $this->parsedUrl = $parsedUrl;
-        $this->decorator = $decorator;
         $this->injections = $injector;
     }
 
@@ -48,7 +47,7 @@ final class HttpDriver implements DriverInterface
      * @throws JsonException
      * @throws ClientExceptionInterface
      */
-    public function aquireSession(): SessionInterface
+    public function aquireSession(FormatterInterface $formatter): SessionInterface
     {
         if ($this->session) {
             return $this->session;
@@ -64,21 +63,31 @@ final class HttpDriver implements DriverInterface
         $requestData = new RequestData(
             $url,
             $this->parsedUrl['user'],
-            $this->parsedUrl['pass'],
-            false
+            $this->parsedUrl['pass']
         );
-        $tsx = $this->decorator->discoverTransactionUrl($requestData, $this->injections->database());
+        $tsx = (new VersionDiscovery(
+            new RequestFactory(
+                $this->injections->requestFactory(),
+                $this->injections->streamFactory(),
+                new BasicFormatter()
+            ),
+            $this->injections->client())
+        )->discoverTransactionUrl($requestData, $this->injections->database());
         $requestData = $requestData->withEndpoint($tsx);
+        $streamFactory = $this->injections->streamFactory();
 
-        $formatter = new HttpCypherFormatter();
-        $this->session = new HttpSession(
-            new RequestFactory($this->injections->requestFactory(), $this->injections->streamFactory(), $formatter),
-            $this->injections->client(),
-            $formatter,
-            $requestData
-        );
         if ($this->injections->hasAutoRouting()) {
-            $this->session = new AutoRoutedSession($this->session, $this->injections, $this->parsedUrl);
+            $basicFormatter = new BasicFormatter();
+            $requestFactory = new RequestFactory($this->injections->requestFactory(), $streamFactory, $basicFormatter);
+            $basicSession = new HttpSession($requestFactory, $this->injections->client(), $basicFormatter, $requestData);
+            $this->session = new AutoRoutedSession($formatter, $basicSession, $this->injections, $this->parsedUrl);
+        } else {
+            $this->session = new HttpSession(
+                new RequestFactory($this->injections->requestFactory(), $streamFactory, $formatter),
+                $this->injections->client(),
+                $formatter,
+                $requestData
+            );
         }
 
         return $this->session;
