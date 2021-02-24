@@ -18,14 +18,14 @@ use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\ConfigInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
-use Laudis\Neo4j\Contracts\InjectionInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Enum\RoutingRoles;
-use Laudis\Neo4j\Network\Bolt\BoltInjections;
-use Laudis\Neo4j\Network\Http\HttpInjections;
+use Laudis\Neo4j\Network\Bolt\BoltConfig;
+use Laudis\Neo4j\Network\Http\HttpConfig;
 use function parse_url;
 use function preg_match;
 use function random_int;
@@ -40,8 +40,8 @@ final class AutoRoutedSession implements SessionInterface
     /** @var ClientInterface<T>|null */
     private ?ClientInterface $client = null;
     private ?RoutingTable $table = null;
-    /** @var BoltInjections|HttpInjections */
-    private InjectionInterface $injections;
+    /** @var BoltConfig|HttpConfig */
+    private ConfigInterface $injections;
     private int $maxLeader = 0;
     private int $maxFollower = 0;
     private array $parsedUrl;
@@ -52,13 +52,13 @@ final class AutoRoutedSession implements SessionInterface
 
     /**
      * @param FormatterInterface<T>                                    $formatter
-     * @param BoltInjections|HttpInjections                            $injections
+     * @param BoltConfig|HttpConfig                                    $injections
      * @param SessionInterface<Vector<Map<string, scalar|array|null>>> $basicSession
      */
     public function __construct(
         FormatterInterface $formatter,
         SessionInterface $basicSession,
-        InjectionInterface $injections,
+        ConfigInterface $injections,
         array $parsedUrl
     ) {
         $this->injections = $injections;
@@ -97,14 +97,14 @@ final class AutoRoutedSession implements SessionInterface
         if ($this->table === null || $this->client === null || $this->table->getTtl() < time()) {
             $statement = new Statement('CALL dbms.routing.getRoutingTable({context: $context, database: $database})', [
                 'context' => [],
-                'database' => $this->injections->database(),
+                'database' => $this->injections->getDatabase(),
             ]);
             $response = $this->basicSession->run([$statement])->first()->first();
             /** @var iterable<array{addresses: list<string>, role:string}> $values */
             $values = $response->get('servers');
             /** @var int $ttl */
             $ttl = $response->get('ttl');
-            if ($this->injections instanceof HttpInjections) {
+            if ($this->injections instanceof HttpConfig) {
                 $values = $this->translateTableToHttp($values);
             }
             $this->table = new RoutingTable($values, time() + $ttl);
@@ -114,7 +114,7 @@ final class AutoRoutedSession implements SessionInterface
             $followers = $this->table->getWithRole(RoutingRoles::FOLLOWER());
             $injections = $this->injections->withAutoRouting(false);
 
-            if ($injections instanceof BoltInjections) {
+            if ($injections instanceof BoltConfig) {
                 $builder = $this->buildBoltConnections($leaders, $builder, $injections, $followers);
             } else {
                 $builder = $this->buildHttpConnections($leaders, $builder, $injections, $followers);
@@ -228,7 +228,7 @@ final class AutoRoutedSession implements SessionInterface
     private function buildBoltConnections(
         Vector $leaders,
         ClientBuilder $builder,
-        BoltInjections $injections,
+        BoltConfig $injections,
         Vector $followers
     ): ClientBuilder {
         foreach ($leaders as $i => $leader) {
@@ -250,7 +250,7 @@ final class AutoRoutedSession implements SessionInterface
     private function buildHttpConnections(
         Vector $leaders,
         ClientBuilder $builder,
-        HttpInjections $injections,
+        HttpConfig $injections,
         Vector $followers
     ): ClientBuilder {
         foreach ($leaders as $i => $leader) {

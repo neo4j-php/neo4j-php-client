@@ -26,11 +26,20 @@ composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 ### Initializing client
 
 ```php
-$client = Laudis\Neo4j\ClientBuilder::create()
-    ->addHttpConnection('backup', 'http://neo4j:password@localhost')
+use Laudis\Neo4j\Network\Bolt\BoltConfig;use Laudis\Neo4j\Network\Http\HttpConfig;$client = Laudis\Neo4j\ClientBuilder::create()
+    ->addHttpConnection('backup', 'http://neo4j:password@localhost', Http)
     ->addBoltConnection('default', 'bolt://neo4j:password@localhost')
     ->setDefaultConnection('default')
     ->build();
+
+$boltConfig = BoltConfig::create()->withDatabase('a')->withAutoRouting(true);
+$httpConfig = HttpConfig::create()->withClient(static function () {
+    return new MyCustomHttpClient();
+})->withRequestFactory(static function () {
+    return new MyCustomRequestFactory();
+})->withStreamFactory(static function () {
+    return new MyCustomStreamFactory();
+});
 ```
 
 The default connection is the first registered connection. `setDefaultConnection` overrides this behaviour.
@@ -130,6 +139,39 @@ $tsx->rollback();
 $tsx->commit([Statement::create('MATCH (x) RETURN x LIMIT 100')]);
 ```
 
+```php
+use Ds\Map;
+use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
+
+/**
+ * @template T
+ */
+final class AgnosticRepository {
+    /**
+     * AgnosticRepository constructor.
+     * @param ClientInterface<T>|TransactionInterface<T> $tsx
+     */
+    public function __construct(private ClientInterface|TransactionInterface $tsx) {
+    }
+
+    /**
+     * @return T
+     */
+    public function load(int $id): mixed {
+        return $this->tsx->run('MATCH (x:X {id: $id}) RETURN x LIMIT 1', compact('id'));
+    }
+
+    public function __destruct()
+    {
+        // This autocommit is probably not the best idea but it is here as an example :)
+        if ($this->tsx instanceof TransactionInterface) {
+            $this->tsx->commit();
+        }
+    }
+}
+```
+
 ### Differentiating between parameter type
 
 Cypher has lists and maps. This notion can be problematic as the standard php arrays encapsulate both. When you provide an empty array as a parameter, it will be impossible to determine if it is an empty list or map.
@@ -155,16 +197,16 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
-use Laudis\Neo4j\Network\Bolt\BoltInjections;
-use Laudis\Neo4j\Network\Http\HttpInjections;
+use Laudis\Neo4j\Network\Bolt\BoltConfig;
+use Laudis\Neo4j\Network\Http\HttpConfig;
 
 $client = Laudis\Neo4j\ClientBuilder::create()
-    ->addHttpConnection('backup', 'http://neo4j:password@localhost', HttpInjections::create()->withClient(static function () {
+    ->addHttpConnection('backup', 'http://neo4j:password@localhost', HttpConfig::create()->withClient(static function () {
         $handler = HandlerStack::create(new CurlHandler());
         $handler->push(Middleware::cookies());
         return new Client(['handler' => $handler]);
     }))
-    ->addBoltConnection('default', 'neo4j:password@localhost', BoltInjections::create()->withDatabase('tags'))
+    ->addBoltConnection('default', 'neo4j:password@localhost', BoltConfig::create()->withDatabase('tags'))
     ->build();
 ```
 
@@ -175,19 +217,19 @@ Wrapping the injections in a callable will enforce lazy initialization.
 Cluster support is always available when directly connecting to the responsible servers. If you do not need to fine tune these connections, autorouting is available for all connections:
 
 ```php
-use Laudis\Neo4j\Network\Bolt\BoltInjections;
-use Laudis\Neo4j\Network\Http\HttpInjections;
+use Laudis\Neo4j\Network\Bolt\BoltConfig;
+use Laudis\Neo4j\Network\Http\HttpConfig;
 
 $client = Laudis\Neo4j\ClientBuilder::create()
     ->addBoltConnection(
         'main',
         'bolt://neo4j:password@any-server-with-routing-information',
-         BoltInjections::create()->withAutoRouting(true)
+         BoltConfig::create()->withAutoRouting(true)
      )
     ->addHttpConnection(
         'http',
         'http://neo4j:password@any-server-with-routing-information',
-         HttpInjections::create()->withAutoRouting(true)
+         HttpConfig::create()->withAutoRouting(true)
      )
     ->addBoltConnection('backup', 'bolt://neo4j:password@non-replicated-server')
     ->setDefaultConnection('main')
@@ -205,7 +247,7 @@ $client->run('RETURN 1', [], 'http'); //will be autorouted
 The user agent can be manipulated with the ClientBuilder. This value will be sent to the neo4j servers.
 
 ```php
-$client = \Laudis\Neo4j\ClientBuilder::create()
+use Laudis\Neo4j\ClientBuilder;$client = ClientBuilder::create()
     ->addBoltConnection('main', 'bolt://neo4j:password@core')
     ->setUserAgent('MyApp/2.0 (X11; Linux x86_64)')
     ->build();

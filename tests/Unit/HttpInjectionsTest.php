@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Laudis\Neo4j\Network\Http\HttpInjections;
+use Laudis\Neo4j\Network\Http\HttpConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -23,38 +23,38 @@ final class HttpInjectionsTest extends TestCase
 {
     public function testConstruct(): void
     {
-        $injections = HttpInjections::create();
-        self::assertEquals('neo4j', $injections->database());
-        $injections = new HttpInjections('abc');
-        self::assertEquals('abc', $injections->database());
+        $injections = HttpConfig::create();
+        self::assertEquals('neo4j', $injections->getDatabase());
+        $injections = new HttpConfig('abc');
+        self::assertEquals('abc', $injections->getDatabase());
     }
 
     public function testWithDatabase(): void
     {
-        self::assertEquals('test', HttpInjections::create()->withDatabase('test')->database());
-        self::assertEquals('test', HttpInjections::create()->withDatabase(static fn () => 'test')->database());
+        self::assertEquals('test', HttpConfig::create()->withDatabase('test')->getDatabase());
+        self::assertEquals('test', HttpConfig::create()->withDatabase(static fn () => 'test')->getDatabase());
     }
 
     public function testWithClient(): void
     {
         $client = $this->getMockBuilder(ClientInterface::class)->getMock();
-        self::assertSame($client, HttpInjections::create()->withClient($client)->client());
-        self::assertSame($client, HttpInjections::create()->withClient(static fn () => $client)->client());
+        self::assertSame($client, HttpConfig::create()->withClient($client)->getClient());
+        self::assertSame($client, HttpConfig::create()->withClient(static fn () => $client)->getClient());
     }
 
     public function testWithRequestFactory(): void
     {
         $factory = $this->getMockBuilder(RequestFactoryInterface::class)->getMock();
-        self::assertSame($factory, HttpInjections::create()->withRequestFactory($factory)->requestFactory());
-        self::assertSame($factory, HttpInjections::create()
-            ->withRequestFactory(static fn () => $factory)->requestFactory()
+        self::assertSame($factory, HttpConfig::create()->withRequestFactory($factory)->getRequestFactory());
+        self::assertSame($factory, HttpConfig::create()
+            ->withRequestFactory(static fn () => $factory)->getRequestFactory()
         );
     }
 
     public function testWithStreamFactory(): void
     {
         $factory = $this->getMockBuilder(StreamFactoryInterface::class)->getMock();
-        self::assertSame($factory, HttpInjections::create()->withStreamFactory($factory)->streamFactory());
-        self::assertSame($factory, HttpInjections::create()->withStreamFactory(static fn () => $factory)->streamFactory());
+        self::assertSame($factory, HttpConfig::create()->withStreamFactory($factory)->getStreamFactory());
+        self::assertSame($factory, HttpConfig::create()->withStreamFactory(static fn () => $factory)->getStreamFactory());
     }
 }

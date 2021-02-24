@@ -13,35 +13,35 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Laudis\Neo4j\Network\Bolt\BoltInjections;
+use Laudis\Neo4j\Network\Bolt\BoltConfig;
 use PHPUnit\Framework\TestCase;
 
 final class BoltInjectionsTest extends TestCase
 {
     public function testConstruct(): void
     {
-        $injections = BoltInjections::create('test');
-        self::assertEquals('test', $injections->database());
-        $injections = new BoltInjections('abc');
-        self::assertEquals('abc', $injections->database());
+        $injections = BoltConfig::create('test');
+        self::assertEquals('test', $injections->getDatabase());
+        $injections = new BoltConfig('abc');
+        self::assertEquals('abc', $injections->getDatabase());
     }
 
     public function testWithDatabase(): void
     {
-        $injections = new BoltInjections('abc');
-        self::assertEquals('test', $injections->withDatabase('test')->database());
+        $injections = new BoltConfig('abc');
+        self::assertEquals('test', $injections->withDatabase('test')->getDatabase());
     }
 
     public function testWithSslContext(): void
     {
-        $injections = new BoltInjections('abc', ['passphrase' => 'test']);
-        self::assertEquals(['passphrase' => 'test'], $injections->sslContextOptions());
-        self::assertNull(BoltInjections::create()->sslContextOptions());
+        $injections = new BoltConfig('abc', ['passphrase' => 'test']);
+        self::assertEquals(['passphrase' => 'test'], $injections->getSslContextOptions());
+        self::assertNull(BoltConfig::create()->getSslContextOptions());
 
-        self::assertEquals(['passphrase' => 'x'], $injections->withSslContextOptions(['passphrase' => 'x'])->sslContextOptions());
+        self::assertEquals(['passphrase' => 'x'], $injections->withSslContextOptions(['passphrase' => 'x'])->getSslContextOptions());
         self::assertEquals(
             ['passphrase' => 'y'],
-            $injections->withSslContextOptions(static fn () => ['passphrase' => 'y'])->sslContextOptions()
+            $injections->withSslContextOptions(static fn () => ['passphrase' => 'y'])->getSslContextOptions()
         );
     }
 }

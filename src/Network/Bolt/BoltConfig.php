@@ -15,7 +15,7 @@ namespace Laudis\Neo4j\Network\Bolt;
 
 use function call_user_func;
 use function is_callable;
-use Laudis\Neo4j\Contracts\InjectionInterface;
+use Laudis\Neo4j\Contracts\ConfigInterface;
 
 /**
  * @psalm-type SSLContextOptions = null|array{
@@ -40,7 +40,7 @@ use Laudis\Neo4j\Contracts\InjectionInterface;
  *
  * @psalm-type LazySSLContextOptions = callable():SSLContextOptions|SSLContextOptions
  */
-final class BoltInjections implements InjectionInterface
+final class BoltConfig implements ConfigInterface
 {
     /** @var callable():string|string */
     private $database;
@@ -101,7 +101,7 @@ final class BoltInjections implements InjectionInterface
         return new self($this->database, $this->sslContextOptions, $routing);
     }
 
-    public function database(): string
+    public function getDatabase(): string
     {
         if (is_callable($this->database)) {
             $this->database = call_user_func($this->database);
@@ -122,13 +122,17 @@ final class BoltInjections implements InjectionInterface
     /**
      * @return SSLContextOptions
      */
-    public function sslContextOptions(): ?array
+    public function getSslContextOptions(): ?array
     {
         if (is_callable($this->sslContextOptions)) {
-            /** @psalm-suppress PossiblyInvalidFunctionCall */
             $this->sslContextOptions = call_user_func($this->sslContextOptions);
         }
 
         return $this->sslContextOptions;
+    }
+
+    public function mergeConfig(ConfigInterface $config): ConfigInterface
+    {
+        return new self($config->getDatabase(), $this->sslContextOptions, $config->hasAutoRouting());
     }
 }

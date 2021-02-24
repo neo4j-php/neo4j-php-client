@@ -40,7 +40,7 @@ final class BoltSession implements SessionInterface
     private Bolt $bolt;
     private const DEFAULT_TCP_PORT = 7687;
     private FormatterInterface $formatter;
-    private BoltInjections $injections;
+    private BoltConfig $injections;
     /** @var Map<string, Bolt> */
     private Map $transactions;
     /** @var ParsedUrl */
@@ -50,7 +50,7 @@ final class BoltSession implements SessionInterface
      * @param FormatterInterface<T> $formatter
      * @param ParsedUrl             $parsedUrl
      */
-    public function __construct(array $parsedUrl, Bolt $bolt, FormatterInterface $formatter, BoltInjections $injections)
+    public function __construct(array $parsedUrl, Bolt $bolt, FormatterInterface $formatter, BoltConfig $injections)
     {
         $this->bolt = $bolt;
         $this->formatter = $formatter;
@@ -99,7 +99,7 @@ final class BoltSession implements SessionInterface
             $sock = new StreamSocket($this->parsedUrl['host'], $this->parsedUrl['port'] ?? self::DEFAULT_TCP_PORT);
             $bolt = new Bolt($sock);
             $bolt->init($userAgent, $this->parsedUrl['user'], $this->parsedUrl['pass']);
-            $extra = ['db' => $this->injections->database()];
+            $extra = ['db' => $this->injections->getDatabase()];
             if (!$bolt->begin($extra)) {
                 throw new Neo4jException(new Vector([new Neo4jError('', 'Cannot open new transaction')]));
             }
@@ -128,7 +128,7 @@ final class BoltSession implements SessionInterface
     {
         $tbr = new Vector();
         foreach ($statements as $statement) {
-            $extra = ['db' => $this->injections->database()];
+            $extra = ['db' => $this->injections->getDatabase()];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             try {
                 /** @var array{fields: array<int, string>} $meta */

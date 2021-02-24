@@ -71,7 +71,7 @@ interface FormatterInterface
     public function formatBoltResult(array $meta, array $results, Bolt $bolt);
 
     /**
-     * @param CypherResponseSet $body
+     * @return Vector<T>
      */
     public function formatHttpResult(ResponseInterface $response, array $body): Vector;
 

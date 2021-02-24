@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-interface InjectionInterface
+interface ConfigInterface
 {
     /**
      * @param string|callable():string $database
@@ -29,7 +29,13 @@ interface InjectionInterface
      */
     public function withAutoRouting($routing): self;
 
-    public function database(): string;
+    public function getDatabase(): string;
 
     public function hasAutoRouting(): bool;
+
+    /**
+     * @param ConfigInterface $config
+     * @return static
+     */
+    public function mergeConfig(ConfigInterface $config): ConfigInterface;
 }

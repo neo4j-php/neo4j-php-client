@@ -24,7 +24,7 @@ final class TransactionIntegrationTest extends TransactionTest
         $builder = ClientBuilder::create();
         foreach ($versions as $version) {
             $hostname = 'neo4j-'.$version;
-            if (gethostbyname($hostname) !== $hostname) {
+            if (checkdnsrr($hostname, 'A')) {
                 $builder = $builder->addBoltConnection('bolt-'.$version, 'bolt://neo4j:test@'.$hostname);
                 $builder = $builder->addHttpConnection('http-'.$version, 'http://neo4j:test@'.$hostname);
             }
@@ -34,7 +34,7 @@ final class TransactionIntegrationTest extends TransactionTest
         $tbr = [];
         foreach ($versions as $version) {
             $hostname = 'neo4j-'.$version;
-            if (gethostbyname($hostname) !== $hostname) {
+            if (checkdnsrr($hostname, 'A')) {
                 $tbr[] = $client->openTransaction(null, 'bolt-'.$version);
                 $tbr[] = $client->openTransaction(null, 'http-'.$version);
             }

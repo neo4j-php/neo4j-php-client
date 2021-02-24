@@ -15,12 +15,12 @@ namespace Laudis\Neo4j\Network\Http;
 
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
-use Laudis\Neo4j\Contracts\InjectionInterface;
+use Laudis\Neo4j\Contracts\ConfigInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
-final class HttpInjections implements InjectionInterface
+final class HttpConfig implements ConfigInterface
 {
     /** @var ClientInterface|callable():ClientInterface */
     private $client;
@@ -64,7 +64,7 @@ final class HttpInjections implements InjectionInterface
         return new self();
     }
 
-    public function client(): ClientInterface
+    public function getClient(): ClientInterface
     {
         if (is_callable($this->client)) {
             $this->client = call_user_func($this->client);
@@ -105,7 +105,7 @@ final class HttpInjections implements InjectionInterface
         return new self($database, $this->client, $this->streamFactory, $this->requestFactory, $this->autoRouting);
     }
 
-    public function streamFactory(): StreamFactoryInterface
+    public function getStreamFactory(): StreamFactoryInterface
     {
         if (is_callable($this->streamFactory)) {
             $this->streamFactory = call_user_func($this->streamFactory);
@@ -114,7 +114,7 @@ final class HttpInjections implements InjectionInterface
         return $this->streamFactory;
     }
 
-    public function requestFactory(): RequestFactoryInterface
+    public function getRequestFactory(): RequestFactoryInterface
     {
         if (is_callable($this->requestFactory)) {
             $this->requestFactory = call_user_func($this->requestFactory);
@@ -123,7 +123,7 @@ final class HttpInjections implements InjectionInterface
         return $this->requestFactory;
     }
 
-    public function database(): string
+    public function getDatabase(): string
     {
         if (is_callable($this->database)) {
             $this->database = call_user_func($this->database);
@@ -132,7 +132,7 @@ final class HttpInjections implements InjectionInterface
         return $this->database;
     }
 
-    public function withAutoRouting($routing): InjectionInterface
+    public function withAutoRouting($routing): ConfigInterface
     {
         return new self(
             $this->database,
@@ -150,5 +150,16 @@ final class HttpInjections implements InjectionInterface
         }
 
         return $this->autoRouting;
+    }
+
+    public function mergeConfig(ConfigInterface $config): ConfigInterface
+    {
+        return new self(
+            $config->getDatabase(),
+            $this->client,
+            $this->streamFactory,
+            $this->requestFactory,
+            $config->hasAutoRouting()
+        );
     }
 }

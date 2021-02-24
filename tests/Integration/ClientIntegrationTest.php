@@ -17,7 +17,7 @@ use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Network\Bolt\BoltInjections;
+use Laudis\Neo4j\Network\Bolt\BoltConfig;
 use Laudis\Neo4j\Tests\Base\ClientTest;
 
 final class ClientIntegrationTest extends ClientTest
@@ -37,7 +37,7 @@ final class ClientIntegrationTest extends ClientTest
             }
         }
 
-        $builder = $builder->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltInjections::create()->withAutoRouting(true));
+        $builder = $builder->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfig::create()->withAutoRouting(true));
 
         return $builder->build();
     }
@@ -47,7 +47,7 @@ final class ClientIntegrationTest extends ClientTest
         $tbr = [];
         foreach (['42', '41', '40', '35'] as $version) {
             $hostname = 'neo4j-'.$version.'.';
-            if (gethostbyname($hostname) !== $hostname) {
+            if (checkdnsrr($hostname, 'A')) {
                 $tbr[] = ['bolt-'.$version];
                 $tbr[] = ['http-'.$version];
             }

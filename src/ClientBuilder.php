@@ -22,9 +22,9 @@ use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Network\Bolt\BoltDriver;
-use Laudis\Neo4j\Network\Bolt\BoltInjections;
+use Laudis\Neo4j\Network\Bolt\BoltConfig;
 use Laudis\Neo4j\Network\Http\HttpDriver;
-use Laudis\Neo4j\Network\Http\HttpInjections;
+use Laudis\Neo4j\Network\Http\HttpConfig;
 
 /**
  * @template T
@@ -64,12 +64,12 @@ final class ClientBuilder
      *
      * @return self<T>
      */
-    public function addBoltConnection(string $alias, string $url, BoltInjections $provider = null): self
+    public function addBoltConnection(string $alias, string $url, BoltConfig $provider = null): self
     {
         $parse = $this->assertCorrectUrl($url);
         $pool = new Map(array_merge(
                 $this->connectionPool->toArray(),
-                [$alias => new BoltDriver($parse, $provider ?? new BoltInjections(), $this->userAgent)])
+                [$alias => new BoltDriver($parse, $provider ?? new BoltConfig(), $this->userAgent)])
         );
 
         return new self($pool, $this->default, $this->formatter, $this->userAgent);
@@ -80,11 +80,11 @@ final class ClientBuilder
      *
      * @return self<T>
      */
-    public function addHttpConnection(string $alias, string $url, HttpInjections $injections = null): self
+    public function addHttpConnection(string $alias, string $url, HttpConfig $injections = null): self
     {
         $parse = $this->assertCorrectUrl($url);
 
-        $injections = $injections ?? new HttpInjections();
+        $injections = $injections ?? new HttpConfig();
         $connection = new HttpDriver($parse, $injections, $this->userAgent);
         $pool = new Map(array_merge(
             $this->connectionPool->toArray(),

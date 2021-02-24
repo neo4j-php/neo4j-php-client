@@ -33,14 +33,14 @@ final class BoltDriver implements DriverInterface
     /** @var ParsedUrl */
     private array $parsedUrl;
     private ?SessionInterface $session = null;
-    private BoltInjections $injections;
+    private BoltConfig $injections;
     public const DEFAULT_TCP_PORT = 7687;
     private string $userAgent;
 
     /**
      * @param ParsedUrl $parsedUrl
      */
-    public function __construct(array $parsedUrl, BoltInjections $injections, string $userAgent)
+    public function __construct(array $parsedUrl, BoltConfig $injections, string $userAgent)
     {
         $this->parsedUrl = $parsedUrl;
         $this->injections = $injections;
@@ -58,7 +58,7 @@ final class BoltDriver implements DriverInterface
 
         try {
             $sock = new StreamSocket($this->parsedUrl['host'], $this->parsedUrl['port'] ?? self::DEFAULT_TCP_PORT);
-            $options = $this->injections->sslContextOptions();
+            $options = $this->injections->getSslContextOptions();
             if ($options) {
                 $sock->setSslContextOptions($options);
             }
