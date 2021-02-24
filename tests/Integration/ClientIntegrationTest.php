@@ -45,12 +45,9 @@ final class ClientIntegrationTest extends ClientTest
     public function connectionAliases(): iterable
     {
         $tbr = [];
-        foreach (['42', '41', '40', '35'] as $version) {
-            $hostname = 'neo4j-'.$version.'.';
-            if (checkdnsrr($hostname, 'A')) {
-                $tbr[] = ['bolt-'.$version];
-                $tbr[] = ['http-'.$version];
-            }
+        foreach (explode(',', (string) getenv('NEO4J_VERSIONS_AVAILABLE')) as $version) {
+            $tbr[] = ['bolt-'.$version];
+            $tbr[] = ['http-'.$version];
         }
 
         $tbr[] = ['cluster'];
@@ -65,7 +62,7 @@ final class ClientIntegrationTest extends ClientTest
             ['email' => 'a@b.c', 'uuid' => 'cc60fd69-a92b-47f3-9674-2f27f3437d66']
         );
 
-        foreach (['42', '41', '40', '35'] as $version) {
+        foreach (explode(',', (string) getenv('NEO4J_VERSIONS_AVAILABLE')) as $version) {
             $x = $this->client->runStatement($statement, 'bolt-'.$version);
             $y = $this->client->runStatement($statement, 'http-'.$version);
 

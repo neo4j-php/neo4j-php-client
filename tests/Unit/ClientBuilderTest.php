@@ -70,15 +70,17 @@ final class ClientBuilderTest extends TestCase
     public function testBoltSetupWithScheme(): void
     {
         $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42:7687')->build();
-        $client->openTransaction();
+        $tsx = $client->openTransaction();
         self::assertTrue(true);
+        $tsx->rollback();
     }
 
     public function testBoltSetupWithoutPort(): void
     {
         $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42')->build();
-        $client->openTransaction();
+        $tsx = $client->openTransaction();
         self::assertTrue(true);
+        $tsx->rollback();
     }
 
     public function testBoltSetupWithoutUserAndPass(): void
@@ -98,8 +100,9 @@ final class ClientBuilderTest extends TestCase
     public function testBoltSetupWrongScheme(): void
     {
         $client = ClientBuilder::create()->addBoltConnection('bolt', 'neo4j://neo4j:test@neo4j-42:7687')->build();
-        $client->openTransaction();
+        $tsx = $client->openTransaction();
         self::assertTrue(true);
+        $tsx->rollback();
     }
 
     public function testHttpSetupNoScheme(): void
@@ -112,8 +115,9 @@ final class ClientBuilderTest extends TestCase
     public function testHttpSetupWithScheme(): void
     {
         $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@neo4j-42:7474')->build();
-        $client->openTransaction();
+        $tsx = $client->openTransaction();
         self::assertTrue(true);
+        $tsx->rollback();
     }
 
     public function testHttpSetupWrongScheme(): void
@@ -126,8 +130,9 @@ final class ClientBuilderTest extends TestCase
     public function testHttpSetupWithoutPort(): void
     {
         $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@neo4j-42')->build();
-        $client->openTransaction();
+        $tsx = $client->openTransaction();
         self::assertTrue(true);
+        $tsx->rollback();
     }
 
     public function testHttpSetupWithoutUserAndPass(): void

@@ -158,26 +158,21 @@ CYPHER,
      */
     public function testInvalidStatements(string $alias): void
     {
-        $exception = false;
-        try {
-            $params = ['test' => 'a', 'otherTest' => 'b'];
-            $this->client->runStatements([
-                Statement::create(<<<'CYPHER'
+        $this->expectException(Neo4jException::class);
+        $params = ['test' => 'a', 'otherTest' => 'b'];
+        $this->client->runStatements([
+            Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 CYPHER,
-                    $params
-                ),
-                Statement::create(<<<'CYPHER'
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
 MERGE (x:OtherTestNode {test: $otherTest})
 CYPHER,
-                    $params
-                ),
-                Statement::create('1 AS x;erns', []),
-            ], $alias);
-        } catch (Neo4jException $e) {
-            $exception = true;
-        }
-        self::assertTrue($exception);
+                $params
+            ),
+            Statement::create('1 AS x;erns', []),
+        ], $alias);
     }
 
     /**
@@ -188,6 +183,8 @@ CYPHER,
         $x = $this->client->openTransaction(null, $alias);
         $y = $this->client->openTransaction(null, $alias);
         self::assertNotSame($x, $y);
+        $x->rollback();
+        $y->rollback();
     }
 
     public function testInvalidConnection(): void

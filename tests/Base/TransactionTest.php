@@ -23,7 +23,13 @@ use PHPUnit\Framework\TestCase;
 abstract class TransactionTest extends TestCase
 {
     /** @var iterable<TransactionInterface<Vector<Map<string, scalar|array|null>>>> */
-    private iterable $transactions;
+    protected iterable $transactions;
+
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+        putenv('RES_OPTIONS=retrans:1 retry:1 timeout:1 attempts:1');
+    }
 
     /**
      * @return iterable<TransactionInterface<Vector<Map<string, scalar|array|null>>>>

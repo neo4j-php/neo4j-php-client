@@ -72,12 +72,9 @@ final class StatisticsFormatterIntegrationTest extends TestCase
     {
         /** @var array<array{0: string}> $tbr */
         $tbr = [];
-        foreach (['42', '41', '40', '35'] as $version) {
-            $hostname = 'neo4j-'.$version.'.';
-            if (checkdnsrr($hostname, 'A')) {
-                $tbr[] = ['bolt-'.$version];
-                $tbr[] = ['http-'.$version];
-            }
+        foreach (explode(',', (string) getenv('NEO4J_VERSIONS_AVAILABLE')) as $version) {
+            $tbr[] = ['bolt-'.$version];
+            $tbr[] = ['http-'.$version];
         }
 
         $tbr[] = ['cluster'];
