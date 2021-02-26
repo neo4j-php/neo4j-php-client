@@ -184,6 +184,8 @@ final class BasicFormatter implements FormatterInterface
 
     public function statementConfigOverride(): array
     {
-        return [];
+        return [
+            'resultDataContents' => ['ROW']
+        ];
     }
 }

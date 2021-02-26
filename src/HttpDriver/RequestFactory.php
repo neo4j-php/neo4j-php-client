@@ -22,6 +22,7 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use stdClass;
+use function array_merge_recursive;
 
 final class RequestFactory
 {
@@ -71,7 +72,7 @@ final class RequestFactory
                 'resultDataContents' => ['ROW'],
                 'includeStats' => false,
             ];
-            $st = array_merge($st, $this->formatter->statementConfigOverride());
+            $st = array_merge_recursive($st, $this->formatter->statementConfigOverride());
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
             $tbr[] = $st;
