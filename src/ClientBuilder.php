@@ -21,10 +21,10 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use Laudis\Neo4j\Network\Bolt\BoltConfig;
-use Laudis\Neo4j\Network\Http\HttpDriver;
+use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use Laudis\Neo4j\Network\Http\HttpConfig;
+use Laudis\Neo4j\Network\Http\HttpDriver;
 
 /**
  * @template T

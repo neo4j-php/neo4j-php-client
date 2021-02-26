@@ -34,7 +34,6 @@ interface ConfigInterface
     public function hasAutoRouting(): bool;
 
     /**
-     * @param ConfigInterface $config
      * @return static
      */
     public function mergeConfig(ConfigInterface $config): ConfigInterface;

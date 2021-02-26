@@ -17,8 +17,8 @@ use Exception;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use Laudis\Neo4j\Network\Bolt\BoltConfig;
+use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Contracts;
 
 use Bolt\Bolt;
 use Ds\Vector;
+use JsonException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -71,6 +72,10 @@ interface FormatterInterface
     public function formatBoltResult(array $meta, array $results, Bolt $bolt);
 
     /**
+     * @param CypherResponseSet $body
+     *
+     * @throws JsonException
+     *
      * @return Vector<T>
      */
     public function formatHttpResult(ResponseInterface $response, array $body): Vector;
