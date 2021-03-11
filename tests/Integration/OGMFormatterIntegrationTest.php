@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Ds\Map;
 use Ds\Vector;
+use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -51,6 +52,36 @@ CYPHER
             , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
 
         self::assertEquals(1, $results->count());
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testNode(string $alias): void
+    {
+        $uuid = 'cc60fd69-a92b-47f3-9674-2f27f3437d66';
+        $email = 'a@b.c';
+        $type = 'pepperoni';
+
+        $results = $this->client->run(
+            'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
+            ['email' => $email, 'uuid' => $uuid, 'type' => $type], $alias
+        );
+
+        self::assertEquals(1, $results->count());
+
+        /** @var Node $u */
+        $u = $results[0]['u'];
+        self::assertInstanceOf(Node::class, $u);
+        self::assertEquals(['User'], $u->labels());
+        self::assertEquals($email, $u->properties()['email']);
+        self::assertEquals($uuid, $u->properties()['uuid']);
+
+        /** @var Node $p */
+        $p = $results[0]['p'];
+        self::assertInstanceOf(Node::class, $p);
+        self::assertEquals(['Food', 'Pizza'], $p->labels());
+        self::assertEquals($type, $p->properties()['type']);
     }
 
     /**
