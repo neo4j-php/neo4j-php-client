@@ -13,7 +13,13 @@ namespace Laudis\Neo4j\Formatter;
 
 use Ds\Map;
 use Bolt\structures\Path;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Bolt\structures\DateTime as BoltDateTime;
+use Bolt\structures\Date as BoltDate;
 use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Duration;
+use Bolt\structures\Duration as BoltDuration;
 use Bolt\structures\Node as BoltNode;
 use BadMethodCallException;
 use Bolt\Bolt;
@@ -102,11 +108,18 @@ final class OGMFormatter implements FormatterInterface
             switch (get_class($value)) {
                 case BoltNode::class:
                     return Node::makeFromBoltNode($value);
-                    break;
+                case BoltDate::class:
+                    return Date::makeFromBoltDate($value);
+                case BoltDuration::class:
+                    return Duration::makeFromBoltDuration($value);
+                case BoltDateTime::class:
+                    return DateTime::makeFromBoltDateTime($value);
                 default:
                     // @TODO what to do about unsupported types?
                     return $value;
             }
+        } elseif (is_numeric($value)) {
+            return $value;
         }
     }
 

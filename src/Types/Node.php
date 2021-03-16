@@ -15,7 +15,10 @@ namespace Laudis\Neo4j\Types;
 
 use Ds\Map;
 use Ds\Vector;
+use Bolt\structures\Date as BoltDate;
 use Bolt\structures\Node as BoltNode;
+use Bolt\structures\Duration as BoltDuration;
+use Bolt\structures\DateTime as BoltDateTime;
 
 class Node
 {
@@ -27,7 +30,7 @@ class Node
     {
         $this->id = $id;
         $this->labels = $labels;
-        $this->properties = $properties;
+        $this->properties = $this->mapProperties($properties);
     }
 
     public static function makeFromBoltNode(BoltNode $node): self
@@ -61,5 +64,35 @@ class Node
     public function id(): int
     {
         return $this->id;
+    }
+
+    public function property(string $key)
+    {
+        if ($this->properties->hasKey($key)) {
+            return $this->properties->get($key);
+        }
+    }
+
+    private function mapProperties(Map $properties): Map
+    {
+        return $properties->map(function($key, $value) {
+            if (is_object($value)) {
+                switch(get_class($value)) {
+                    case BoltDate::class:
+                        return Date::makeFromBoltDate($value);
+                    case BoltDuration::class:
+                        return Duration::makeFromBoltDuration($value);
+                    case BoltDateTime::class:
+                        return DateTime::makeFromBoltDateTime($value);
+                }
+            }
+
+            return $value;
+        });
+    }
+
+    public function __get($key)
+    {
+        return $this->property($key);
     }
 }
