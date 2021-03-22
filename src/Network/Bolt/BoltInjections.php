@@ -101,7 +101,7 @@ final class BoltInjections implements Injections
 
     public function database(): string
     {
-        if (is_callable($this->database)) {
+        if (!is_string($this->database) && is_callable($this->database)) {
             $this->database = call_user_func($this->database);
         }
 

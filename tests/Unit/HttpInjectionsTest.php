@@ -29,6 +29,11 @@ final class HttpInjectionsTest extends TestCase
         self::assertEquals('abc', $injections->database());
     }
 
+    public function testSystem(): void
+    {
+        self::assertEquals('test', HttpInjections::create()->withDatabase('system')->database());
+    }
+
     public function testWithDatabase(): void
     {
         self::assertEquals('test', HttpInjections::create()->withDatabase('test')->database());
