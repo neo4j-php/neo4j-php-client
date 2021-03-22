@@ -123,11 +123,13 @@ CYPHER, ['listOrMap' => self::generate()], $alias);
     public function testInvalidParameters(string $alias): void
     {
         $this->expectException(InvalidArgumentException::class);
+        /** @var iterable<string, iterable<mixed, mixed>|null|scalar> */
+        $generator = self::generate();
         $this->client->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
-CYPHER, self::generate(), $alias);
+CYPHER, $generator, $alias);
     }
 
     /**

@@ -19,6 +19,6 @@
         </ignoreFiles>
     </projectFiles>
     <stubs>
-        <file name="tools/psalm/vendor/vimeo/psalm/stubs/ext-ds.php"/>
+        <file name="tools/psalm/vendor/vimeo/psalm/stubs/ext-ds.phpstub"/>
     </stubs>
 <plugins><pluginClass class="Psalm\PhpUnitPlugin\Plugin"/></plugins></psalm>
