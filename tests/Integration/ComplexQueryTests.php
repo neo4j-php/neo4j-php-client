@@ -123,7 +123,7 @@ CYPHER, ['listOrMap' => self::generate()], $alias);
     public function testInvalidParameters(string $alias): void
     {
         $this->expectException(InvalidArgumentException::class);
-        /** @var iterable<string, iterable<mixed, mixed>|null|scalar> */
+        /** @var iterable<string, iterable<mixed, mixed>|scalar|null> $generator */
         $generator = self::generate();
         $this->client->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
