@@ -26,6 +26,12 @@ final class BoltInjectionsTest extends TestCase
         self::assertEquals('abc', $injections->database());
     }
 
+    public function testSystem(): void
+    {
+        $injections = BoltInjections::create('system');
+        self::assertEquals('system', $injections->database());
+    }
+
     public function testWithDatabase(): void
     {
         $injections = new BoltInjections('abc');
