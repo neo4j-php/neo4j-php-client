@@ -21,6 +21,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\HttpDriver\RequestFactory;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
 
 /**
  * @psalm-type DiscoveryResult = array{
@@ -52,12 +53,10 @@ use Psr\Http\Client\ClientInterface;
  */
 final class VersionDiscovery
 {
-    private RequestFactory $requestFactory;
     private ClientInterface $client;
 
-    public function __construct(RequestFactory $requestFactory, ClientInterface $client)
+    public function __construct(ClientInterface $client)
     {
-        $this->requestFactory = $requestFactory;
         $this->client = $client;
     }
 
@@ -65,13 +64,14 @@ final class VersionDiscovery
      * @throws ClientExceptionInterface
      * @throws JsonException
      */
-    public function discoverTransactionUrl(RequestData $data, string $database): string
+    public function discoverTransactionUrl(RequestInterface $request, string $database): string
     {
-        $discovery = $this->discovery($data);
+        $discovery = $this->discovery($request);
         $version = $discovery['neo4j_version'] ?? null;
 
         if ($version === null) {
-            $discovery = $this->discovery($data->withEndpoint($discovery['data'] ?? ($data->getEndpoint().'/db/data')));
+            $request = $request->withUri($request->getUri()->withPath($discovery['data'] ?? '/db/data'));
+            $discovery = $this->discovery($request);
         }
         $tsx = $discovery['transaction'];
 
@@ -84,9 +84,9 @@ final class VersionDiscovery
      *
      * @return DiscoveryResult|DiscoveryResultLegacy
      */
-    private function discovery(RequestData $data): array
+    private function discovery(RequestInterface $request): array
     {
-        $response = $this->client->sendRequest($this->requestFactory->createRequest($data, 'GET'));
+        $response = $this->client->sendRequest($request);
 
         $contents = $response->getBody()->getContents();
         if ($response->getStatusCode() >= 400) {

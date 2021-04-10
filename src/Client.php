@@ -19,8 +19,11 @@ use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use function sprintf;
 
 /**
  * @template T
@@ -29,8 +32,8 @@ use Laudis\Neo4j\Databags\Statement;
 final class Client implements ClientInterface
 {
     /** @var Map<string, DriverInterface> */
-    private Map $connectionPool;
-    private string $defaultConnectionAlias;
+    private Map $driverPool;
+    private string $defaultDriverAlias;
     private FormatterInterface $formatter;
 
     /**
@@ -39,57 +42,56 @@ final class Client implements ClientInterface
      */
     public function __construct(Map $connectionPool, string $defaultConnectionAlias, FormatterInterface $formatter)
     {
-        $this->connectionPool = $connectionPool;
-        $this->defaultConnectionAlias = $defaultConnectionAlias;
+        $this->driverPool = $connectionPool;
+        $this->defaultDriverAlias = $defaultConnectionAlias;
         $this->formatter = $formatter;
     }
 
     public function run(string $query, iterable $parameters = [], ?string $alias = null)
     {
-        return $this->runStatement(new Statement($query, $parameters), $alias);
+        return $this->startSession($alias)->run($query, $parameters);
     }
 
     public function runStatement(Statement $statement, ?string $alias = null)
     {
-        return $this->runStatements([$statement], $alias)->first();
+        return $this->startSession($alias)->runStatement($statement);
     }
 
     public function runStatements(iterable $statements, ?string $alias = null): Vector
     {
-        $connection = $this->getConnection($alias);
-        $session = $connection->aquireSession($this->formatter);
-
-        return $session->run($statements);
+        return $this->startSession($alias)->runStatements($statements);
     }
 
-    public function openTransaction(?iterable $statements = null, ?string $connectionAlias = null): TransactionInterface
-    {
-        $connection = $this->getConnection($connectionAlias);
-
-        return $connection->aquireSession($this->formatter)->openTransaction($statements);
-    }
-
-    /**
-     * @throws InvalidArgumentException
-     */
-    private function getConnection(?string $connectionAlias): DriverInterface
-    {
-        $key = $connectionAlias ?? $this->defaultConnectionAlias;
-        if (!$this->connectionPool->hasKey($key)) {
-            $key = sprintf('The provided alias: "%s" was not found in the connection pool', $key);
-            throw new InvalidArgumentException($key);
-        }
-
-        return $this->connectionPool->get($key);
+    public function openTransaction(
+        ?iterable $statements = null,
+        ?string $alias = null
+    ): TransactionInterface {
+        return $this->startSession($alias)->beginTransaction($statements);
     }
 
     public function withFormatter(FormatterInterface $formatter): ClientInterface
     {
-        return new self($this->connectionPool, $this->defaultConnectionAlias, $formatter);
+        return new self($this->driverPool, $this->defaultDriverAlias, $formatter);
     }
 
     public function getFormatter(): FormatterInterface
     {
         return $this->formatter;
+    }
+
+    public function getDriver(?string $alias): DriverInterface
+    {
+        $key = $alias ?? $this->defaultDriverAlias;
+        if (!$this->driverPool->hasKey($key)) {
+            $key = sprintf('The provided alias: "%s" was not found in the connection pool', $key);
+            throw new InvalidArgumentException($key);
+        }
+
+        return $this->driverPool->get($key);
+    }
+
+    public function startSession(?string $alias = null, ?SessionConfiguration $config = null): SessionInterface
+    {
+        return $this->getDriver($alias)->createSession($config)->withFormatter($this->formatter);
     }
 }

@@ -13,82 +13,87 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Network\Http;
 
-use JsonException;
+use Exception;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
-use Laudis\Neo4j\Databags\RequestData;
+use Laudis\Neo4j\Databags\HttpPsrBindings;
+use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfig;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use Laudis\Neo4j\HttpDriver\RequestFactory;
-use Laudis\Neo4j\Network\AutoRoutedSession;
 use Laudis\Neo4j\Network\VersionDiscovery;
 use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
 
+/**
+ * @implements DriverInterface<ClientInterface>
+ *
+ * @psalm-import-type ParsedUrl from \Laudis\Neo4j\Network\Bolt\BoltDriver
+ */
 final class HttpDriver implements DriverInterface
 {
-    /** @var array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} */
+    /** @var ParsedUrl */
     private array $parsedUrl;
-    private ?SessionInterface $session = null;
     public const DEFAULT_PORT = '7474';
-    private HttpConfig $injections;
+    private HttpPsrBindings $bindings;
     private string $userAgent;
+    private AuthenticateInterface $auth;
+    private string $defaultDatabase;
 
     /**
-     * HttpConnection constructor.
-     *
-     * @param array{fragment?: string, host: string, pass: string, path?: string, port?: int, query?: string, scheme?: string, user: string} $parsedUrl $parsedUrl
+     * @param ParsedUrl $parsedUrl
      */
-    public function __construct(array $parsedUrl, HttpConfig $injector, string $userAgent)
+    public function __construct(array $parsedUrl, HttpPsrBindings $bindings, string $userAgent, AuthenticateInterface $auth, string $defaultDatabase = 'neo4j')
     {
         $this->parsedUrl = $parsedUrl;
-        $this->injections = $injector;
+        $this->bindings = $bindings;
         $this->userAgent = $userAgent;
+        $this->auth = $auth;
+        $this->defaultDatabase = $defaultDatabase;
     }
 
     /**
-     * @throws JsonException
-     * @throws ClientExceptionInterface
+     * @throws Exception|ClientExceptionInterface
      */
-    public function aquireSession(FormatterInterface $formatter): SessionInterface
+    public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
-        if ($this->session) {
-            return $this->session;
-        }
-
+        $config ??= SessionConfiguration::create($this->defaultDatabase);
         $url = sprintf('%s://%s:%s%s',
             $this->parsedUrl['scheme'] ?? 'http',
-            $this->parsedUrl['host'],
+            $this->parsedUrl['host'] ?? '127.0.0.1',
             $this->parsedUrl['port'] ?? self::DEFAULT_PORT,
             $this->parsedUrl['path'] ?? ''
         );
 
-        $requestData = new RequestData(
-            $url,
-            $this->parsedUrl['user'],
-            $this->parsedUrl['pass']
+        $factory = $this->bindings->getRequestFactory();
+
+        $request = $factory->createRequest('GET', $url)
+            ->withHeader('Accept', 'application/json;charset=UTF-8')
+            ->withHeader('Content-Type', 'application/json')
+            ->withHeader('User-Agent', $this->userAgent);
+
+        $request = $this->auth->authenticateHttp($request, $this->parsedUrl);
+
+        $tsx = (new VersionDiscovery($this->bindings->getClient()))->discoverTransactionUrl($request, $config->getDatabase());
+
+        $request = $factory->createRequest('POST', $tsx)
+            ->withHeader('Accept', 'application/json;charset=UTF-8')
+            ->withHeader('Content-Type', 'application/json')
+            ->withHeader('User-Agent', $this->userAgent);
+
+        $request = $this->auth->authenticateHttp($request, $this->parsedUrl);
+
+        return new HttpSession(
+            $request,
+            new BasicFormatter(),
+            $this,
+            $config,
+            $this->bindings->getStreamFactory()
         );
-        $factory = $this->injections->getRequestFactory();
-        $streamFactory = $this->injections->getStreamFactory();
-        $requestFactory = new RequestFactory($factory, $streamFactory, new BasicFormatter(), $this->userAgent);
-        $tsx = (new VersionDiscovery($requestFactory, $this->injections->getClient()))
-            ->discoverTransactionUrl($requestData, $this->injections->getDatabase());
+    }
 
-        $requestData = $requestData->withEndpoint($tsx);
-
-        if ($this->injections->hasAutoRouting()) {
-            $basicFormatter = new BasicFormatter();
-            $requestFactory = new RequestFactory($factory, $streamFactory, $basicFormatter, $this->userAgent);
-            $basicSession = new HttpSession($requestFactory, $this->injections->getClient(), $basicFormatter, $requestData);
-            $this->session = new AutoRoutedSession($formatter, $basicSession, $this->injections, $this->parsedUrl);
-        } else {
-            $this->session = new HttpSession(
-                new RequestFactory($factory, $streamFactory, $formatter, $this->userAgent),
-                $this->injections->getClient(),
-                $formatter,
-                $requestData
-            );
-        }
-
-        return $this->session;
+    public function acquireConnection(SessionConfiguration $sessionConfig, TransactionConfig $tsxConfig): ClientInterface
+    {
+        return $this->bindings->getClient();
     }
 }

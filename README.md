@@ -142,7 +142,7 @@ $tsx->commit([Statement::create('MATCH (x) RETURN x LIMIT 100')]);
 ```php
 use Ds\Map;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 
 /**
  * @template T
@@ -150,9 +150,9 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 final class AgnosticRepository {
     /**
      * AgnosticRepository constructor.
-     * @param ClientInterface<T>|TransactionInterface<T> $tsx
+     * @param ClientInterface<T>|UnmanagedTransactionInterface<T> $tsx
      */
-    public function __construct(private ClientInterface|TransactionInterface $tsx) {
+    public function __construct(private ClientInterface|UnmanagedTransactionInterface $tsx) {
     }
 
     /**
@@ -165,7 +165,7 @@ final class AgnosticRepository {
     public function __destruct()
     {
         // This autocommit is probably not the best idea but it is here as an example :)
-        if ($this->tsx instanceof TransactionInterface) {
+        if ($this->tsx instanceof UnmanagedTransactionInterface) {
             $this->tsx->commit();
         }
     }
@@ -249,7 +249,7 @@ The user agent can be manipulated with the ClientBuilder. This value will be sen
 ```php
 use Laudis\Neo4j\ClientBuilder;$client = ClientBuilder::create()
     ->addBoltConnection('main', 'bolt://neo4j:password@core')
-    ->setUserAgent('MyApp/2.0 (X11; Linux x86_64)')
+    ->withUserAgent('MyApp/2.0 (X11; Linux x86_64)')
     ->build();
 ```
 

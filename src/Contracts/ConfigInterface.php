@@ -26,6 +26,8 @@ interface ConfigInterface
      * @param callable():bool|bool $routing
      *
      * @return static
+     *
+     * @deprecated enable auto routing by using the neo4j:// scheme as uri
      */
     public function withAutoRouting($routing): self;
 

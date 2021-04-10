@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /*
  * This file is part of the Laudis Neo4j package.
  *
@@ -13,23 +11,16 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Ds\Map;
-use Ds\Vector;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfig;
 
 /**
  * @template T
  */
-interface DriverInterface
+interface ConnectionManagerInterface
 {
-    /**
-     * @return SessionInterface<Vector<Map<string, array<array-key, mixed>|null|scalar>>>
-     */
-    public function createSession(?SessionConfiguration $config = null): SessionInterface;
-
     /**
      * @return T
      */
-    public function acquireConnection(SessionConfiguration $sessionConfig, TransactionConfig $tsxConfig);
+    public function acquireConnection(string $uri, SessionConfiguration $sessionConfig, TransactionConfig $tsxConfig);
 }

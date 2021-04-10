@@ -13,20 +13,31 @@ namespace Laudis\Neo4j\Contracts;
 
 use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Exception\Neo4jException;
 
 /**
  * @template T
- *
- * @extends ManagedTransactionInterface<T>
  */
-interface TransactionInterface extends ManagedTransactionInterface
+interface ManagedTransactionInterface
 {
+    /**
+     * @param iterable<string, scalar|iterable|null> $parameters
+     *
+     * @return T
+     */
+    public function run(string $statement, iterable $parameters = []);
+
+    /**
+     * @return T
+     */
+    public function runStatement(Statement $statement);
+
     /**
      * @param iterable<Statement> $statements
      *
+     * @throws Neo4jException
+     *
      * @return Vector<T>
      */
-    public function commit(iterable $statements = []): Vector;
-
-    public function rollback(): void;
+    public function runStatements(iterable $statements): Vector;
 }

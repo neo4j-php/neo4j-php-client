@@ -22,9 +22,6 @@ use PHPUnit\Framework\TestCase;
 
 abstract class TransactionTest extends TestCase
 {
-    /** @var iterable<TransactionInterface<Vector<Map<string, scalar|array|null>>>> */
-    protected iterable $transactions;
-
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -32,20 +29,18 @@ abstract class TransactionTest extends TestCase
     }
 
     /**
-     * @return iterable<TransactionInterface<Vector<Map<string, scalar|array|null>>>>
+     * @return array<array{0: TransactionInterface<Vector<Map<string, scalar|array|null>>>}>
      */
-    abstract protected function makeTransactions(): iterable;
+    abstract public function makeTransactions(): iterable;
 
-    protected function setUp(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testValidRun(TransactionInterface $transaction): void
     {
-        parent::setUp();
-        $this->transactions = $this->makeTransactions();
-    }
-
-    public function testValidRun(): void
-    {
-        foreach ($this->transactions as $transaction) {
-            $response = $transaction->run(<<<'CYPHER'
+        $response = $transaction->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
@@ -53,191 +48,223 @@ WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
 CYPHER, ['test' => 'a', 'otherTest' => 'b']);
 
-            self::assertEquals(1, $response->count());
-            $map = $response->first();
-            self::assertEquals(5, $map->count());
-            self::assertEquals(['test' => 'a'], $map->get('x'));
-            self::assertEquals(['test' => 'b'], $map->get('y'));
-            self::assertEquals('a', $map->get('test'));
-            self::assertEquals(['c' => 'd'], $map->get('map'));
-            self::assertEquals([1, 2, 3], $map->get('list'));
-        }
+        self::assertEquals(1, $response->count());
+        $map = $response->first();
+        self::assertEquals(5, $map->count());
+        self::assertEquals(['test' => 'a'], $map->get('x'));
+        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals('a', $map->get('test'));
+        self::assertEquals(['c' => 'd'], $map->get('map'));
+        self::assertEquals([1, 2, 3], $map->get('list'));
     }
 
-    public function testInvalidRun(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testInvalidRun(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
-            $exception = false;
-            try {
-                $transaction->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
-            } catch (Neo4jException $e) {
-                $exception = true;
-            }
-            self::assertTrue($exception);
+        $exception = false;
+        try {
+            $transaction->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
+        } catch (Neo4jException $e) {
+            $exception = true;
         }
+        self::assertTrue($exception);
     }
 
-    public function testValidStatement(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testValidStatement(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
-            $response = $transaction->runStatement(
-                Statement::create(<<<'CYPHER'
+        $response = $transaction->runStatement(
+            Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
 WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
 CYPHER, ['test' => 'a', 'otherTest' => 'b'])
-            );
+        );
 
-            self::assertEquals(1, $response->count());
-            $map = $response->first();
-            self::assertEquals(5, $map->count());
-            self::assertEquals(['test' => 'a'], $map->get('x'));
-            self::assertEquals(['test' => 'b'], $map->get('y'));
-            self::assertEquals('a', $map->get('test'));
-            self::assertEquals(['c' => 'd'], $map->get('map'));
-            self::assertEquals([1, 2, 3], $map->get('list'));
-        }
+        self::assertEquals(1, $response->count());
+        $map = $response->first();
+        self::assertEquals(5, $map->count());
+        self::assertEquals(['test' => 'a'], $map->get('x'));
+        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals('a', $map->get('test'));
+        self::assertEquals(['c' => 'd'], $map->get('map'));
+        self::assertEquals([1, 2, 3], $map->get('list'));
     }
 
-    public function testInvalidStatement(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testInvalidStatement(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
-            $exception = false;
-            try {
-                $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
-                $transaction->runStatement($statement);
-            } catch (Neo4jException $e) {
-                $exception = true;
-            }
-            self::assertTrue($exception);
+        $exception = false;
+        try {
+            $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
+            $transaction->runStatement($statement);
+        } catch (Neo4jException $e) {
+            $exception = true;
         }
+        self::assertTrue($exception);
     }
 
-    public function testStatements(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testStatements(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
-            $params = ['test' => 'a', 'otherTest' => 'b'];
-            $response = $transaction->runStatements([
-                Statement::create(<<<'CYPHER'
+        $params = ['test' => 'a', 'otherTest' => 'b'];
+        $response = $transaction->runStatements([
+            Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 CYPHER,
-                    $params
-                ),
-                Statement::create(<<<'CYPHER'
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
 MERGE (x:OtherTestNode {test: $otherTest})
 CYPHER,
-                    $params
-                ),
-                Statement::create(<<<'CYPHER'
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER,
-                    []
-                ),
-            ]);
+                []
+            ),
+        ]);
 
-            self::assertEquals(3, $response->count());
-            self::assertEquals(0, $response->get(0)->count());
-            self::assertEquals(0, $response->get(1)->count());
-            self::assertEquals(1, $response->get(2)->count());
-            self::assertEquals(1, $response->get(2)->first()->get('x'));
-        }
+        self::assertEquals(3, $response->count());
+        self::assertEquals(0, $response->get(0)->count());
+        self::assertEquals(0, $response->get(1)->count());
+        self::assertEquals(1, $response->get(2)->count());
+        self::assertEquals(1, $response->get(2)->first()->get('x'));
     }
 
-    public function testInvalidStatements(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testInvalidStatements(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
-            $exception = false;
-            try {
-                $params = ['test' => 'a', 'otherTest' => 'b'];
-                $transaction->runStatements([
-                    Statement::create(<<<'CYPHER'
+        $exception = false;
+        try {
+            $params = ['test' => 'a', 'otherTest' => 'b'];
+            $transaction->runStatements([
+                Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 CYPHER,
-                        $params
-                    ),
-                    Statement::create(<<<'CYPHER'
+                    $params
+                ),
+                Statement::create(<<<'CYPHER'
 MERGE (x:OtherTestNode {test: $otherTest})
 CYPHER,
-                        $params
-                    ),
-                    Statement::create('1 AS x;erns', []),
-                ]);
-            } catch (Neo4jException $e) {
-                $exception = true;
-            }
-            self::assertTrue($exception);
+                    $params
+                ),
+                Statement::create('1 AS x;erns', []),
+            ]);
+        } catch (Neo4jException $e) {
+            $exception = true;
         }
+        self::assertTrue($exception);
     }
 
-    public function testCommitValidEmpty(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testCommitValidEmpty(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
-            $result = $transaction->commit();
-            self::assertEquals(0, $result->count());
-        }
+        $result = $transaction->commit();
+        self::assertEquals(0, $result->count());
     }
 
-    public function testCommitValidFilled(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testCommitValidFilled(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
-            $result = $transaction->commit([Statement::create(<<<'CYPHER'
+        $result = $transaction->commit([Statement::create(<<<'CYPHER'
 UNWIND [1, 2, 3] AS x
 RETURN x
 CYPHER
-            )]);
-            self::assertEquals(1, $result->count());
-            self::assertEquals(3, $result->first()->count());
-        }
+        )]);
+        self::assertEquals(1, $result->count());
+        self::assertEquals(3, $result->first()->count());
     }
 
-    public function testCommitValidFilledWithInvalidStatement(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testCommitValidFilledWithInvalidStatement(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
-            $exception = false;
-            try {
-                $transaction->commit([Statement::create('adkjbehqjk')]);
-            } catch (Neo4jException $e) {
-                $exception = true;
-            }
-            self::assertTrue($exception);
+        $exception = false;
+        try {
+            $transaction->commit([Statement::create('adkjbehqjk')]);
+        } catch (Neo4jException $e) {
+            $exception = true;
         }
+        self::assertTrue($exception);
     }
 
-    public function testCommitInvalid(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testCommitInvalid(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
+        $transaction->commit();
+        $exception = false;
+        try {
             $transaction->commit();
-            $exception = false;
-            try {
-                $transaction->commit();
-            } catch (Neo4jException $e) {
-                $exception = true;
-            }
-            self::assertTrue($exception);
+        } catch (Neo4jException $e) {
+            $exception = true;
         }
+        self::assertTrue($exception);
     }
 
-    public function testRollbackValid(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testRollbackValid(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
-            $transaction->rollback();
-            self::assertTrue(true);
-        }
+        $transaction->rollback();
+        self::assertTrue(true);
     }
 
-    public function testRollbackInvalid(): void
+    /**
+     * @dataProvider makeTransactions
+     *
+     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     */
+    public function testRollbackInvalid(TransactionInterface $transaction): void
     {
-        foreach ($this->transactions as $transaction) {
+        $transaction->rollback();
+        $exception = false;
+        try {
             $transaction->rollback();
-            $exception = false;
-            try {
-                $transaction->rollback();
-            } catch (Neo4jException $e) {
-                $exception = true;
-            }
-            self::assertTrue($exception);
+        } catch (Neo4jException $e) {
+            $exception = true;
         }
+        self::assertTrue($exception);
     }
 }

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Ds\Vector;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 
@@ -23,9 +24,10 @@ use Laudis\Neo4j\Exception\Neo4jException;
 interface ClientInterface
 {
     public const VERSION = '2.0.0';
+    public const DEFAULT_USER_AGENT = 'LaudisNeo4j/'.self::VERSION;
 
     /**
-     * Runs a one off transaction with the provided query and parameters over the connection with the provided alias or the master alias othwerise.
+     * Runs a one off transaction with the provided query and parameters over the connection with the provided alias or the master alias otherwise.
      *
      * @param iterable<string, scalar|iterable|null> $parameters
      *
@@ -64,7 +66,17 @@ interface ClientInterface
      *
      * @return TransactionInterface<T>
      */
-    public function openTransaction(?iterable $statements = null, ?string $connectionAlias = null): TransactionInterface;
+    public function openTransaction(?iterable $statements = null, ?string $alias = null): TransactionInterface;
+
+    /**
+     * @return SessionInterface<T>
+     */
+    public function startSession(?string $alias = null, ?SessionConfiguration $config = null): SessionInterface;
+
+    /**
+     * @return DriverInterface
+     */
+    public function getDriver(?string $alias): DriverInterface;
 
     /**
      * @template U

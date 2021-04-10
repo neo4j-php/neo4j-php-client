@@ -127,6 +127,7 @@ CYPHER, ['listOrMap' => self::generate()], $alias);
     public function testInvalidParameters(string $alias): void
     {
         $this->expectException(InvalidArgumentException::class);
+        /** @psalm-suppress MixedArgumentTypeCoercion */
         $this->client->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
@@ -211,7 +212,7 @@ CYPHER
     /**
      * @dataProvider transactionProvider
      */
-    public function testPathRetunType(string $alias): void
+    public function testPathReturnType(string $alias): void
     {
         $this->client->run(<<<'CYPHER'
 MERGE (:Node {x: 'x'}) - [:Rel] -> (x:Node {x: 'y'})

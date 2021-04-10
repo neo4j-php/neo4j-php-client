@@ -41,14 +41,14 @@ final class ParameterHelper
         return self::emptySequenceToArray($value) ??
             self::emptyDictionaryToStdClass($value) ??
             self::filledIterableToArray($value) ??
-            self::stringableToString($value) ??
+            self::stringAbleToString($value) ??
             self::filterInvalidType($value);
     }
 
     /**
      * @param mixed $value
      */
-    private static function stringableToString($value): ?string
+    private static function stringAbleToString($value): ?string
     {
         if (is_object($value) && method_exists($value, '__toString')) {
             return (string) $value;

@@ -62,7 +62,7 @@ final class StatisticsFormatterIntegrationTest extends TestCase
      */
     public function testAcceptanceWrite(string $alias): void
     {
-        self::assertEquals(new StatementStatistics(1, 0, 0, 0, 1, 1), $this->client->run('MERGE (x:X {y: $x}) RETURN x', ['x' => random_bytes(128)], $alias));
+        self::assertEquals(new StatementStatistics(1, 0, 0, 0, 1, 1), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => random_bytes(128)], $alias));
     }
 
     /**
