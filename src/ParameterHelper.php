@@ -76,7 +76,8 @@ final class ParameterHelper
      */
     private static function emptySequenceToArray($value): ?array
     {
-        if ($value instanceof Sequence && $value->count() === 0) {
+        if (($value instanceof Sequence && $value->count() === 0) ||
+            (is_array($value) && count($value) === 0)) {
             return [];
         }
 
@@ -88,9 +89,7 @@ final class ParameterHelper
      */
     private static function emptyDictionaryToStdClass($value): ?stdClass
     {
-        if (($value instanceof Map && $value->count() === 0) ||
-            (is_array($value) && count($value) === 0)
-        ) {
+        if ($value instanceof Map && $value->count() === 0) {
             return new stdClass();
         }
 
