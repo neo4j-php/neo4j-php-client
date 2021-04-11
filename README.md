@@ -141,7 +141,7 @@ use Laudis\Neo4j\ParameterHelper;
 
 $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asList([])]); // will return an empty set
 $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asMap([])]); // will error
-$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []]); // will error
+$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []]); // will return an empty set
 ```
 
 This helper can also be used to make intent explicit.
