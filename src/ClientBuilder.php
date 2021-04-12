@@ -179,7 +179,7 @@ final class ClientBuilder
      * @return self<T>
      *
      * @deprecated
-     * @see ClientBuilder::withDefaultConnection()
+     * @see ClientBuilder::withDefaultDriver()
      */
     public function setDefaultConnection(string $alias): self
     {
@@ -191,7 +191,7 @@ final class ClientBuilder
      *
      * @return self<T>
      */
-    public function withDefaultConnection(string $alias): self
+    public function withDefaultDriver(string $alias): self
     {
         return new self($this->bindings, $this->driverPool->copy(), $alias, $this->formatter, $this->userAgent);
     }
