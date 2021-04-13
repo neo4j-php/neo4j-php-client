@@ -7,46 +7,111 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/275c2269aa54c2c43210/test_coverage)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/test_coverage)
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/laudis-technologies/neo4j-php-client/blob/main/LICENSE)
 
-## Installation
+## Effortlessly control to worlds' most powerful graph database
+ - Pick and choose your drivers with easy configuration
+ - Intuitive API
+ - Extensible
+ - Designed, built and tested under close supervision with the official neo4j driver team
+ - Validated with [testkit]()
 
-Install via composer:
+## See the driver in action
+
+An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an api for the classic movies example of neo4j.
+
+## Start your driving experience in three easy steps
+
+### Step 1: install via composer
 
 ```bash
 composer require laudis/neo4j-php-client
 ```
+Find more details [here]()
 
-The HTTP protocol requires [psr-7](https://www.php-fig.org/psr/psr-7/), [psr-17](https://www.php-fig.org/psr/psr-17/) and [psr-18](https://www.php-fig.org/psr/psr-18/) implementations. If there are not any available, composer can install them.
-
-```bash
-composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
-```
-
-## General usage
-
-### Initializing client
+### Step 2: create a client
 
 ```php
-use Laudis\Neo4j\Network\Bolt\BoltConfig;use Laudis\Neo4j\Network\Http\HttpConfig;$client = Laudis\Neo4j\ClientBuilder::create()
-    ->addHttpConnection('backup', 'http://neo4j:password@localhost', Http)
-    ->addBoltConnection('default', 'bolt://neo4j:password@localhost')
-    ->setDefaultConnection('default')
-    ->build();
+use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\ClientBuilder;
 
-$boltConfig = BoltConfig::create()->withDatabase('a')->withAutoRouting(true);
-$httpConfig = HttpConfig::create()->withClient(static function () {
-    return new MyCustomHttpClient();
-})->withRequestFactory(static function () {
-    return new MyCustomRequestFactory();
-})->withStreamFactory(static function () {
-    return new MyCustomStreamFactory();
-});
+$client = ClientBuilder::create()
+    ->withDriver('bolt', 'bolt+s://user:password@localhost')
+    ->withDriver('https', 'https://test.com', Authenticate::basic('user', 'password'))
+    ->withDriver('neo4j', 'neo4j://neo4j.test.com?database=my-database', Authenticate::kerberos('token'))
+    ->withDefaultDriver('bolt')
+    ->build();
 ```
 
-The default connection is the first registered connection. `setDefaultConnection` overrides this behaviour.
+You have now created a client with **bolt, https and neo4j drivers**. The default driver that the client will use is **bolt**.
 
-### Sending a Cypher Query
+Read more about the urls and how to use them to configure drivers [here]().
 
-Sending a query is done by sending the cypher with optional parameters and a connection alias.
+### Step 3: run a transaction
+
+```php
+use Laudis\Neo4j\Contracts\TransactionInterface;
+
+$result = $client->writeTransaction(static function (TransactionInterface $tsx) {
+    $result = $tsx->run('MERGE (x {y: "z"}:X) return x');
+    return $result->first()->get('x')['y'];
+});
+
+echo $result; // echos 'z'
+```
+
+## Decide how to send your Cypher queries
+
+You can control the driver using three different approaches:
+ - *Transaction functions* (recommended and portable)
+ - *Auto committed queries* (easiest and most intuitive)
+ - *Unmanaged transactions* (for the highest degree of control)
+
+### Use transaction functions like a pro
+
+Transaction functions are the **de facto** standard when using the driver. It is the most portable as it is resistant to a lot of the pitfalls when first developing with high availability solutions such as [Neo4j aura]() or a [cluster]().
+
+Transaction functions are managed by the driver:
+ - It **re-executes** the function in case of a [transient error]().
+ - It **commits** the transaction on successful execution
+ - It **rolls back** the transaction in case of a timeout.
+ - It **routes** the execution to a relevant follower or leader server when the neo4j protocol is enabled.
+
+> ATTENTION: Because of the automatic retry functionality, the function should produce the same result on subsequent recalls, or in more technical terms: should be **idempotent**. Always remember this when designing the execution logic within the function.
+
+Some examples:
+
+```php
+use Laudis\Neo4j\Contracts\TransactionInterface;
+
+// Do a simple merge and return the result
+$result = $client->writeTransaction(static function (TransactionInterface $tsx) {
+    $result = $tsx->run('MERGE (x {y: "z"}:X) return x');
+    return $result->first()->get('x')['y'];
+});
+
+// Will result in an error
+$client->readTransaction(static function (TransactionInterface $tsx) {
+    $tsx->run('MERGE (x {y: "z"}:X) return x');
+});
+
+// This is a poorly designed transaction function
+$client->writeTransaction(static function (TransactionInterface $tsx) use ($externalCounter) {
+    $externalCounter->incrementNodesCreated();
+    $tsx->run('MERGE (x {y: $id}:X) return x', ['id' => Uuid::v4()]);
+});
+
+// This achieves the same effect but is safe in case it should be retried. The function is now idempotent.
+$id = Uuid::v4();
+$client->writeTransaction(static function (TransactionInterface $tsx) use ($id) {
+    $tsx->run('MERGE (x {y: $id}:X) return x', ['id' => $id]);
+});
+$externalCounter->incrementNodesCreated();
+```
+
+### Get quick and dirty with auto committed queries
+
+Auto committed queries are the simplest and most intuitive, but have a lot of drawbacks when running complex business logic or within a high availability environment.
+
+#### Run a simple cypher query
 
 ```php
 $client->run(
@@ -56,7 +121,7 @@ $client->run(
 );
 ```
 
-Or by using a statement object.
+#### Run a statement object:
 
 ```php
 use Laudis\Neo4j\Databags\Statement;
@@ -65,28 +130,9 @@ $statement = new Statement('MERGE (user {email: $email})', ['email' => 'abc@hotm
 $client->runStatement($statement, 'default');
 ```
 
-### Reading a Result
+#### Running multiple queries at once
 
-A result is a simple vector, with hashmaps representing a record.
-
-```php
-foreach ($client->run('UNWIND range(1, 9) as x RETURN x') as $item) {
-    echo $item->get('x');
-}
-```
-will echo `123456789`.
-
-The Map representing the Record can only contain null, scalar or array values. Each array can then only contain null, scalar or array values, ad infinitum.
-
-## Example project
-
-An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an api for the classic movies example of neo4j.
-
-## Diving Deeper
-
-### Running multiple queries at once
-
-The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database calls.
+The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database calls, especially useful when using the HTTP protocol.
 
 ```php
 use Laudis\Neo4j\Databags\Statement;
@@ -97,17 +143,13 @@ $results = $client->runStatements([
 ]);
 ```
 
-The returned value is a vector containing result vectors.
+### Get into the nitty-gritty details with unmanaged transactions.
 
-```php
-$results->first(); //Contains the first result vector
-$results->get(0); //Contains the first result vector
-$result->get(1); //Contains the second result vector
-```
+If you need lower level access to the drivers capabilities, then you want unmanaged transactions. They allow for completely controllable commits and rollbacks.
 
-### Opening a transaction
+#### Opening a transaction
 
-The `openTransaction` method will start a transaction over the relevant connection.
+The `openTransaction` method will start a transaction with the relevant driver.
 
 ```php
 use Laudis\Neo4j\Databags\Statement;
@@ -119,7 +161,9 @@ $tsx = $client->openTransaction(
 );
 ```
 
-**Note that `openTransaction` only returns the transaction object, not the results of the provided statements.**
+> Note that `openTransaction` only returns the transaction object, not the results of the provided statements.
+
+#### Running statements within a transaction
 
 The transaction can run statements just like the client object as long as it is still open.
 
@@ -129,48 +173,25 @@ $result = $tsx->runStatement(Statement::create('MATCH (x) RETURN x LIMIT 100'));
 $results = $tsx->runStatements([Statement::create('MATCH (x) RETURN x LIMIT 100')]);
 ```
 
-They can be committed or rolled back at will:
+#### Finish a transaction
+
+Rollback a transaction:
 
 ```php
 $tsx->rollback();
 ```
 
+Commit a transaction:
+
 ```php
 $tsx->commit([Statement::create('MATCH (x) RETURN x LIMIT 100')]);
 ```
 
-```php
-use Ds\Map;
-use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+## Accessing the results
 
-/**
- * @template T
- */
-final class AgnosticRepository {
-    /**
-     * AgnosticRepository constructor.
-     * @param ClientInterface<T>|UnmanagedTransactionInterface<T> $tsx
-     */
-    public function __construct(private ClientInterface|UnmanagedTransactionInterface $tsx) {
-    }
+> TODO: Rewrite this as the new standard will be the OGM.
 
-    /**
-     * @return T
-     */
-    public function load(int $id): mixed {
-        return $this->tsx->run('MATCH (x:X {id: $id}) RETURN x LIMIT 1', compact('id'));
-    }
-
-    public function __destruct()
-    {
-        // This autocommit is probably not the best idea but it is here as an example :)
-        if ($this->tsx instanceof UnmanagedTransactionInterface) {
-            $this->tsx->commit();
-        }
-    }
-}
-```
+## Diving Deeper
 
 ### Differentiating between parameter type
 
@@ -181,98 +202,11 @@ The `ParameterHelper` class is the ideal companion for this:
 ```php
 use Laudis\Neo4j\ParameterHelper;
 
-$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asList([])]); // will return an empty set
+$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asList([])]); // will return an empty vector
 $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asMap([])]); // will error
-$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []]); // will error
+$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []]); // will retrun an empty vector
 ```
 
-This helper can also be used to make intent explicit.
-
-### Providing custom injections
-
-`addHttpConnection` and `addBoltConnection` each accept their respective injections.
-
-```php
-use GuzzleHttp\Client;
-use GuzzleHttp\Handler\CurlHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Middleware;
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
-use Laudis\Neo4j\Network\Http\HttpConfig;
-
-$client = Laudis\Neo4j\ClientBuilder::create()
-    ->addHttpConnection('backup', 'http://neo4j:password@localhost', HttpConfig::create()->withClient(static function () {
-        $handler = HandlerStack::create(new CurlHandler());
-        $handler->push(Middleware::cookies());
-        return new Client(['handler' => $handler]);
-    }))
-    ->addBoltConnection('default', 'neo4j:password@localhost', BoltConfig::create()->withDatabase('tags'))
-    ->build();
-```
-
-Wrapping the injections in a callable will enforce lazy initialization.
-
-### Clusters and routing
-
-Cluster support is always available when directly connecting to the responsible servers. If you do not need to fine tune these connections, autorouting is available for all connections:
-
-```php
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
-use Laudis\Neo4j\Network\Http\HttpConfig;
-
-$client = Laudis\Neo4j\ClientBuilder::create()
-    ->addBoltConnection(
-        'main',
-        'bolt://neo4j:password@any-server-with-routing-information',
-         BoltConfig::create()->withAutoRouting(true)
-     )
-    ->addHttpConnection(
-        'http',
-        'http://neo4j:password@any-server-with-routing-information',
-         HttpConfig::create()->withAutoRouting(true)
-     )
-    ->addBoltConnection('backup', 'bolt://neo4j:password@non-replicated-server')
-    ->setDefaultConnection('main')
-    ->build();
-
-$client->run('RETURN 1'); // will run over a random follower found in the routing table
-$client->run('MERGE (x:Y {z: 0)'); //will run over a random leader found in the routing table
-$client->run('RETURN 1', [], 'backup'); //will run over the non replicated server
-$client->run('RETURN 1', [], 'main'); //will be autorouted
-$client->run('RETURN 1', [], 'http'); //will be autorouted
-```
-
-### Setting the user agen
-
-The user agent can be manipulated with the ClientBuilder. This value will be sent to the neo4j servers.
-
-```php
-use Laudis\Neo4j\ClientBuilder;$client = ClientBuilder::create()
-    ->addBoltConnection('main', 'bolt://neo4j:password@core')
-    ->withUserAgent('MyApp/2.0 (X11; Linux x86_64)')
-    ->build();
-```
-
-## Final Remarks
-
-### Filosophy
-
-This client tries to strike a balance between extensibility, performance and clean code. All elementary classes have an interface. These provide infinite options to extend or change the implementation.
-
-This library does not use any custom result classes but uses php-ds instead. These data structures are competent, flexible and fast. It furthermore provides a consistent interface and works seamlessly with other iterables.
-
-Flexibility is maintained where possible by making all parameters iterables if they are a container of sorts. This means you can pass parameters as an array, \Ds\Map or any other object which implements the \Iterator or \IteratorAggregate. These examples are all valid:
-
-```php
-use Ds\Map;
-
-// Vanilla flavour
-$client->run('MATCH (x {slug: $slug})', ['slug' => 'a']);
-// php-ds implementation
-$client->run('MATCH (x {slug: $slug})', new Map(['slug' => 'a']));
-// laravel style
-$client->run('MATCH (x {slug: $slug})', collect(['slug' => 'a']));
-```
 
 ### Neo4j Version Support
 
@@ -285,17 +219,18 @@ $client->run('MATCH (x {slug: $slug})', collect(['slug' => 'a']));
 
 | **Feature**          | **Supported?** |
 |----------------------|----------------|
-| Auth                 |  Yes           |
+| Authentication       |  Yes           |
 | Transactions         |  Yes           |
 | Http Protocol        |  Yes           |
 | Bolt Protocol        |  Yes           |
 | Cluster              |  Yes           |
-| Graph Representation |  Roadmap       |
+| Aura                 |  Yes           |
+| Jolt Protocol        |  Roadmap       |
 
-## Requirements
+## In depth requirements
 
 * PHP >= 7.4
-* A Neo4j database (minimum version 2.3)
+* A Neo4j database (minimum version 3.5)
 * ext-bcmath *
 * ext-sockets *
 * ext-json **
@@ -307,60 +242,88 @@ $client->run('MATCH (x {slug: $slug})', collect(['slug' => 'a']));
 
 (***) Needed for optimal performance
 
-## Roadmap
 
-### Support for graph representation instead of simple records
+If you plan on using the HTTP drivers, make sure you have [psr-7](https://www.php-fig.org/psr/psr-7/), [psr-17](https://www.php-fig.org/psr/psr-17/) and [psr-18](https://www.php-fig.org/psr/psr-18/) implementations included into the project. If you don't have any, you can install them via composer:
 
-Version 2.0 will have graph representation suppport. The inteface for this is not yet set in stone, but will be somthing akin to this:
-
-```php
-$client = $clientBuilder->withGraph($client);
-$result = $client->run('MATCH (x:Article) - [:ContainsReferenceTo] -> (y:Article)');
-
-$node = $result->getGraph()->enter(HasLabel::create('Article')->and(HasAttribute::create('slug', 'neo4j-is-awesome')))->first();
-
-foreach ($node->relationships() as $relationship) {
-    if (!$relationship->endNode()->relationships()->isEmpty()) {
-        echo 'multi level path detected' . "\n";
-    }
-}
-```
-### Support for statistics
-
-Neo4j has the option to return statement statistics as well. These will be supported in version 2.0 with an api like this:
-
-```php
-// This will create a client which will wrap the results and statistics in a single object.
-$client = $clientBuilder->withStatistics($client);
-$result = $client->run('MERGE (x:Node {id: $id}) RETURN x.id as id', ['id' => Uuid::v4()]);
-echo $result->getStatistics()->getNodesCreated() . "\n"; // will echo 1 or 0.
-echo $result->getResults()->first()->get('id') . "\n"; // will echo the id generated by the Uuid::v4() method
+```bash
+composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 ```
 
-Statistics aggregate like this:
+If you plan on using the Bolt protocol, make sure you have the sockets extension enabled.
+
+
+
+## Concepts
+
+The client is based on the driver api found [here](). Because of this, the client is nothing more than a driver manager. The driver creates sessions. A session runs queries through a transaction.
+
+Because of this behavior you can access each concept starting from the client like this:
 
 ```php
-$results = $client->runStatements([
- Statement::create('MERGE (x:Node {id: $id}) RETURN x', ['id' => Uuid::v4()]),
- Statement::create('MERGE (p:Person {email: $email})', ['email' => 'abc@hotmail.com'])
-]);
+use Laudis\Neo4j\ClientBuilder;
 
-$total = Statistics::aggregate($results);
-echo $total->getNodesCreated(); // will echo 0, 1 or 2.
+// A builder is responsible for configuring the client on a high level.
+$builder = ClientBuilder::create();
+// A client manages the drivers as configured by the builder.
+$client = $builder->build();
+// A driver manages connections and sessions.
+$driver = $client->getDriver('default');
+// A session manages transactions.
+$session = $driver->createSession();
+// A transaction is the atomic unit of the driver where are the cypher queries are chained.
+$transaction = $session->beginTransaction();
+// A transaction runs the actual queries
+$transaction->run('MATCH (x) RETURN count(x)');
 ```
 
-### Result decoration
+If you need complete control, you can control each object with custom configuration objects.
 
-Statistics and graph representation are ways of decorating a result. They can be chained like this:
+### Client
 
-```php
-$client = $clientBuilder->withGraph($client);
-$client = $clientBuilder->withStatistics($client);
+A **client** manages **drivers** and routes the queries to the correct drivers based on preconfigured **aliases**.
 
-$result = $client->run('MATCH (x:Article) RETURN x.slug as slug LIMIT 1');
-$statistics = $result->getStatistics();
-$graph = $result->getResults()->getGraph();
-$records = $result->getResults()->getResults();
+### Driver
+
+The **Driver** object is the thread-safe backbone that gives access to Neo4j. It owns a connection pool, through which all database connectivity occurs, and can spawn **sessions** for carrying out work
+
+### Session
+
+**Sessions** are lightweight containers for causally chained sequences of **transactions**. They borrow **connections** from the connection pool as required and chain transactions using **bookmarks**.
+
+### Transaction
+
+**Transactions** are atomic units of work that may contain one or more **query**. Each transaction is bound to a single **connection** and is represented in the causal chain by a **bookmark**.
+
+### Statement
+
+**Queries** are executable units within **transactions**, and are comprised of a Cypher string and a keyed parameter set. Each query outputs a **result** that may contain zero or more **records**.
+
+### Result
+
+A **result** contains the output from a **query**, made up of header metadata, content **records** and summary metadata. In Neo4j 4.0 and above, applications have control over the flow of result data.
+
+
+## In depth configuration
+
+### Url Schemes
+
+The url scheme is the easiest way to configure the driver.
+
+Configuration format:
+```
+'<scheme>://<user>:<password>@<host>:<port>?database=<database>'
 ```
 
-This way maximum flexibility is guaranteed. Type safety will be enforced by using psalm templates.
+Default configuration:
+```
+neo4j://localhost:7678?database=neo4j
+```
+
+
+#### Scheme configuration matrix
+
+| driver| scheme| valid certificate | self-signed certificate                       |
+|-------|-------|-------------------|-----------------------------------------------|
+| neo4j | neo4j | neo4j+s           | neo4j+ssc                                     |
+| bolt  | bolt  | bolt+s            | bolt+ssc                                      |
+| http  | http  | https             | configured through PSR Client implementation  |
