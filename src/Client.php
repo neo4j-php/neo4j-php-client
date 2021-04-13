@@ -23,6 +23,7 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\TransactionConfig;
 use function sprintf;
 
 /**
@@ -93,5 +94,20 @@ final class Client implements ClientInterface
     public function startSession(?string $alias = null, ?SessionConfiguration $config = null): SessionInterface
     {
         return $this->getDriver($alias)->createSession($config)->withFormatter($this->formatter);
+    }
+
+    public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfig $config = null)
+    {
+        return $this->startSession($alias)->writeTransaction($tsxHandler, $config);
+    }
+
+    public function readTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfig $config = null)
+    {
+        return $this->startSession($alias)->readTransaction($tsxHandler, $config);
+    }
+
+    public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfig $config = null)
+    {
+        return $this->startSession($alias)->transaction($tsxHandler, $config);
     }
 }

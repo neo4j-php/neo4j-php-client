@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Contracts;
 use Ds\Vector;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\TransactionConfig;
 use Laudis\Neo4j\Exception\Neo4jException;
 
 /**
@@ -91,4 +92,33 @@ interface ClientInterface
      * @return FormatterInterface<T>
      */
     public function getFormatter(): FormatterInterface;
+
+    /**
+     * @template U
+     *
+     * @param callable(ManagedTransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfig $config = null);
+
+    /**
+     * @template U
+     *
+     * @param callable(ManagedTransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function readTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfig $config = null);
+
+    /**
+     * Alias for write transaction.
+     *
+     * @template U
+     *
+     * @param callable(ManagedTransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfig $config = null);
 }
