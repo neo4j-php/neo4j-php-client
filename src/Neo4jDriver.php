@@ -13,55 +13,60 @@ namespace Laudis\Neo4j;
 
 use Bolt\Bolt;
 use Ds\Map;
+use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\Authentication\UriAuth;
+use Laudis\Neo4j\Authentication\UrlAuth;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\DriverConfigurationInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Databags\TransactionConfig;
+use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
-use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use Laudis\Neo4j\Network\Bolt\Session;
 use Laudis\Neo4j\Network\RoutingTable;
-use function parse_url;
-use function random_int;
 use function time;
 
 /**
- * @implements DriverInterface<\Bolt\Bolt>
+ * @template T
+ *
+ * @implements DriverInterface<T>
  *
  * @psalm-import-type ParsedUrl from \Laudis\Neo4j\Network\Bolt\BoltDriver
  */
 final class Neo4jDriver implements DriverInterface
 {
-    private string $userAgent;
     private AuthenticateInterface $auth;
-    /** @var Map<string, BoltDriver>|null */
-    private ?Map $drivers = null;
 
     private ?RoutingTable $table = null;
-    private int $maxLeader = 0;
-    private int $maxFollower = 0;
+    private int $currentLeader = 0;
+    private int $currentFollower = 0;
+    /** @var BoltDriver<Vector<Map<string, scalar|array|null>>> */
     private BoltDriver $driver;
-    private string $defaultDatabase;
+    /** @var DriverConfigurationInterface<T> */
+    private DriverConfigurationInterface $configuration;
     /** @var ParsedUrl */
     private array $parsedUrl;
 
     /**
-     * @param ParsedUrl $parsedUrl
+     * @param ParsedUrl                                          $parsedUrl
+     * @param BoltDriver<Vector<Map<string, scalar|array|null>>> $driver
+     * @param DriverConfigurationInterface<T>                    $configuration
      */
-    public function __construct(array $parsedUrl, string $userAgent, AuthenticateInterface $auth, BoltDriver $driver, string $defaultDatabase = 'neo4j')
-    {
-        $this->userAgent = $userAgent;
+    public function __construct(
+        array $parsedUrl,
+        AuthenticateInterface $auth,
+        BoltDriver $driver,
+        DriverConfigurationInterface $configuration
+    ) {
         $this->auth = $auth;
         $this->driver = $driver;
-        $this->defaultDatabase = $defaultDatabase;
         $this->parsedUrl = $parsedUrl;
+        $this->configuration = $configuration;
     }
 
     /**
@@ -69,17 +74,17 @@ final class Neo4jDriver implements DriverInterface
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
-        $config ??= SessionConfiguration::create($this->defaultDatabase);
+        $config ??= $this->configuration->getSessionConfiguration();
 
-        return new Session($this, $config, new BasicFormatter());
+        return new Session($this, $config);
     }
 
     /**
      * @throws Exception
      */
-    public function acquireConnection(SessionConfiguration $sessionConfig, TransactionConfig $tsxConfig): Bolt
+    public function acquireConnection(SessionConfiguration $configuration): Bolt
     {
-        return $this->getNextDriver($sessionConfig)->acquireConnection($sessionConfig, $tsxConfig);
+        return $this->getNextDriver($configuration)->acquireConnection($configuration);
     }
 
     /**
@@ -87,24 +92,31 @@ final class Neo4jDriver implements DriverInterface
      */
     private function getNextDriver(SessionConfiguration $config): BoltDriver
     {
-        $mode = $config->getDefaultAccessMode();
-        $client = $this->setupDrivers($config);
+        $drivers = $this->setupDrivers($config);
 
-        if ($mode === AccessMode::WRITE()) {
-            return $client->get($this->writeAlias());
+        if ($config->getAccessMode() === AccessMode::WRITE()) {
+            $currentLeader = $this->currentLeader % $drivers['leaders']->count();
+            $tbr = $drivers['leaders']->get($currentLeader)();
+            ++$this->currentLeader;
+
+            return $tbr;
         }
 
-        return $client->get($this->readAlias());
+        $currentFollower = $this->currentFollower % $drivers['followers']->count();
+        $tbr = $drivers['followers']->get($currentFollower)();
+        ++$this->currentFollower;
+
+        return $tbr;
     }
 
     /**
      * @throws Exception
      *
-     * @return Map<string, BoltDriver>
+     * @return array{'leaders': Vector<callable():BoltDriver>, 'followers': Vector<callable():BoltDriver>}
      */
-    private function setupDrivers(SessionConfiguration $config): Map
+    private function setupDrivers(SessionConfiguration $config): array
     {
-        if ($this->table === null || $this->drivers === null || $this->table->getTtl() < time()) {
+        if ($this->table === null || $this->table->getTtl() < time()) {
             $statement = new Statement('CALL dbms.routing.getRoutingTable({context: $context, database: $database})', [
                 'context' => [],
                 'database' => $config->getDatabase(),
@@ -115,60 +127,104 @@ final class Neo4jDriver implements DriverInterface
             /** @var int $ttl */
             $ttl = $response->get('ttl');
             $this->table = new RoutingTable($values, time() + $ttl);
-
-            /** @var Map<string, BoltDriver> $map */
-            $map = new Map();
-
-            $leaders = $this->table->getWithRole(RoutingRoles::LEADER());
-            $followers = $this->table->getWithRole(RoutingRoles::FOLLOWER());
-
-            $auth = $this->auth;
-            // Translate authentication from uri to basic because the routing table does not provide uri authentication
-            if (isset($this->parsedUrl['user'], $this->parsedUrl['pass']) && $auth instanceof UriAuth) {
-                $auth = Authenticate::basic($this->parsedUrl['user'], $this->parsedUrl['pass']);
-            }
-
-            foreach ($leaders as $i => $leader) {
-                $map->put('leader-'.$i, $this->makeDriver($leader, $auth));
-                $this->maxLeader = $i;
-            }
-            foreach ($followers as $i => $follower) {
-                $map->put('follower-'.$i, $this->makeDriver($follower, $auth));
-                $this->maxFollower = $i;
-            }
-
-            $this->drivers = $map;
-
-            return $map;
         }
 
-        return $this->drivers;
+        $leaders = $this->table->getWithRole(RoutingRoles::LEADER());
+        $followers = $this->table->getWithRole(RoutingRoles::FOLLOWER());
+
+        $auth = $this->auth;
+        // Translate authentication from uri to basic because the routing table does not provide uri authentication
+        if (isset($this->parsedUrl['user'], $this->parsedUrl['pass']) && $auth instanceof UrlAuth) {
+            $auth = Authenticate::basic($this->parsedUrl['user'], $this->parsedUrl['pass']);
+        }
+
+        /** @var Vector<callable():BoltDriver> $leadersTbr */
+        $leadersTbr = new Vector();
+        foreach ($leaders as $leader) {
+            $leadersTbr->push($this->makeDriver($leader, $auth));
+        }
+
+        /** @var Vector<callable():BoltDriver> $followersTbr */
+        $followersTbr = new Vector();
+        foreach ($followers as $follower) {
+            $followersTbr->push($this->makeDriver($follower, $auth));
+        }
+
+        return ['leaders' => $leadersTbr, 'followers' => $followersTbr];
     }
 
-    /**
-     * @throws Exception
-     */
-    private function readAlias(): string
+    private function makeDriver(string $url, AuthenticateInterface $auth): callable
     {
-        return 'follower-'.random_int(0, $this->maxFollower);
+        return function () use ($url, $auth) {
+            return new BoltDriver(
+                ConnectionManager::parseUrl($url),
+                $auth,
+                new ConnectionManager($this->configuration->getHttpPsrBindings()),
+                $this->getConfiguration()
+            );
+        };
     }
 
-    /**
-     * @throws Exception
-     */
-    private function writeAlias(): string
+    public function withUserAgent($userAgent): DriverInterface
     {
-        return 'leader-'.random_int(0, $this->maxLeader);
+        return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withUserAgent($userAgent));
     }
 
-    private function makeDriver(string $leader, AuthenticateInterface $auth): BoltDriver
+    public function withSessionConfiguration($configuration): DriverInterface
     {
-        return new BoltDriver(
-            parse_url($leader),
-            $this->userAgent,
-            $auth,
-            new ConnectionManager(),
-            $this->defaultDatabase
-        );
+        return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withSessionConfiguration($configuration));
+    }
+
+    public function withTransactionConfiguration($configuration): DriverInterface
+    {
+        $transactionConfiguration = $this->configuration->getTransactionConfiguration()->merge($configuration);
+        $merged = $this->configuration->withTransactionConfiguration($transactionConfiguration);
+
+        return new self($this->parsedUrl, $this->auth, $this->driver, $merged);
+    }
+
+    public function withConfiguration($configuration): DriverInterface
+    {
+        return new self($this->parsedUrl, $this->auth, $this->driver, $configuration);
+    }
+
+    public function getTransactionConfiguration(): StaticTransactionConfiguration
+    {
+        return $this->configuration->getTransactionConfiguration();
+    }
+
+    public function getSessionConfiguration(): SessionConfiguration
+    {
+        return $this->configuration->getSessionConfiguration();
+    }
+
+    public function withFormatter($formatter): DriverInterface
+    {
+        return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withFormatter($formatter));
+    }
+
+    public function withTransactionTimeout($timeout): DriverInterface
+    {
+        return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withTransactionTimeout($timeout));
+    }
+
+    public function withDatabase($database): DriverInterface
+    {
+        return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withDatabase($database));
+    }
+
+    public function withFetchSize($fetchSize): DriverInterface
+    {
+        return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withFetchSize($fetchSize));
+    }
+
+    public function withAccessMode($accessMode): DriverInterface
+    {
+        return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withAccessMode($accessMode));
+    }
+
+    public function getConfiguration(): DriverConfigurationInterface
+    {
+        return $this->configuration;
     }
 }

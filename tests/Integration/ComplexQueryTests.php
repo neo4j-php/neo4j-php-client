@@ -20,7 +20,7 @@ use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
+use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ParameterHelper;
 use PHPUnit\Framework\TestCase;
 
@@ -35,7 +35,7 @@ final class ComplexQueryTests extends TestCase
         $this->client = ClientBuilder::create()
             ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42')
             ->addHttpConnection('http', 'http://neo4j:test@neo4j-42')
-            ->addBoltConnection('cluster', 'http://neo4j:test@core1', BoltConfig::create()->withAutoRouting(true))
+            ->addBoltConnection('cluster', 'http://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true))
             ->build();
     }
 

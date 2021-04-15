@@ -11,8 +11,8 @@
 
 namespace Laudis\Neo4j\Exception;
 
-use RuntimeException;
 use function implode;
+use RuntimeException;
 
 final class UnsupportedScheme extends RuntimeException
 {

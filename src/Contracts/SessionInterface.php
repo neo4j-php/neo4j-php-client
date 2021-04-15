@@ -16,7 +16,8 @@ namespace Laudis\Neo4j\Contracts;
 use Ds\Vector;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Databags\TransactionConfig;
+use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 
 /**
@@ -31,18 +32,19 @@ interface SessionInterface
      *
      * @return Vector<T>
      */
-    public function runStatements(iterable $statements, ?TransactionConfig $config = null): Vector;
+    public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): Vector;
 
     /**
      * @return T
      */
-    public function runStatement(Statement $statement, ?TransactionConfig $config = null);
+    public function runStatement(Statement $statement, ?TransactionConfiguration $config = null);
 
     /**
      * @param iterable<string, scalar|iterable|null> $parameters
+     *
      * @return T
      */
-    public function run(string $statement, iterable $parameters, ?TransactionConfig $config = null);
+    public function run(string $statement, iterable $parameters, ?TransactionConfiguration $config = null);
 
     /**
      * @psalm-param iterable<Statement>|null $statements
@@ -51,48 +53,105 @@ interface SessionInterface
      *
      * @deprecated
      * @see SessionInterface::beginTransaction use this method instead.
+     *
+     * @return UnmanagedTransactionInterface<T>
      */
-    public function openTransaction(?iterable $statements = null, ?TransactionConfig $config = null): TransactionInterface;
+    public function openTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
 
     /**
      * @psalm-param iterable<Statement>|null $statements
      *
      * @throws Neo4jException
+     *
+     * @return UnmanagedTransactionInterface<T>
      */
-    public function beginTransaction(?iterable $statements = null, ?TransactionConfig $config = null): TransactionInterface;
+    public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
 
     /**
      * @template U
      *
-     * @param callable(ManagedTransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<T>):U $tsxHandler
      *
      * @return U
      */
-    public function writeTransaction(callable $tsxHandler, ?TransactionConfig $config = null);
+    public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
 
     /**
      * @template U
      *
-     * @param callable(ManagedTransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<T>):U $tsxHandler
      *
      * @return U
      */
-    public function readTransaction(callable $tsxHandler, ?TransactionConfig $config = null);
+    public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
 
     /**
-     * Alias for write transaction.
-     *
      * @template U
      *
-     * @param callable(ManagedTransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<T>):U $tsxHandler
      *
      * @return U
      */
-    public function transaction(callable $tsxHandler, ?TransactionConfig $config = null);
+    public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
 
     public function getConfig(): SessionConfiguration;
 
-    public function getFormatter(): FormatterInterface;
+    /**
+     * @return StaticTransactionConfiguration<T>
+     */
+    public function getTransactionConfig(): StaticTransactionConfiguration;
 
-    public function withFormatter(FormatterInterface $formatter): self;
+    /**
+     * @template U
+     *
+     * @param callable():FormatterInterface<U>|FormatterInterface<U> $formatter
+     *
+     * @return self<U>
+     */
+    public function withFormatter($formatter): self;
+
+    /**
+     * @param callable():(float|null)|float|null $timeout
+     *
+     * @return self<T>
+     */
+    public function withTransactionTimeout($timeout): self;
+
+    /**
+     * @param callable():(string|null)|string|null $database
+     *
+     * @return self<T>
+     */
+    public function withDatabase($database): self;
+
+    /**
+     * @param callable():(int|null)|int|null $fetchSize
+     *
+     * @return self<T>
+     */
+    public function withFetchSize($fetchSize): self;
+
+    /**
+     * @param callable():(\Laudis\Neo4j\Enum\AccessMode|null)|\Laudis\Neo4j\Enum\AccessMode|null $accessMode
+     *
+     * @return self<T>
+     */
+    public function withAccessMode($accessMode): self;
+
+    /**
+     * @param callable():(iterable<string>|null)|null $bookmarks
+     *
+     * @return self<T>
+     */
+    public function withBookmarks($bookmarks): self;
+
+    /**
+     * @return self<T>
+     */
+    public function withConfiguration(SessionConfiguration $configuration): self;
+
+    /**
+     * @return self<T>
+     */
+    public function withTransactionConfiguration(?TransactionConfiguration $configuration): self;
 }

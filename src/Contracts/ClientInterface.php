@@ -16,7 +16,7 @@ namespace Laudis\Neo4j\Contracts;
 use Ds\Vector;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Databags\TransactionConfig;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 
 /**
@@ -24,9 +24,6 @@ use Laudis\Neo4j\Exception\Neo4jException;
  */
 interface ClientInterface
 {
-    public const VERSION = '2.0.0';
-    public const DEFAULT_USER_AGENT = 'LaudisNeo4j/'.self::VERSION;
-
     /**
      * Runs a one off transaction with the provided query and parameters over the connection with the provided alias or the master alias otherwise.
      *
@@ -65,9 +62,9 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return TransactionInterface<T>
+     * @return UnmanagedTransactionInterface<T>
      */
-    public function openTransaction(?iterable $statements = null, ?string $alias = null): TransactionInterface;
+    public function openTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface;
 
     /**
      * @return SessionInterface<T>
@@ -75,50 +72,92 @@ interface ClientInterface
     public function startSession(?string $alias = null, ?SessionConfiguration $config = null): SessionInterface;
 
     /**
-     * @return DriverInterface
+     * @return DriverInterface<T>
      */
     public function getDriver(?string $alias): DriverInterface;
 
     /**
      * @template U
      *
-     * @param FormatterInterface<U> $formatter
+     * @param callable(TransactionInterface<T>):U $tsxHandler
      *
-     * @return ClientInterface<U>
+     * @return U
      */
-    public function withFormatter(FormatterInterface $formatter): ClientInterface;
-
-    /**
-     * @return FormatterInterface<T>
-     */
-    public function getFormatter(): FormatterInterface;
+    public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
 
     /**
      * @template U
      *
-     * @param callable(ManagedTransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<T>):U $tsxHandler
      *
      * @return U
      */
-    public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfig $config = null);
-
-    /**
-     * @template U
-     *
-     * @param callable(ManagedTransactionInterface<T>):U $tsxHandler
-     *
-     * @return U
-     */
-    public function readTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfig $config = null);
+    public function readTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
 
     /**
      * Alias for write transaction.
      *
      * @template U
      *
-     * @param callable(ManagedTransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<T>):U $tsxHandler
      *
      * @return U
      */
-    public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfig $config = null);
+    public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
+
+    /**
+     * @template U
+     *
+     * @param callable():(FormatterInterface<U>)|FormatterInterface<U> $formatter
+     *
+     * @return self<U>
+     */
+    public function withFormatter($formatter): self;
+
+    /**
+     * @param callable():(float|null)|float|null $timeout
+     *
+     * @return self<T>
+     */
+    public function withTransactionTimeout($timeout): self;
+
+    /**
+     * @param callable():(int|null)|int|null $fetchSize
+     *
+     * @return self<T>
+     */
+    public function withFetchSize($fetchSize): self;
+
+    /**
+     * @param callable():(string|null)|string|null $defaultDriver
+     *
+     * @return self<T>
+     */
+    public function withDefaultDriver($defaultDriver): self;
+
+    /**
+     * @param callable():(\Laudis\Neo4j\Databags\HttpPsrBindings|null)|\Laudis\Neo4j\Databags\HttpPsrBindings|null $bindings
+     *
+     * @return self<T>
+     */
+    public function withHttpPsrBindings($bindings): self;
+
+    /**
+     * @param callable():(\Laudis\Neo4j\Enum\AccessMode|null)|\Laudis\Neo4j\Enum\AccessMode|null $accessMode
+     *
+     * @return self<T>
+     */
+    public function withAccessMode($accessMode): self;
+
+    /**
+     * @param callable():(string|null)|string|null $userAgent
+     *
+     * @return self<T>
+     */
+    public function withUserAgent($userAgent): self;
+
+    /**
+     * @return self<T>
+     */
+    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null): self;
 }

@@ -56,6 +56,11 @@ final class HttpPsrBindings
         return new self($client, $streamFactory, $requestFactory);
     }
 
+    public static function default(): self
+    {
+        return new self();
+    }
+
     public function getClient(): ClientInterface
     {
         if (is_callable($this->client)) {

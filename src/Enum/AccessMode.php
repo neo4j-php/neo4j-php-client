@@ -16,6 +16,8 @@ use Laudis\TypedEnum\TypedEnum;
 /**
  * @method static self READ()
  * @method static self WRITE()
+ *
+ * @extends TypedEnum<string>
  */
 final class AccessMode extends TypedEnum
 {

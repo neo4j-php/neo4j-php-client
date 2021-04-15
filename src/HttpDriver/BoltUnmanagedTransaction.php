@@ -16,10 +16,12 @@ namespace Laudis\Neo4j\HttpDriver;
 use Bolt\Bolt;
 use Ds\Vector;
 use Exception;
-use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Throwable;
@@ -27,20 +29,22 @@ use Throwable;
 /**
  * @template T
  *
- * @implements TransactionInterface<T>
+ * @implements UnmanagedTransactionInterface<T>
  */
-final class BoltTransaction implements TransactionInterface
+final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
+    private SessionConfiguration $sessionConfiguration;
+    private StaticTransactionConfiguration $config;
     private Bolt $bolt;
-    private SessionInterface $session;
 
     /**
-     * @param SessionInterface<T> $session
+     * @param StaticTransactionConfiguration<T> $config
      */
-    public function __construct(Bolt $bolt, SessionInterface $session)
+    public function __construct(SessionConfiguration $driver, StaticTransactionConfiguration $config, Bolt $bolt)
     {
+        $this->sessionConfiguration = $driver;
+        $this->config = $config;
         $this->bolt = $bolt;
-        $this->session = $session;
     }
 
     public function commit(iterable $statements = []): Vector
@@ -80,7 +84,7 @@ final class BoltTransaction implements TransactionInterface
         /** @var Vector<T> $tbr */
         $tbr = new Vector();
         foreach ($statements as $statement) {
-            $extra = ['db' => $this->session->getConfig()->getDatabase()];
+            $extra = ['db' => $this->sessionConfiguration->getDatabase()];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             try {
                 /** @var array{fields: array<int, string>} $meta */
@@ -90,9 +94,29 @@ final class BoltTransaction implements TransactionInterface
             } catch (Throwable $e) {
                 throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
             }
-            $tbr->push($this->session->getFormatter()->formatBoltResult($meta, $results, $this->bolt));
+            $tbr->push($this->config->getFormatter()->formatBoltResult($meta, $results, $this->bolt));
         }
 
         return $tbr;
+    }
+
+    public function getConfiguration(): StaticTransactionConfiguration
+    {
+        return $this->config;
+    }
+
+    public function withTimeout($timeout): TransactionInterface
+    {
+        return new self($this->sessionConfiguration, $this->config->withTimeout($timeout), $this->bolt);
+    }
+
+    public function withFormatter($formatter): TransactionInterface
+    {
+        return new self($this->sessionConfiguration, $this->config->withFormatter($formatter), $this->bolt);
+    }
+
+    public function withMetaData($metaData): TransactionInterface
+    {
+        return new self($this->sessionConfiguration, $this->config->withMetaData($metaData), $this->bolt);
     }
 }

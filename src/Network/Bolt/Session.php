@@ -13,19 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Network\Bolt;
 
-use Bolt\Bolt;
 use Ds\Vector;
 use Exception;
-use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Databags\TransactionConfig;
+use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\HttpDriver\BoltTransaction;
+use Laudis\Neo4j\HttpDriver\BoltUnmanagedTransaction;
+use Laudis\Neo4j\Neo4jDriver;
 use function microtime;
 
 /**
@@ -34,55 +34,52 @@ use function microtime;
  */
 final class Session implements SessionInterface
 {
-    private FormatterInterface $formatter;
     private SessionConfiguration $config;
-    /** @var DriverInterface<Bolt> */
-    private DriverInterface $driver;
+    /** @var BoltDriver<T>|Neo4jDriver<T> */
+    private $driver;
 
     /**
-     * @param DriverInterface<Bolt> $driver
-     * @param FormatterInterface<T> $formatter
+     * @param BoltDriver<T>|Neo4jDriver<T> $driver
      */
-    public function __construct(DriverInterface $driver, SessionConfiguration $injections, FormatterInterface $formatter)
+    public function __construct($driver, SessionConfiguration $config)
     {
-        $this->config = $injections;
+        $this->config = $config;
         $this->driver = $driver;
-        $this->formatter = $formatter;
     }
 
-    public function runStatements(iterable $statements, ?TransactionConfig $config = null): Vector
+    public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): Vector
     {
         return $this->openTransaction($statements)->commit($statements);
     }
 
-    public function openTransaction(iterable $statements = null, ?TransactionConfig $config = null): TransactionInterface
+    public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         return $this->beginTransaction($statements, $config);
     }
 
-    public function runStatement(Statement $statement, ?TransactionConfig $config = null)
+    public function runStatement(Statement $statement, ?TransactionConfiguration $config = null)
     {
         return $this->runStatements([$statement])->first();
     }
 
-    public function run(string $statement, iterable $parameters, ?TransactionConfig $config = null)
+    public function run(string $statement, iterable $parameters, ?TransactionConfiguration $config = null)
     {
         return $this->runStatement(new Statement($statement, $parameters));
     }
 
-    public function writeTransaction(callable $tsxHandler, ?TransactionConfig $config = null)
+    public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
-        return $this->retry($tsxHandler, $config ?? TransactionConfig::default());
+        return $this->retry($tsxHandler, $this->driver->getTransactionConfiguration()->merge($config));
     }
 
     /**
      * @template U
      *
-     * @param callable(\Laudis\Neo4j\Contracts\ManagedTransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<T>):U $tsxHandler
      *
      * @return U
      */
-    private function retry(callable $tsxHandler, TransactionConfig $config)
+    private function retry(callable $tsxHandler, StaticTransactionConfiguration $config)
     {
         $timeout = $config->getTimeout();
         if ($timeout) {
@@ -105,12 +102,12 @@ final class Session implements SessionInterface
         }
     }
 
-    public function readTransaction(callable $tsxHandler, ?TransactionConfig $config = null)
+    public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
         return $this->writeTransaction($tsxHandler);
     }
 
-    public function transaction(callable $tsxHandler, ?TransactionConfig $config = null)
+    public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
         return $this->writeTransaction($tsxHandler, $config);
     }
@@ -120,10 +117,10 @@ final class Session implements SessionInterface
         return $this->config;
     }
 
-    public function beginTransaction(?iterable $statements = null, ?TransactionConfig $config = null): TransactionInterface
+    public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         try {
-            $bolt = $this->driver->acquireConnection($this->config, $config ?? TransactionConfig::default());
+            $bolt = $this->driver->acquireConnection($this->config);
             if (!$bolt->begin(['db' => $this->config->getDatabase()])) {
                 throw new Neo4jException(new Vector([new Neo4jError('', 'Cannot open new transaction')]));
             }
@@ -134,20 +131,56 @@ final class Session implements SessionInterface
             throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
         }
 
-        $tsx = new BoltTransaction($bolt, $this);
+        $tsxConfig = $this->driver->getTransactionConfiguration()->merge($config);
+        $tsx = new BoltUnmanagedTransaction($this->config, $tsxConfig, $bolt);
 
         $tsx->runStatements($statements ?? []);
 
         return $tsx;
     }
 
-    public function getFormatter(): FormatterInterface
+    public function getTransactionConfig(): StaticTransactionConfiguration
     {
-        return $this->formatter;
+        return $this->driver->getTransactionConfiguration();
     }
 
-    public function withFormatter(FormatterInterface $formatter): SessionInterface
+    public function withFormatter($formatter): SessionInterface
     {
-        return new self($this->driver, $this->config, $formatter);
+        return new self($this->driver->withFormatter($formatter), $this->config);
+    }
+
+    public function withTransactionTimeout($timeout): SessionInterface
+    {
+        return new self($this->driver->withTransactionTimeout($timeout), $this->config);
+    }
+
+    public function withDatabase($database): SessionInterface
+    {
+        return new self($this->driver->withDatabase($database), $this->config);
+    }
+
+    public function withFetchSize($fetchSize): SessionInterface
+    {
+        return new self($this->driver->withFetchSize($fetchSize), $this->config);
+    }
+
+    public function withAccessMode($accessMode): SessionInterface
+    {
+        return new self($this->driver->withAccessMode($accessMode), $this->config);
+    }
+
+    public function withBookmarks($bookmarks): SessionInterface
+    {
+        return new self($this->driver, $this->config->withBookmarks($bookmarks));
+    }
+
+    public function withConfiguration(SessionConfiguration $configuration): SessionInterface
+    {
+        return new self($this->driver, $configuration);
+    }
+
+    public function withTransactionConfiguration($configuration): SessionInterface
+    {
+        return new self($this->driver->withTransactionConfiguration($configuration), $this->config);
     }
 }

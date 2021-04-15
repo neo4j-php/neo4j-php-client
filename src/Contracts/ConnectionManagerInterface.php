@@ -12,7 +12,7 @@
 namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\TransactionConfig;
+use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
 
 /**
  * @template T
@@ -22,5 +22,5 @@ interface ConnectionManagerInterface
     /**
      * @return T
      */
-    public function acquireConnection(string $uri, SessionConfiguration $sessionConfig, TransactionConfig $tsxConfig);
+    public function acquireConnection(string $uri, SessionConfiguration $sessionConfig, StaticTransactionConfiguration $tsxConfig);
 }

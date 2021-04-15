@@ -19,7 +19,7 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\StatementStatistics;
 use Laudis\Neo4j\Formatter\StatisticsFormatter;
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
+use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
 use PHPUnit\Framework\TestCase;
 
 final class StatisticsFormatterIntegrationTest extends TestCase
@@ -42,7 +42,7 @@ final class StatisticsFormatterIntegrationTest extends TestCase
             }
         }
 
-        $builder = $builder->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfig::create()->withAutoRouting(true));
+        $builder = $builder->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true));
 
         $this->client = $builder->build()->withFormatter(new StatisticsFormatter());
     }

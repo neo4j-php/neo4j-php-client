@@ -13,6 +13,7 @@
  - Extensible
  - Designed, built and tested under close supervision with the official neo4j driver team
  - Validated with [testkit]()
+ - Fully typed with [psalm]()
 
 ## See the driver in action
 
@@ -48,9 +49,9 @@ Read more about the urls and how to use them to configure drivers [here]().
 ### Step 3: run a transaction
 
 ```php
-use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 
-$result = $client->writeTransaction(static function (TransactionInterface $tsx) {
+$result = $client->writeTransaction(static function (UnmanagedTransactionInterface $tsx) {
     $result = $tsx->run('MERGE (x {y: "z"}:X) return x');
     return $result->first()->get('x')['y'];
 });
@@ -80,28 +81,28 @@ Transaction functions are managed by the driver:
 Some examples:
 
 ```php
-use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 
 // Do a simple merge and return the result
-$result = $client->writeTransaction(static function (TransactionInterface $tsx) {
+$result = $client->writeTransaction(static function (UnmanagedTransactionInterface $tsx) {
     $result = $tsx->run('MERGE (x {y: "z"}:X) return x');
     return $result->first()->get('x')['y'];
 });
 
 // Will result in an error
-$client->readTransaction(static function (TransactionInterface $tsx) {
+$client->readTransaction(static function (UnmanagedTransactionInterface $tsx) {
     $tsx->run('MERGE (x {y: "z"}:X) return x');
 });
 
 // This is a poorly designed transaction function
-$client->writeTransaction(static function (TransactionInterface $tsx) use ($externalCounter) {
+$client->writeTransaction(static function (UnmanagedTransactionInterface $tsx) use ($externalCounter) {
     $externalCounter->incrementNodesCreated();
     $tsx->run('MERGE (x {y: $id}:X) return x', ['id' => Uuid::v4()]);
 });
 
 // This achieves the same effect but is safe in case it should be retried. The function is now idempotent.
 $id = Uuid::v4();
-$client->writeTransaction(static function (TransactionInterface $tsx) use ($id) {
+$client->writeTransaction(static function (UnmanagedTransactionInterface $tsx) use ($id) {
     $tsx->run('MERGE (x {y: $id}:X) return x', ['id' => $id]);
 });
 $externalCounter->incrementNodesCreated();

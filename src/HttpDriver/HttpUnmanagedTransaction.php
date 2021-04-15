@@ -16,14 +16,13 @@ use Ds\Vector;
 use function json_encode;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
-use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Databags\TransactionConfig;
-use Laudis\Neo4j\Network\Http\HttpDriver;
+use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
 use Laudis\Neo4j\ParameterHelper;
 use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use stdClass;
@@ -31,28 +30,29 @@ use stdClass;
 /**
  * @template T
  *
- * @implements TransactionInterface<T>
+ * @implements UnmanagedTransactionInterface<T>
  */
-final class HttpTransaction implements TransactionInterface
+final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
 {
     private RequestInterface $request;
-    private FormatterInterface $formatter;
-    private HttpDriver $driver;
     private StreamFactoryInterface $factory;
-    private SessionConfiguration $sessionConfig;
-    private TransactionConfig $tsxConfig;
+    /** @var StaticTransactionConfiguration<T> */
+    private StaticTransactionConfiguration $config;
+    private ClientInterface $client;
 
     /**
-     * @param FormatterInterface<T> $formatter
+     * @param StaticTransactionConfiguration<T> $config
      */
-    public function __construct(RequestInterface $request, FormatterInterface $formatter, HttpDriver $driver, StreamFactoryInterface $factory, SessionConfiguration $sessionConfig, TransactionConfig $tsxConfig)
-    {
+    public function __construct(
+        RequestInterface $request,
+        ClientInterface $client,
+        StreamFactoryInterface $factory,
+        StaticTransactionConfiguration $config
+    ) {
         $this->request = $request;
-        $this->formatter = $formatter;
-        $this->driver = $driver;
         $this->factory = $factory;
-        $this->sessionConfig = $sessionConfig;
-        $this->tsxConfig = $tsxConfig;
+        $this->config = $config;
+        $this->client = $client;
     }
 
     /**
@@ -81,15 +81,14 @@ final class HttpTransaction implements TransactionInterface
         $body = $this->statementsToString($statements);
 
         $request = $request->withBody($this->factory->createStream($body));
-        $response = $this->driver->acquireConnection($this->sessionConfig, $this->tsxConfig)->sendRequest($request);
+        $response = $this->client->sendRequest($request);
         $data = HttpHelper::interpretResponse($response);
 
-        return $this->formatter->formatHttpResult($response, $data);
+        return $this->config->getFormatter()->formatHttpResult($response, $data);
     }
 
     /**
-     * @throws JsonException
-     * @throws ClientExceptionInterface
+     * @throws JsonException|ClientExceptionInterface
      */
     public function commit(iterable $statements = []): Vector
     {
@@ -97,23 +96,20 @@ final class HttpTransaction implements TransactionInterface
         $request = $this->request->withUri($uri->withPath($uri->getPath().'/commit'))->withMethod('POST');
         $request = $request->withBody($this->factory->createStream($this->statementsToString($statements)));
 
-        $response = $this->driver->acquireConnection($this->sessionConfig, $this->tsxConfig)
-            ->sendRequest($request);
+        $response = $this->client->sendRequest($request);
 
         $data = HttpHelper::interpretResponse($response);
 
-        return $this->formatter->formatHttpResult($response, $data);
+        return $this->config->getFormatter()->formatHttpResult($response, $data);
     }
 
     /**
-     * @throws JsonException
-     * @throws ClientExceptionInterface
+     * @throws JsonException|ClientExceptionInterface
      */
     public function rollback(): void
     {
         $request = $this->request->withMethod('DELETE');
-        $response = $this->driver->acquireConnection($this->sessionConfig, $this->tsxConfig)
-            ->sendRequest($request);
+        $response = $this->client->sendRequest($request);
 
         HttpHelper::interpretResponse($response);
     }
@@ -132,7 +128,7 @@ final class HttpTransaction implements TransactionInterface
                 'resultDataContents' => [],
                 'includeStats' => false,
             ];
-            $st = array_merge_recursive($st, $this->formatter->statementConfigOverride());
+            $st = array_merge_recursive($st, $this->config->getFormatter()->statementConfigOverride());
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
             $tbr[] = $st;
@@ -141,5 +137,40 @@ final class HttpTransaction implements TransactionInterface
         return json_encode([
             'statements' => $tbr,
         ], JSON_THROW_ON_ERROR);
+    }
+
+    public function getConfiguration(): StaticTransactionConfiguration
+    {
+        return $this->config;
+    }
+
+    public function withTimeout($timeout): TransactionInterface
+    {
+        return new self(
+            $this->request,
+            $this->client,
+            $this->factory,
+            $this->config->withTimeout($timeout)
+        );
+    }
+
+    public function withFormatter($formatter): TransactionInterface
+    {
+        return new self(
+            $this->request,
+            $this->client,
+            $this->factory,
+            $this->config->withFormatter($formatter)
+        );
+    }
+
+    public function withMetaData($metaData): TransactionInterface
+    {
+        return new self(
+            $this->request,
+            $this->client,
+            $this->factory,
+            $this->config->withMetaData($metaData)
+        );
     }
 }

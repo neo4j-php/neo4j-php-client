@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+/**
+ * @deprecated
+ */
 interface ConfigInterface
 {
     /**

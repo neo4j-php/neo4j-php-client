@@ -13,11 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Bolt\Bolt;
 use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
+use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
 use Laudis\Neo4j\Tests\Base\ClientTest;
 
 final class ClientIntegrationTest extends ClientTest
@@ -37,7 +40,7 @@ final class ClientIntegrationTest extends ClientTest
             }
         }
 
-        $builder = $builder->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfig::create()->withAutoRouting(true));
+        $builder = $builder->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true));
 
         return $builder->build();
     }
@@ -69,5 +72,35 @@ final class ClientIntegrationTest extends ClientTest
             self::assertEquals($x, $y);
             self::assertEquals($x->toArray(), $y->toArray());
         }
+    }
+
+    public function testAvailabilityFullImplementation(): void
+    {
+        $driver = $this->client->getDriver('cluster');
+        $connection = $driver->acquireConnection(SessionConfiguration::create());
+        self::assertInstanceOf(Bolt::class, $connection);
+        $results = $driver->createSession()->beginTransaction()->run('UNWIND [1] AS x RETURN x')->first()->get('x');
+        self::assertEquals(1, $results);
+    }
+
+    public function testTransactionFunction(): void
+    {
+        $result = $this->client->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
+        });
+
+        self::assertEquals(1, $result);
+
+        $result = $this->client->readTransaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
+        });
+
+        self::assertEquals(1, $result);
+
+        $result = $this->client->writeTransaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
+        });
+
+        self::assertEquals(1, $result);
     }
 }

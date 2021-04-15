@@ -28,8 +28,8 @@ final class Authenticate
         return new NoAuth();
     }
 
-    public static function fromUri(): UriAuth
+    public static function fromUrl(): UrlAuth
     {
-        return new UriAuth();
+        return new UrlAuth();
     }
 }

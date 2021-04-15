@@ -13,50 +13,36 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use BadMethodCallException;
 use Ds\Map;
 use Ds\Vector;
-use function in_array;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Databags\ClientConfiguration;
 use Laudis\Neo4j\Databags\HttpPsrBindings;
-use Laudis\Neo4j\Exception\UnsupportedScheme;
-use Laudis\Neo4j\Formatter\BasicFormatter;
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
-use Laudis\Neo4j\Network\Bolt\BoltDriver;
+use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
 use Laudis\Neo4j\Network\Http\HttpConfig;
-use Laudis\Neo4j\Network\Http\HttpDriver;
-use function parse_url;
 
 /**
  * @template T
  *
  * @psalm-import-type ParsedUrl from \Laudis\Neo4j\Network\Bolt\BoltDriver
+ *
+ * @deprecated use the client itself to configure it
+ * @see Client::create()
  */
 final class ClientBuilder
 {
-    private ?string $default;
-    /** @var Map<string, DriverInterface> */
-    private Map $driverPool;
-    /** @var FormatterInterface<T> */
-    private FormatterInterface $formatter;
-    private string $userAgent;
-    private HttpPsrBindings $bindings;
+    /** @var Client<T> */
+    private Client $client;
 
     /**
-     * @param Map<string, DriverInterface> $driverPool
-     * @param FormatterInterface<T>        $formatter
+     * @param Client<T> $client
      */
-    private function __construct(HttpPsrBindings $bindings, Map $driverPool, ?string $default, FormatterInterface $formatter, string $userAgent)
+    public function __construct(Client $client)
     {
-        $this->bindings = $bindings;
-        $this->driverPool = $driverPool;
-        $this->default = $default;
-        $this->formatter = $formatter;
-        $this->userAgent = $userAgent;
+        $this->client = $client;
     }
 
     /**
@@ -64,64 +50,15 @@ final class ClientBuilder
      */
     public static function create(): ClientBuilder
     {
-        return new self(HttpPsrBindings::create(), new Map(), null, new BasicFormatter(), 'LaudisNeo4j/'.ClientInterface::VERSION);
-    }
-
-    public function withDriver(string $alias, string $uri, ?AuthenticateInterface $authentication = null): self
-    {
-        $parsedUrl = parse_url($uri);
-        $scheme = $parsedUrl['scheme'] ?? 'bolt';
-        $authentication ??= Authenticate::fromUri();
-
-        if (in_array($scheme, ['bolt', 'bolt+s', 'bolt+ssc'])) {
-            return $this->addBoltDriver($alias, $parsedUrl, $authentication);
-        }
-
-        if (in_array($scheme, ['neo4j', 'neo4j+s', 'neo4j+ssc'])) {
-            return $this->addNeo4jDriver($alias, $parsedUrl, $authentication);
-        }
-
-        if (in_array($scheme, ['http', 'https'])) {
-            return $this->addHttpDriver($alias, $parsedUrl, $authentication);
-        }
-
-        throw UnsupportedScheme::make($scheme, ['bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https']);
+        return new self(new Client(new Map(), ClientConfiguration::default()));
     }
 
     /**
-     * @param ParsedUrl $parsedUrl
+     * @return self<T>
      */
-    private function addHttpDriver(string $alias, array $parsedUrl, AuthenticateInterface $authenticate, ?string $defaultDatabase = null): self
+    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null): self
     {
-        $pool = $this->driverPool->copy();
-        $pool->put($alias, new HttpDriver($parsedUrl, $this->bindings, $this->userAgent, $authenticate, $defaultDatabase ?? 'neo4j'));
-
-        return new self($this->bindings, $pool, $this->default, $this->formatter, $this->userAgent);
-    }
-
-    /**
-     * @param ParsedUrl $parsedUrl
-     */
-    private function addBoltDriver(string $alias, array $parsedUrl, AuthenticateInterface $authenticate, string $defaultDatabase = null): self
-    {
-        $pool = $this->driverPool->copy();
-        $pool->put($alias, new BoltDriver($parsedUrl, $this->userAgent, $authenticate, new ConnectionManager(), $defaultDatabase ?? 'neo4j'));
-
-        return new self($this->bindings, $pool, $this->default, $this->formatter, $this->userAgent);
-    }
-
-    /**
-     * @param ParsedUrl $parsedUrl
-     */
-    private function addNeo4jDriver(string $alias, array $parsedUrl, AuthenticateInterface $authenticate, string $defaultDatabase = null): self
-    {
-        $pool = $this->driverPool->copy();
-        $baseDriver = new BoltDriver($parsedUrl, $this->userAgent, $authenticate, new ConnectionManager(), $defaultDatabase ?? 'neo4j');
-        $driver = new Neo4jDriver($parsedUrl, $this->userAgent, $authenticate, $baseDriver, $defaultDatabase ?? 'neo4j');
-
-        $pool->put($alias, $driver);
-
-        return new self($this->bindings, $pool, $this->default, $this->formatter, $this->userAgent);
+        return new self($this->client->withDriver($alias, $url, $authentication));
     }
 
     /**
@@ -130,12 +67,12 @@ final class ClientBuilder
      * @return self<T>
      *
      * @deprecated
-     * @see ClientBuilder::addConnection()
+     * @see Client::withDriver()
      */
-    public function addBoltConnection(string $alias, string $url, BoltConfig $config = null): self
+    public function addBoltConnection(string $alias, string $url, BoltConfiguration $config = null): self
     {
-        $config ??= BoltConfig::create();
-        $parsedUrl = parse_url($url);
+        $config ??= BoltConfiguration::create();
+        $parsedUrl = ConnectionManager::parseUrl($url);
         $options = $config->getSslContextOptions();
         $postScheme = '';
         if ($options !== []) {
@@ -146,15 +83,15 @@ final class ClientBuilder
             }
         }
 
+        $parsedUrl['query']['database'] ??= $config->getDatabase();
+
         if ($config->hasAutoRouting()) {
             $parsedUrl['scheme'] = 'neo4j'.$postScheme;
-
-            return $this->addNeo4jDriver($alias, $parsedUrl, Authenticate::fromUri(), $config->getDatabase());
+        } else {
+            $parsedUrl['scheme'] = 'bolt'.$postScheme;
         }
 
-        $parsedUrl['scheme'] = 'bolt'.$postScheme;
-
-        return $this->addBoltDriver($alias, $parsedUrl, Authenticate::fromUri(), $config->getDatabase());
+        return new self($this->client->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl()));
     }
 
     /**
@@ -164,13 +101,23 @@ final class ClientBuilder
      *
      * @deprecated
      * @see ClientBuilder::withDriver()
+     *
+     * @psalm-suppress DeprecatedClass
      */
     public function addHttpConnection(string $alias, string $url, HttpConfig $config = null): self
     {
         $config ??= HttpConfig::create();
-        $bindings = new HttpPsrBindings($config->getClient(), $config->getStreamFactory(), $config->getRequestFactory());
 
-        return $this->addHttpDriver($alias, parse_url($url), Authenticate::fromUri(), $config->getDatabase())->withHttpPsrBindings($bindings);
+        $bindings = new HttpPsrBindings($config->getClient(), $config->getStreamFactory(), $config->getRequestFactory());
+        $client = $this->client->withHttpPsrBindings($bindings);
+
+        $parsedUrl = ConnectionManager::parseUrl($url);
+
+        $parsedUrl['scheme'] = $bindings->getRequestFactory()->createRequest('GET', '')->getUri()->getScheme();
+        $parsedUrl['scheme'] = $parsedUrl['scheme'] === '' ? 'http' : '';
+        $parsedUrl['port'] = $parsedUrl['port'] === 7687 ? 7474 : $parsedUrl['port'];
+
+        return new self($client->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl()));
     }
 
     /**
@@ -183,7 +130,7 @@ final class ClientBuilder
      */
     public function setDefaultConnection(string $alias): self
     {
-        return new self($this->bindings, $this->driverPool->copy(), $alias, $this->formatter, $this->userAgent);
+        return new self($this->client->withDefaultDriver($alias));
     }
 
     /**
@@ -193,27 +140,29 @@ final class ClientBuilder
      */
     public function withDefaultDriver(string $alias): self
     {
-        return new self($this->bindings, $this->driverPool->copy(), $alias, $this->formatter, $this->userAgent);
+        return new self($this->client->withDefaultDriver($alias));
     }
 
     /**
      * @template U
      *
-     * @param FormatterInterface<U> $formatter
+     * @param callable():FormatterInterface<U>|FormatterInterface<U> $formatter
      *
-     * @return ClientBuilder<U>
+     * @return self<U>
      */
-    public function withFormatter(FormatterInterface $formatter): self
+    public function withFormatter($formatter): self
     {
-        return new self($this->bindings, $this->driverPool->copy(), $this->default, $formatter, $this->userAgent);
+        return new self($this->client->withFormatter($formatter));
     }
 
     /**
+     * @param callable():(\Laudis\Neo4j\Enum\AccessMode|null)|\Laudis\Neo4j\Enum\AccessMode|null $accessMode
+     *
      * @return self<T>
      */
     public function withUserAgent(string $userAgent): self
     {
-        return new self($this->bindings, $this->driverPool->copy(), $this->default, $this->formatter, $userAgent);
+        return new self($this->client->withUserAgent($userAgent));
     }
 
     /**
@@ -221,20 +170,11 @@ final class ClientBuilder
      */
     public function build(): ClientInterface
     {
-        if ($this->driverPool->isEmpty()) {
-            throw new BadMethodCallException('Client cannot be built with an empty driver pool');
-        }
-        $default = $this->default ?? $this->driverPool->first()->key;
-        if (!$this->driverPool->hasKey($default)) {
-            $format = 'Client cannot be built with a default connection "%s" that is not in the driver pool';
-            throw new BadMethodCallException(sprintf($format, $default));
-        }
-
-        return new Client($this->driverPool, $default, $this->formatter);
+        return $this->client;
     }
 
     public function withHttpPsrBindings(HttpPsrBindings $bindings): self
     {
-        return new self($bindings, $this->driverPool, $this->default, $this->formatter, $this->userAgent);
+        return new self($this->client->withHttpPsrBindings($bindings));
     }
 }

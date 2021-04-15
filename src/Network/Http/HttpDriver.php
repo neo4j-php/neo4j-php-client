@@ -14,19 +14,23 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Network\Http;
 
 use Exception;
+use Laudis\Neo4j\ConnectionManager;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\DriverConfigurationInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\HttpPsrBindings;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\TransactionConfig;
-use Laudis\Neo4j\Formatter\BasicFormatter;
+use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Network\VersionDiscovery;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 
 /**
- * @implements DriverInterface<ClientInterface>
+ * @template T
+ *
+ * @implements DriverInterface<T>
  *
  * @psalm-import-type ParsedUrl from \Laudis\Neo4j\Network\Bolt\BoltDriver
  */
@@ -36,20 +40,26 @@ final class HttpDriver implements DriverInterface
     private array $parsedUrl;
     public const DEFAULT_PORT = '7474';
     private HttpPsrBindings $bindings;
-    private string $userAgent;
     private AuthenticateInterface $auth;
-    private string $defaultDatabase;
+    private DriverConfigurationInterface $config;
+    private ConnectionManager $manager;
 
     /**
-     * @param ParsedUrl $parsedUrl
+     * @param ParsedUrl                       $parsedUrl
+     * @param DriverConfigurationInterface<T> $config
      */
-    public function __construct(array $parsedUrl, HttpPsrBindings $bindings, string $userAgent, AuthenticateInterface $auth, string $defaultDatabase = 'neo4j')
-    {
+    public function __construct(
+        array $parsedUrl,
+        HttpPsrBindings $bindings,
+        DriverConfigurationInterface $config,
+        AuthenticateInterface $auth,
+        ConnectionManager $manager
+    ) {
         $this->parsedUrl = $parsedUrl;
         $this->bindings = $bindings;
-        $this->userAgent = $userAgent;
         $this->auth = $auth;
-        $this->defaultDatabase = $defaultDatabase;
+        $this->config = $config;
+        $this->manager = $manager;
     }
 
     /**
@@ -57,12 +67,12 @@ final class HttpDriver implements DriverInterface
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
-        $config ??= SessionConfiguration::create($this->defaultDatabase);
+        $config ??= $this->config->getSessionConfiguration();
         $url = sprintf('%s://%s:%s%s',
-            $this->parsedUrl['scheme'] ?? 'http',
-            $this->parsedUrl['host'] ?? '127.0.0.1',
-            $this->parsedUrl['port'] ?? self::DEFAULT_PORT,
-            $this->parsedUrl['path'] ?? ''
+            $this->parsedUrl['scheme'],
+            $this->parsedUrl['host'],
+            $this->parsedUrl['port'],
+            $this->parsedUrl['path']
         );
 
         $factory = $this->bindings->getRequestFactory();
@@ -70,7 +80,7 @@ final class HttpDriver implements DriverInterface
         $request = $factory->createRequest('GET', $url)
             ->withHeader('Accept', 'application/json;charset=UTF-8')
             ->withHeader('Content-Type', 'application/json')
-            ->withHeader('User-Agent', $this->userAgent);
+            ->withHeader('User-Agent', $this->config->getUserAgent());
 
         $request = $this->auth->authenticateHttp($request, $this->parsedUrl);
 
@@ -79,21 +89,98 @@ final class HttpDriver implements DriverInterface
         $request = $factory->createRequest('POST', $tsx)
             ->withHeader('Accept', 'application/json;charset=UTF-8')
             ->withHeader('Content-Type', 'application/json')
-            ->withHeader('User-Agent', $this->userAgent);
+            ->withHeader('User-Agent', $this->config->getUserAgent());
 
         $request = $this->auth->authenticateHttp($request, $this->parsedUrl);
 
         return new HttpSession(
             $request,
-            new BasicFormatter(),
+            $this->bindings->getStreamFactory(),
             $this,
-            $config,
-            $this->bindings->getStreamFactory()
+            $config
         );
     }
 
-    public function acquireConnection(SessionConfiguration $sessionConfig, TransactionConfig $tsxConfig): ClientInterface
+    public function acquireConnection(SessionConfiguration $configuration): ClientInterface
     {
-        return $this->bindings->getClient();
+        return $this->manager->acquireHttpConnection();
+    }
+
+    public function withUserAgent($userAgent): DriverInterface
+    {
+        return new self($this->parsedUrl, $this->bindings, $this->config->withUserAgent($userAgent), $this->auth, $this->manager);
+    }
+
+    public function withSessionConfiguration($configuration): DriverInterface
+    {
+        return new self($this->parsedUrl, $this->bindings, $this->config->withSessionConfiguration($configuration), $this->auth, $this->manager);
+    }
+
+    public function withTransactionConfiguration(?TransactionConfiguration $configuration): DriverInterface
+    {
+        $transactionConfig = $this->config->getTransactionConfiguration()->merge($configuration);
+        $driverConfig = $this->config->withTransactionConfiguration($transactionConfig);
+
+        return new self($this->parsedUrl, $this->bindings, $driverConfig, $this->auth, $this->manager);
+    }
+
+    public function withConfiguration(DriverConfigurationInterface $configuration): DriverInterface
+    {
+        return new self($this->parsedUrl, $this->bindings, $configuration, $this->auth, $this->manager);
+    }
+
+    public function getTransactionConfiguration(): StaticTransactionConfiguration
+    {
+        return $this->config->getTransactionConfiguration();
+    }
+
+    public function getSessionConfiguration(): SessionConfiguration
+    {
+        return $this->config->getSessionConfiguration();
+    }
+
+    public function withFormatter($formatter): DriverInterface
+    {
+        $transactionConfig = $this->config->getTransactionConfiguration()->withFormatter($formatter);
+        $driverConfig = $this->config->withTransactionConfiguration($transactionConfig);
+
+        return new self($this->parsedUrl, $this->bindings, $driverConfig, $this->auth, $this->manager);
+    }
+
+    public function withTransactionTimeout($timeout): DriverInterface
+    {
+        $transactionConfig = $this->config->getTransactionConfiguration()->withTimeout($timeout);
+        $driverConfig = $this->config->withTransactionConfiguration($transactionConfig);
+
+        return new self($this->parsedUrl, $this->bindings, $driverConfig, $this->auth, $this->manager);
+    }
+
+    public function withDatabase($database): DriverInterface
+    {
+        $sessionConfig = $this->config->getSessionConfiguration()->withDatabase($database);
+        $driverConfig = $this->config->withSessionConfiguration($sessionConfig);
+
+        return new self($this->parsedUrl, $this->bindings, $driverConfig, $this->auth, $this->manager);
+    }
+
+    public function withFetchSize($fetchSize): DriverInterface
+    {
+        $sessionConfig = $this->config->getSessionConfiguration()->withFetchSize($fetchSize);
+        $driverConfig = $this->config->withSessionConfiguration($sessionConfig);
+
+        return new self($this->parsedUrl, $this->bindings, $driverConfig, $this->auth, $this->manager);
+    }
+
+    public function withAccessMode($accessMode): DriverInterface
+    {
+        $sessionConfig = $this->config->getSessionConfiguration()->withAccessMode($accessMode);
+        $driverConfig = $this->config->withSessionConfiguration($sessionConfig);
+
+        return new self($this->parsedUrl, $this->bindings, $driverConfig, $this->auth, $this->manager);
+    }
+
+    public function getConfiguration(): DriverConfigurationInterface
+    {
+        return $this->config;
     }
 }

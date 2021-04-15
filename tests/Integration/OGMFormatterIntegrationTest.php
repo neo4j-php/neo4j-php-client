@@ -18,7 +18,7 @@ use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
+use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
 use PHPUnit\Framework\TestCase;
 
 final class OGMFormatterIntegrationTest extends TestCase
@@ -32,7 +32,7 @@ final class OGMFormatterIntegrationTest extends TestCase
         $this->client = ClientBuilder::create()
             ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42')
             ->addHttpConnection('http', 'http://neo4j:test@neo4j-42')
-            ->addBoltConnection('cluster', 'http://neo4j:test@core1', BoltConfig::create()->withAutoRouting(true))
+            ->addBoltConnection('cluster', 'http://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true))
             ->withFormatter(new OGMFormatter())
             ->build();
     }
@@ -43,11 +43,11 @@ final class OGMFormatterIntegrationTest extends TestCase
 //    public function testPath(string $alias): void
 //    {
 //        $results = $this->client->run(<<<'CYPHER'
-//MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
-//WITH b
-//MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
-//RETURN x, y, z
-//CYPHER
+    //MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
+    //WITH b
+    //MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
+    //RETURN x, y, z
+    //CYPHER
 //            , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
 //
 //        self::assertEquals(1, $results->count());

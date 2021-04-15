@@ -11,114 +11,117 @@
 
 namespace Laudis\Neo4j\Databags;
 
-use function call_user_func;
-use Ds\Vector;
-use function is_callable;
 use Laudis\Neo4j\Enum\AccessMode;
 
 final class SessionConfiguration
 {
-    /** @var callable():string|string */
+    public const DEFAULT_DATABASE = 'neo4j';
+    public const DEFAULT_FETCH_SIZE = 1000;
+    public const DEFAULT_ACCESS_MODE = 'WRITE';
+    public const DEFAULT_BOOKMARKS = '[]';
+
+    /** @var callable():(string|null)|string|null */
     private $database;
-    /** @var callable():int|int */
+    /** @var callable():(int|null)|int|null */
     private $fetchSize;
-    /** @var callable():AccessMode|AccessMode */
-    private $defaultAccessMode;
-    /** @var callable():Vector<string>|Vector<string> */
+    /** @var callable():(AccessMode|null)|AccessMode|null */
+    private $accessMode;
+    /** @var callable():(iterable<string>|null)|iterable<string>|null */
     private $bookmarks;
 
     /**
-     * @param callable():string|string|null            $database
-     * @param callable():int|int|null                  $fetchSize
-     * @param callable():AccessMode|AccessMode|null    $defaultAccessMode
-     * @param callable():Vector<string>|Vector<string> $bookmarks
+     * @param callable():(string|null)|string|null                     $database
+     * @param callable():(int|null)|int|null                           $fetchSize
+     * @param callable():(AccessMode|null)|AccessMode|null             $defaultAccessMode
+     * @param callable():(iterable<string>|null)|iterable<string>|null $bookmarks
      */
-    public function __construct($database = null, $fetchSize = null, $defaultAccessMode = null, $bookmarks = null)
-    {
-        $this->database = $database ?? 'neo4j';
-        $this->fetchSize = $fetchSize ?? 1000;
-        $this->defaultAccessMode = $defaultAccessMode ?? AccessMode::WRITE();
-        $this->bookmarks = $bookmarks ?? new Vector();
+    public function __construct(
+        $database = null,
+        $fetchSize = null,
+        $defaultAccessMode = null,
+        $bookmarks = null
+    ) {
+        $this->database = $database;
+        $this->fetchSize = $fetchSize;
+        $this->accessMode = $defaultAccessMode;
+        $this->bookmarks = $bookmarks;
     }
 
     /**
      * @psalm-immutable
      *
-     * @param callable():string|string|null            $database
-     * @param callable():int|int|null                  $fetchSize
-     * @param callable():AccessMode|AccessMode|null    $defaultAccessMode
-     * @param callable():Vector<string>|Vector<string> $bookmarks
+     * @param callable():(string|null)|string|null                $database
+     * @param callable():(int|null)|int|null                      $fetchSize
+     * @param callable():(AccessMode|null)|AccessMode|null        $defaultAccessMode
+     * @param callable():(iterable<string>|null)|iterable<string> $bookmarks
      */
     public static function create($database = null, $fetchSize = null, $defaultAccessMode = null, $bookmarks = null): self
     {
         return new self($database, $fetchSize, $defaultAccessMode, $bookmarks);
     }
 
+    public static function default(): self
+    {
+        return new self();
+    }
+
     /**
-     * @param string|callable():string $database
+     * @param string|callable():(string|null)|null $database
      */
     public function withDatabase($database): self
     {
-        return new self($database, $this->fetchSize, $this->defaultAccessMode, $this->bookmarks);
+        return new self($database, $this->fetchSize, $this->accessMode, $this->bookmarks);
     }
 
     /**
-     * @param callable():int|int $size
+     * @param callable():(int|null)|int|null $size
      */
     public function withFetchSize($size): self
     {
-        return new self($this->database, $size, $this->defaultAccessMode, $this->bookmarks);
+        return new self($this->database, $size, $this->accessMode, $this->bookmarks);
     }
 
     /**
-     * @param callable():AccessMode|AccessMode|null $defaultAccessMode
+     * @param callable():(AccessMode|null)|AccessMode|null $defaultAccessMode
      */
-    public function withDefaultAccessMode($defaultAccessMode): self
+    public function withAccessMode($defaultAccessMode): self
     {
         return new self($this->database, $this->fetchSize, $defaultAccessMode, $this->bookmarks);
     }
 
     /**
-     * @param (callable():Vector<string>)|Vector<string> $bookmarks
+     * @param callable():(iterable<string>|null)|iterable<string>|null $bookmarks
      */
     public function withBookmarks($bookmarks): self
     {
-        return new self($this->database, $this->fetchSize, $this->defaultAccessMode, $bookmarks);
+        return new self($this->database, $this->fetchSize, $this->accessMode, $bookmarks);
     }
 
     public function getFetchSize(): int
     {
-        if (is_callable($this->fetchSize)) {
-            $this->fetchSize = call_user_func($this->fetchSize);
-        }
+        $fetchSize = is_callable($this->fetchSize) ? call_user_func($this->fetchSize) : $this->fetchSize;
 
-        return $this->fetchSize;
+        return $fetchSize ?? self::DEFAULT_FETCH_SIZE;
     }
 
-    public function getDefaultAccessMode(): AccessMode
+    public function getAccessMode(): AccessMode
     {
-        if (is_callable($this->defaultAccessMode)) {
-            $this->defaultAccessMode = call_user_func($this->defaultAccessMode);
-        }
+        $accessMode = is_callable($this->accessMode) ? call_user_func($this->accessMode) : $this->accessMode;
 
-        return $this->defaultAccessMode;
+        return $accessMode ?? AccessMode::WRITE();
     }
 
     public function getDatabase(): string
     {
-        if (is_callable($this->database)) {
-            $this->database = call_user_func($this->database);
-        }
+        $database = is_callable($this->database) ? call_user_func($this->database) : $this->database;
 
-        return $this->database;
+        return $database ?? self::DEFAULT_DATABASE;
     }
 
-    public function getBookmarks(): Vector
+    public function getBookmarks(): iterable
     {
-        if (is_callable($this->bookmarks)) {
-            $this->bookmarks = call_user_func($this->bookmarks);
-        }
+        $bookmarks = is_callable($this->bookmarks) ? call_user_func($this->bookmarks) : $this->bookmarks;
 
-        return $this->bookmarks;
+        return $bookmarks ?? [];
     }
 }

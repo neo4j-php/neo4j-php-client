@@ -15,7 +15,7 @@ use Bolt\Bolt;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 
-final class UriAuth implements AuthenticateInterface
+final class UrlAuth implements AuthenticateInterface
 {
     public function authenticateHttp(RequestInterface $request, array $parsedUrl): RequestInterface
     {

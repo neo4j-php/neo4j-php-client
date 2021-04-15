@@ -39,8 +39,9 @@ use Laudis\Neo4j\Contracts\ConfigInterface;
  * }
  *
  * @psalm-type LazySSLContextOptions = callable():SSLContextOptions|SSLContextOptions
+ * @psalm-suppress DeprecatedInterface
  */
-final class BoltConfig implements ConfigInterface
+final class BoltConfiguration implements ConfigInterface
 {
     /** @var callable():string|string */
     private $database;
@@ -131,6 +132,9 @@ final class BoltConfig implements ConfigInterface
         return $this->sslContextOptions;
     }
 
+    /**
+     * @psalm-suppress DeprecatedClass
+     */
     public function mergeConfig(ConfigInterface $config): ConfigInterface
     {
         return new self($config->getDatabase(), $this->sslContextOptions, $config->hasAutoRouting());

@@ -20,6 +20,10 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
+/**
+ * @deprecated
+ * @psalm-suppress DeprecatedInterface
+ */
 final class HttpConfig implements ConfigInterface
 {
     /** @var ClientInterface|callable():ClientInterface */
@@ -34,8 +38,6 @@ final class HttpConfig implements ConfigInterface
     private $autoRouting;
 
     /**
-     * Injector constructor.
-     *
      * @param string|callable():string|null                                   $database
      * @param ClientInterface|callable():ClientInterface|null                 $client
      * @param StreamFactoryInterface|callable():StreamFactoryInterface|null   $streamFactory
@@ -59,7 +61,19 @@ final class HttpConfig implements ConfigInterface
         $this->autoRouting = $autoRouting ?? false;
     }
 
-    public static function create(): self
+    /**
+     * @param string|callable():string|null                                   $database
+     * @param ClientInterface|callable():ClientInterface|null                 $client
+     * @param StreamFactoryInterface|callable():StreamFactoryInterface|null   $streamFactory
+     * @param RequestFactoryInterface|callable():RequestFactoryInterface|null $requestFactory
+     * @param bool|callable():bool                                            $autoRouting
+     */
+    public static function create($database = null, $client = null, $streamFactory = null, $requestFactory = null, $autoRouting = null): HttpConfig
+    {
+        return new self($database, $client, $streamFactory, $requestFactory, $autoRouting);
+    }
+
+    public static function default(): HttpConfig
     {
         return new self();
     }
@@ -132,6 +146,9 @@ final class HttpConfig implements ConfigInterface
         return $this->database;
     }
 
+    /**
+     * @psalm-suppress DeprecatedClass
+     */
     public function withAutoRouting($routing): ConfigInterface
     {
         return new self(
@@ -152,6 +169,9 @@ final class HttpConfig implements ConfigInterface
         return $this->autoRouting;
     }
 
+    /**
+     * @psalm-suppress DeprecatedClass
+     */
     public function mergeConfig(ConfigInterface $config): ConfigInterface
     {
         return new self(

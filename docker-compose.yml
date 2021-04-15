@@ -9,8 +9,6 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-            args:
-                - WITH_XDEBUG=true
         working_dir: /opt/project
         networks:
             - neo4j

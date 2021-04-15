@@ -39,8 +39,6 @@ class HttpHelper
         /** @var CypherResponseSet $body */
         $body = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
 
-        var_dump($body);
-
         $errors = new Vector();
         foreach ($body['errors'] as $error) {
             $errors->push(new Neo4jError($error['code'], $error['message']));

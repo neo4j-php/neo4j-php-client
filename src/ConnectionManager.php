@@ -16,6 +16,12 @@ use Exception;
 use function explode;
 use const FILTER_VALIDATE_IP;
 use function filter_var;
+use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\HttpPsrBindings;
+use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
+use Laudis\Neo4j\Exception\Neo4jException;
+use Psr\Http\Client\ClientInterface;
 use function str_starts_with;
 
 /**
@@ -23,18 +29,78 @@ use function str_starts_with;
  */
 final class ConnectionManager
 {
-    public const DEFAULT_BOLT_PORT = 7687;
+    private HttpPsrBindings $bindings;
+
+    public function __construct(HttpPsrBindings $bindings)
+    {
+        $this->bindings = $bindings;
+    }
+
+    /**
+     * @return ParsedUrl
+     */
+    public static function parseUrl(string $url): array
+    {
+        $parsedUrl = parse_url($url);
+        parse_str($parsedUrl['query'] ?? '', $query);
+        /** @var array<string, string> */
+        $query['database'] ??= 'neo4j';
+
+        /** @var array<string, string> $query */
+        return [
+            'scheme' => $parsedUrl['scheme'] ?? 'bolt',
+            'host' => $parsedUrl['host'] ?? '127.0.0.1',
+            'path' => $parsedUrl['path'] ?? '',
+            'port' => $parsedUrl['port'] ?? 7687,
+            'query' => $query,
+            'user' => $parsedUrl['user'] ?? null,
+            'pass' => $parsedUrl['pass'] ?? null,
+        ];
+    }
+
+    /**
+     * @template U
+     * @template T
+     *
+     * @param callable(TransactionInterface<T>):U         $tsxHandler
+     * @param callable():UnmanagedTransactionInterface<T> $tsxFactory
+     *
+     * @return U
+     */
+    public static function retry(callable $tsxFactory, callable $tsxHandler, StaticTransactionConfiguration $config)
+    {
+        $timeout = $config->getTimeout();
+        if ($timeout) {
+            $limit = microtime(true) + $timeout;
+        } else {
+            $limit = PHP_FLOAT_MAX;
+        }
+        while (true) {
+            try {
+                $transaction = $tsxFactory();
+                $tbr = $tsxHandler($transaction);
+                $transaction->commit();
+
+                return $tbr;
+            } catch (Neo4jException $e) {
+                if (microtime(true) > $limit) {
+                    throw $e;
+                }
+            }
+        }
+    }
 
     /**
      * @param ParsedUrl $parsedUrl
+     *
      * @throws Exception
      */
-    public function acquireConnection(array $parsedUrl): StreamSocket
+    public function acquireBoltConnection(array $parsedUrl): StreamSocket
     {
-        $host = $parsedUrl['host'] ?? '127.0.0.1';
-        $socket = new StreamSocket($host, $parsedUrl['port'] ?? self::DEFAULT_BOLT_PORT);
+        $host = $parsedUrl['host'];
+        $socket = new StreamSocket($host, $parsedUrl['port']);
 
-        $scheme = $parsedUrl['scheme'] ?? 'bolt';
+        $scheme = $parsedUrl['scheme'];
         $explosion = explode('+', $scheme, 2);
         $sslConfig = $explosion[1] ?? '';
 
@@ -43,6 +109,11 @@ final class ConnectionManager
         }
 
         return $socket;
+    }
+
+    public function acquireHttpConnection(): ClientInterface
+    {
+        return $this->bindings->getClient();
     }
 
     private function enableSsl(string $host, string $sslConfig, StreamSocket $sock): void

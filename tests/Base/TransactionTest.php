@@ -15,7 +15,7 @@ namespace Laudis\Neo4j\Tests\Base;
 
 use Ds\Map;
 use Ds\Vector;
-use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
@@ -29,16 +29,16 @@ abstract class TransactionTest extends TestCase
     }
 
     /**
-     * @return array<array{0: TransactionInterface<Vector<Map<string, scalar|array|null>>>}>
+     * @return array<array{0: UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>>}>
      */
     abstract public function makeTransactions(): iterable;
 
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testValidRun(TransactionInterface $transaction): void
+    public function testValidRun(UnmanagedTransactionInterface $transaction): void
     {
         $response = $transaction->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
@@ -61,9 +61,9 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testInvalidRun(TransactionInterface $transaction): void
+    public function testInvalidRun(UnmanagedTransactionInterface $transaction): void
     {
         $exception = false;
         try {
@@ -77,9 +77,9 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testValidStatement(TransactionInterface $transaction): void
+    public function testValidStatement(UnmanagedTransactionInterface $transaction): void
     {
         $response = $transaction->runStatement(
             Statement::create(<<<'CYPHER'
@@ -104,9 +104,9 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testInvalidStatement(TransactionInterface $transaction): void
+    public function testInvalidStatement(UnmanagedTransactionInterface $transaction): void
     {
         $exception = false;
         try {
@@ -121,9 +121,9 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testStatements(TransactionInterface $transaction): void
+    public function testStatements(UnmanagedTransactionInterface $transaction): void
     {
         $params = ['test' => 'a', 'otherTest' => 'b'];
         $response = $transaction->runStatements([
@@ -154,9 +154,9 @@ CYPHER,
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testInvalidStatements(TransactionInterface $transaction): void
+    public function testInvalidStatements(UnmanagedTransactionInterface $transaction): void
     {
         $exception = false;
         try {
@@ -183,9 +183,9 @@ CYPHER,
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testCommitValidEmpty(TransactionInterface $transaction): void
+    public function testCommitValidEmpty(UnmanagedTransactionInterface $transaction): void
     {
         $result = $transaction->commit();
         self::assertEquals(0, $result->count());
@@ -194,9 +194,9 @@ CYPHER,
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testCommitValidFilled(TransactionInterface $transaction): void
+    public function testCommitValidFilled(UnmanagedTransactionInterface $transaction): void
     {
         $result = $transaction->commit([Statement::create(<<<'CYPHER'
 UNWIND [1, 2, 3] AS x
@@ -210,9 +210,9 @@ CYPHER
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testCommitValidFilledWithInvalidStatement(TransactionInterface $transaction): void
+    public function testCommitValidFilledWithInvalidStatement(UnmanagedTransactionInterface $transaction): void
     {
         $exception = false;
         try {
@@ -226,9 +226,9 @@ CYPHER
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testCommitInvalid(TransactionInterface $transaction): void
+    public function testCommitInvalid(UnmanagedTransactionInterface $transaction): void
     {
         $transaction->commit();
         $exception = false;
@@ -243,9 +243,9 @@ CYPHER
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testRollbackValid(TransactionInterface $transaction): void
+    public function testRollbackValid(UnmanagedTransactionInterface $transaction): void
     {
         $transaction->rollback();
         self::assertTrue(true);
@@ -254,9 +254,9 @@ CYPHER
     /**
      * @dataProvider makeTransactions
      *
-     * @param TransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
+     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testRollbackInvalid(TransactionInterface $transaction): void
+    public function testRollbackInvalid(UnmanagedTransactionInterface $transaction): void
     {
         $transaction->rollback();
         $exception = false;
