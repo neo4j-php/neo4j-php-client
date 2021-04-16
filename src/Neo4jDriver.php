@@ -24,6 +24,7 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Laudis\Neo4j\Network\Bolt\BoltDriver;
@@ -164,12 +165,12 @@ final class Neo4jDriver implements DriverInterface
         return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withUserAgent($userAgent));
     }
 
-    public function withSessionConfiguration($configuration): DriverInterface
+    public function withSessionConfiguration(?SessionConfiguration $configuration): DriverInterface
     {
         return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withSessionConfiguration($configuration));
     }
 
-    public function withTransactionConfiguration($configuration): DriverInterface
+    public function withTransactionConfiguration(?TransactionConfiguration $configuration): DriverInterface
     {
         $transactionConfiguration = $this->configuration->getTransactionConfiguration()->merge($configuration);
         $merged = $this->configuration->withTransactionConfiguration($transactionConfiguration);

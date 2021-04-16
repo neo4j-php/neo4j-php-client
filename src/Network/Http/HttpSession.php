@@ -184,7 +184,7 @@ final class HttpSession implements SessionInterface
         return new self($this->request, $this->factory, $this->driver, $configuration);
     }
 
-    public function withTransactionConfiguration($configuration): SessionInterface
+    public function withTransactionConfiguration(?TransactionConfiguration $configuration): SessionInterface
     {
         $driver = $this->driver->withTransactionConfiguration($configuration);
 

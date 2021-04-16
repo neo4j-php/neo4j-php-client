@@ -111,7 +111,7 @@ final class HttpDriver implements DriverInterface
         return new self($this->parsedUrl, $this->bindings, $this->config->withUserAgent($userAgent), $this->auth, $this->manager);
     }
 
-    public function withSessionConfiguration($configuration): DriverInterface
+    public function withSessionConfiguration(?SessionConfiguration $configuration): DriverInterface
     {
         return new self($this->parsedUrl, $this->bindings, $this->config->withSessionConfiguration($configuration), $this->auth, $this->manager);
     }

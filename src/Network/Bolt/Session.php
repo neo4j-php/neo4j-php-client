@@ -179,7 +179,7 @@ final class Session implements SessionInterface
         return new self($this->driver, $configuration);
     }
 
-    public function withTransactionConfiguration($configuration): SessionInterface
+    public function withTransactionConfiguration(?TransactionConfiguration $configuration): SessionInterface
     {
         return new self($this->driver->withTransactionConfiguration($configuration), $this->config);
     }
