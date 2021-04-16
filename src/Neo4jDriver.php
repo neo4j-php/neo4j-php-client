@@ -43,8 +43,6 @@ final class Neo4jDriver implements DriverInterface
     private AuthenticateInterface $auth;
 
     private ?RoutingTable $table = null;
-    private int $currentLeader = 0;
-    private int $currentFollower = 0;
     /** @var BoltDriver<Vector<Map<string, scalar|array|null>>> */
     private BoltDriver $driver;
     /** @var DriverConfigurationInterface<T> */
@@ -95,18 +93,14 @@ final class Neo4jDriver implements DriverInterface
         $drivers = $this->setupDrivers($config);
 
         if ($config->getAccessMode() === AccessMode::WRITE()) {
-            $currentLeader = $this->currentLeader % $drivers['leaders']->count();
-            $tbr = $drivers['leaders']->get($currentLeader)();
-            ++$this->currentLeader;
+            $currentLeader = random_int(0, $drivers['leaders']->count() - 1);
 
-            return $tbr;
+            return $drivers['leaders']->get($currentLeader)();
         }
 
-        $currentFollower = $this->currentFollower % $drivers['followers']->count();
-        $tbr = $drivers['followers']->get($currentFollower)();
-        ++$this->currentFollower;
+        $currentFollower = random_int(0, $drivers['followers']->count() - 1);
 
-        return $tbr;
+        return $drivers['followers']->get($currentFollower)();
     }
 
     /**
