@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Network\Bolt;
 
 use function call_user_func;
 use function is_callable;
+use Laudis\Neo4j\Client;
 use Laudis\Neo4j\Contracts\ConfigInterface;
 
 /**
@@ -40,6 +41,9 @@ use Laudis\Neo4j\Contracts\ConfigInterface;
  *
  * @psalm-type LazySSLContextOptions = callable():SSLContextOptions|SSLContextOptions
  * @psalm-suppress DeprecatedInterface
+ *
+ * @deprecated
+ * @see Client::withDriver()
  */
 final class BoltConfiguration implements ConfigInterface
 {

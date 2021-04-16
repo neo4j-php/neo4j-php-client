@@ -13,10 +13,16 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use function array_slice;
 use Bolt\Bolt;
 use Bolt\structures\Path;
+use function count;
 use Ds\Map;
 use Ds\Vector;
+use function get_class;
+use function gettype;
+use function is_array;
+use function is_object;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -157,10 +163,8 @@ final class BasicFormatter implements FormatterInterface
             throw new UnexpectedValueException($message);
         }
 
-        /** @var array $properties */
-        $properties = $object->properties();
-
-        return $properties;
+        /** @var array */
+        return $object->properties();
     }
 
     private function remapObjectsInArray(array $value): array

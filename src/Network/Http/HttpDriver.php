@@ -38,7 +38,6 @@ final class HttpDriver implements DriverInterface
 {
     /** @var ParsedUrl */
     private array $parsedUrl;
-    public const DEFAULT_PORT = '7474';
     private HttpPsrBindings $bindings;
     private AuthenticateInterface $auth;
     private DriverConfigurationInterface $config;
