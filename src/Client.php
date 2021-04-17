@@ -58,6 +58,14 @@ final class Client implements ClientInterface
         $this->driverConfigurations = $driverConfigurations;
     }
 
+    /**
+     * @return Client<Vector<Map<string, array|scalar|null>>>
+     */
+    public static function make(): Client
+    {
+        return new self(new Map(), ClientConfiguration::default());
+    }
+
     public function run(string $query, iterable $parameters = [], ?string $alias = null)
     {
         return $this->startSession($alias)->run($query, $parameters);
