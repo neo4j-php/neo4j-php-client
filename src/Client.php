@@ -15,6 +15,7 @@ namespace Laudis\Neo4j;
 
 use Ds\Map;
 use Ds\Vector;
+use function in_array;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;

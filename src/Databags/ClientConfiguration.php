@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Laudis Neo4j package.
  *
@@ -13,6 +15,7 @@ namespace Laudis\Neo4j\Databags;
 
 use Ds\Map;
 use Ds\Vector;
+use function is_callable;
 use Laudis\Neo4j\Contracts\DriverConfigurationInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Enum\AccessMode;

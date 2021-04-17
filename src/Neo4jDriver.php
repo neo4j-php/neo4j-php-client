@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Laudis Neo4j package.
  *
@@ -24,6 +26,7 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Laudis\Neo4j\Network\Bolt\BoltDriver;
@@ -43,8 +46,6 @@ final class Neo4jDriver implements DriverInterface
     private AuthenticateInterface $auth;
 
     private ?RoutingTable $table = null;
-    private int $currentLeader = 0;
-    private int $currentFollower = 0;
     /** @var BoltDriver<Vector<Map<string, scalar|array|null>>> */
     private BoltDriver $driver;
     /** @var DriverConfigurationInterface<T> */
@@ -95,18 +96,14 @@ final class Neo4jDriver implements DriverInterface
         $drivers = $this->setupDrivers($config);
 
         if ($config->getAccessMode() === AccessMode::WRITE()) {
-            $currentLeader = $this->currentLeader % $drivers['leaders']->count();
-            $tbr = $drivers['leaders']->get($currentLeader)();
-            ++$this->currentLeader;
+            $currentLeader = random_int(0, $drivers['leaders']->count() - 1);
 
-            return $tbr;
+            return $drivers['leaders']->get($currentLeader)();
         }
 
-        $currentFollower = $this->currentFollower % $drivers['followers']->count();
-        $tbr = $drivers['followers']->get($currentFollower)();
-        ++$this->currentFollower;
+        $currentFollower = random_int(0, $drivers['followers']->count() - 1);
 
-        return $tbr;
+        return $drivers['followers']->get($currentFollower)();
     }
 
     /**
@@ -170,12 +167,12 @@ final class Neo4jDriver implements DriverInterface
         return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withUserAgent($userAgent));
     }
 
-    public function withSessionConfiguration($configuration): DriverInterface
+    public function withSessionConfiguration(?SessionConfiguration $configuration): DriverInterface
     {
         return new self($this->parsedUrl, $this->auth, $this->driver, $this->configuration->withSessionConfiguration($configuration));
     }
 
-    public function withTransactionConfiguration($configuration): DriverInterface
+    public function withTransactionConfiguration(?TransactionConfiguration $configuration): DriverInterface
     {
         $transactionConfiguration = $this->configuration->getTransactionConfiguration()->merge($configuration);
         $merged = $this->configuration->withTransactionConfiguration($transactionConfiguration);
