@@ -15,6 +15,7 @@ use Ds\Map;
 use Bolt\structures\Path;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\TypeMapperTrait;
 use Bolt\structures\DateTime as BoltDateTime;
 use Bolt\structures\Date as BoltDate;
 use Laudis\Neo4j\Types\Node;
@@ -34,6 +35,8 @@ use Psr\Http\Message\ResponseInterface;
  */
 final class OGMFormatter implements FormatterInterface
 {
+    use TypeMapperTrait;
+
     public function formatBoltResult(array $meta, iterable $results, Bolt $bolt): Vector
     {
         $results = array_slice($results, 0, count($results) - 1);
@@ -72,14 +75,7 @@ final class OGMFormatter implements FormatterInterface
             foreach ($row as $i => $value) {
                 if (is_array($value)) {
                     // dealing with properties
-                    switch ($meta[$i]['type']) {
-                        case 'node':
-                            $record->put($columns[$i], Node::makeFromHttpNode($graph['nodes'][$i]));
-                            break;
-                        default:
-                            // @TODO What to do about unsupported types
-                            $record->put($columns[$i], $value);
-                    }
+                    $record->put($columns[$i], $this->mapValueToType($meta[$i]['type'], $graph['nodes'][$i]));
                 } elseif (is_numeric($value)) {
                     // dealing with a number
                     $record->put($columns[$i], $value);
@@ -105,22 +101,10 @@ final class OGMFormatter implements FormatterInterface
     private function mapValue($value)
     {
         if (is_object($value)) {
-            switch (get_class($value)) {
-                case BoltNode::class:
-                    return Node::makeFromBoltNode($value);
-                case BoltDate::class:
-                    return Date::makeFromBoltDate($value);
-                case BoltDuration::class:
-                    return Duration::makeFromBoltDuration($value);
-                case BoltDateTime::class:
-                    return DateTime::makeFromBoltDateTime($value);
-                default:
-                    // @TODO what to do about unsupported types?
-                    return $value;
-            }
-        } elseif (is_numeric($value)) {
-            return $value;
+            return $this->mapValueToType(get_class($value), $value);
         }
+
+        return $value;
     }
 
     public function decorateRequest(RequestInterface $request): RequestInterface

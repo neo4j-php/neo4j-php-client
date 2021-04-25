@@ -23,6 +23,8 @@ use Bolt\structures\DateTime as BoltDateTime;
 
 class Node
 {
+    use TypeMapperTrait;
+
     private int $id;
     private Vector $labels;
     private Map $properties;
@@ -78,14 +80,7 @@ class Node
     {
         return $properties->map(function($key, $value) {
             if (is_object($value)) {
-                switch(get_class($value)) {
-                    case BoltDate::class:
-                        return Date::makeFromBoltDate($value);
-                    case BoltDuration::class:
-                        return Duration::makeFromBoltDuration($value);
-                    case BoltDateTime::class:
-                        return DateTime::makeFromBoltDateTime($value);
-                }
+                return $this->mapValueToType(get_class($value), $value);
             }
 
             return $value;
