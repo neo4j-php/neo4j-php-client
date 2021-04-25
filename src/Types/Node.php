@@ -51,9 +51,9 @@ class Node
         );
     }
 
-    public function labels(): array
+    public function labels(): Vector
     {
-        return $this->labels->toArray();
+        return $this->labels->copy();
     }
 
     public function properties(): array
