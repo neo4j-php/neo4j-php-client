@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use DateInterval;
 use Bolt\structures\Duration as BoltDuration;
 
 class Duration
@@ -48,6 +49,11 @@ class Duration
     public function nanoseconds(): int
     {
         return $this->nanoseconds;
+    }
+
+    public function toDateInterval(): DateInterval
+    {
+        return new DateInterval(sprintf('P%dM%dDT%dS', $this->months, $this->days, $this->seconds));
     }
 
     public static function makeFromBoltDuration(BoltDuration $duration): self
