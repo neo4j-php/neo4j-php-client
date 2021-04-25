@@ -135,6 +135,8 @@ CYPHER);
         self::assertEquals(1, $results[1]['aDuration']->days());
         self::assertEquals(43200, $results[1]['aDuration']->seconds());
         self::assertEquals(0, $results[1]['aDuration']->nanoseconds());
+        $interval = new DateInterval(sprintf('P%dM%dDT%dS', 5, 1, 43200));
+        self::assertEquals($interval, $results[1]['aDuration']->toDateInterval());
     }
 
     /**
@@ -206,7 +208,7 @@ CYPHER);
         }
     }
 
-    private function articlesQuery()
+    private function articlesQuery(): string
     {
         return <<<CYPHER
 UNWIND [
