@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Types;
 
 use Ds\Map;
 use Ds\Vector;
+use BadMethodCallException;
 use Bolt\structures\Date as BoltDate;
 use Bolt\structures\Node as BoltNode;
 use Bolt\structures\Duration as BoltDuration;
@@ -94,5 +95,10 @@ class Node
     public function __get($key)
     {
         return $this->property($key);
+    }
+
+    public function __set($key, $value)
+    {
+        throw new BadMethodCallException(sprintf("% is immutable", get_class($this)));
     }
 }
