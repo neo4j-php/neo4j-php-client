@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Ds\Map;
 use Ds\Vector;
+use DateInterval;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\ClientBuilder;
@@ -76,14 +77,14 @@ CYPHER
         /** @var Node $u */
         $u = $results[0]['u'];
         self::assertInstanceOf(Node::class, $u);
-        self::assertEquals(['User'], $u->labels());
+        self::assertEquals(new Vector(['User']), $u->labels());
         self::assertEquals($email, $u->properties()['email']);
         self::assertEquals($uuid, $u->properties()['uuid']);
 
         /** @var Node $p */
         $p = $results[0]['p'];
         self::assertInstanceOf(Node::class, $p);
-        self::assertEquals(['Food', 'Pizza'], $p->labels());
+        self::assertEquals(new Vector(['Food', 'Pizza']), $p->labels());
         self::assertEquals($type, $p->properties()['type']);
     }
 
@@ -158,7 +159,7 @@ CYPHER);
         self::assertEquals(18049, $results[1]['published_at']->days());
 
         self::assertInstanceOf(Date::class, $results[2]['published_at']);
-        self::assertEquals(18702, $results[2]['published_at']->days());
+        self::assertEquals(18742, $results[2]['published_at']->days());
     }
 
     /**
@@ -222,7 +223,7 @@ UNWIND [
       readingTime: {minutes: 2, seconds: 30} },
     { title: "Dates, Datetimes, and Durations in Neo4j",
       created: datetime(),
-      datePublished: date(),
+      datePublished: date("2021-04-25"),
       readingTime: {minutes: 3, seconds: 30} }
 ] AS articleProperties
 
