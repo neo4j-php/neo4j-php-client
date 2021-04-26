@@ -54,7 +54,12 @@ class TransactionConfiguration
      */
     public function getMetaData(): iterable
     {
-        return  (is_callable($this->metaData) ? call_user_func($this->metaData) : $this->metaData) ?? new Map();
+        $tbr = $this->metaData;
+        if (is_callable($tbr)) {
+            $tbr = $tbr();
+        }
+
+        return $tbr ?? new Map();
     }
 
     /**
@@ -62,7 +67,12 @@ class TransactionConfiguration
      */
     public function getTimeout(): float
     {
-        return (is_callable($this->timeout) ? call_user_func($this->timeout) : $this->timeout) ?? self::DEFAULT_TIMEOUT;
+        $tbr = $this->timeout;
+        if (is_callable($tbr)) {
+            $tbr = $tbr();
+        }
+
+        return $tbr ?? self::DEFAULT_TIMEOUT;
     }
 
     /**
