@@ -23,23 +23,22 @@ use Laudis\Neo4j\Formatter\BasicFormatter;
 /**
  * @template T
  */
-final class StaticTransactionConfiguration
+final class StaticTransactionConfiguration extends TransactionConfiguration
 {
-    public const DEFAULT_TIMEOUT = 15.0;
-    public const DEFAULT_METADATA = '[]';
     public const DEFAULT_FORMATTER = BasicFormatter::class;
 
     /** @var callable():(FormatterInterface<T>)|FormatterInterface<T> */
     private $formatter;
-    private TransactionConfiguration $config;
 
     /**
-     * @param callable():FormatterInterface<T>|FormatterInterface<T> $formatter
+     * @param callable():FormatterInterface<T>|FormatterInterface<T>                                         $formatter
+     * @param callable():(float|null)|float|null                                                             $timeout   timeout in seconds
+     * @param callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
      */
-    public function __construct($formatter, ?TransactionConfiguration $configuration = null)
+    public function __construct($formatter, $timeout = null, $metaData = null)
     {
         $this->formatter = $formatter;
-        $this->config = $configuration ?? new TransactionConfiguration();
+        parent::__construct($timeout, $metaData);
     }
 
     /**
@@ -51,43 +50,14 @@ final class StaticTransactionConfiguration
     }
 
     /**
-     * @template U
-     *
-     * @param callable():(float|null)|float|null                                                             $timeout   timeout in seconds
+     * @param callable():(float|null)|float|null                                                             $timeout  timeout in seconds
      * @param callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
-     * @param callable():FormatterInterface<U>|FormatterInterface<U>                                         $formatter
      *
-     * @return self<U>
+     * @return self<Vector<Map<string, array|scalar|null>>>
      */
-    public static function create($formatter, $timeout = null, $metaData = null): self
+    public static function create($timeout = null, $metaData = null): self
     {
-        return new self($formatter, TransactionConfiguration::create($timeout, $metaData));
-    }
-
-    /**
-     * @return iterable<string, scalar|array|null>
-     */
-    public function getMetaData(): iterable
-    {
-        $metaData = $this->config->getMetaData();
-        if (is_callable($metaData)) {
-            $metaData = $metaData();
-        }
-
-        return $metaData ?? [];
-    }
-
-    /**
-     * Timeout in seconds.
-     */
-    public function getTimeout(): float
-    {
-        $timeout = $this->config->getTimeout();
-        if (is_callable($timeout)) {
-            $timeout = $timeout();
-        }
-
-        return $timeout ?? self::DEFAULT_TIMEOUT;
+        return self::default()->withTimeout($timeout)->withMetaData($metaData);
     }
 
     /**
@@ -105,7 +75,7 @@ final class StaticTransactionConfiguration
      */
     public function withTimeout($timeout): self
     {
-        return new self($this->formatter, $this->config->withTimeout($timeout));
+        return new self($this->formatter, $timeout, $this->metaData);
     }
 
     /**
@@ -117,7 +87,7 @@ final class StaticTransactionConfiguration
      */
     public function withFormatter($formatter): self
     {
-        return new self($formatter, $this->config);
+        return new self($formatter, $this->timeout, $this->metaData);
     }
 
     /**
@@ -127,7 +97,7 @@ final class StaticTransactionConfiguration
      */
     public function withMetaData($metaData): self
     {
-        return new self($this->formatter, $this->config->withMetaData($metaData));
+        return new self($this->formatter, $this->timeout, $metaData);
     }
 
     /**
@@ -138,11 +108,11 @@ final class StaticTransactionConfiguration
         $tsxConfig = $this;
         $config ??= TransactionConfiguration::create();
 
-        $metaData = $config->getMetaData();
+        $metaData = $config->metaData;
         if ($metaData) {
             $tsxConfig = $tsxConfig->withMetaData($metaData);
         }
-        $timeout = $config->getTimeout();
+        $timeout = $config->timeout;
         if ($timeout) {
             $tsxConfig = $tsxConfig->withTimeout($timeout);
         }

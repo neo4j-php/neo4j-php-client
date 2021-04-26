@@ -13,12 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-final class TransactionConfiguration
+use Ds\Map;
+
+class TransactionConfiguration
 {
+    public const DEFAULT_TIMEOUT = 15.0;
+    public const DEFAULT_METADATA = '[]';
+
     /** @var callable():(float|null)|float|null */
-    private $timeout;
+    protected $timeout;
     /** @var callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null */
-    private $metaData;
+    protected $metaData;
 
     /**
      * @param callable():(float|null)|float|null                                                             $timeout  timeout in seconds
@@ -45,21 +50,19 @@ final class TransactionConfiguration
     }
 
     /**
-     * @return callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null
+     * @return iterable<string, scalar|array|null>
      */
-    public function getMetaData()
+    public function getMetaData(): iterable
     {
-        return $this->metaData;
+        return  (is_callable($this->metaData) ? call_user_func($this->metaData) : $this->metaData) ?? new Map();
     }
 
     /**
      * Timeout in seconds.
-     *
-     * @return callable():(float|null)|float|null
      */
-    public function getTimeout()
+    public function getTimeout(): float
     {
-        return $this->timeout;
+        return (is_callable($this->timeout) ? call_user_func($this->timeout) : $this->timeout) ?? self::DEFAULT_TIMEOUT;
     }
 
     /**
