@@ -46,6 +46,8 @@ final class Client implements ClientInterface
 
     /** @var Map<string, array{0: ParsedUrl, 1:AuthenticateInterface}> */
     private Map $driverConfigurations;
+    /** @var Map<string, DriverInterface> */
+    private Map $drivers;
     /** @var ClientConfiguration<T> */
     private ClientConfiguration $configuration;
 
@@ -57,6 +59,7 @@ final class Client implements ClientInterface
     {
         $this->configuration = $configuration;
         $this->driverConfigurations = $driverConfigurations;
+        $this->drivers = new Map();
     }
 
     /**
@@ -103,14 +106,20 @@ final class Client implements ClientInterface
         $scheme = $parsedUrl['scheme'] ?? 'bolt';
 
         if (in_array($scheme, ['bolt', 'bolt+s', 'bolt+ssc'])) {
-            return $this->makeBoltDriver($parsedUrl, $authentication);
+            return $this->cacheDriver($alias, function () use ($parsedUrl, $authentication) {
+                return $this->makeBoltDriver($parsedUrl, $authentication);
+            });
         }
 
         if (in_array($scheme, ['neo4j', 'neo4j+s', 'neo4j+ssc'])) {
-            return $this->makeNeo4jDriver($parsedUrl, $authentication);
+            return $this->cacheDriver($alias, function () use ($parsedUrl, $authentication) {
+                return $this->makeNeo4jDriver($parsedUrl, $authentication);
+            });
         }
 
-        return $this->makeHttpDriver($parsedUrl, $authentication);
+        return $this->cacheDriver($alias, function () use ($parsedUrl, $authentication) {
+            return $this->makeHttpDriver($parsedUrl, $authentication);
+        });
     }
 
     public function startSession(?string $alias = null, ?SessionConfiguration $config = null): SessionInterface
@@ -193,6 +202,24 @@ final class Client implements ClientInterface
         $manager = new ConnectionManager($this->configuration->getDriverConfiguration()->getHttpPsrBindings());
 
         return new BoltDriver($parsedUrl, $authenticate, $manager, $driverConfig);
+    }
+
+    /**
+     * @template U as DriverInterface
+     *
+     * @param callable():U $factory
+     *
+     * @return U
+     */
+    private function cacheDriver(string $alias, callable $factory): DriverInterface
+    {
+        /** @var U|null */
+        $tbr = $this->drivers->get($alias, null);
+        $tbr ??= $factory();
+
+        $this->drivers->put($alias, $tbr);
+
+        return $tbr;
     }
 
     /**
