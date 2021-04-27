@@ -22,19 +22,19 @@ jobs:
             -   name: "Build"
                 run: |
                     docker build . \
-                    && docker-compose -f docker/docker-compose.yml \
-                    && build --parallel && docker-compose build
+                      && docker-compose -f docker/docker-compose.yml build --parallel \
+                      && docker-compose build
             -   name: "Static Analysis"
                 run: |
                     docker run php-neo4j:static-analysis tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run \
-                    && docker run php-neo4j:static-analysis tools/psalm/vendor/bin/psalm --show-info=true
+                      && docker run php-neo4j:static-analysis tools/psalm/vendor/bin/psalm --show-info=true
             -   name: "Test"
                 run: |
                     docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME down --volumes --remove-orphans \
-                    && docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME up -d --force-recreate --remove-orphans \
-                    && sleep 30' // Wait for the servers to complete bootin \
-                    && docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-80 php vendor/bin/phpunit \
-                    && docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-74 php vendor/bin/phpunit
+                      && docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME up -d --force-recreate --remove-orphans \
+                      && sleep 30' // Wait for the servers to complete bootin \
+                      && docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-80 php vendor/bin/phpunit \
+                      && docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client-74 php vendor/bin/phpunit
             -   name: "Coverage"
                 run: |
                     docker-compose -f docker/docker-compose.yml -p $BRANCH_NAME run client bash -c "\
