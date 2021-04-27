@@ -32,7 +32,8 @@ jobs:
         run: |
           docker-compose -f docker/docker-compose.yml down --volumes --remove-orphans \
             && docker-compose -f docker/docker-compose.yml up -d --force-recreate --remove-orphans \
-            && sleep 30 \
+            && sleep 60 \
+            && docker-compose -f docker/docker-compose.yml ps
             && docker-compose -f docker/docker-compose.yml run client-80 php vendor/bin/phpunit \
             && docker-compose -f docker/docker-compose.yml run client-74 php vendor/bin/phpunit
       - name: "Coverage"
