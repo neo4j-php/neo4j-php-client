@@ -13,7 +13,7 @@ jobs:
         name: "Neo4j PHP Client tests"
         runs-on: ubuntu-latest
         strategy:
-            fail-fast: false
+                fail-fast: false
         steps:
             -   name: "Checkout branch"
                 uses: actions/checkout@v2
