@@ -27,6 +27,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\HttpDriver\BoltUnmanagedTransaction;
 use Laudis\Neo4j\Neo4jDriver;
 use function microtime;
+use function var_export;
 
 /**
  * @template T
