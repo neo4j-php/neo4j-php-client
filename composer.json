@@ -29,7 +29,7 @@
         "php-http/message": "^1.0",
         "php-ds/php-ds": "1.*",
         "php-http/message-factory": "^1.0",
-        "stefanak-michal/bolt": "^2.1"
+        "stefanak-michal/bolt": "^2.2"
     },
     "suggest": {
         "ext-sockets": "Needed to implement bolt protocol",
