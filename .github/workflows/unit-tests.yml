@@ -14,10 +14,10 @@ jobs:
       matrix:
         php-version: ['7.4', '8']
         neo4j-version: ["3.5", "4.0", "4.1", "4.2"]
-    name: "Running Unit Tests for PHP ${php-version} on Neo4j ${neo4j-version}"
+    name: "Running Unit Tests for PHP ${{matrix.php-version}} on Neo4j ${{matrix.neo4-version}}"
     services:
       neo4j:
-        image: neo4j:${neo4j-version}
+        image: neo4j:${{matrix.neo4j-version}}
         ports:
           - 7474
           - 7687
@@ -28,7 +28,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${php-version}
+          php-version: ${{matrix.php-version}}
       - name: Install dependencies
         uses: php-actions/composer@v5
       - name: Run unit tests
