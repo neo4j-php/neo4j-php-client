@@ -37,7 +37,7 @@ final class ClientBuilderTest extends TestCase
         $this->expectExceptionMessage('Client cannot be built with a default connection "error" that is not in the connection pool');
 
         ClientBuilder::create()
-            ->addHttpConnection('temp', 'http://neoj:test@localhost')
+            ->addHttpConnection('temp', 'http://neoj:test@neo4j')
             ->setDefaultConnection('error')
             ->build();
     }
@@ -63,20 +63,20 @@ final class ClientBuilderTest extends TestCase
     public function testBoltSetupNoScheme(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $client = ClientBuilder::create()->addBoltConnection('bolt', 'neo4j:test@localhost:7687')->build();
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'neo4j:test@neo4j:7687')->build();
         $client->openTransaction();
     }
 
     public function testBoltSetupWithScheme(): void
     {
-        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@localhost:7687')->build();
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j:7687')->build();
         $client->openTransaction();
         self::assertTrue(true);
     }
 
     public function testBoltSetupWithoutPort(): void
     {
-        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@localhost')->build();
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')->build();
         $client->openTransaction();
         self::assertTrue(true);
     }
@@ -84,7 +84,7 @@ final class ClientBuilderTest extends TestCase
     public function testBoltSetupWithoutUserAndPass(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://@localhost')->build();
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://@neo4j')->build();
         $client->openTransaction();
     }
 
@@ -97,7 +97,7 @@ final class ClientBuilderTest extends TestCase
 
     public function testBoltSetupWrongScheme(): void
     {
-        $client = ClientBuilder::create()->addBoltConnection('bolt', 'neo4j://neo4j:test@localhost:7687')->build();
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'neo4j://neo4j:test@neo4j:7687')->build();
         $client->openTransaction();
         self::assertTrue(true);
     }
@@ -105,27 +105,27 @@ final class ClientBuilderTest extends TestCase
     public function testHttpSetupNoScheme(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $client = ClientBuilder::create()->addHttpConnection('http', 'test:neo4j@localhost:7474')->build();
+        $client = ClientBuilder::create()->addHttpConnection('http', 'test:neo4j@neo4j:7474')->build();
         $client->openTransaction();
     }
 
     public function testHttpSetupWithScheme(): void
     {
-        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@localhost:7474')->build();
+        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@neo4j:7474')->build();
         $client->openTransaction();
         self::assertTrue(true);
     }
 
     public function testHttpSetupWrongScheme(): void
     {
-        $client = ClientBuilder::create()->addHttpConnection('http', 'neo4j://neo4j:test@localhost:7474')->build();
+        $client = ClientBuilder::create()->addHttpConnection('http', 'neo4j://neo4j:test@neo4j:7474')->build();
         $this->expectException(NetworkException::class);
         $client->openTransaction();
     }
 
     public function testHttpSetupWithoutPort(): void
     {
-        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@localhost')->build();
+        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@neo4j')->build();
         $client->openTransaction();
         self::assertTrue(true);
     }
@@ -133,7 +133,7 @@ final class ClientBuilderTest extends TestCase
     public function testHttpSetupWithoutUserAndPass(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $client = ClientBuilder::create()->addHttpConnection('http', 'http://@localhost')->build();
+        $client = ClientBuilder::create()->addHttpConnection('http', 'http://@neo4j')->build();
         $client->openTransaction();
     }
 
@@ -146,14 +146,14 @@ final class ClientBuilderTest extends TestCase
 
     public function testHttpWithDatabase(): void
     {
-        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@localhost', HttpInjections::create()->withDatabase('abc'))->build();
+        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@neo4j', HttpInjections::create()->withDatabase('abc'))->build();
         $this->expectException(Neo4jException::class);
         $client->openTransaction();
     }
 
     public function testBoltWithDatabase(): void
     {
-        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@localhost', BoltInjections::create()->withDatabase('abc'))->build();
+        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j', BoltInjections::create()->withDatabase('abc'))->build();
         $this->expectException(Neo4jException::class);
         $client->openTransaction();
     }

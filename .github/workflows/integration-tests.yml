@@ -12,10 +12,10 @@ jobs:
       matrix:
         php-version: ['7.4', '8']
         neo4j-version: ["3.5", "4.0", "4.1", "4.2"]
-    name: "Running Integration Tests for PHP ${{matrix.php-version}} on Neo4j ${{matrix.neo4j-version}}"
+    name: "Running Integration Tests for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }}"
 
     container:
-      image:  php:${{ matrxi.php-version }}-cli
+      image:  php:${{ matrix.php-version }}-cli
 
     services:
       core1:
