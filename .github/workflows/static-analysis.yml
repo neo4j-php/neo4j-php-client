@@ -4,12 +4,8 @@ jobs:
   php-cs-fixer:
     name: "PHP-CS-Fixer"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: [ '7.4', '8' ]
-      fail-fast: false
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       - name: "PHP-CS-Fixer"
         uses: docker://oskarstark/php-cs-fixer-ga:2.19.0
         with:
