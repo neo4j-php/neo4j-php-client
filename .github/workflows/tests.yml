@@ -18,13 +18,21 @@ jobs:
       image:  php:${{ matrix.php-version }}-cli
 
     services:
+      neo4j:
+        image: neo4j:${{ matrix.neo4j-version }}
+        ports:
+          - 7474:7474
+          - 7687:7687
+        env:
+          NEO4J_AUTH: neo4j/test
+
       core1:
         image: neo4j:${{ matrix.neo4j-version }}-enterprise
         ports:
           - 7686:7686
-          - 5000:5000
-          - 6000:6000
-          - 7000:7000
+          - 5000
+          - 6000
+          - 7000
         env:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
           NEO4J_AUTH: neo4j/test
@@ -91,8 +99,17 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup PHP
         run: |
-          apt-get update && apt-get install -y libzip-dev zip unzip \
-            && docker-php-ext-install gd sockets bcmath
+          apt-get update && apt-get install -y \
+            libfreetype6-dev \
+            libjpeg62-turbo-dev \
+            libmcrypt-dev \
+            libpng-dev \
+            libzip-dev \
+            zip \
+            unzip \
+            && docker-php-ext-install -j$(nproc) gd sockets bcmath \
+            && pecl install ds \
+            && docker-php-ext-enable ds
       - name: Install Composer
         run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       - name: Install dependencies

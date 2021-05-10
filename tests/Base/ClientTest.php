@@ -27,7 +27,9 @@ abstract class ClientTest extends TestCase
     /**
      * @return iterable<array-key, array<array-key, string>>
      */
-    abstract public function connectionAliases(): iterable;
+    public function connectionAliases(): iterable {
+        return ['bolt', 'http', 'cluster'];
+    }
 
     protected function setUp(): void
     {
