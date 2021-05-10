@@ -12,7 +12,7 @@ jobs:
       matrix:
         php-version: ['7.4', '8']
         neo4j-version: ["3.5", "4.0", "4.1", "4.2"]
-    name: "Running Integration Tests for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }}"
+    name: "Running Tests for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }}"
 
     container:
       image:  php:${{ matrix.php-version }}-cli
@@ -114,6 +114,8 @@ jobs:
         run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       - name: Install dependencies
         run: /usr/local/bin/composer install
-      - name: Run unit tests
+      - name: Run Unit tests
+        run: vendor/bin/phpunit tests/Unit
+      - name: Run Integration tests
         run: vendor/bin/phpunit tests/Integration
 

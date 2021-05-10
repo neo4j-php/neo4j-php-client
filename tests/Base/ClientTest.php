@@ -25,10 +25,11 @@ abstract class ClientTest extends TestCase
     abstract public function createClient(): ClientInterface;
 
     /**
-     * @return iterable<array-key, array<array-key, string>>
+     * @return iterable<array<string>>
      */
-    public function connectionAliases(): iterable {
-        return ['bolt', 'http', 'cluster'];
+    public function connectionAliases(): iterable
+    {
+        return [['bolt'], ['http'], ['cluster']];
     }
 
     protected function setUp(): void
