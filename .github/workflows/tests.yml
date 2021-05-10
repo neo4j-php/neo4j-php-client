@@ -107,6 +107,7 @@ jobs:
             libzip-dev \
             zip \
             unzip \
+            wget \
             && docker-php-ext-install -j$(nproc) gd sockets bcmath \
             && pecl install ds \
             && docker-php-ext-enable ds
