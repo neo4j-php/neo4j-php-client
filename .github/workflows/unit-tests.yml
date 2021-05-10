@@ -28,7 +28,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup PHP
-        run: docker-php-ext-install gd sockets bcmath
+        run: |
+        apt-get update && apt-get install -y libzip-dev zip unzip \
+          && docker-php-ext-install gd sockets bcmath
       - name: Install Composer
         run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       - name: Install dependencies
