@@ -30,6 +30,11 @@ jobs:
           extensions: gd, sockets, bcmath
       - name: Install dependencies
         uses: php-actions/composer@v5
+        with:
+          dev: no
+          progress: yes
+          php_version: ${{matrix.php-version}}
+          php_extensions: gd sockets bcmath
       - name: Run unit tests
         run: vendor/bin/phpunit tests/Unit
 
