@@ -31,7 +31,7 @@ final class BoltDriverIntegrationTest extends TestCase
     public function testValidHostname(): void
     {
         /** @var ParsedUrl $parsedUrl */
-        $parsedUrl = parse_url('bolt://neo4j:test@neo4j-42');
+        $parsedUrl = parse_url('bolt://neo4j:test@neo4j');
         $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession();
         $results = $session->run([new Statement(<<<'CYPHER'
 RETURN 1 AS x
@@ -44,7 +44,7 @@ CYPHER, [])]);
      */
     public function testValidUrl(): void
     {
-        $ip = gethostbyname('neo4j-42');
+        $ip = gethostbyname('neo4j');
         /** @var ParsedUrl $parsedUrl */
         $parsedUrl = parse_url('bolt://neo4j:test@'.$ip);
         $session = (new BoltDriver($parsedUrl, BoltInjections::create()))->aquireSession();

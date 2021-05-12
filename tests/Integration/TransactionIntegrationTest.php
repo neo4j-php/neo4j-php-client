@@ -20,25 +20,14 @@ final class TransactionIntegrationTest extends TransactionTest
 {
     protected function makeTransactions(): iterable
     {
-        $versions = ['42', '41', '40', '35'];
         $builder = ClientBuilder::create();
-        foreach ($versions as $version) {
-            $hostname = 'neo4j-'.$version;
-            if (gethostbyname($hostname) !== $hostname) {
-                $builder->addBoltConnection('bolt-'.$version, 'bolt://neo4j:test@'.$hostname);
-                $builder->addHttpConnection('http-'.$version, 'http://neo4j:test@'.$hostname);
-            }
-        }
+        $builder->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j');
+        $builder->addHttpConnection('http', 'http://neo4j:test@neo4j');
         $client = $builder->build();
 
         $tbr = [];
-        foreach ($versions as $version) {
-            $hostname = 'neo4j-'.$version;
-            if (gethostbyname($hostname) !== $hostname) {
-                $tbr[] = $client->openTransaction(null, 'bolt-'.$version);
-                $tbr[] = $client->openTransaction(null, 'http-'.$version);
-            }
-        }
+        $tbr[] = $client->openTransaction(null, 'bolt');
+        $tbr[] = $client->openTransaction(null, 'http');
 
         return $tbr;
     }
