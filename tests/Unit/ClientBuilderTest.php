@@ -143,18 +143,4 @@ final class ClientBuilderTest extends TestCase
         $client = ClientBuilder::create()->addHttpConnection('http', '')->build();
         $client->openTransaction();
     }
-
-    public function testHttpWithDatabase(): void
-    {
-        $client = ClientBuilder::create()->addHttpConnection('http', 'http://neo4j:test@neo4j', HttpInjections::create()->withDatabase('abc'))->build();
-        $this->expectException(Neo4jException::class);
-        $client->openTransaction();
-    }
-
-    public function testBoltWithDatabase(): void
-    {
-        $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j', BoltInjections::create()->withDatabase('abc'))->build();
-        $this->expectException(Neo4jException::class);
-        $client->openTransaction();
-    }
 }
