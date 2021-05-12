@@ -49,7 +49,7 @@ final class Session implements SessionInterface
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): Vector
     {
-        return $this->openTransaction($statements)->commit($statements);
+        return $this->openTransaction($statements)->commit();
     }
 
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
