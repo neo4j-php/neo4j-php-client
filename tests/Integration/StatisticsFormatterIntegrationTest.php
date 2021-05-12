@@ -21,6 +21,7 @@ use Laudis\Neo4j\Databags\StatementStatistics;
 use Laudis\Neo4j\Formatter\StatisticsFormatter;
 use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
 use PHPUnit\Framework\TestCase;
+use function var_export;
 
 final class StatisticsFormatterIntegrationTest extends TestCase
 {
@@ -37,12 +38,12 @@ final class StatisticsFormatterIntegrationTest extends TestCase
             if ($index % 2 === 0) {
                 $explosion = explode('-', $alias);
                 $version = $explosion[count($explosion) - 1];
-                $builder = $builder->addBoltConnection('bolt-'.$version, 'bolt://neo4j:test@neo4j-'.$version);
-                $builder = $builder->addBoltConnection('http-'.$version, 'http://neo4j:test@neo4j-'.$version);
+                $builder = $builder->withDriver('bolt-' . $version, 'bolt://neo4j:test@neo4j-' . $version);
+                $builder = $builder->withDriver('http-' . $version, 'http://neo4j:test@neo4j-' . $version);
             }
         }
 
-        $builder = $builder->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true));
+        $builder = $builder->withDriver('cluster', 'neo4j://neo4j:test@core1');
 
         $this->client = $builder->build()->withFormatter(new StatisticsFormatter());
     }
@@ -62,7 +63,7 @@ final class StatisticsFormatterIntegrationTest extends TestCase
      */
     public function testAcceptanceWrite(string $alias): void
     {
-        self::assertEquals(new StatementStatistics(1, 0, 0, 0, 1, 1), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => random_bytes(128)], $alias));
+        self::assertEquals(new StatementStatistics(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias));
     }
 
     /**
@@ -72,9 +73,9 @@ final class StatisticsFormatterIntegrationTest extends TestCase
     {
         /** @var array<array{0: string}> $tbr */
         $tbr = [];
-        foreach (explode(',', (string) getenv('NEO4J_VERSIONS_AVAILABLE')) as $version) {
-            $tbr[] = ['bolt-'.$version];
-            $tbr[] = ['http-'.$version];
+        foreach (explode(',', (string)getenv('NEO4J_VERSIONS_AVAILABLE')) as $version) {
+            $tbr[] = ['bolt-' . $version];
+            $tbr[] = ['http-' . $version];
         }
 
         $tbr[] = ['cluster'];

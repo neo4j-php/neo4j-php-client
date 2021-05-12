@@ -87,19 +87,23 @@ final class Session implements SessionInterface
         } else {
             $limit = PHP_FLOAT_MAX;
         }
-        while (true) {
+        $tbr = null;
+        $continue = true;
+        while ($continue) {
             try {
                 $transaction = $this->openTransaction();
                 $tbr = $tsxHandler($transaction);
                 $transaction->commit();
 
-                return $tbr;
+                $continue = false;
             } catch (Neo4jException $e) {
                 if (microtime(true) > $limit) {
                     throw $e;
                 }
             }
         }
+
+        return $tbr;
     }
 
     public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)

@@ -32,6 +32,7 @@ use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use Laudis\Neo4j\Network\Http\HttpDriver;
 use function sprintf;
+use function var_export;
 
 /**
  * @template T

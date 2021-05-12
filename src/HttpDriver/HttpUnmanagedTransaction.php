@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\HttpDriver;
 use function array_merge_recursive;
 use Ds\Vector;
 use function json_encode;
+use function var_export;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
 use Laudis\Neo4j\Contracts\TransactionInterface;
@@ -130,7 +131,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
                 'resultDataContents' => [],
                 'includeStats' => false,
             ];
-            $st = array_merge_recursive($st, $this->config->getFormatter()->statementConfigOverride());
+            $st = array_merge($st, $this->config->getFormatter()->statementConfigOverride());
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
             $tbr[] = $st;

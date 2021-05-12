@@ -49,11 +49,12 @@ final class ConnectionManager
         $query['database'] ??= 'neo4j';
 
         /** @var array<string, string> $query */
+        $scheme = $parsedUrl['scheme'] ?? 'bolt';
         return [
-            'scheme' => $parsedUrl['scheme'] ?? 'bolt',
+            'scheme' => $scheme,
             'host' => $parsedUrl['host'] ?? '127.0.0.1',
             'path' => $parsedUrl['path'] ?? '',
-            'port' => $parsedUrl['port'] ?? 7687,
+            'port' => $parsedUrl['port'] ?? ($scheme === 'http' ? 7474 : 7687),
             'query' => $query,
             'user' => $parsedUrl['user'] ?? null,
             'pass' => $parsedUrl['pass'] ?? null,
