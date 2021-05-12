@@ -17,7 +17,7 @@ services:
         volumes:
             - .:/opt/project
         depends_on:
-            - neo4j-42
+            - neo4j
             - core1
             - core2
             - core3
@@ -26,10 +26,10 @@ services:
             - 9000
         environment:
             - XDEBUG_MODE=coverage
-    neo4j-42:
+    neo4j:
         networks:
             - neo4j
-        image: neo4j:4.2-enterprise
+        image: neo4j:3.5-enterprise
         healthcheck:
             test: [ "CMD", "neo4j status" ]
             interval: 30s

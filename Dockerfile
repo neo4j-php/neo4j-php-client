@@ -29,13 +29,9 @@ WORKDIR /opt/project
 COPY composer.json composer.lock phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php_cs ./
 COPY src/ src/
 COPY tests/ tests/
-COPY tools/ tools/
 COPY .git/ .git/
 
 
-RUN composer install  && \
-    composer install --working-dir=tools/php-cs-fixer && \
-    composer install --working-dir=tools/psalm
-
+RUN composer install
 
 
