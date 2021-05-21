@@ -16,23 +16,19 @@ namespace Laudis\Neo4j\Contracts;
 use Bolt\Bolt;
 use Exception;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\UriInterface;
 
-/**
- * @psalm-import-type ParsedUrl from \Laudis\Neo4j\Network\Bolt\BoltDriver
- */
 interface AuthenticateInterface
 {
     /**
-     * @param ParsedUrl $parsedUrl
-     *
-     * @throws Exception
+     * Authenticates a RequestInterface with the provided configuration Uri and userAgent.
      */
-    public function authenticateHttp(RequestInterface $request, array $parsedUrl): RequestInterface;
+    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface;
 
     /**
-     * @param ParsedUrl $parsedUrl
+     * Authenticates a Bolt connection with the provided configuration Uri and userAgent.
      *
      * @throws Exception
      */
-    public function authenticateBolt(Bolt $bolt, array $parsedUrl, string $userAgent): void;
+    public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void;
 }

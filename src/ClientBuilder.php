@@ -15,34 +15,46 @@ namespace Laudis\Neo4j;
 
 use Ds\Map;
 use Ds\Vector;
+use function http_build_query;
+use function in_array;
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Bolt\BoltConfiguration;
+use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
-use Laudis\Neo4j\Databags\ClientConfiguration;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\HttpPsrBindings;
-use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
-use Laudis\Neo4j\Network\Http\HttpConfig;
+use Laudis\Neo4j\Exception\UnsupportedScheme;
+use Laudis\Neo4j\Formatter\BasicFormatter;
+use Laudis\Neo4j\Http\HttpConfig;
+use function var_export;
 
 /**
  * @template T
  *
- * @psalm-import-type ParsedUrl from \Laudis\Neo4j\Network\Bolt\BoltDriver
- *
- * @deprecated use the client itself to configure it
  * @see Client::create()
  */
 final class ClientBuilder
 {
-    /** @var Client<T> */
-    private Client $client;
+    public const SUPPORTED_SCHEMES = ['', 'bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https'];
+
+    /** @var Map<string, array{0: Uri, 1:AuthenticateInterface}> */
+    private Map $driverConfigurations;
+    private DriverConfiguration $configuration;
+    private ?string $defaultDriver;
+    private FormatterInterface $formatter;
 
     /**
-     * @param Client<T> $client
+     * @param Map<string, array{0: Uri, 1:AuthenticateInterface}> $driverConfigurations
+     * @param FormatterInterface<T>                               $formatter
      */
-    public function __construct(Client $client)
+    public function __construct(DriverConfiguration $configuration, FormatterInterface $formatter, Map $driverConfigurations, ?string $defaultDriver)
     {
-        $this->client = $client;
+        $this->driverConfigurations = $driverConfigurations;
+        $this->configuration = $configuration;
+        $this->defaultDriver = $defaultDriver;
+        $this->formatter = $formatter;
     }
 
     /**
@@ -50,7 +62,7 @@ final class ClientBuilder
      */
     public static function create(): ClientBuilder
     {
-        return new self(new Client(new Map(), ClientConfiguration::default()));
+        return new self(DriverConfiguration::default(), new BasicFormatter(), new Map(), null);
     }
 
     /**
@@ -58,7 +70,25 @@ final class ClientBuilder
      */
     public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null): self
     {
-        return new self($this->client->withDriver($alias, $url, $authentication));
+        return $this->withParsedUrl($alias, Uri::create($url), $authentication);
+    }
+
+    /**
+     * @return self<T>
+     */
+    private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication = null): self
+    {
+        $scheme = $uri->getScheme();
+        $authentication ??= Authenticate::fromUrl();
+
+        if (!in_array($scheme, self::SUPPORTED_SCHEMES, true)) {
+            throw UnsupportedScheme::make($scheme, self::SUPPORTED_SCHEMES);
+        }
+
+        $configs = $this->driverConfigurations->copy();
+        $configs->put($alias, [$uri, $authentication]);
+
+        return new self($this->configuration, $this->formatter, $configs, $this->defaultDriver);
     }
 
     /**
@@ -67,12 +97,14 @@ final class ClientBuilder
      * @return self<T>
      *
      * @deprecated
+     * @psalm-suppress DeprecatedClass
+     *
      * @see Client::withDriver()
      */
     public function addBoltConnection(string $alias, string $url, BoltConfiguration $config = null): self
     {
         $config ??= BoltConfiguration::create();
-        $parsedUrl = ConnectionManager::parseUrl($url);
+        $parsedUrl = Uri::create($url);
         $options = $config->getSslContextOptions();
         $postScheme = '';
         if ($options !== []) {
@@ -83,15 +115,19 @@ final class ClientBuilder
             }
         }
 
-        $parsedUrl['query']['database'] ??= $config->getDatabase();
+        $query = [];
+        parse_str($parsedUrl->getQuery(), $query);
+        /** @var array<string, string> */
+        $query['database'] ??= $config->getDatabase();
+        $parsedUrl = $parsedUrl->withPath(http_build_query($query));
 
         if ($config->hasAutoRouting()) {
-            $parsedUrl['scheme'] = 'neo4j'.$postScheme;
+            $parsedUrl = $parsedUrl->withScheme('neo4j'.$postScheme);
         } else {
-            $parsedUrl['scheme'] = 'bolt'.$postScheme;
+            $parsedUrl = $parsedUrl->withScheme('bolt'.$postScheme);
         }
 
-        return new self($this->client->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl()));
+        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl());
     }
 
     /**
@@ -109,15 +145,21 @@ final class ClientBuilder
         $config ??= HttpConfig::create();
 
         $bindings = new HttpPsrBindings($config->getClient(), $config->getStreamFactory(), $config->getRequestFactory());
-        $client = $this->client->withHttpPsrBindings($bindings);
 
-        $parsedUrl = ConnectionManager::parseUrl($url);
+        $uri = Uri::create($url);
 
-        $parsedUrl['scheme'] = $bindings->getRequestFactory()->createRequest('GET', '')->getUri()->getScheme();
-        $parsedUrl['scheme'] = $parsedUrl['scheme'] === '' ? 'http' : '';
-        $parsedUrl['port'] = $parsedUrl['port'] === 7687 ? 7474 : $parsedUrl['port'];
+        $scheme = $bindings->getRequestFactory()->createRequest('GET', $uri)->getUri()->getScheme();
+        $uri = $uri->withScheme($scheme === '' ? 'http' : $scheme);
+        $uri = $uri->withPort($uri->getPort() === 7687 ? 7474 : $uri->getPort());
 
-        return new self($client->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl()));
+        $self = new self(
+            $this->configuration->withHttpPsrBindings($bindings),
+            $this->formatter,
+            $this->driverConfigurations,
+            $this->defaultDriver
+        );
+
+        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl());
     }
 
     /**
@@ -130,7 +172,7 @@ final class ClientBuilder
      */
     public function setDefaultConnection(string $alias): self
     {
-        return new self($this->client->withDefaultDriver($alias));
+        return $this->withDefaultDriver($alias);
     }
 
     /**
@@ -140,29 +182,19 @@ final class ClientBuilder
      */
     public function withDefaultDriver(string $alias): self
     {
-        return new self($this->client->withDefaultDriver($alias));
+        return new self($this->configuration, $this->formatter, $this->driverConfigurations, $alias);
     }
 
     /**
      * @template U
      *
-     * @param callable():FormatterInterface<U>|FormatterInterface<U> $formatter
+     * @param FormatterInterface<U> $formatter
      *
      * @return self<U>
      */
-    public function withFormatter($formatter): self
+    public function withFormatter(FormatterInterface $formatter): self
     {
-        return new self($this->client->withFormatter($formatter));
-    }
-
-    /**
-     * @param callable():(\Laudis\Neo4j\Enum\AccessMode|null)|\Laudis\Neo4j\Enum\AccessMode|null $accessMode
-     *
-     * @return self<T>
-     */
-    public function withUserAgent(string $userAgent): self
-    {
-        return new self($this->client->withUserAgent($userAgent));
+        return new self($this->configuration, $formatter, $this->driverConfigurations, $this->defaultDriver);
     }
 
     /**
@@ -170,11 +202,13 @@ final class ClientBuilder
      */
     public function build(): ClientInterface
     {
-        return $this->client;
+        return new Client($this->driverConfigurations, $this->configuration, $this->formatter, $this->defaultDriver);
     }
 
     public function withHttpPsrBindings(HttpPsrBindings $bindings): self
     {
-        return new self($this->client->withHttpPsrBindings($bindings));
+        $config = $this->configuration->withHttpPsrBindings($bindings);
+
+        return new self($config, $this->formatter, $this->driverConfigurations, $this->defaultDriver);
     }
 }

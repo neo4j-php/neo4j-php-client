@@ -11,7 +11,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\Network\Http;
+namespace Laudis\Neo4j\Http;
 
 use function call_user_func;
 use Http\Discovery\Psr17FactoryDiscovery;

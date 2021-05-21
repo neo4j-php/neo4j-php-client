@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
+use Laudis\Neo4j\Bolt\BoltConfiguration;
 use PHPUnit\Framework\TestCase;
 
 final class BoltInjectionsTest extends TestCase

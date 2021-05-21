@@ -15,15 +15,13 @@ namespace Laudis\Neo4j\Formatter;
 
 use Bolt\Bolt;
 use Ds\Vector;
+use function in_array;
+use function is_int;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\StatementStatistics;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use UnexpectedValueException;
-use function array_filter;
-use function array_sum;
-use function in_array;
-use function var_export;
 
 /**
  * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
@@ -71,10 +69,12 @@ final class StatisticsFormatter implements FormatterInterface
             return new StatementStatistics();
         }
 
-        $updateFields = array_filter($stats, static function(string $x) {
-            return !in_array($x, ['system-updates', 'contains-system-updates']);
-        });
-        $updateCount = array_sum($updateFields);
+        $updateCount = 0;
+        foreach ($stats as $key => $value) {
+            if (is_int($value) && !in_array($key, ['system-updates', 'contains-system-updates'])) {
+                $updateCount += $value;
+            }
+        }
 
         return new StatementStatistics(
             $stats['nodes-created'] ?? 0,

@@ -17,20 +17,22 @@ use Ds\Map;
 use Ds\Vector;
 use function in_array;
 use InvalidArgumentException;
+use function is_array;
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Bolt\BoltDriver;
+use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Databags\ClientConfiguration;
-use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
-use Laudis\Neo4j\Exception\UnsupportedScheme;
-use Laudis\Neo4j\Formatter\BasicFormatter;
-use Laudis\Neo4j\Network\Bolt\BoltDriver;
-use Laudis\Neo4j\Network\Http\HttpDriver;
+use Laudis\Neo4j\Http\HttpDriver;
+use Laudis\Neo4j\Neo4j\Neo4jDriver;
+use Psr\Http\Message\UriInterface;
 use function sprintf;
 use function var_export;
 
@@ -38,37 +40,34 @@ use function var_export;
  * @template T
  *
  * @implements ClientInterface<T>
- *
- * @psalm-import-type ParsedUrl from \Laudis\Neo4j\Network\Bolt\BoltDriver
  */
 final class Client implements ClientInterface
 {
-    public const SUPPORTED_SCHEMES = ['bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https'];
+    private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
 
-    /** @var Map<string, array{0: ParsedUrl, 1:AuthenticateInterface}> */
+    /** @var Map<string, array{0: Uri, 1:AuthenticateInterface}|DriverInterface<T>> */
     private Map $driverConfigurations;
     /** @var Map<string, DriverInterface> */
     private Map $drivers;
-    /** @var ClientConfiguration<T> */
-    private ClientConfiguration $configuration;
+    /** @var FormatterInterface<T> */
+    private FormatterInterface $formatter;
+    private DriverConfiguration $configuration;
+    private ?string $default;
 
     /**
-     * @param ClientConfiguration<T>                                    $configuration
-     * @param Map<string, array{0: ParsedUrl, 1:AuthenticateInterface}> $driverConfigurations
+     * @param Map<string, array{0: Uri, 1:AuthenticateInterface}> $driverConfigurations
+     * @param FormatterInterface<T>                               $formatter
      */
-    public function __construct(Map $driverConfigurations, ClientConfiguration $configuration)
+    public function __construct(Map $driverConfigurations, DriverConfiguration $configuration, FormatterInterface $formatter, ?string $default)
     {
-        $this->configuration = $configuration;
-        $this->driverConfigurations = $driverConfigurations;
+        $this->driverConfigurations = new Map();
+        foreach ($driverConfigurations as $key => $value) {
+            $this->driverConfigurations->put($key, $value);
+        }
         $this->drivers = new Map();
-    }
-
-    /**
-     * @return Client<Vector<Map<string, array|scalar|null>>>
-     */
-    public static function make(): Client
-    {
-        return new self(new Map(), ClientConfiguration::default());
+        $this->formatter = $formatter;
+        $this->configuration = $configuration;
+        $this->default = $default;
     }
 
     public function run(string $query, iterable $parameters = [], ?string $alias = null)
@@ -94,38 +93,32 @@ final class Client implements ClientInterface
     public function getDriver(?string $alias): DriverInterface
     {
         if ($this->driverConfigurations->count() === 0) {
-            return $this->withDriver('default', '', Authenticate::disabled())->getDriver('default');
+            $driver = $this->makeDriver(Uri::create('bolt://localhost:7687'), 'default', Authenticate::disabled());
+            $this->driverConfigurations->put('default', $driver);
         }
 
-        $alias ??= $this->configuration->getDefaultDriver() ?? $this->driverConfigurations->first()->key;
+        $alias ??= $this->default ?? $this->driverConfigurations->first()->key;
         if (!$this->driverConfigurations->hasKey($alias)) {
             $key = sprintf('The provided alias: "%s" was not found in the connection pool', $alias);
             throw new InvalidArgumentException($key);
         }
 
-        [$parsedUrl, $authentication] = $this->driverConfigurations->get($alias);
-        $scheme = $parsedUrl['scheme'] ?? 'bolt';
-
-        if (in_array($scheme, ['bolt', 'bolt+s', 'bolt+ssc'])) {
-            return $this->cacheDriver($alias, function () use ($parsedUrl, $authentication) {
-                return $this->makeBoltDriver($parsedUrl, $authentication);
-            });
+        $driverOrConfig = $this->driverConfigurations->get($alias);
+        if (is_array($driverOrConfig)) {
+            [$parsedUrl, $authentication] = $driverOrConfig;
+            $driverOrConfig = $this->makeDriver($parsedUrl, $alias, $authentication);
+            $this->driverConfigurations->put($alias, $driverOrConfig);
         }
 
-        if (in_array($scheme, ['neo4j', 'neo4j+s', 'neo4j+ssc'])) {
-            return $this->cacheDriver($alias, function () use ($parsedUrl, $authentication) {
-                return $this->makeNeo4jDriver($parsedUrl, $authentication);
-            });
-        }
-
-        return $this->cacheDriver($alias, function () use ($parsedUrl, $authentication) {
-            return $this->makeHttpDriver($parsedUrl, $authentication);
-        });
+        return $driverOrConfig;
     }
 
-    public function startSession(?string $alias = null, ?SessionConfiguration $config = null): SessionInterface
+    /**
+     * @return SessionInterface<T>
+     */
+    private function startSession(?string $alias = null): SessionInterface
     {
-        return $this->getDriver($alias)->createSession($config)->withFormatter($this->configuration->getFormatter());
+        return $this->getDriver($alias)->createSession();
     }
 
     public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
@@ -143,66 +136,22 @@ final class Client implements ClientInterface
         return $this->startSession($alias)->transaction($tsxHandler, $config);
     }
 
-    public function withTransactionTimeout($timeout): Client
-    {
-        $config = $this->configuration->withTransactionTimeout($timeout);
-
-        return new self($this->driverConfigurations, $config);
-    }
-
-    public function withFetchSize($fetchSize): Client
-    {
-        $config = $this->configuration->withFetchSize($fetchSize);
-
-        return new self($this->driverConfigurations, $config);
-    }
-
-    public function withDefaultDriver($defaultDriver): Client
-    {
-        $config = $this->configuration->withDefaultDriver($defaultDriver);
-
-        return new self($this->driverConfigurations, $config);
-    }
-
-    public function withAccessMode($accessMode): Client
-    {
-        $config = $this->configuration->withAccessMode($accessMode);
-
-        return new self($this->driverConfigurations, $config);
-    }
-
-    public function withFormatter($formatter): Client
-    {
-        $config = $this->configuration->withFormatter($formatter);
-
-        return new self($this->driverConfigurations, $config);
-    }
-
     /**
      * @param ParsedUrl $parsedUrl
      *
      * @return HttpDriver<T>
      */
-    private function makeHttpDriver(array $parsedUrl, AuthenticateInterface $authenticate): HttpDriver
+    private function makeHttpDriver(Uri $uri, AuthenticateInterface $authenticate): HttpDriver
     {
-        $bindings = $this->configuration->getHttpPsrBindings();
-
-        $driverConfig = $this->configuration->getDriverConfiguration();
-
-        return new HttpDriver($parsedUrl, $bindings, $driverConfig, $authenticate, new ConnectionManager($bindings));
+        return HttpDriver::createWithFormatter($uri, $this->formatter, $this->configuration, $authenticate);
     }
 
     /**
-     * @param ParsedUrl $parsedUrl
-     *
      * @return BoltDriver<T>
      */
-    private function makeBoltDriver(array $parsedUrl, AuthenticateInterface $authenticate): BoltDriver
+    private function makeBoltDriver(Uri $uri, AuthenticateInterface $authenticate): BoltDriver
     {
-        $driverConfig = $this->configuration->getDriverConfiguration();
-        $manager = new ConnectionManager($this->configuration->getDriverConfiguration()->getHttpPsrBindings());
-
-        return new BoltDriver($parsedUrl, $authenticate, $manager, $driverConfig);
+        return BoltDriver::createWithFormatter($uri, $this->formatter, $this->configuration, $authenticate);
     }
 
     /**
@@ -224,65 +173,37 @@ final class Client implements ClientInterface
     }
 
     /**
-     * @param ParsedUrl $parsedUrl
-     *
      * @return Neo4jDriver<T>
      */
-    private function makeNeo4jDriver(array $parsedUrl, AuthenticateInterface $authenticate): Neo4jDriver
+    private function makeNeo4jDriver(UriInterface $uri, AuthenticateInterface $authenticate): Neo4jDriver
     {
-        $driverConfig = $this->configuration->getDriverConfiguration();
-
-        $manager = new ConnectionManager($this->configuration->getDriverConfiguration()->getHttpPsrBindings());
-        $baseDriver = new BoltDriver($parsedUrl, $authenticate, $manager, $driverConfig->withFormatter(new BasicFormatter()));
-
-        return new Neo4jDriver($parsedUrl, $authenticate, $baseDriver, $driverConfig);
-    }
-
-    /**
-     * @return self<T>
-     */
-    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null): Client
-    {
-        return $this->addParsedUrl($alias, ConnectionManager::parseUrl($url), $authentication);
+        return Neo4jDriver::createWithFormatter($uri, $this->formatter, $this->configuration, $authenticate);
     }
 
     /**
      * @param ParsedUrl $parsedUrl
      *
-     * @return self<T>
+     * @return DriverInterface<T>
      */
-    private function addParsedUrl(string $alias, array $parsedUrl, ?AuthenticateInterface $authentication): Client
+    private function makeDriver(Uri $uri, string $alias, AuthenticateInterface $authentication): DriverInterface
     {
-        $scheme = $parsedUrl['scheme'] ?? 'bolt';
-        $authentication ??= Authenticate::fromUrl();
+        $scheme = $uri->getScheme();
+        $scheme = $scheme === '' ? 'bolt' : $scheme;
 
-        if (!in_array($scheme, self::SUPPORTED_SCHEMES, true)) {
-            throw UnsupportedScheme::make($scheme, self::SUPPORTED_SCHEMES);
+        if (in_array($scheme, ['bolt', 'bolt+s', 'bolt+ssc'])) {
+            return $this->cacheDriver($alias, function () use ($uri, $authentication) {
+                return $this->makeBoltDriver($uri, $authentication);
+            });
         }
 
-        $configs = $this->driverConfigurations->copy();
-        $configs->put($alias, [$parsedUrl, $authentication]);
+        if (in_array($scheme, ['neo4j', 'neo4j+s', 'neo4j+ssc'])) {
+            return $this->cacheDriver($alias, function () use ($uri, $authentication) {
+                return $this->makeNeo4jDriver($uri, $authentication);
+            });
+        }
 
-        return new self($configs, $this->configuration);
-    }
-
-    public function withHttpPsrBindings($bindings): Client
-    {
-        return new self($this->driverConfigurations, $this->configuration->withHttpPsrBindings($bindings));
-    }
-
-    public function withUserAgent($userAgent): Client
-    {
-        return new self($this->driverConfigurations, $this->configuration->withUserAgent($userAgent));
-    }
-
-    /**
-     * @param ParsedUrl $parsedUrl
-     *
-     * @return self<T>
-     */
-    public function withParsedUrl(string $alias, array $parsedUrl, AuthenticateInterface $auth): self
-    {
-        return $this->addParsedUrl($alias, $parsedUrl, $auth);
+        return $this->cacheDriver($alias, function () use ($uri, $authentication) {
+            return $this->makeHttpDriver($uri, $authentication);
+        });
     }
 }

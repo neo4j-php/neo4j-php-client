@@ -16,15 +16,16 @@ namespace Laudis\Neo4j\Authentication;
 use Bolt\Bolt;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\UriInterface;
 
 final class NoAuth implements AuthenticateInterface
 {
-    public function authenticateHttp(RequestInterface $request, array $parsedUrl): RequestInterface
+    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
-        return $request;
+        return $request->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(Bolt $bolt, array $parsedUrl, string $userAgent): void
+    public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
     {
         $bolt->setScheme('none');
         $bolt->init($userAgent, '', '');

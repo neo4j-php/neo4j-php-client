@@ -11,20 +11,27 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\HttpDriver;
+namespace Laudis\Neo4j\Http;
 
+use function array_merge;
 use Ds\Vector;
 use function json_decode;
+use function json_encode;
+use function var_export;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\ParameterHelper;
 use Psr\Http\Message\ResponseInterface;
+use stdClass;
 
 /**
  * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
  */
-class HttpHelper
+final class HttpHelper
 {
     /**
      * @throws JsonException
@@ -42,7 +49,7 @@ class HttpHelper
         $body = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
 
         $errors = new Vector();
-        foreach ($body['errors'] as $error) {
+        foreach (($body['errors'] ?? []) as $error) {
             $errors->push(new Neo4jError($error['code'], $error['message']));
         }
 
@@ -51,5 +58,30 @@ class HttpHelper
         }
 
         return $body;
+    }
+
+    /**
+     * @param iterable<Statement> $statements
+     *
+     * @throws JsonException
+     */
+    public static function statementsToString(FormatterInterface $formatter, iterable $statements): string
+    {
+        $tbr = [];
+        foreach ($statements as $statement) {
+            $st = [
+                'statement' => $statement->getText(),
+                'resultDataContents' => [],
+                'includeStats' => false,
+            ];
+            $st = array_merge($st, $formatter->statementConfigOverride());
+            $parameters = ParameterHelper::formatParameters($statement->getParameters());
+            $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
+            $tbr[] = $st;
+        }
+
+        return json_encode([
+            'statements' => $tbr,
+        ], JSON_THROW_ON_ERROR);
     }
 }

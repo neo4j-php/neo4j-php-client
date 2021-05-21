@@ -14,9 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Ds\Vector;
-use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 
@@ -44,7 +42,7 @@ interface SessionInterface
      *
      * @return T
      */
-    public function run(string $statement, iterable $parameters, ?TransactionConfiguration $config = null);
+    public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null);
 
     /**
      * @psalm-param iterable<Statement>|null $statements
@@ -93,65 +91,4 @@ interface SessionInterface
      * @return U
      */
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
-
-    public function getConfig(): SessionConfiguration;
-
-    /**
-     * @return StaticTransactionConfiguration<T>
-     */
-    public function getTransactionConfig(): StaticTransactionConfiguration;
-
-    /**
-     * @template U
-     *
-     * @param callable():FormatterInterface<U>|FormatterInterface<U> $formatter
-     *
-     * @return self<U>
-     */
-    public function withFormatter($formatter): self;
-
-    /**
-     * @param callable():(float|null)|float|null $timeout
-     *
-     * @return self<T>
-     */
-    public function withTransactionTimeout($timeout): self;
-
-    /**
-     * @param callable():(string|null)|string|null $database
-     *
-     * @return self<T>
-     */
-    public function withDatabase($database): self;
-
-    /**
-     * @param callable():(int|null)|int|null $fetchSize
-     *
-     * @return self<T>
-     */
-    public function withFetchSize($fetchSize): self;
-
-    /**
-     * @param callable():(\Laudis\Neo4j\Enum\AccessMode|null)|\Laudis\Neo4j\Enum\AccessMode|null $accessMode
-     *
-     * @return self<T>
-     */
-    public function withAccessMode($accessMode): self;
-
-    /**
-     * @param callable():(iterable<string>|null)|null $bookmarks
-     *
-     * @return self<T>
-     */
-    public function withBookmarks($bookmarks): self;
-
-    /**
-     * @return self<T>
-     */
-    public function withConfiguration(SessionConfiguration $configuration): self;
-
-    /**
-     * @return self<T>
-     */
-    public function withTransactionConfiguration(?TransactionConfiguration $configuration): self;
 }

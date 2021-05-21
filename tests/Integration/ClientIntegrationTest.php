@@ -13,20 +13,20 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Bolt\Bolt;
 use Ds\Vector;
-use Laudis\Neo4j\Client;
+use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
-use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Tests\Base\ClientTest;
+use function count;
+use function var_export;
 
 final class ClientIntegrationTest extends ClientTest
 {
     public function createClient(): ClientInterface
     {
-        $builder = Client::make();
+        $builder = ClientBuilder::create();
         $aliases = new Vector($this->connectionAliases());
         $aliases = $aliases->slice(0, $aliases->count() - 1);
         foreach ($aliases as $index => $alias) {
@@ -39,7 +39,7 @@ final class ClientIntegrationTest extends ClientTest
             }
         }
 
-        return $builder->withDriver('cluster', 'neo4j://neo4j:test@core1');
+        return $builder->withDriver('cluster', 'neo4j://neo4j:test@core1')->build();
     }
 
     public function connectionAliases(): iterable
@@ -73,10 +73,14 @@ final class ClientIntegrationTest extends ClientTest
 
     public function testAvailabilityFullImplementation(): void
     {
-        $driver = $this->client->getDriver('cluster');
-        $connection = $driver->acquireConnection(SessionConfiguration::create());
-        self::assertInstanceOf(Bolt::class, $connection);
-        $results = $driver->createSession()->beginTransaction()->run('UNWIND [1] AS x RETURN x')->first()->get('x');
+        $results = $this->client->getDriver('cluster')
+            ->createSession()
+            ->beginTransaction()
+            ->run('UNWIND [1] AS x RETURN x')
+            ->first()
+            ->get('x')
+        ;
+
         self::assertEquals(1, $results);
     }
 

@@ -11,7 +11,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\Network\Bolt;
+namespace Laudis\Neo4j\Bolt;
 
 use function call_user_func;
 use function is_callable;

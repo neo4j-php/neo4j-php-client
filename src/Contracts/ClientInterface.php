@@ -67,11 +67,6 @@ interface ClientInterface
     public function openTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface;
 
     /**
-     * @return SessionInterface<T>
-     */
-    public function startSession(?string $alias = null, ?SessionConfiguration $config = null): SessionInterface;
-
-    /**
      * @return DriverInterface<T>
      */
     public function getDriver(?string $alias): DriverInterface;
@@ -104,60 +99,4 @@ interface ClientInterface
      * @return U
      */
     public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
-
-    /**
-     * @template U
-     *
-     * @param callable():(FormatterInterface<U>)|FormatterInterface<U> $formatter
-     *
-     * @return self<U>
-     */
-    public function withFormatter($formatter): self;
-
-    /**
-     * @param callable():(float|null)|float|null $timeout
-     *
-     * @return self<T>
-     */
-    public function withTransactionTimeout($timeout): self;
-
-    /**
-     * @param callable():(int|null)|int|null $fetchSize
-     *
-     * @return self<T>
-     */
-    public function withFetchSize($fetchSize): self;
-
-    /**
-     * @param callable():(string|null)|string|null $defaultDriver
-     *
-     * @return self<T>
-     */
-    public function withDefaultDriver($defaultDriver): self;
-
-    /**
-     * @param callable():(\Laudis\Neo4j\Databags\HttpPsrBindings|null)|\Laudis\Neo4j\Databags\HttpPsrBindings|null $bindings
-     *
-     * @return self<T>
-     */
-    public function withHttpPsrBindings($bindings): self;
-
-    /**
-     * @param callable():(\Laudis\Neo4j\Enum\AccessMode|null)|\Laudis\Neo4j\Enum\AccessMode|null $accessMode
-     *
-     * @return self<T>
-     */
-    public function withAccessMode($accessMode): self;
-
-    /**
-     * @param callable():(string|null)|string|null $userAgent
-     *
-     * @return self<T>
-     */
-    public function withUserAgent($userAgent): self;
-
-    /**
-     * @return self<T>
-     */
-    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null): self;
 }

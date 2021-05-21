@@ -14,130 +14,65 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use function call_user_func;
-use Ds\Map;
-use Ds\Vector;
 use function is_callable;
-use Laudis\Neo4j\Contracts\DriverConfigurationInterface;
 
-/**
- * @template T
- *
- * @implements DriverConfigurationInterface<T>
- */
-final class DriverConfiguration implements DriverConfigurationInterface
+final class DriverConfiguration
 {
-    private SessionConfiguration $sessionConfiguration;
-    /** @var StaticTransactionConfiguration<T> */
-    private StaticTransactionConfiguration $transactionConfiguration;
+    public const DEFAULT_USER_AGENT = 'neo4j-php-client/2.0.0-alpha';
+
     /** @var callable():(string|null)|string|null */
     private $userAgent;
     /** @var callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
     private $httpPsrBindings;
 
     /**
-     * @param StaticTransactionConfiguration<T>                      $transactionConfiguration
      * @param callable():(string|null)|string|null                   $userAgent
      * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      */
-    public function __construct(
-        SessionConfiguration $sessionConfiguration,
-        StaticTransactionConfiguration $transactionConfiguration,
-        $userAgent,
-        $httpPsrBindings
-    ) {
-        $this->sessionConfiguration = $sessionConfiguration;
-        $this->transactionConfiguration = $transactionConfiguration;
+    public function __construct($userAgent, $httpPsrBindings)
+    {
         $this->userAgent = $userAgent;
         $this->httpPsrBindings = $httpPsrBindings;
     }
 
     /**
-     * @template U
-     *
-     * @param StaticTransactionConfiguration<U>                      $transactionConfiguration
      * @param callable():(string|null)|string|null                   $userAgent
      * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
-     *
-     * @return self<U>
      */
-    public static function create(SessionConfiguration $sessionConfiguration, StaticTransactionConfiguration $transactionConfiguration, $userAgent, $httpPsrBindings): self
+    public static function create($userAgent, $httpPsrBindings): self
     {
-        return new self($sessionConfiguration, $transactionConfiguration, $userAgent, $httpPsrBindings);
+        return new self($userAgent, $httpPsrBindings);
     }
 
-    /**
-     * @return self<Vector<Map<string, scalar|array|null>>>
-     */
     public static function default(): self
     {
         return new self(
-            SessionConfiguration::create(),
-            StaticTransactionConfiguration::default(),
-            DriverConfigurationInterface::DEFAULT_USER_AGENT,
+            self::DEFAULT_USER_AGENT,
             HttpPsrBindings::default()
         );
-    }
-
-    public function getSessionConfiguration(): SessionConfiguration
-    {
-        return $this->sessionConfiguration;
-    }
-
-    public function getTransactionConfiguration(): StaticTransactionConfiguration
-    {
-        return $this->transactionConfiguration;
     }
 
     public function getUserAgent(): string
     {
         $userAgent = (is_callable($this->userAgent)) ? call_user_func($this->userAgent) : $this->userAgent;
 
-        return $userAgent ?? DriverConfigurationInterface::DEFAULT_USER_AGENT;
+        return $userAgent ?? self::DEFAULT_USER_AGENT;
     }
 
+    /**
+     * @param callable():(string|null)|string|null $userAgent
+     */
     public function withUserAgent($userAgent): self
     {
-        return new self($this->sessionConfiguration, $this->transactionConfiguration, $userAgent, $this->httpPsrBindings);
+        return new self($userAgent, $this->httpPsrBindings);
     }
 
-    public function withSessionConfiguration(?SessionConfiguration $configuration): self
+    /**
+     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $bindings
+     */
+    public function withHttpPsrBindings($bindings): self
     {
-        return new self($configuration ?? SessionConfiguration::default(), $this->transactionConfiguration, $this->userAgent, $this->httpPsrBindings);
-    }
-
-    public function withTransactionConfiguration(StaticTransactionConfiguration $configuration): self
-    {
-        return new self($this->sessionConfiguration, $configuration, $this->userAgent, $this->httpPsrBindings);
-    }
-
-    public function withHttpPsrBindings($bindings): DriverConfigurationInterface
-    {
-        return new self($this->sessionConfiguration, $this->transactionConfiguration, $this->userAgent, $bindings);
-    }
-
-    public function withAccessMode($accessMode): DriverConfigurationInterface
-    {
-        return new self($this->sessionConfiguration->withAccessMode($accessMode), $this->transactionConfiguration, $this->userAgent, $this->httpPsrBindings);
-    }
-
-    public function withFetchSize($fetchSize): DriverConfigurationInterface
-    {
-        return new self($this->sessionConfiguration->withFetchSize($fetchSize), $this->transactionConfiguration, $this->userAgent, $this->httpPsrBindings);
-    }
-
-    public function withTransactionTimeout($timeout): DriverConfigurationInterface
-    {
-        return new self($this->sessionConfiguration, $this->transactionConfiguration->withTimeout($timeout), $this->userAgent, $this->httpPsrBindings);
-    }
-
-    public function withFormatter($formatter): DriverConfigurationInterface
-    {
-        return new self($this->sessionConfiguration, $this->transactionConfiguration->withFormatter($formatter), $this->userAgent, $this->httpPsrBindings);
-    }
-
-    public function withDatabase($database): DriverConfigurationInterface
-    {
-        return new self($this->sessionConfiguration->withDatabase($database), $this->transactionConfiguration, $this->userAgent, $this->httpPsrBindings);
+        return new self($this->userAgent, $bindings);
     }
 
     public function getHttpPsrBindings(): HttpPsrBindings

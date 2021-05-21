@@ -19,9 +19,8 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\StatementStatistics;
 use Laudis\Neo4j\Formatter\StatisticsFormatter;
-use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
 use PHPUnit\Framework\TestCase;
-use function var_export;
+use function count;
 
 final class StatisticsFormatterIntegrationTest extends TestCase
 {
@@ -38,14 +37,14 @@ final class StatisticsFormatterIntegrationTest extends TestCase
             if ($index % 2 === 0) {
                 $explosion = explode('-', $alias);
                 $version = $explosion[count($explosion) - 1];
-                $builder = $builder->withDriver('bolt-' . $version, 'bolt://neo4j:test@neo4j-' . $version);
-                $builder = $builder->withDriver('http-' . $version, 'http://neo4j:test@neo4j-' . $version);
+                $builder = $builder->withDriver('bolt-'.$version, 'bolt://neo4j:test@neo4j-'.$version);
+                $builder = $builder->withDriver('http-'.$version, 'http://neo4j:test@neo4j-'.$version);
             }
         }
 
         $builder = $builder->withDriver('cluster', 'neo4j://neo4j:test@core1');
 
-        $this->client = $builder->build()->withFormatter(new StatisticsFormatter());
+        $this->client = $builder->withFormatter(new StatisticsFormatter())->build();
     }
 
     /**
@@ -73,9 +72,9 @@ final class StatisticsFormatterIntegrationTest extends TestCase
     {
         /** @var array<array{0: string}> $tbr */
         $tbr = [];
-        foreach (explode(',', (string)getenv('NEO4J_VERSIONS_AVAILABLE')) as $version) {
-            $tbr[] = ['bolt-' . $version];
-            $tbr[] = ['http-' . $version];
+        foreach (explode(',', (string) getenv('NEO4J_VERSIONS_AVAILABLE')) as $version) {
+            $tbr[] = ['bolt-'.$version];
+            $tbr[] = ['http-'.$version];
         }
 
         $tbr[] = ['cluster'];

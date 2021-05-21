@@ -14,16 +14,17 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Ds\Map;
+use function is_callable;
 
-class TransactionConfiguration
+final class TransactionConfiguration
 {
     public const DEFAULT_TIMEOUT = 15.0;
     public const DEFAULT_METADATA = '[]';
 
     /** @var callable():(float|null)|float|null */
-    protected $timeout;
+    private $timeout;
     /** @var callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null */
-    protected $metaData;
+    private $metaData;
 
     /**
      * @param callable():(float|null)|float|null                                                             $timeout  timeout in seconds
@@ -89,5 +90,22 @@ class TransactionConfiguration
     public function withMetaData($metaData): self
     {
         return new self($this->timeout, $metaData);
+    }
+
+    public function merge(?TransactionConfiguration $config): self
+    {
+        $tsxConfig = $this;
+        $config ??= self::default();
+
+        $metaData = $config->metaData;
+        if ($metaData) {
+            $tsxConfig = $tsxConfig->withMetaData($metaData);
+        }
+        $timeout = $config->timeout;
+        if ($timeout) {
+            $tsxConfig = $tsxConfig->withTimeout($timeout);
+        }
+
+        return $tsxConfig;
     }
 }

@@ -11,17 +11,15 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\HttpDriver;
+namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Ds\Vector;
 use Exception;
-use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
-use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Throwable;
@@ -33,18 +31,18 @@ use Throwable;
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
-    private SessionConfiguration $sessionConfiguration;
-    private StaticTransactionConfiguration $config;
+    private FormatterInterface $formatter;
     private Bolt $bolt;
+    private string $database;
 
     /**
-     * @param StaticTransactionConfiguration<T> $config
+     * @param FormatterInterface<T> $formatter
      */
-    public function __construct(SessionConfiguration $driver, StaticTransactionConfiguration $config, Bolt $bolt)
+    public function __construct(string $database, FormatterInterface $formatter, Bolt $bolt)
     {
-        $this->sessionConfiguration = $driver;
-        $this->config = $config;
+        $this->formatter = $formatter;
         $this->bolt = $bolt;
+        $this->database = $database;
     }
 
     public function commit(iterable $statements = []): Vector
@@ -84,7 +82,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         /** @var Vector<T> $tbr */
         $tbr = new Vector();
         foreach ($statements as $statement) {
-            $extra = ['db' => $this->sessionConfiguration->getDatabase()];
+            $extra = ['db' => $this->database];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             try {
                 /** @var array{fields: array<int, string>} $meta */
@@ -94,29 +92,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             } catch (Throwable $e) {
                 throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
             }
-            $tbr->push($this->config->getFormatter()->formatBoltResult($meta, $results, $this->bolt));
+            $tbr->push($this->formatter->formatBoltResult($meta, $results, $this->bolt));
         }
 
         return $tbr;
-    }
-
-    public function getConfiguration(): StaticTransactionConfiguration
-    {
-        return $this->config;
-    }
-
-    public function withTimeout($timeout): TransactionInterface
-    {
-        return new self($this->sessionConfiguration, $this->config->withTimeout($timeout), $this->bolt);
-    }
-
-    public function withFormatter($formatter): TransactionInterface
-    {
-        return new self($this->sessionConfiguration, $this->config->withFormatter($formatter), $this->bolt);
-    }
-
-    public function withMetaData($metaData): TransactionInterface
-    {
-        return new self($this->sessionConfiguration, $this->config->withMetaData($metaData), $this->bolt);
     }
 }

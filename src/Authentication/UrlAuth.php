@@ -14,27 +14,33 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Authentication;
 
 use Bolt\Bolt;
+use function explode;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\UriInterface;
+use function substr_count;
 
 final class UrlAuth implements AuthenticateInterface
 {
-    public function authenticateHttp(RequestInterface $request, array $parsedUrl): RequestInterface
+    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
-        if (isset($parsedUrl['user'], $parsedUrl['pass'])) {
-            return Authenticate::basic($parsedUrl['user'], $parsedUrl['pass'])
-                ->authenticateHttp($request, $parsedUrl);
+        if (substr_count($uri->getUserInfo(), ':') === 1) {
+            [$user, $pass] = explode(':', $uri->getUserInfo());
+
+            return Authenticate::basic($user, $pass)
+                ->authenticateHttp($request, $uri, $userAgent);
         }
 
-        return Authenticate::disabled()->authenticateHttp($request, $parsedUrl);
+        return Authenticate::disabled()->authenticateHttp($request, $uri, $userAgent);
     }
 
-    public function authenticateBolt(Bolt $bolt, array $parsedUrl, string $userAgent): void
+    public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
     {
-        if (isset($parsedUrl['user'], $parsedUrl['pass'])) {
-            Authenticate::basic($parsedUrl['user'], $parsedUrl['pass'])->authenticateBolt($bolt, $parsedUrl, $userAgent);
+        if (substr_count($uri->getUserInfo(), ':') === 1) {
+            [$user, $pass] = explode(':', $uri->getUserInfo());
+            Authenticate::basic($user, $pass)->authenticateBolt($bolt, $uri, $userAgent);
         } else {
-            Authenticate::disabled()->authenticateBolt($bolt, $parsedUrl, $userAgent);
+            Authenticate::disabled()->authenticateBolt($bolt, $uri, $userAgent);
         }
     }
 }

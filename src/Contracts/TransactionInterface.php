@@ -13,10 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Ds\Map;
 use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Databags\StaticTransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 
 /**
@@ -44,32 +42,4 @@ interface TransactionInterface
      * @return Vector<T>
      */
     public function runStatements(iterable $statements): Vector;
-
-    /**
-     * @return StaticTransactionConfiguration<T>
-     */
-    public function getConfiguration(): StaticTransactionConfiguration;
-
-    /**
-     * @param callable():float|float $timeout timeout in seconds
-     *
-     * @return self<T>
-     */
-    public function withTimeout($timeout): self;
-
-    /**
-     * @template U
-     *
-     * @param callable():FormatterInterface<U>|FormatterInterface<U> $formatter
-     *
-     * @return self<U>
-     */
-    public function withFormatter($formatter): self;
-
-    /**
-     * @param callable():Map<string, scalar|array|null>|Map<string, scalar|array|null> $metaData
-     *
-     * @return self<T>
-     */
-    public function withMetaData($metaData): self;
 }

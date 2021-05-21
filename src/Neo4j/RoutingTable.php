@@ -11,9 +11,9 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\Network;
+namespace Laudis\Neo4j\Neo4j;
 
-use Ds\Vector;
+use Ds\Set;
 use Laudis\Neo4j\Enum\RoutingRoles;
 
 final class RoutingTable
@@ -37,16 +37,16 @@ final class RoutingTable
     }
 
     /**
-     * @return Vector<string>
+     * @return Set<string>
      */
-    public function getWithRole(RoutingRoles $role): Vector
+    public function getWithRole(RoutingRoles $role): Set
     {
-        /** @psalm-var Vector<string> $tbr */
-        $tbr = new Vector();
+        /** @psalm-var Set<string> $tbr */
+        $tbr = new Set();
         foreach ($this->servers as $server) {
             if ($server['role'] === $role->getValue()) {
                 foreach ($server['addresses'] as $address) {
-                    $tbr->push($address);
+                    $tbr->add($address);
                 }
             }
         }

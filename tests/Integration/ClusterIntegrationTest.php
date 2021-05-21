@@ -17,8 +17,8 @@ use Ds\Map;
 use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Network\Bolt\BoltConfiguration;
-use Laudis\Neo4j\Network\Http\HttpConfig;
+use Laudis\Neo4j\Bolt\BoltConfiguration;
+use Laudis\Neo4j\Http\HttpConfig;
 use PHPUnit\Framework\TestCase;
 
 final class ClusterIntegrationTest extends TestCase

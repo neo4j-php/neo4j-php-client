@@ -18,6 +18,7 @@ use Bolt\Bolt;
 use Exception;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\UriInterface;
 
 final class BasicAuth implements AuthenticateInterface
 {
@@ -30,17 +31,18 @@ final class BasicAuth implements AuthenticateInterface
         $this->password = $password;
     }
 
-    public function authenticateHttp(RequestInterface $request, array $parsedUrl): RequestInterface
+    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
         $combo = base64_encode($this->username.':'.$this->password);
 
-        return $request->withHeader('Authorization', 'Basic '.$combo);
+        return $request->withHeader('Authorization', 'Basic '.$combo)
+            ->withHeader('User-Agent', $userAgent);
     }
 
     /**
      * @throws Exception
      */
-    public function authenticateBolt(Bolt $bolt, array $parsedUrl, string $userAgent): void
+    public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
     {
         $bolt->setScheme('basic');
         $bolt->init($userAgent, $this->username, $this->password);
