@@ -13,46 +13,46 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Ds\Map;
 use Ds\Vector;
+use InvalidArgumentException;
+use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Tests\Base\ClientTest;
-use function count;
-use function var_export;
+use Laudis\Neo4j\Exception\Neo4jException;
+use PHPUnit\Framework\TestCase;
 
-final class ClientIntegrationTest extends ClientTest
+final class ClientIntegrationTest extends TestCase
 {
-    public function createClient(): ClientInterface
-    {
-        $builder = ClientBuilder::create();
-        $aliases = new Vector($this->connectionAliases());
-        $aliases = $aliases->slice(0, $aliases->count() - 1);
-        foreach ($aliases as $index => $alias) {
-            $alias = (new Vector($alias))->first();
-            if ($index % 2 === 0) {
-                $explosion = explode('-', $alias);
-                $version = $explosion[count($explosion) - 1];
-                $builder = $builder->withDriver('bolt-'.$version, 'bolt://neo4j:test@neo4j-'.$version);
-                $builder = $builder->withDriver('http-'.$version, 'http://neo4j:test@neo4j-'.$version);
-            }
-        }
+    /** @var ClientInterface<Vector<Map<string, scalar|array|null>>> */
+    private ClientInterface $client;
 
-        return $builder->withDriver('cluster', 'neo4j://neo4j:test@core1')->build();
-    }
-
+    /**
+     * @return iterable<list<string>>
+     */
     public function connectionAliases(): iterable
     {
-        $tbr = [];
-        foreach (explode(',', (string) getenv('NEO4J_VERSIONS_AVAILABLE')) as $version) {
-            $tbr[] = ['bolt-'.$version];
-            $tbr[] = ['http-'.$version];
-        }
+        return [['bolt'], ['http'], ['cluster']];
+    }
 
-        $tbr[] = ['cluster'];
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->client = $this->createClient();
+    }
 
-        return $tbr;
+    /**
+     * @return ClientInterface<Vector<Map<string, scalar|array|null>>>
+     */
+    public function createClient(): ClientInterface
+    {
+        return ClientBuilder::create()
+            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
+            ->addBoltConnection('http', 'http://neo4j:test@neo4j')
+            ->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true))
+            ->build();
     }
 
     public function testEqualEffect(): void
@@ -62,13 +62,11 @@ final class ClientIntegrationTest extends ClientTest
             ['email' => 'a@b.c', 'uuid' => 'cc60fd69-a92b-47f3-9674-2f27f3437d66']
         );
 
-        foreach (explode(',', (string) getenv('NEO4J_VERSIONS_AVAILABLE')) as $version) {
-            $x = $this->client->runStatement($statement, 'bolt-'.$version);
-            $y = $this->client->runStatement($statement, 'http-'.$version);
+        $x = $this->client->runStatement($statement, 'bolt');
+        $y = $this->client->runStatement($statement, 'http');
 
-            self::assertEquals($x, $y);
-            self::assertEquals($x->toArray(), $y->toArray());
-        }
+        self::assertEquals($x, $y);
+        self::assertEquals($x->toArray(), $y->toArray());
     }
 
     public function testAvailabilityFullImplementation(): void
@@ -78,8 +76,7 @@ final class ClientIntegrationTest extends ClientTest
             ->beginTransaction()
             ->run('UNWIND [1] AS x RETURN x')
             ->first()
-            ->get('x')
-        ;
+            ->get('x');
 
         self::assertEquals(1, $results);
     }
@@ -103,5 +100,159 @@ final class ClientIntegrationTest extends ClientTest
         });
 
         self::assertEquals(1, $result);
+    }
+
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testValidRun(string $alias): void
+    {
+        $response = $this->client->run(<<<'CYPHER'
+MERGE (x:TestNode {test: $test})
+WITH x
+MERGE (y:OtherTestNode {test: $otherTest})
+WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
+RETURN x, y, x.test AS test, map, list
+CYPHER, ['test' => 'a', 'otherTest' => 'b'], $alias);
+
+        self::assertEquals(1, $response->count());
+        $map = $response->first();
+        self::assertEquals(5, $map->count());
+        self::assertEquals(['test' => 'a'], $map->get('x'));
+        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals('a', $map->get('test'));
+        self::assertEquals(['c' => 'd'], $map->get('map'));
+        self::assertEquals([1, 2, 3], $map->get('list'));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testInvalidRun(string $alias): void
+    {
+        $exception = false;
+        try {
+            $this->client->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b'], $alias);
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testValidStatement(string $alias): void
+    {
+        $response = $this->client->runStatement(
+            Statement::create(<<<'CYPHER'
+MERGE (x:TestNode {test: $test})
+WITH x
+MERGE (y:OtherTestNode {test: $otherTest})
+WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
+RETURN x, y, x.test AS test, map, list
+CYPHER, ['test' => 'a', 'otherTest' => 'b']),
+            $alias
+        );
+
+        self::assertEquals(1, $response->count());
+        $map = $response->first();
+        self::assertEquals(5, $map->count());
+        self::assertEquals(['test' => 'a'], $map->get('x'));
+        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals('a', $map->get('test'));
+        self::assertEquals(['c' => 'd'], $map->get('map'));
+        self::assertEquals([1, 2, 3], $map->get('list'));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testInvalidStatement(string $alias): void
+    {
+        $exception = false;
+        try {
+            $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
+            $this->client->runStatement($statement, $alias);
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testStatements(string $alias): void
+    {
+        $params = ['test' => 'a', 'otherTest' => 'b'];
+        $response = $this->client->runStatements([
+            Statement::create(<<<'CYPHER'
+MERGE (x:TestNode {test: $test})
+CYPHER,
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
+MERGE (x:OtherTestNode {test: $otherTest})
+CYPHER,
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
+RETURN 1 AS x
+CYPHER,
+                []
+            ),
+        ],
+            $alias
+        );
+
+        self::assertEquals(3, $response->count());
+        self::assertEquals(0, $response->get(0)->count());
+        self::assertEquals(0, $response->get(1)->count());
+        self::assertEquals(1, $response->get(2)->count());
+        self::assertEquals(1, $response->get(2)->first()->get('x'));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testInvalidStatements(string $alias): void
+    {
+        $this->expectException(Neo4jException::class);
+        $params = ['test' => 'a', 'otherTest' => 'b'];
+        $this->client->runStatements([
+            Statement::create(<<<'CYPHER'
+MERGE (x:TestNode {test: $test})
+CYPHER,
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
+MERGE (x:OtherTestNode {test: $otherTest})
+CYPHER,
+                $params
+            ),
+            Statement::create('1 AS x;erns', []),
+        ], $alias);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testMultipleTransactions(string $alias): void
+    {
+        $x = $this->client->openTransaction(null, $alias);
+        $y = $this->client->openTransaction(null, $alias);
+        self::assertNotSame($x, $y);
+        $x->rollback();
+        $y->rollback();
+    }
+
+    public function testInvalidConnection(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the connection pool');
+
+        $this->client->run('RETURN 1 AS x', [], 'ghqkneq;tr');
     }
 }

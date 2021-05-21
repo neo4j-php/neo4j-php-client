@@ -19,7 +19,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
-final class HttpInjectionsTest extends TestCase
+final class HttpConfigTest extends TestCase
 {
     public function testConstruct(): void
     {
@@ -27,6 +27,11 @@ final class HttpInjectionsTest extends TestCase
         self::assertEquals('neo4j', $injections->getDatabase());
         $injections = new HttpConfig('abc');
         self::assertEquals('abc', $injections->getDatabase());
+    }
+
+    public function testSystem(): void
+    {
+        self::assertEquals('system', HttpConfig::create()->withDatabase('system')->getDatabase());
     }
 
     public function testWithDatabase(): void

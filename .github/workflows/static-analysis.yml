@@ -1,0 +1,17 @@
+on: [ pull_request ]
+name: Lint
+jobs:
+  php-cs-fixer:
+    name: "Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: "PHP-CS-Fixer"
+        uses: docker://oskarstark/php-cs-fixer-ga:2.19.0
+        with:
+          args: --dry-run
+      - name: "PSalm"
+        uses: docker://vimeo/psalm-github-actions
+        with:
+          composer_require_dev: true
+          composer_ignore_platform_reqs: false

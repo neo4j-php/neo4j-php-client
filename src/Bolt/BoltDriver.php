@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\StreamSocket;
+use Ds\Map;
+use Ds\Vector;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -62,6 +64,7 @@ final class BoltDriver implements DriverInterface
 
     /**
      * @param string|UriInterface $uri
+     * @return self<Vector<Map<string, scalar|null|array>>>
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
@@ -69,7 +72,12 @@ final class BoltDriver implements DriverInterface
     }
 
     /**
-     * @param string|UriInterface $uri
+     * @template U
+     *
+     * @param string|UriInterface   $uri
+     * @param FormatterInterface<U> $formatter
+     *
+     * @return self<U>
      */
     public static function createWithFormatter($uri, FormatterInterface $formatter, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {

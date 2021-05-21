@@ -53,7 +53,7 @@ final class ParameterHelper
     /**
      * @param mixed $value
      */
-    private static function stringAbleToString($value): ?string
+    private static function stringableToString($value): ?string
     {
         if (is_object($value) && method_exists($value, '__toString')) {
             return (string) $value;
@@ -81,7 +81,8 @@ final class ParameterHelper
      */
     private static function emptySequenceToArray($value): ?array
     {
-        if ($value instanceof Sequence && $value->count() === 0) {
+        if (($value instanceof Sequence && $value->count() === 0) ||
+            (is_array($value) && count($value) === 0)) {
             return [];
         }
 

@@ -20,7 +20,6 @@ use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ParameterHelper;
 use PHPUnit\Framework\TestCase;
 
@@ -33,9 +32,9 @@ final class ComplexQueryTests extends TestCase
     {
         parent::setUp();
         $this->client = ClientBuilder::create()
-            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42')
-            ->addHttpConnection('http', 'http://neo4j:test@neo4j-42')
-            ->addBoltConnection('cluster', 'http://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true))
+            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
+            ->addHttpConnection('http', 'http://neo4j:test@neo4j')
+            ->addBoltConnection('cluster', 'http://neo4j:test@core1')
             ->build();
     }
 
@@ -127,12 +126,13 @@ CYPHER, ['listOrMap' => self::generate()], $alias);
     public function testInvalidParameters(string $alias): void
     {
         $this->expectException(InvalidArgumentException::class);
-        /** @psalm-suppress MixedArgumentTypeCoercion */
+        /** @var iterable<string, iterable<mixed, mixed>|scalar|null> $generator */
+        $generator = self::generate();
         $this->client->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
-CYPHER, self::generate(), $alias);
+CYPHER, $generator, $alias);
     }
 
     /**

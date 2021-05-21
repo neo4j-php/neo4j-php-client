@@ -7,7 +7,7 @@
     ensureArrayStringOffsetsExist="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
-    xsi:schemaLocation="https://getpsalm.org/schema/config tools/psalm/vendor/vimeo/psalm/config.xsd"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     hoistConstants="true"
 >
     <projectFiles>
@@ -43,7 +43,7 @@
         </DeprecatedInterface>
     </issueHandlers>
     <stubs>
-        <file name="tools/psalm/vendor/vimeo/psalm/stubs/ext-ds.phpstub"/>
+        <file name="./vendor/vimeo/psalm/stubs/ext-ds.phpstub"/>
     </stubs>
     <plugins>
         <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>

@@ -117,23 +117,23 @@ final class ParameterHelperTest extends TestCase
         ]);
     }
 
-    public function testAsParmeterEmptyVector(): void
+    public function testAsParameterEmptyVector(): void
     {
         $result = ParameterHelper::asParameter(new Vector());
         self::assertIsArray($result);
         self::assertCount(0, $result);
     }
 
-    public function testAsParmeterEmptyMap(): void
+    public function testAsParameterEmptyMap(): void
     {
         $result = ParameterHelper::asParameter(new Map());
         self::assertInstanceOf(stdClass::class, $result);
     }
 
-    public function testAsParmeterEmptyArray(): void
+    public function testAsParameterEmptyArray(): void
     {
         $result = ParameterHelper::asParameter([]);
-        self::assertInstanceOf(stdClass::class, $result);
+        self::assertIsArray($result);
     }
 
     public function testStringable(): void

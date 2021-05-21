@@ -19,6 +19,9 @@
             "email": "ghlen@pm.me"
         }
     ],
+    "scripts": {
+        "cs": " docker run --rm -it -w=/app -v ${PWD}:/app oskarstark/php-cs-fixer-ga:2.19.0"
+    },
     "require": {
         "php": "^7.4 || ^8.0",
         "laudis/typed-enum": "^1.1",
@@ -41,7 +44,10 @@
         "phpunit/phpunit": "^9.0",
         "nyholm/psr7": "^1.3",
         "nyholm/psr7-server": "^1.0",
-        "kriswallsmith/buzz": "^1.2"
+        "kriswallsmith/buzz": "^1.2",
+        "vimeo/psalm": "^4.7",
+        "friendsofphp/php-cs-fixer": "^2.19",
+        "psalm/plugin-phpunit": "^0.15.1"
     },
     "autoload": {
         "psr-4": {

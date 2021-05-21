@@ -141,9 +141,12 @@ final class HttpConfig implements ConfigInterface
 
     public function getDatabase(): string
     {
-        if (is_callable($this->database)) {
-            $this->database = call_user_func($this->database);
+        if (is_string($this->database)) {
+            return $this->database;
         }
+
+        /** @var string */
+        $this->database = call_user_func($this->database);
 
         return $this->database;
     }
