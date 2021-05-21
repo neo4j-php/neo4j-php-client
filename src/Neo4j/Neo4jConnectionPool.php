@@ -72,6 +72,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
     /**
      * @param BasicDriver $driver
+     *
      * @throws Exception
      */
     private function routingTable(DriverInterface $driver): RoutingTable

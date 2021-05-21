@@ -34,7 +34,6 @@ use Laudis\Neo4j\Http\HttpDriver;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Psr\Http\Message\UriInterface;
 use function sprintf;
-use function var_export;
 
 /**
  * @template T

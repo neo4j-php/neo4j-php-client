@@ -64,7 +64,8 @@ final class BoltDriver implements DriverInterface
 
     /**
      * @param string|UriInterface $uri
-     * @return self<Vector<Map<string, scalar|null|array>>>
+     *
+     * @return self<Vector<Map<string, scalar|array|null>>>
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {

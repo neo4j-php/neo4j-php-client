@@ -102,7 +102,6 @@ final class ClientIntegrationTest extends TestCase
         self::assertEquals(1, $result);
     }
 
-
     /**
      * @dataProvider connectionAliases
      */

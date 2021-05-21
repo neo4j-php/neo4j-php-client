@@ -17,7 +17,6 @@ use function array_merge;
 use Ds\Vector;
 use function json_decode;
 use function json_encode;
-use function var_export;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
 use Laudis\Neo4j\Contracts\FormatterInterface;

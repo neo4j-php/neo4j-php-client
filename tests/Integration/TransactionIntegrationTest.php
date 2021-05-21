@@ -20,7 +20,6 @@ use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
-use function var_dump;
 
 final class TransactionIntegrationTest extends TestCase
 {
@@ -38,13 +37,12 @@ final class TransactionIntegrationTest extends TestCase
             ->build();
 
         $tbr = [];
-        $tbr[] = [ $client->openTransaction(null, 'bolt') ];
-        $tbr[] = [ $client->openTransaction(null, 'http') ];
+        $tbr[] = [$client->openTransaction(null, 'bolt')];
+        $tbr[] = [$client->openTransaction(null, 'http')];
 
         /** @var iterable<array> */
         return $tbr;
     }
-
 
     /**
      * @dataProvider makeTransactions

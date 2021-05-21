@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use Exception;
+use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -25,9 +26,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\UriInterface;
-use function is_string;
 use function str_replace;
-use function var_export;
 
 /**
  * @template T

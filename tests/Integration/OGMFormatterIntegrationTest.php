@@ -15,10 +15,10 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Ds\Map;
 use Ds\Vector;
+use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
-use Laudis\Neo4j\Bolt\BoltConfiguration;
 use PHPUnit\Framework\TestCase;
 
 final class OGMFormatterIntegrationTest extends TestCase

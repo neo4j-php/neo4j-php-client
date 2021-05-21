@@ -28,7 +28,6 @@ use Laudis\Neo4j\Databags\HttpPsrBindings;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Http\HttpConfig;
-use function var_export;
 
 /**
  * @template T

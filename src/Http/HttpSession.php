@@ -23,7 +23,6 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
-use function constant;
 use function parse_url;
 use const PHP_URL_PATH;
 use Psr\Http\Client\ClientExceptionInterface;
