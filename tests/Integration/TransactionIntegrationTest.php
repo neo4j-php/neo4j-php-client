@@ -20,7 +20,7 @@ use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
-use function putenv;
+use function var_dump;
 
 final class TransactionIntegrationTest extends TestCase
 {
@@ -32,14 +32,14 @@ final class TransactionIntegrationTest extends TestCase
 
     public function makeTransactions(): iterable
     {
-        $builder = ClientBuilder::create();
-        $builder->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j');
-        $builder->addHttpConnection('http', 'http://neo4j:test@neo4j');
-        $client = $builder->build();
+        $client = ClientBuilder::create()
+            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
+            ->addHttpConnection('http', 'http://neo4j:test@neo4j')
+            ->build();
 
         $tbr = [];
-        $tbr[] = $client->openTransaction(null, 'bolt');
-        $tbr[] = $client->openTransaction(null, 'http');
+        $tbr[] = [ $client->openTransaction(null, 'bolt') ];
+        $tbr[] = [ $client->openTransaction(null, 'http') ];
 
         /** @var iterable<array> */
         return $tbr;

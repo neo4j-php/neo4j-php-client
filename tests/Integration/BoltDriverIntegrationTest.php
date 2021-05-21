@@ -50,7 +50,7 @@ CYPHER);
     {
         $driver = BoltDriver::create('bolt://neo4j:test@127.0.0.0');
         $this->expectException(Neo4jException::class);
-        $driver->createSession();
+        $driver->createSession()->run('RETURN 1');
     }
 
     /**
@@ -60,6 +60,6 @@ CYPHER);
     {
         $driver = BoltDriver::create('bolt://neo4j:test@127.0.0.0');
         $this->expectException(Neo4jException::class);
-        $driver->createSession();
+        $driver->createSession()->run('RETURN 1');
     }
 }

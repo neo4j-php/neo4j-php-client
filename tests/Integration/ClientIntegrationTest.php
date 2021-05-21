@@ -50,7 +50,7 @@ final class ClientIntegrationTest extends TestCase
     {
         return ClientBuilder::create()
             ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
-            ->addBoltConnection('http', 'http://neo4j:test@neo4j')
+            ->addHttpConnection('http', 'http://neo4j:test@neo4j')
             ->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true))
             ->build();
     }
