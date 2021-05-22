@@ -23,7 +23,6 @@ use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
 use PHPUnit\Framework\TestCase;
 
 final class OGMFormatterIntegrationTest extends TestCase
@@ -35,10 +34,10 @@ final class OGMFormatterIntegrationTest extends TestCase
     {
         parent::setUp();
         $this->client = ClientBuilder::create()
-            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j-42')
-            ->addHttpConnection('http', 'http://neo4j:test@neo4j-42')
-            ->addBoltConnection('cluster', 'http://neo4j:test@core1', BoltConfig::create()->withAutoRouting(true))
-            ->setFormatter(new OGMFormatter())
+            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
+            ->withDriver('http', 'http://neo4j:test@neo4j')
+            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
+            ->withFormatter(new OGMFormatter())
             ->build();
     }
 

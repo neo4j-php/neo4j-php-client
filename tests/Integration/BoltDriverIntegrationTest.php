@@ -14,16 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Exception;
-use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Formatter\BasicFormatter;
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
-use Laudis\Neo4j\Network\Bolt\BoltDriver;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @psalm-import-type ParsedUrl from BoltDriver
- */
 final class BoltDriverIntegrationTest extends TestCase
 {
     /**
@@ -31,13 +25,10 @@ final class BoltDriverIntegrationTest extends TestCase
      */
     public function testValidHostname(): void
     {
-        /** @var ParsedUrl $parsedUrl */
-        $parsedUrl = parse_url('bolt://neo4j:test@neo4j-42');
-        $session = (new BoltDriver($parsedUrl, BoltConfig::create(), 'ua'))->aquireSession(new BasicFormatter());
-        $results = $session->run([new Statement(<<<'CYPHER'
+        $results = BoltDriver::create('bolt://neo4j:test@neo4j')->createSession()->run(<<<'CYPHER'
 RETURN 1 AS x
-CYPHER, [])]);
-        self::assertEquals(1, $results->first()->first()->get('x'));
+CYPHER);
+        self::assertEquals(1, $results->first()->get('x'));
     }
 
     /**
@@ -45,14 +36,11 @@ CYPHER, [])]);
      */
     public function testValidUrl(): void
     {
-        $ip = gethostbyname('neo4j-42');
-        /** @var ParsedUrl $parsedUrl */
-        $parsedUrl = parse_url('bolt://neo4j:test@'.$ip);
-        $session = (new BoltDriver($parsedUrl, BoltConfig::create(), 'ua'))->aquireSession(new BasicFormatter());
-        $results = $session->run([new Statement(<<<'CYPHER'
+        $ip = gethostbyname('neo4j');
+        $results = BoltDriver::create('bolt://neo4j:test@'.$ip)->createSession()->run(<<<'CYPHER'
 RETURN 1 AS x
-CYPHER, [])]);
-        self::assertEquals(1, $results->first()->first()->get('x'));
+CYPHER);
+        self::assertEquals(1, $results->first()->get('x'));
     }
 
     /**
@@ -60,11 +48,9 @@ CYPHER, [])]);
      */
     public function testInvalidIp(): void
     {
-        /** @var ParsedUrl $parsedUrl */
-        $parsedUrl = parse_url('bolt://neo4j:test@127.0.0.0');
-        $driver = new BoltDriver($parsedUrl, BoltConfig::create(), 'ua');
+        $driver = BoltDriver::create('bolt://neo4j:test@127.0.0.0');
         $this->expectException(Neo4jException::class);
-        $driver->aquireSession(new BasicFormatter());
+        $driver->createSession()->run('RETURN 1');
     }
 
     /**
@@ -72,10 +58,8 @@ CYPHER, [])]);
      */
     public function testInvalidSocket(): void
     {
-        /** @var ParsedUrl $parsedUrl */
-        $parsedUrl = parse_url('bolt://neo4j:test@127.0.0.0');
-        $driver = new BoltDriver($parsedUrl, BoltConfig::create(), 'ua');
+        $driver = BoltDriver::create('bolt://neo4j:test@127.0.0.0');
         $this->expectException(Neo4jException::class);
-        $driver->aquireSession(new BasicFormatter());
+        $driver->createSession()->run('RETURN 1');
     }
 }

@@ -15,6 +15,8 @@ namespace Laudis\Neo4j\Formatter;
 
 use Bolt\Bolt;
 use Ds\Vector;
+use function in_array;
+use function is_int;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\StatementStatistics;
 use Psr\Http\Message\RequestInterface;
@@ -62,25 +64,33 @@ final class StatisticsFormatter implements FormatterInterface
      */
     public function formatBoltStats(array $response): StatementStatistics
     {
-        if (!isset($response['stats'])) {
+        $stats = $response['stats'] ?? false;
+        if ($stats === false) {
             return new StatementStatistics();
         }
 
+        $updateCount = 0;
+        foreach ($stats as $key => $value) {
+            if (is_int($value) && !in_array($key, ['system-updates', 'contains-system-updates'])) {
+                $updateCount += $value;
+            }
+        }
+
         return new StatementStatistics(
-            $response['stats']['nodes-created'] ?? 0,
-            $response['stats']['nodes-deleted'] ?? 0,
-            $response['stats']['relationships-created'] ?? 0,
-            $response['stats']['relationships-deleted'] ?? 0,
-            $response['stats']['properties-set'] ?? 0,
-            $response['stats']['labels-added'] ?? 0,
-            $response['stats']['labels-removed'] ?? 0,
-            $response['stats']['indexes-added'] ?? 0,
-            $response['stats']['indexes-removed'] ?? 0,
-            $response['stats']['constraints-added'] ?? 0,
-            $response['stats']['constraints-removed'] ?? 0,
-            $response['stats']['contains-updates'] ?? false,
-            $response['stats']['contains-system-updates'] ?? false,
-            $response['stats']['system-updates'] ?? 0
+            $stats['nodes-created'] ?? 0,
+            $stats['nodes-deleted'] ?? 0,
+            $stats['relationships-created'] ?? 0,
+            $stats['relationships-deleted'] ?? 0,
+            $stats['properties-set'] ?? 0,
+            $stats['labels-added'] ?? 0,
+            $stats['labels-removed'] ?? 0,
+            $stats['indexes-added'] ?? 0,
+            $stats['indexes-removed'] ?? 0,
+            $stats['constraints-added'] ?? 0,
+            $stats['constraints-removed'] ?? 0,
+            $updateCount > 0,
+            ($stats['contains-system-updates'] ?? $stats['system-updates'] ?? 0) >= 1,
+            $stats['system-updates'] ?? 0
         );
     }
 

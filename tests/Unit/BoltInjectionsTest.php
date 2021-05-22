@@ -13,30 +13,36 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Laudis\Neo4j\Network\Bolt\BoltConfig;
+use Laudis\Neo4j\Bolt\BoltConfiguration;
 use PHPUnit\Framework\TestCase;
 
 final class BoltInjectionsTest extends TestCase
 {
     public function testConstruct(): void
     {
-        $injections = BoltConfig::create('test');
+        $injections = BoltConfiguration::create('test');
         self::assertEquals('test', $injections->getDatabase());
-        $injections = new BoltConfig('abc');
+        $injections = new BoltConfiguration('abc');
         self::assertEquals('abc', $injections->getDatabase());
+    }
+
+    public function testSystem(): void
+    {
+        $injections = BoltConfiguration::create('system');
+        self::assertEquals('system', $injections->getDatabase());
     }
 
     public function testWithDatabase(): void
     {
-        $injections = new BoltConfig('abc');
+        $injections = new BoltConfiguration('abc');
         self::assertEquals('test', $injections->withDatabase('test')->getDatabase());
     }
 
     public function testWithSslContext(): void
     {
-        $injections = new BoltConfig('abc', ['passphrase' => 'test']);
+        $injections = new BoltConfiguration('abc', ['passphrase' => 'test']);
         self::assertEquals(['passphrase' => 'test'], $injections->getSslContextOptions());
-        self::assertNull(BoltConfig::create()->getSslContextOptions());
+        self::assertNull(BoltConfiguration::create()->getSslContextOptions());
 
         self::assertEquals(['passphrase' => 'x'], $injections->withSslContextOptions(['passphrase' => 'x'])->getSslContextOptions());
         self::assertEquals(

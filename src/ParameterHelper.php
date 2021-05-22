@@ -16,7 +16,12 @@ namespace Laudis\Neo4j;
 use Ds\Map;
 use Ds\Sequence;
 use Ds\Vector;
+use function gettype;
 use InvalidArgumentException;
+use function is_array;
+use function is_int;
+use function is_object;
+use function is_string;
 use stdClass;
 
 final class ParameterHelper
@@ -41,7 +46,7 @@ final class ParameterHelper
         return self::emptySequenceToArray($value) ??
             self::emptyDictionaryToStdClass($value) ??
             self::filledIterableToArray($value) ??
-            self::stringableToString($value) ??
+            self::stringAbleToString($value) ??
             self::filterInvalidType($value);
     }
 
@@ -76,7 +81,8 @@ final class ParameterHelper
      */
     private static function emptySequenceToArray($value): ?array
     {
-        if ($value instanceof Sequence && $value->count() === 0) {
+        if (($value instanceof Sequence && $value->count() === 0) ||
+            (is_array($value) && count($value) === 0)) {
             return [];
         }
 
@@ -88,8 +94,8 @@ final class ParameterHelper
      */
     private static function emptyDictionaryToStdClass($value): ?stdClass
     {
-        if (($value instanceof Map && $value->count() === 0) ||
-            (is_array($value) && count($value) === 0)
+        if ((!$value && is_array($value)) ||
+            ($value instanceof Map && $value->count() === 0)
         ) {
             return new stdClass();
         }

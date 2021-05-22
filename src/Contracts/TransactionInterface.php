@@ -23,15 +23,6 @@ use Laudis\Neo4j\Exception\Neo4jException;
 interface TransactionInterface
 {
     /**
-     * @param iterable<Statement> $statements
-     *
-     * @return Vector<T>
-     */
-    public function commit(iterable $statements = []): Vector;
-
-    public function rollback(): void;
-
-    /**
      * @param iterable<string, scalar|iterable|null> $parameters
      *
      * @return T
@@ -51,6 +42,4 @@ interface TransactionInterface
      * @return Vector<T>
      */
     public function runStatements(iterable $statements): Vector;
-
-    public function getDomainIdentifier(): string;
 }

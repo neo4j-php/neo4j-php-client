@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Contracts;
 
 use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 
 /**
@@ -29,35 +30,65 @@ interface SessionInterface
      *
      * @return Vector<T>
      */
-    public function run(iterable $statements): Vector;
+    public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): Vector;
 
     /**
-     * @param iterable<Statement> $statements
-     *
-     * @throws Neo4jException
-     *
-     * @return Vector<T>
+     * @return T
      */
-    public function runOverTransaction(TransactionInterface $transaction, iterable $statements): Vector;
+    public function runStatement(Statement $statement, ?TransactionConfiguration $config = null);
 
     /**
-     * @throws Neo4jException
-     */
-    public function rollbackTransaction(TransactionInterface $transaction): void;
-
-    /**
-     * @param iterable<Statement> $statements
+     * @param iterable<string, scalar|iterable|null> $parameters
      *
-     * @throws Neo4jException
-     *
-     * @return Vector<T>
+     * @return T
      */
-    public function commitTransaction(TransactionInterface $transaction, iterable $statements): Vector;
+    public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null);
 
     /**
      * @psalm-param iterable<Statement>|null $statements
      *
      * @throws Neo4jException
+     *
+     * @deprecated
+     * @see SessionInterface::beginTransaction use this method instead.
+     *
+     * @return UnmanagedTransactionInterface<T>
      */
-    public function openTransaction(?iterable $statements = null): TransactionInterface;
+    public function openTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
+
+    /**
+     * @psalm-param iterable<Statement>|null $statements
+     *
+     * @throws Neo4jException
+     *
+     * @return UnmanagedTransactionInterface<T>
+     */
+    public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
+
+    /**
+     * @template U
+     *
+     * @param callable(TransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
+
+    /**
+     * @template U
+     *
+     * @param callable(TransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
+
+    /**
+     * @template U
+     *
+     * @param callable(TransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
 }

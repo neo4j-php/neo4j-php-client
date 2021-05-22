@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Contracts;
 
 use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 
 /**
@@ -22,10 +23,8 @@ use Laudis\Neo4j\Exception\Neo4jException;
  */
 interface ClientInterface
 {
-    public const VERSION = '2.0.0';
-
     /**
-     * Runs a one off transaction with the provided query and parameters over the connection with the provided alias or the master alias othwerise.
+     * Runs a one off transaction with the provided query and parameters over the connection with the provided alias or the master alias otherwise.
      *
      * @param iterable<string, scalar|iterable|null> $parameters
      *
@@ -62,21 +61,41 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return TransactionInterface<T>
+     * @return UnmanagedTransactionInterface<T>
      */
-    public function openTransaction(?iterable $statements = null, ?string $connectionAlias = null): TransactionInterface;
+    public function openTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface;
+
+    /**
+     * @return DriverInterface<T>
+     */
+    public function getDriver(?string $alias): DriverInterface;
 
     /**
      * @template U
      *
-     * @param FormatterInterface<U> $formatter
+     * @param callable(TransactionInterface<T>):U $tsxHandler
      *
-     * @return ClientInterface<U>
+     * @return U
      */
-    public function withFormatter(FormatterInterface $formatter): ClientInterface;
+    public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
 
     /**
-     * @return FormatterInterface<T>
+     * @template U
+     *
+     * @param callable(TransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
      */
-    public function getFormatter(): FormatterInterface;
+    public function readTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
+
+    /**
+     * Alias for write transaction.
+     *
+     * @template U
+     *
+     * @param callable(TransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
 }
