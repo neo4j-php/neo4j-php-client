@@ -13,17 +13,21 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use DateInterval;
 use Ds\Map;
 use Ds\Vector;
-use DateInterval;
-use Laudis\Neo4j\Types\Node;
-use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Types\Duration;
-use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\Duration;
+use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Time;
 use PHPUnit\Framework\TestCase;
+use function range;
+use function sprintf;
 
 final class OGMFormatterIntegrationTest extends TestCase
 {
@@ -34,63 +38,179 @@ final class OGMFormatterIntegrationTest extends TestCase
     {
         parent::setUp();
         $this->client = ClientBuilder::create()
-            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
             ->withDriver('http', 'http://neo4j:test@neo4j')
+            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
             ->withDriver('cluster', 'neo4j://neo4j:test@core1')
             ->withFormatter(new OGMFormatter())
             ->build();
+
+        $this->client->run('MATCH (n) DETACH DELETE n');
     }
 
     /**
      * @dataProvider transactionProvider
      */
-    public function testPath(string $alias): void
+    public function testNull(string $alias): void
     {
-        $results = $this->client->run(<<<'CYPHER'
-MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
-WITH b
-MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
-RETURN x, y, z
-CYPHER
-            , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
+        $results = $this->client->run('RETURN null as x', [], $alias);
 
-        self::assertEquals(1, $results->count());
+        self::assertNull($results->first()->get('x'));
     }
 
     /**
      * @dataProvider transactionProvider
      */
-    public function testNode(string $alias): void
+    public function testList(string $alias): void
     {
-        $uuid = 'cc60fd69-a92b-47f3-9674-2f27f3437d66';
-        $email = 'a@b.c';
-        $type = 'pepperoni';
+        $results = $this->client->run('RETURN range(5, 15) as list, range(16, 35) as list2', [], $alias);
 
-        $results = $this->client->run(
-            'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
-            ['email' => $email, 'uuid' => $uuid, 'type' => $type], $alias
-        );
+        $list = $results->first()->get('list');
+        $list2 = $results->first()->get('list2');
+
+        self::assertInstanceOf(CypherList::class, $list);
+        self::assertInstanceOf(CypherList::class, $list2);
+        self::assertEquals(range(5, 15), $list->toArray());
+        self::assertEquals(range(16, 35), $list2->toArray());
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testMap(string $alias): void
+    {
+        $results = $this->client->run('RETURN {a: "b", c: "d"} as map', [], $alias);
+
+        self::assertEquals(['a' => 'b', 'c' => 'd'], $results->first()->get('map')->toArray());
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testBoolean(string $alias): void
+    {
+        $results = $this->client->run('RETURN true as bool1, false as bool2', [], $alias);
 
         self::assertEquals(1, $results->count());
-
-        /** @var Node $u */
-        $u = $results[0]['u'];
-        self::assertInstanceOf(Node::class, $u);
-        self::assertEquals(new Vector(['User']), $u->labels());
-        self::assertEquals($email, $u->properties()['email']);
-        self::assertEquals($uuid, $u->properties()['uuid']);
-
-        /** @var Node $p */
-        $p = $results[0]['p'];
-        self::assertInstanceOf(Node::class, $p);
-        self::assertEquals(new Vector(['Food', 'Pizza']), $p->labels());
-        self::assertEquals($type, $p->properties()['type']);
+        self::assertIsBool($results->first()->get('bool1'));
+        self::assertIsBool($results->first()->get('bool2'));
     }
 
     /**
      * @dataProvider transactionProvider
      */
     public function testInteger(string $alias): void
+    {
+        $results = $this->client->run(<<<CYPHER
+CREATE (z:Int {num:1}), (:Int {num: 2}), (:Int {num:3})
+WITH z
+MATCH (x:Int)
+RETURN x.num ORDER BY x.num ASC
+CYPHER, [], $alias);
+
+        self::assertEquals(3, $results->count());
+        self::assertEquals(1, $results[0]['x.num']);
+        self::assertEquals(2, $results[1]['x.num']);
+        self::assertEquals(3, $results[2]['x.num']);
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testFloat(string $alias): void
+    {
+        $results = $this->client->run('RETURN 0.1 AS float', [], $alias);
+
+        self::assertIsFloat($results->first()->get('float'));
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testString(string $alias): void
+    {
+        $results = $this->client->run('RETURN "abc" AS string', [], $alias);
+
+        self::assertIsString($results->first()->get('string'));
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testDate(string $alias): void
+    {
+        $query = $this->articlesQuery();
+        $query .= 'RETURN article.datePublished as published_at';
+
+        $results = $this->client->run($query, [], $alias);
+
+        self::assertEquals(3, $results->count());
+
+        self::assertInstanceOf(Date::class, $results[0]['published_at']);
+        self::assertEquals(18048, $results[0]['published_at']->days());
+
+        self::assertInstanceOf(Date::class, $results[1]['published_at']);
+        self::assertEquals(18049, $results[1]['published_at']->days());
+
+        self::assertInstanceOf(Date::class, $results[2]['published_at']);
+        self::assertEquals(18742, $results[2]['published_at']->days());
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testTime(string $alias): void
+    {
+        $results = $this->client->run('RETURN time("12:00:00.000000000") AS time', [], $alias);
+
+        $time = $results->first()->get('time');
+        self::assertInstanceOf(Time::class, $time);
+        self::assertEquals((float) 12 * 60 * 60, $time->getSeconds());
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testLocalTime(string $alias): void
+    {
+        $results = $this->client->run('RETURN time("12:00:00.000000000") AS time', [], $alias);
+
+        $time = $results->first()->get('time');
+        self::assertInstanceOf(Time::class, $time);
+        self::assertEquals((float) 12 * 60 * 60, $time->getSeconds());
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testDateTime(string $alias): void
+    {
+        $query = $this->articlesQuery();
+        $query .= 'RETURN article.created as created_at';
+
+        $results = $this->client->run($query);
+
+        self::assertCount(3, $results);
+
+        self::assertInstanceOf(DateTime::class, $results[0]['created_at']);
+        self::assertEquals(1559414432, $results[0]['created_at']->seconds());
+        self::assertEquals(142000000, $results[0]['created_at']->nanoseconds());
+        self::assertEquals(3600, $results[0]['created_at']->offsetSeconds());
+
+        self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
+        self::assertEquals(1559471012, $results[1]['created_at']->seconds());
+        self::assertEquals(122000000, $results[1]['created_at']->nanoseconds());
+        self::assertEquals(3600, $results[1]['created_at']->offsetSeconds());
+
+        self::assertInstanceOf(DateTime::class, $results[2]['created_at']);
+        self::assertGreaterThan(0, $results[2]['created_at']->seconds());
+        self::assertGreaterThan(0, $results[2]['created_at']->nanoseconds());
+        self::assertEquals(0, $results[2]['created_at']->offsetSeconds());
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testLocalDateTime(string $alias): void
     {
         $this->client->run('MATCH (n) DETACH DELETE n');
         $results = $this->client->run(<<<CYPHER
@@ -142,51 +262,85 @@ CYPHER);
     /**
      * @dataProvider transactionProvider
      */
-    public function testDate(string $alias): void
+    public function testPoint(string $alias): void
     {
-        $query = $this->articlesQuery();
-        $query .= 'RETURN article.datePublished as published_at';
-
-        $results = $this->client->run($query);
+        $this->client->run('MATCH (n) DETACH DELETE n');
+        $results = $this->client->run(<<<CYPHER
+CREATE (z:Int {num:1}), (:Int {num: 2}), (:Int {num:3})
+WITH z
+MATCH (x:Int)
+RETURN x.num ORDER BY x.num ASC
+CYPHER);
 
         self::assertCount(3, $results);
-
-        self::assertInstanceOf(Date::class, $results[0]['published_at']);
-        self::assertEquals(18048, $results[0]['published_at']->days());
-
-        self::assertInstanceOf(Date::class, $results[1]['published_at']);
-        self::assertEquals(18049, $results[1]['published_at']->days());
-
-        self::assertInstanceOf(Date::class, $results[2]['published_at']);
-        self::assertEquals(18742, $results[2]['published_at']->days());
+        self::assertEquals(1, $results[0]['x.num']);
+        self::assertEquals(2, $results[1]['x.num']);
+        self::assertEquals(3, $results[2]['x.num']);
     }
 
     /**
      * @dataProvider transactionProvider
      */
-    public function testDateTime(string $alias): void
+    public function testNode(string $alias): void
     {
-        $query = $this->articlesQuery();
-        $query .= 'RETURN article.created as created_at';
+        $uuid = 'cc60fd69-a92b-47f3-9674-2f27f3437d66';
+        $email = 'a@b.c';
+        $type = 'pepperoni';
 
-        $results = $this->client->run($query);
+        $results = $this->client->run(
+            'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
+            ['email' => $email, 'uuid' => $uuid, 'type' => $type], $alias
+        );
+
+        self::assertEquals(1, $results->count());
+
+        /** @var Node $u */
+        $u = $results[0]['u'];
+        self::assertInstanceOf(Node::class, $u);
+        self::assertEquals(new Vector(['User']), $u->labels());
+        self::assertEquals($email, $u->properties()['email']);
+        self::assertEquals($uuid, $u->properties()['uuid']);
+
+        /** @var Node $p */
+        $p = $results[0]['p'];
+        self::assertInstanceOf(Node::class, $p);
+        self::assertEquals(new Vector(['Food', 'Pizza']), $p->labels());
+        self::assertEquals($type, $p->properties()['type']);
+    }
+
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testRelationship(string $alias): void
+    {
+        $this->client->run('MATCH (n) DETACH DELETE n');
+        $results = $this->client->run(<<<CYPHER
+CREATE (z:Int {num:1}), (:Int {num: 2}), (:Int {num:3})
+WITH z
+MATCH (x:Int)
+RETURN x.num ORDER BY x.num ASC
+CYPHER);
 
         self::assertCount(3, $results);
+        self::assertEquals(1, $results[0]['x.num']);
+        self::assertEquals(2, $results[1]['x.num']);
+        self::assertEquals(3, $results[2]['x.num']);
+    }
 
-        self::assertInstanceOf(DateTime::class, $results[0]['created_at']);
-        self::assertEquals(1559414432, $results[0]['created_at']->seconds());
-        self::assertEquals(142000000, $results[0]['created_at']->nanoseconds());
-        self::assertEquals(3600, $results[0]['created_at']->offsetSeconds());
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testPath(string $alias): void
+    {
+        $results = $this->client->run(<<<'CYPHER'
+MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
+WITH b
+MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
+RETURN x, y, z
+CYPHER
+            , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
 
-        self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
-        self::assertEquals(1559471012, $results[1]['created_at']->seconds());
-        self::assertEquals(122000000, $results[1]['created_at']->nanoseconds());
-        self::assertEquals(3600, $results[1]['created_at']->offsetSeconds());
-
-        self::assertInstanceOf(DateTime::class, $results[2]['created_at']);
-        self::assertGreaterThan(0, $results[2]['created_at']->seconds());
-        self::assertGreaterThan(0, $results[2]['created_at']->nanoseconds());
-        self::assertEquals(0, $results[2]['created_at']->offsetSeconds());
+        self::assertEquals(1, $results->count());
     }
 
     /**
@@ -231,7 +385,6 @@ SET article.created = articleProperties.created,
     article.datePublished = articleProperties.datePublished,
     article.readingTime = duration(articleProperties.readingTime)
 CYPHER;
-
     }
 
     /**

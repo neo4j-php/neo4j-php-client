@@ -11,6 +11,8 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
+use PhpCsFixer\Config;
+
 $header = <<<'EOF'
 This file is part of the Laudis Neo4j package.
 
@@ -30,7 +32,7 @@ try {
     exit(1);
 }
 
-return PhpCsFixer\Config::create()
+return (new Config())
     ->setRules([
         '@Symfony' => true,
 

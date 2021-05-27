@@ -16,6 +16,7 @@ namespace Laudis\Neo4j;
 use Ds\Map;
 use Ds\Sequence;
 use Ds\Vector;
+use function count;
 use function gettype;
 use InvalidArgumentException;
 use function is_array;
@@ -53,7 +54,7 @@ final class ParameterHelper
     /**
      * @param mixed $value
      */
-    private static function stringableToString($value): ?string
+    private static function stringAbleToString($value): ?string
     {
         if (is_object($value) && method_exists($value, '__toString')) {
             return (string) $value;

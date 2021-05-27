@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use Bolt\structures\Date as BoltDate;
+use DateTimeImmutable;
+use Exception;
 
 class Date
 {
@@ -32,5 +34,13 @@ class Date
     public static function makeFromBoltDate(BoltDate $date): self
     {
         return new self($date->days());
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function toDateTime(): DateTimeImmutable
+    {
+        return new DateTimeImmutable('@'.$this->days);
     }
 }

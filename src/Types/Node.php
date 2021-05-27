@@ -13,13 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use BadMethodCallException;
+use Bolt\structures\Node as BoltNode;
 use Ds\Map;
 use Ds\Vector;
-use BadMethodCallException;
-use Bolt\structures\Date as BoltDate;
-use Bolt\structures\Node as BoltNode;
-use Bolt\structures\Duration as BoltDuration;
-use Bolt\structures\DateTime as BoltDateTime;
 
 class Node
 {
@@ -78,7 +75,7 @@ class Node
 
     private function mapProperties(Map $properties): Map
     {
-        return $properties->map(function($key, $value) {
+        return $properties->map(function ($key, $value) {
             if (is_object($value)) {
                 return $this->mapValueToType(get_class($value), $value);
             }
@@ -94,6 +91,6 @@ class Node
 
     public function __set($key, $value)
     {
-        throw new BadMethodCallException(sprintf("% is immutable", get_class($this)));
+        throw new BadMethodCallException(sprintf('% is immutable', get_class($this)));
     }
 }

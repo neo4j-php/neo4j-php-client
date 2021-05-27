@@ -32,9 +32,9 @@ final class ComplexQueryTests extends TestCase
     {
         parent::setUp();
         $this->client = ClientBuilder::create()
-            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
-            ->addHttpConnection('http', 'http://neo4j:test@neo4j')
-            ->addBoltConnection('cluster', 'http://neo4j:test@core1')
+            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
+            ->withDriver('http', 'http://neo4j:test@neo4j')
+            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
             ->build();
     }
 

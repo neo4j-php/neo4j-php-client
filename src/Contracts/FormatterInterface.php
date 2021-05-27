@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Contracts;
 use Bolt\Bolt;
 use Ds\Vector;
 use JsonException;
+use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
