@@ -124,10 +124,7 @@ final class HttpDriver implements DriverInterface
             $this->transactionUrl = $this->transactionUrl($factory, $config);
         }
 
-        parse_str($this->uri->getQuery(), $query);
-        if (isset($query['database'])) {
-            $config = $config->merge(SessionConfiguration::default()->withDatabase($query['database']));
-        }
+        $config = $config->merge(SessionConfiguration::fromUri($this->uri));
 
         return new HttpSession(
             $bindings->getStreamFactory(),

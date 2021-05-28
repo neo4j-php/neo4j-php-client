@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Psr\Http\Message\UriInterface;
 use function call_user_func;
 use function is_callable;
 use Laudis\Neo4j\Enum\AccessMode;
+use function parse_str;
 
 final class SessionConfiguration
 {
@@ -137,5 +139,17 @@ final class SessionConfiguration
             $this->accessMode ?? $config->accessMode,
             $this->bookmarks ?? $config->bookmarks
         );
+    }
+
+    public static function fromUri(UriInterface $uri): self
+    {
+        parse_str($uri->getQuery(), $query);
+        $tbr = SessionConfiguration::default();
+        if (isset($query['database'])) {
+            $database = (string)$query['database'];
+            $tbr = $tbr->withDatabase($database);
+        }
+
+        return $tbr;
     }
 }

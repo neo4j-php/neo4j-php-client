@@ -95,10 +95,7 @@ final class Neo4jDriver implements DriverInterface
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
         $config ??= SessionConfiguration::default();
-        parse_str($this->parsedUrl->getQuery(), $query);
-        if (isset($query['database'])) {
-            $config = $config->merge(SessionConfiguration::default()->withDatabase($query['database']));
-        }
+        $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl));
 
         return new Session(
             $config,
