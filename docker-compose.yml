@@ -22,10 +22,17 @@ services:
             - core2
             - core3
             - readreplica1
-        expose:
-            - 9000
-        environment:
-            - XDEBUG_MODE=coverage
+    testkit-backend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                - WITH_XDEBUG=true
+        working_dir: /opt/project
+        volumes:
+            - .:/opt/project
+        ports:
+          - "9876:9876"
     neo4j:
         networks:
             - neo4j
