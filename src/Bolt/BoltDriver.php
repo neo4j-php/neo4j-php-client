@@ -29,6 +29,7 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Psr\Http\Message\UriInterface;
+use function parse_str;
 
 /**
  * @template T
@@ -101,6 +102,10 @@ final class BoltDriver implements DriverInterface
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
         $config ??= SessionConfiguration::default();
+        parse_str($this->parsedUrl->getQuery(), $query);
+        if (isset($query['database'])) {
+            $config = $config->merge(SessionConfiguration::default()->withDatabase($query['database']));
+        }
 
         return new Session(
             $config,

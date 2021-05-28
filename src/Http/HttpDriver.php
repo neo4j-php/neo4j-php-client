@@ -26,6 +26,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\UriInterface;
+use function parse_str;
 use function str_replace;
 
 /**
@@ -117,16 +118,21 @@ final class HttpDriver implements DriverInterface
         $bindings = $this->config->getHttpPsrBindings();
         $psrFactory = $bindings->getRequestFactory();
         $factory = new RequestFactory($psrFactory, $this->auth, $this->uri, $this->config->getUserAgent());
-        $sessionConfiguration = $config ?? SessionConfiguration::default();
+        $config ??= SessionConfiguration::default();
 
         if ($this->transactionUrl === null) {
-            $this->transactionUrl = $this->transactionUrl($factory, $sessionConfiguration);
+            $this->transactionUrl = $this->transactionUrl($factory, $config);
+        }
+
+        parse_str($this->uri->getQuery(), $query);
+        if (isset($query['database'])) {
+            $config = $config->merge(SessionConfiguration::default()->withDatabase($query['database']));
         }
 
         return new HttpSession(
             $bindings->getStreamFactory(),
             new HttpConnectionPool($bindings->getClient()),
-            $sessionConfiguration,
+            $config,
             $this->formatter,
             $factory,
             $this->transactionUrl

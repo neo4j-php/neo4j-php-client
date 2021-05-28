@@ -128,4 +128,14 @@ final class SessionConfiguration
 
         return $bookmarks ?? [];
     }
+
+    public function merge(SessionConfiguration $config): self
+    {
+        return new self(
+            $this->database ?? $config->database,
+            $this->fetchSize ?? $config->fetchSize,
+            $this->accessMode ?? $config->accessMode,
+            $this->bookmarks ?? $config->bookmarks
+        );
+    }
 }
