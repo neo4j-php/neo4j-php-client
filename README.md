@@ -66,7 +66,7 @@ You can control the driver using three different approaches:
  - *Auto committed queries* (easiest and most intuitive)
  - *Unmanaged transactions* (for the highest degree of control)
 
-### Use transaction functions like a pro
+### Transaction functions
 
 Transaction functions are the **de facto** standard when using the driver. It is the most portable as it is resistant to a lot of the pitfalls when first developing with high availability solutions such as [Neo4j aura]() or a [cluster]().
 
@@ -108,7 +108,7 @@ $client->writeTransaction(static function (UnmanagedTransactionInterface $tsx) u
 $externalCounter->incrementNodesCreated();
 ```
 
-### Get quick and dirty with auto committed queries
+### Auto committed queries
 
 Auto committed queries are the simplest and most intuitive, but have a lot of drawbacks when running complex business logic or within a high availability environment.
 
@@ -144,7 +144,7 @@ $results = $client->runStatements([
 ]);
 ```
 
-### Get into the nitty-gritty details with unmanaged transactions.
+### Unmanaged transactions
 
 If you need lower level access to the drivers capabilities, then you want unmanaged transactions. They allow for completely controllable commits and rollbacks.
 
@@ -256,7 +256,7 @@ If you plan on using the Bolt protocol, make sure you have the sockets extension
 
 ## Concepts
 
-The client is based on the driver api found [here](). Because of this, the client is nothing more than a driver manager. The driver creates sessions. A session runs queries through a transaction.
+The client is based on the driver api found [here](https://neo4j.com/docs/driver-manual/current/). Because of this, the client is nothing more than a driver manager. The driver creates sessions. A session runs queries through a transaction.
 
 Because of this behavior you can access each concept starting from the client like this:
 
