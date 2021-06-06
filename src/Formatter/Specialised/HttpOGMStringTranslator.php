@@ -38,25 +38,30 @@ final class HttpOGMStringTranslator
     public function translate(Iterator $meta, string $value)
     {
         $type = $meta->current()['type'] ?? null;
-        $meta->next();
 
         switch ($type) {
             case 'duration':
+                $meta->next();
                 $tbr = $this->translateDuration($value);
                 break;
             case 'datetime':
+                $meta->next();
                 $tbr = $this->translateDateTime($value);
                 break;
             case 'date':
+                $meta->next();
                 $tbr = $this->translateDate($value);
                 break;
             case 'time':
+                $meta->next();
                 $tbr = $this->translateTime($value);
                 break;
             case 'localdatetime':
+                $meta->next();
                 $tbr = $this->translateLocalDateTime($value);
                 break;
             case 'localtime':
+                $meta->next();
                 $tbr = $this->translateLocalTime($value);
                 break;
             default:
