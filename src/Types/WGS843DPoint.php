@@ -23,9 +23,13 @@ final class WGS843DPoint implements PointInterface
     private float $x;
     private float $y;
     private float $z;
+    /** @var 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' */
     private string $crs;
     private int $srid;
 
+    /**
+     * @param 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' $crs
+     */
     public function __construct(float $latitude, float $longitude, float $height, float $x, float $y, float $z, string $crs, int $srid)
     {
         $this->latitude = $latitude;
@@ -67,6 +71,7 @@ final class WGS843DPoint implements PointInterface
     {
         return $this->y;
     }
+
 
     public function getCrs(): string
     {
