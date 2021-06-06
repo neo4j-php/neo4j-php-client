@@ -31,11 +31,6 @@ final class Date
         return $this->days;
     }
 
-    public static function makeFromBoltDate(BoltDate $date): self
-    {
-        return new self($date->days());
-    }
-
     /**
      * @throws Exception
      */

@@ -59,14 +59,4 @@ final class Duration
     {
         return new DateInterval(sprintf('P%dM%dDT%dS', $this->months, $this->days, $this->seconds));
     }
-
-    public static function makeFromBoltDuration(BoltDuration $duration): self
-    {
-        return new self(
-            $duration->months(),
-            $duration->days(),
-            $duration->seconds(),
-            $duration->nanoseconds(),
-        );
-    }
 }

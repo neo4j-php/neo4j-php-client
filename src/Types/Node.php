@@ -40,18 +40,6 @@ final class Node
         $this->properties = $properties;
     }
 
-    public static function makeFromBoltNode(BoltNode $node): self
-    {
-        /**
-         * @psalm-suppress MixedArgumentTypeCoercion
-         */
-        return new self(
-            $node->id(),
-            new CypherList(new Vector($node->labels())),
-            new CypherMap(new Map($node->properties()))
-        );
-    }
-
     public static function makeFromHttpNode(array $node): self
     {
         /**

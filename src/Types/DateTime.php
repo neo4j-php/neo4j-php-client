@@ -48,11 +48,6 @@ final class DateTime
         return $this->tzOffsetSeconds;
     }
 
-    public static function makeFromBoltDateTime(BoltDateTimeAlias $datetime): self
-    {
-        return new self($datetime->seconds(), $datetime->nanoseconds(), $datetime->tz_offset_seconds());
-    }
-
     /**
      * @throws Exception
      */

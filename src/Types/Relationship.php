@@ -13,9 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Ds\Map;
-use Ds\Vector;
-
 final class Relationship
 {
     private int $id;
@@ -26,9 +23,13 @@ final class Relationship
 
     private string $type;
 
-    private Map $properties;
+    /** @var CypherMap<scalar|array|null> */
+    private CypherMap $properties;
 
-    public function __construct(int $id, int $startNodeId, int $endNodeId, string $type, Map $properties)
+    /**
+     * @param CypherMap<scalar|array|null> $properties
+     */
+    public function __construct(int $id, int $startNodeId, int $endNodeId, string $type, CypherMap $properties)
     {
         $this->id = $id;
         $this->startNodeId = $startNodeId;
@@ -57,7 +58,10 @@ final class Relationship
         return $this->type;
     }
 
-    public function getProperties(): Map
+    /**
+     * @return CypherMap<scalar|array|null>
+     */
+    public function getProperties(): CypherMap
     {
         return $this->properties;
     }
