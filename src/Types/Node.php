@@ -18,10 +18,8 @@ use Bolt\structures\Node as BoltNode;
 use Ds\Map;
 use Ds\Vector;
 
-class Node
+final class Node
 {
-    use TypeMapperTrait;
-
     private int $id;
     private Vector $labels;
     private Map $properties;
@@ -30,7 +28,7 @@ class Node
     {
         $this->id = $id;
         $this->labels = $labels;
-        $this->properties = $this->mapProperties($properties);
+        $this->properties = $properties;
     }
 
     public static function makeFromBoltNode(BoltNode $node): self
@@ -71,17 +69,6 @@ class Node
         if ($this->properties->hasKey($key)) {
             return $this->properties->get($key);
         }
-    }
-
-    private function mapProperties(Map $properties): Map
-    {
-        return $properties->map(function ($key, $value) {
-            if (is_object($value)) {
-                return $this->mapValueToType(get_class($value), $value);
-            }
-
-            return $value;
-        });
     }
 
     public function __get($key)

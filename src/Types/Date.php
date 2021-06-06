@@ -17,7 +17,7 @@ use Bolt\structures\Date as BoltDate;
 use DateTimeImmutable;
 use Exception;
 
-class Date
+final class Date
 {
     private int $days;
 
@@ -26,7 +26,7 @@ class Date
         $this->days = $days;
     }
 
-    public function days(): int
+    public function getDays(): int
     {
         return $this->days;
     }

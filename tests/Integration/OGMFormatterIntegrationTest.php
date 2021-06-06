@@ -19,11 +19,14 @@ use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Types\Duration;
+use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
 use PHPUnit\Framework\TestCase;
 use function range;
@@ -101,10 +104,9 @@ final class OGMFormatterIntegrationTest extends TestCase
     public function testInteger(string $alias): void
     {
         $results = $this->client->run(<<<CYPHER
-CREATE (z:Int {num:1}), (:Int {num: 2}), (:Int {num:3})
-WITH z
-MATCH (x:Int)
-RETURN x.num ORDER BY x.num ASC
+UNWIND [{num: 1}, {num: 2}, {num: 3}] AS x
+RETURN x.num
+ORDER BY x.num ASC
 CYPHER, [], $alias);
 
         self::assertEquals(3, $results->count());
@@ -146,13 +148,13 @@ CYPHER, [], $alias);
         self::assertEquals(3, $results->count());
 
         self::assertInstanceOf(Date::class, $results[0]['published_at']);
-        self::assertEquals(18048, $results[0]['published_at']->days());
+        self::assertEquals(18048, $results[0]['published_at']->getDays());
 
         self::assertInstanceOf(Date::class, $results[1]['published_at']);
-        self::assertEquals(18049, $results[1]['published_at']->days());
+        self::assertEquals(18049, $results[1]['published_at']->getDays());
 
         self::assertInstanceOf(Date::class, $results[2]['published_at']);
-        self::assertEquals(18742, $results[2]['published_at']->days());
+        self::assertEquals(18742, $results[2]['published_at']->getDays());
     }
 
     /**
@@ -187,24 +189,23 @@ CYPHER, [], $alias);
         $query = $this->articlesQuery();
         $query .= 'RETURN article.created as created_at';
 
-        $results = $this->client->run($query);
+        $results = $this->client->run($query, [], $alias);
 
-        self::assertCount(3, $results);
+        self::assertEquals(3, $results->count());
 
         self::assertInstanceOf(DateTime::class, $results[0]['created_at']);
-        self::assertEquals(1559414432, $results[0]['created_at']->seconds());
-        self::assertEquals(142000000, $results[0]['created_at']->nanoseconds());
-        self::assertEquals(3600, $results[0]['created_at']->offsetSeconds());
+        self::assertEquals(1559414432, $results[0]['created_at']->getSeconds());
+        self::assertEquals(142000000, $results[0]['created_at']->getNanoseconds());
+        self::assertEquals(3600, $results[0]['created_at']->getTimeZoneOffsetSeconds());
 
         self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
-        self::assertEquals(1559471012, $results[1]['created_at']->seconds());
-        self::assertEquals(122000000, $results[1]['created_at']->nanoseconds());
-        self::assertEquals(3600, $results[1]['created_at']->offsetSeconds());
+        self::assertEquals(1559471012, $results[1]['created_at']->getSeconds());
+        self::assertEquals(122000000, $results[1]['created_at']->getNanoseconds());
+        self::assertEquals(3600, $results[1]['created_at']->getTimeZoneOffsetSeconds());
 
         self::assertInstanceOf(DateTime::class, $results[2]['created_at']);
-        self::assertGreaterThan(0, $results[2]['created_at']->seconds());
-        self::assertGreaterThan(0, $results[2]['created_at']->nanoseconds());
-        self::assertEquals(0, $results[2]['created_at']->offsetSeconds());
+        self::assertGreaterThan(0, $results[2]['created_at']->getSeconds());
+        self::assertGreaterThan(0, $results[2]['created_at']->getNanoseconds());
     }
 
     /**
@@ -212,18 +213,9 @@ CYPHER, [], $alias);
      */
     public function testLocalDateTime(string $alias): void
     {
-        $this->client->run('MATCH (n) DETACH DELETE n');
-        $results = $this->client->run(<<<CYPHER
-CREATE (z:Int {num:1}), (:Int {num: 2}), (:Int {num:3})
-WITH z
-MATCH (x:Int)
-RETURN x.num ORDER BY x.num ASC
-CYPHER);
+        $result = $this->client->run('RETURN localdatetime() as local', [], $alias)->first()->get('local');
 
-        self::assertCount(3, $results);
-        self::assertEquals(1, $results[0]['x.num']);
-        self::assertEquals(2, $results[1]['x.num']);
-        self::assertEquals(3, $results[2]['x.num']);
+        self::assertInstanceOf(LocalDateTime::class, $result);
     }
 
     /**
@@ -241,9 +233,9 @@ UNWIND [
   duration({minutes: 1.5, seconds: 1, nanoseconds: 123456789})
 ] AS aDuration
 RETURN aDuration
-CYPHER);
+CYPHER, [], $alias);
 
-        self::assertCount(6, $results);
+        self::assertEquals(6, $results->count());
         self::assertEquals(new Duration(0, 14, 58320, 0), $results[0]['aDuration']);
         self::assertEquals(new Duration(5, 1, 43200, 0), $results[1]['aDuration']);
         self::assertEquals(new Duration(0, 22, 71509, 500000000), $results[2]['aDuration']);
@@ -251,10 +243,10 @@ CYPHER);
         self::assertEquals(new Duration(0, 0, 91, 123456789), $results[4]['aDuration']);
         self::assertEquals(new Duration(0, 0, 91, 123456789), $results[5]['aDuration']);
 
-        self::assertEquals(5, $results[1]['aDuration']->months());
-        self::assertEquals(1, $results[1]['aDuration']->days());
-        self::assertEquals(43200, $results[1]['aDuration']->seconds());
-        self::assertEquals(0, $results[1]['aDuration']->nanoseconds());
+        self::assertEquals(5, $results[1]['aDuration']->getMonths());
+        self::assertEquals(1, $results[1]['aDuration']->getDays());
+        self::assertEquals(43200, $results[1]['aDuration']->getSeconds());
+        self::assertEquals(0, $results[1]['aDuration']->getNanoseconds());
         $interval = new DateInterval(sprintf('P%dM%dDT%dS', 5, 1, 43200));
         self::assertEquals($interval, $results[1]['aDuration']->toDateInterval());
     }
@@ -264,18 +256,13 @@ CYPHER);
      */
     public function testPoint(string $alias): void
     {
-        $this->client->run('MATCH (n) DETACH DELETE n');
-        $results = $this->client->run(<<<CYPHER
-CREATE (z:Int {num:1}), (:Int {num: 2}), (:Int {num:3})
-WITH z
-MATCH (x:Int)
-RETURN x.num ORDER BY x.num ASC
-CYPHER);
+        $point = $this->client->run('RETURN point({x: 3, y: 4}) AS point', [], $alias)->first()->get('point');
 
-        self::assertCount(3, $results);
-        self::assertEquals(1, $results[0]['x.num']);
-        self::assertEquals(2, $results[1]['x.num']);
-        self::assertEquals(3, $results[2]['x.num']);
+        self::assertInstanceOf(CartesianPoint::class, $point);
+        self::assertEquals(3.0, $point->getX());
+        self::assertEquals(4.0, $point->getY());
+        self::assertEquals('cartesian', $point->getCrs());
+        self::assertGreaterThan(0, $point->getSrid());
     }
 
     /**
@@ -297,14 +284,14 @@ CYPHER);
         /** @var Node $u */
         $u = $results[0]['u'];
         self::assertInstanceOf(Node::class, $u);
-        self::assertEquals(new Vector(['User']), $u->labels());
+        self::assertEquals(['User'], $u->labels()->toArray());
         self::assertEquals($email, $u->properties()['email']);
         self::assertEquals($uuid, $u->properties()['uuid']);
 
         /** @var Node $p */
         $p = $results[0]['p'];
         self::assertInstanceOf(Node::class, $p);
-        self::assertEquals(new Vector(['Food', 'Pizza']), $p->labels());
+        self::assertEquals(['Food', 'Pizza'], $p->labels()->toArray());
         self::assertEquals($type, $p->properties()['type']);
     }
 
@@ -314,17 +301,14 @@ CYPHER);
     public function testRelationship(string $alias): void
     {
         $this->client->run('MATCH (n) DETACH DELETE n');
-        $results = $this->client->run(<<<CYPHER
-CREATE (z:Int {num:1}), (:Int {num: 2}), (:Int {num:3})
-WITH z
-MATCH (x:Int)
-RETURN x.num ORDER BY x.num ASC
-CYPHER);
+        $result = $this->client->run(<<<CYPHER
+MERGE (x:X {x: 1}) - [xy:XY {x: 1, y: 1}] -> (y:Y {y: 1})
+RETURN xy
+CYPHER, [], $alias)->first()->get('xy');
 
-        self::assertCount(3, $results);
-        self::assertEquals(1, $results[0]['x.num']);
-        self::assertEquals(2, $results[1]['x.num']);
-        self::assertEquals(3, $results[2]['x.num']);
+        self::assertInstanceOf(Relationship::class, $result);
+        self::assertEquals('XY', $result->getType());
+        self::assertEquals(['x' => 1, 'y' => 1], $result->getProperties()->toArray());
     }
 
     /**
@@ -341,25 +325,6 @@ CYPHER
             , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
 
         self::assertEquals(1, $results->count());
-    }
-
-    /**
-     * @dataProvider transactionProvider
-     */
-    public function testDatesAsNodeProperties(string $alias): void
-    {
-        $query = $this->articlesQuery();
-        $query .= 'RETURN article';
-
-        $results = $this->client->run($query);
-
-        self::assertCount(3, $results);
-
-        foreach ($results as $result) {
-            self::assertInstanceOf(DateTime::class, $result['article']->created);
-            self::assertInstanceOf(Date::class, $result['article']->datePublished);
-            self::assertInstanceOf(Duration::class, $result['article']->readingTime);
-        }
     }
 
     private function articlesQuery(): string

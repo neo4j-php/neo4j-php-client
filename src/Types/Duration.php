@@ -16,7 +16,7 @@ namespace Laudis\Neo4j\Types;
 use DateInterval;
 use Bolt\structures\Duration as BoltDuration;
 
-class Duration
+final class Duration
 {
     private int $months;
     private int $days;
@@ -31,22 +31,22 @@ class Duration
         $this->nanoseconds = $nanoseconds;
     }
 
-    public function months(): int
+    public function getMonths(): int
     {
         return $this->months;
     }
 
-    public function days(): int
+    public function getDays(): int
     {
         return $this->days;
     }
 
-    public function seconds(): int
+    public function getSeconds(): int
     {
         return $this->seconds;
     }
 
-    public function nanoseconds(): int
+    public function getNanoseconds(): int
     {
         return $this->nanoseconds;
     }

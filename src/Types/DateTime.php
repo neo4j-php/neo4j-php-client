@@ -15,7 +15,7 @@ namespace Laudis\Neo4j\Types;
 
 use Bolt\structures\DateTime as BoltDateTimeAlias;
 
-class DateTime
+final class DateTime
 {
     private int $seconds;
     private int $nanoseconds;
@@ -28,17 +28,17 @@ class DateTime
         $this->tzOffsetSeconds = $tzOffsetSeconds;
     }
 
-    public function seconds(): int
+    public function getSeconds(): int
     {
         return $this->seconds;
     }
 
-    public function nanoseconds(): int
+    public function getNanoseconds(): int
     {
         return $this->nanoseconds;
     }
 
-    public function offsetSeconds(): int
+    public function getTimeZoneOffsetSeconds(): int
     {
         return $this->tzOffsetSeconds;
     }

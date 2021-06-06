@@ -83,5 +83,9 @@ interface FormatterInterface
 
     public function decorateRequest(RequestInterface $request): RequestInterface;
 
+
+    /**
+     * @return array{resultDataContents: list<'GRAPH'|'ROW'|'REST'>}
+     */
     public function statementConfigOverride(): array;
 }
