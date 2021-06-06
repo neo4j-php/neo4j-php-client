@@ -14,6 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use Bolt\structures\DateTime as BoltDateTimeAlias;
+use DateTimeImmutable;
+use DateTimeZone;
+use Exception;
+use Laudis\Neo4j\Exception\TimezoneOffsetException;
+use function sprintf;
 
 final class DateTime
 {
@@ -46,5 +51,24 @@ final class DateTime
     public static function makeFromBoltDateTime(BoltDateTimeAlias $datetime): self
     {
         return new self($datetime->seconds(), $datetime->nanoseconds(), $datetime->tz_offset_seconds());
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function toDateTime(): DateTimeImmutable
+    {
+        /** @psalm-suppress PossiblyFalseIterator */
+        foreach (DateTimeZone::listAbbreviations() as $tz) {
+            /** @psalm-suppress all */
+            if ($tz['offset'] === $this->getTimeZoneOffsetSeconds()) {
+                return (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))
+                    ->modify(sprintf('+%s nanoseconds', $this->nanoseconds))
+                    ->setTimezone(new DateTimeZone($tz['timezone_id']));
+            }
+        }
+
+        $message = sprintf('Cannot find an timezone with %s seconds as offset.', $this->tzOffsetSeconds);
+        throw new TimezoneOffsetException($message);
     }
 }

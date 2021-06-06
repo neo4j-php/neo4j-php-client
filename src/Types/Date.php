@@ -41,6 +41,6 @@ final class Date
      */
     public function toDateTime(): DateTimeImmutable
     {
-        return new DateTimeImmutable('@'.$this->days);
+        return (new DateTimeImmutable('@0'))->modify(sprintf('+%s days', $this->days));
     }
 }

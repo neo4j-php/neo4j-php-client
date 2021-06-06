@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Types;
 
 use DateInterval;
 use Bolt\structures\Duration as BoltDuration;
+use Exception;
 
 final class Duration
 {
@@ -51,6 +52,9 @@ final class Duration
         return $this->nanoseconds;
     }
 
+    /**
+     * @throws Exception
+     */
     public function toDateInterval(): DateInterval
     {
         return new DateInterval(sprintf('P%dM%dDT%dS', $this->months, $this->days, $this->seconds));
