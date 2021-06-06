@@ -15,14 +15,26 @@ namespace Laudis\Neo4j\Types;
 
 use ArrayAccess;
 use BadMethodCallException;
-use Ds\Sequence;
 use Ds\Vector;
+use Generator;
 use IteratorAggregate;
+use JsonSerializable;
+use Traversable;
 
-final class CypherList implements IteratorAggregate, ArrayAccess
+/**
+ * @template T
+ *
+ * @implements IteratorAggregate<T>
+ * @implements ArrayAccess<int, T>
+ */
+final class CypherList implements IteratorAggregate, ArrayAccess, JsonSerializable
 {
+    /** @var Vector<T> */
     private Vector $vector;
 
+    /**
+     * @param Vector<T> $vector
+     */
     public function __construct(Vector $vector)
     {
         $this->vector = $vector;
@@ -33,9 +45,12 @@ final class CypherList implements IteratorAggregate, ArrayAccess
         return $this->vector->count();
     }
 
-    public function copy()
+    /**
+     * @return CypherList<T>
+     */
+    public function copy(): CypherList
     {
-        return $this->vector->copy();
+        return new CypherList($this->vector->copy());
     }
 
     public function isEmpty(): bool
@@ -43,101 +58,182 @@ final class CypherList implements IteratorAggregate, ArrayAccess
         return $this->vector->isEmpty();
     }
 
+    /**
+     * @return list<T>
+     */
     public function toArray(): array
     {
         return $this->vector->toArray();
     }
 
+    /**
+     * @return Generator<T>|Traversable<T>
+     */
     public function getIterator()
     {
         return $this->vector->getIterator();
     }
 
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
-        return $this->vector->offsetExists();
+        return $this->vector->offsetExists($offset);
     }
 
+    /**
+     * @psalm-suppress InvalidReturnType
+     *
+     * @param int $offset
+     *
+     * @return T
+     */
     public function offsetGet($offset)
     {
+        /** @psalm-suppress InvalidReturnStatement */
         return $this->vector->offsetGet($offset);
     }
 
+    /**
+     * @param int $offset
+     * @param T   $value
+     */
     public function offsetSet($offset, $value)
     {
         throw new BadMethodCallException('A cypher list is immutable');
     }
 
+    /**
+     * @param int $offset
+     */
     public function offsetUnset($offset)
     {
         throw new BadMethodCallException('A cypher list is immutable');
     }
 
+    /**
+     * @param T ...$values
+     */
     public function contains(...$values): bool
     {
         return $this->vector->contains(...$values);
     }
 
-    public function filter(callable $callback = null): Sequence
+    /**
+     * @param (callable(T):bool)|null $callback
+     *
+     * @return CypherList<T>
+     */
+    public function filter(callable $callback = null): CypherList
     {
-        return $this->vector->filter($callback);
+        return new CypherList($this->vector->filter($callback));
     }
 
+    /**
+     * @param T $value
+     *
+     * @return false|int
+     */
     public function find($value)
     {
         return $this->vector->find($value);
     }
 
+    /**
+     * @return T
+     */
     public function first()
     {
         return $this->vector->first();
     }
 
+    /**
+     * @return T
+     */
     public function get(int $index)
     {
         return $this->vector->get($index);
     }
 
-    public function join(string $glue = null): string
+    public function join(?string $glue = null): string
     {
+        if ($glue === null) {
+            return $this->vector->join();
+        }
+
         return $this->vector->join($glue);
     }
 
+    /**
+     * @return T
+     */
     public function last()
     {
         return $this->vector->last();
     }
 
-    public function map(callable $callback): Sequence
+    /**
+     * @template U
+     *
+     * @param callable(T):U $callback
+     *
+     * @return CypherList<U>
+     */
+    public function map(callable $callback): CypherList
     {
-        return $this->vector->map($callback);
+        return new CypherList($this->vector->map($callback));
     }
 
-    public function merge($values): Sequence
+    /**
+     * @param iterable<T> $values
+     *
+     * @return CypherList<T>
+     */
+    public function merge($values): CypherList
     {
-        return $this->vector->merge($values);
+        return new CypherList($this->vector->merge($values));
     }
 
+    /**
+     * @param callable(T, T|null):T $callback
+     * @param T|null                $initial
+     *
+     * @return T|null
+     */
     public function reduce(callable $callback, $initial = null)
     {
         return $this->vector->reduce($callback, $initial);
     }
 
-    public function reversed()
+    /**
+     * @return CypherList<T>
+     */
+    public function reversed(): CypherList
     {
-        return $this->vector->reversed();
+        return new CypherList($this->vector->reversed());
     }
 
-    public function slice(int $index, int $length = null): Sequence
+    /**
+     * @param int $index
+     * @param int|null $length
+     * @return CypherList
+     */
+    public function slice(int $index, int $length = null): CypherList
     {
-        return $this->vector->slice($index, $length);
+        return new CypherList($this->vector->slice($index, $length));
     }
 
-    public function sorted(callable $comparator = null): Sequence
+    /**
+     * @param (callable(T,T):int)|null $comparator
+     *
+     * @return CypherList<T>
+     */
+    public function sorted(callable $comparator = null): CypherList
     {
-        return $this->vector->sorted($comparator);
+        return new CypherList($this->vector->sorted($comparator));
     }
 
+    /**
+     * @return float|int
+     */
     public function sum()
     {
         return $this->vector->sum();
@@ -148,6 +244,9 @@ final class CypherList implements IteratorAggregate, ArrayAccess
         return $this->vector->jsonSerialize();
     }
 
+    /**
+     * @return list<T>
+     */
     public function __debugInfo()
     {
         return $this->vector->toArray();
