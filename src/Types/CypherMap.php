@@ -20,11 +20,23 @@ use Ds\Pair;
 use Ds\Sequence;
 use Ds\Set;
 use IteratorAggregate;
+use JsonSerializable;
+use Traversable;
 
-final class CypherMap implements ArrayAccess, IteratorAggregate
+/**
+ * @template T
+ *
+ * @implements ArrayAccess<string, T>
+ * @implements IteratorAggregate<T>
+ */
+final class CypherMap implements ArrayAccess, IteratorAggregate, JsonSerializable
 {
+    /** @var Map<string, T> */
     private Map $map;
 
+    /**
+     * @param Map<string, T> $map
+     */
     public function __construct(Map $map)
     {
         $this->map = $map;
@@ -35,9 +47,12 @@ final class CypherMap implements ArrayAccess, IteratorAggregate
         return $this->map->count();
     }
 
-    public function copy()
+    /**
+     * @return CypherMap<T>
+     */
+    public function copy(): CypherMap
     {
-        return $this->map->copy();
+        return new CypherMap($this->map->copy());
     }
 
     public function isEmpty(): bool
@@ -45,31 +60,49 @@ final class CypherMap implements ArrayAccess, IteratorAggregate
         return $this->map->isEmpty();
     }
 
+    /**
+     * @return array<string, T>
+     */
     public function toArray(): array
     {
         return $this->map->toArray();
     }
 
-    public function getIterator()
+    public function getIterator(): Traversable
     {
         return $this->map->getIterator();
     }
 
-    public function offsetExists($offset)
+    /**
+     * @param string $offset
+     */
+    public function offsetExists($offset): bool
     {
         return $this->map->offsetExists($offset);
     }
 
+    /**
+     * @param string $offset
+     *
+     * @return T
+     */
     public function offsetGet($offset)
     {
         return $this->map->offsetGet($offset);
     }
 
+    /**
+     * @param string $offset
+     * @param T      $value
+     */
     public function offsetSet($offset, $value)
     {
         throw new BadMethodCallException('A cypher map is immutable');
     }
 
+    /**
+     * @param string $offset
+     */
     public function offsetUnset($offset)
     {
         throw new BadMethodCallException('A cypher map is immutable');
@@ -80,119 +113,218 @@ final class CypherMap implements ArrayAccess, IteratorAggregate
         return $this->map->jsonSerialize();
     }
 
+    /**
+     * @return Pair<string, T>
+     */
     public function first(): Pair
     {
         return $this->map->first();
     }
 
+    /**
+     * @return Pair<string, T>
+     */
     public function last(): Pair
     {
         return $this->map->last();
     }
 
+    /**
+     * @return Pair<string, T>
+     */
     public function skip(int $position): Pair
     {
         return $this->map->skip($position);
     }
 
-    public function merge($values): Map
+    /**
+     * @param iterable<string, T> $values
+     *
+     * @return CypherMap<T>
+     */
+    public function merge($values): CypherMap
     {
-        return $this->map->merge($values);
+        return new CypherMap($this->map->merge($values));
     }
 
-    public function intersect(Map $map): Map
+    /**
+     * @param Map<string, T>|CypherMap<T> $map
+     *
+     * @return CypherMap<T>
+     */
+    public function intersect($map): CypherMap
     {
-        return $this->map->intersect($map);
+        if ($map instanceof self) {
+            $map = $map->map;
+        }
+
+        return new CypherMap($this->map->intersect($map));
     }
 
-    public function diff(Map $map): Map
+    /**
+     * @param Map<string, T>|CypherMap<T> $map
+     *
+     * @return CypherMap<T>
+     */
+    public function diff($map): CypherMap
     {
-        return $this->map->diff($map);
+        if ($map instanceof self) {
+            $map = $map->map;
+        }
+
+        return new CypherMap($this->map->diff($map));
     }
 
-    public function hasKey($key): bool
+    public function hasKey(string $key): bool
     {
         return $this->map->hasKey($key);
     }
 
     /**
-     * Returns whether an association for a given value exists.
-     *
-     * @param mixed $value
+     * @param T $value
      */
     public function hasValue($value): bool
     {
         return $this->map->hasValue($value);
     }
 
-    public function filter(callable $callback = null): Map
+    /**
+     * @param (callable(string, T):bool)|null $callback
+     *
+     * @return CypherMap<T>
+     */
+    public function filter(callable $callback = null): CypherMap
     {
-        return $this->map->filter($callback);
+        return new CypherMap($this->map->filter($callback));
     }
 
-    public function get($key, $default = null)
+    /**
+     * @param T|null $default
+     *
+     * @return T
+     */
+    public function get(string $key, $default = null)
     {
         return $this->map->get($key, $default);
     }
 
+    /**
+     * @return Set<string>
+     */
     public function keys(): Set
     {
         return $this->map->keys();
     }
 
-    public function map(callable $callback): Map
+    /**
+     * @template U
+     *
+     * @param callable(string, T):U $callback
+     *
+     * @return CypherMap<U>
+     */
+    public function map(callable $callback): CypherMap
     {
-        return $this->map->map($callback);
+        return new CypherMap($this->map->map($callback));
     }
 
+    /**
+     * @return Sequence<Pair<string, T>>
+     */
     public function pairs(): Sequence
     {
         return $this->map->pairs();
     }
 
+    /**
+     * @param callable(T, string, T):T $callback
+     * @param T|null                   $initial
+     *
+     * @return T
+     */
     public function reduce(callable $callback, $initial = null)
     {
         return $this->map->reduce($callback, $initial);
     }
 
-    public function reversed(): Map
+    /**
+     * @return CypherMap<T>
+     */
+    public function reversed(): CypherMap
     {
-        return $this->map->reversed();
+        return new CypherMap($this->map->reversed());
     }
 
-    public function slice(int $offset, int $length = null): Map
+    /**
+     * @return CypherMap<T>
+     */
+    public function slice(int $offset, int $length = null): CypherMap
     {
-        return $this->map->slice($offset, $length);
+        return new CypherMap($this->map->slice($offset, $length));
     }
 
-    public function sorted(callable $comparator = null): Map
+    /**
+     * @param callable(T):int $comparator
+     *
+     * @return CypherMap<T>
+     */
+    public function sorted(callable $comparator = null): CypherMap
     {
-        return $this->map->sorted($comparator);
+        return new CypherMap($this->map->sorted($comparator));
     }
 
-    public function ksorted(callable $comparator = null): Map
+    /**
+     * @param callable(string):int $comparator
+     *
+     * @return CypherMap<T>
+     */
+    public function ksorted(callable $comparator = null): CypherMap
     {
-        return $this->map->ksorted($comparator);
+        return new CypherMap($this->map->ksorted($comparator));
     }
 
+    /**
+     * @return float|int
+     */
     public function sum()
     {
         return $this->map->sum();
     }
 
+    /**
+     * @return Sequence<T>
+     */
     public function values(): Sequence
     {
         return $this->map->values();
     }
 
-    public function union(Map $map): Map
+    /**
+     * @param CypherMap<T>|Map<string, T> $map
+     *
+     * @return CypherMap<T>
+     */
+    public function union($map): CypherMap
     {
-        return $this->map->union($map);
+        if ($map instanceof self) {
+            $map = $map->map;
+        }
+
+        return new CypherMap($this->map->union($map));
     }
 
-    public function xor(Map $map): Map
+    /**
+     * @param CypherMap<T>|Map<string, T> $map
+     *
+     * @return CypherMap<T>
+     */
+    public function xor($map): CypherMap
     {
-        return $this->map->xor($map);
+        if ($map instanceof self) {
+            $map = $map->map;
+        }
+
+        return new CypherMap($this->map->xor($map));
     }
 
     public function __debugInfo()
