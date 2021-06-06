@@ -17,14 +17,23 @@ use BadMethodCallException;
 use Bolt\structures\Node as BoltNode;
 use Ds\Map;
 use Ds\Vector;
+use function get_class;
+use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
+use function sprintf;
 
 final class Node
 {
     private int $id;
-    private Vector $labels;
-    private Map $properties;
+    /** @var CypherList<string> */
+    private CypherList $labels;
+    /** @var CypherMap<scalar|array|null> */
+    private CypherMap $properties;
 
-    public function __construct(int $id, Vector $labels, Map $properties)
+    /**
+     * @param CypherList<string>           $labels
+     * @param CypherMap<scalar|array|null> $properties
+     */
+    public function __construct(int $id, CypherList $labels, CypherMap $properties)
     {
         $this->id = $id;
         $this->labels = $labels;
@@ -33,30 +42,44 @@ final class Node
 
     public static function makeFromBoltNode(BoltNode $node): self
     {
+        /**
+         * @psalm-suppress MixedArgumentTypeCoercion
+         */
         return new self(
             $node->id(),
-            new Vector($node->labels()),
-            new Map($node->properties())
+            new CypherList(new Vector($node->labels())),
+            new CypherMap(new Map($node->properties()))
         );
     }
 
     public static function makeFromHttpNode(array $node): self
     {
+        /**
+         * @psalm-suppress PossiblyUndefinedStringArrayOffset
+         * @psalm-suppress MixedArgumentTypeCoercion
+         * @psalm-suppress MixedArgument
+         */
         return new self(
-            (int) $node['id'],
-            new Vector($node['labels']),
-            new Map($node['properties']),
+            $node['id'],
+            new CypherList(new Vector($node['labels'])),
+            new CypherMap(new Map($node['properties']))
         );
     }
 
-    public function labels(): Vector
+    /**
+     * @return CypherList<string>
+     */
+    public function labels(): CypherList
     {
-        return $this->labels->copy();
+        return $this->labels;
     }
 
-    public function properties(): array
+    /**
+     * @return CypherMap<scalar|array|null>
+     */
+    public function properties(): CypherMap
     {
-        return $this->properties->toArray();
+        return $this->properties;
     }
 
     public function id(): int
@@ -64,20 +87,36 @@ final class Node
         return $this->id;
     }
 
+    /**
+     * @return scalar|array|null
+     */
     public function property(string $key)
     {
-        if ($this->properties->hasKey($key)) {
-            return $this->properties->get($key);
+        if (!$this->properties->hasKey($key)) {
+            throw new PropertyDoesNotExistException(sprintf('Property "%s" does not exist on node', $key));
         }
+
+        return $this->properties->get($key);
     }
 
-    public function __get($key)
+    /**
+     * @return scalar|array|null
+     */
+    public function __get(string $key)
     {
         return $this->property($key);
     }
 
-    public function __set($key, $value)
+    /**
+     * @param scalar|array|null $value
+     */
+    public function __set(string $key, $value)
     {
-        throw new BadMethodCallException(sprintf('% is immutable', get_class($this)));
+        throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
+    }
+
+    public function __isset(string $key)
+    {
+        return $this->properties->offsetExists($key);
     }
 }
