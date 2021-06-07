@@ -24,8 +24,6 @@ services:
             - readreplica1
         expose:
             - 9000
-        environment:
-            - XDEBUG_MODE=coverage
     neo4j:
         networks:
             - neo4j

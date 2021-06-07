@@ -52,6 +52,8 @@ final class HttpSession implements SessionInterface
     public function run(iterable $statements): Vector
     {
         $request = $this->factory->post($this->data, $statements);
+        $uri = $request->getUri();
+        $request = $request->withUri($uri->withPath($uri->getPath() . '/commit'));
         $response = $this->client->sendRequest($request);
         $data = $this->interpretResponse($response);
 
