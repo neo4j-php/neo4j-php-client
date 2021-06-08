@@ -25,9 +25,9 @@ abstract class ClientTest extends TestCase
     abstract public function createClient(): ClientInterface;
 
     /**
-     * @return iterable<array<string>>
+     * @return array<array<string>>
      */
-    public function connectionAliases(): iterable
+    public function connectionAliases(): array
     {
         return [['bolt'], ['http'], ['cluster']];
     }

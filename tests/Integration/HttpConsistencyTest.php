@@ -59,6 +59,9 @@ final class HttpConsistencyTest extends TestCase
         self::assertEquals(['name' => 'bbb'], $results->last()->get('n'));
     }
 
+    /**
+     * @return list<list<string>>
+     */
     public function aliases(): array
     {
         return [
