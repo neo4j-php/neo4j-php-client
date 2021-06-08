@@ -35,9 +35,19 @@ final class RequestFactory
         $this->formatter = $formatter;
     }
 
-    public function openTransaction(RequestData $data): RequestInterface
+    /**
+     * @param iterable<Statement> $statements
+     *
+     * @throws JsonException
+     */
+    public function openTransaction(RequestData $data, iterable $statements): RequestInterface
     {
-        return $this->createRequest($data, 'POST');
+        $body = $this->formatter->prepareBody($statements, $data);
+
+        $request = $this->createRequest($data, 'POST');
+        $request->getBody()->write($body);
+
+        return $request;
     }
 
     public function createRequest(RequestData $data, string $method, string $body = ''): RequestInterface

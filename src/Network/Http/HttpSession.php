@@ -66,7 +66,7 @@ final class HttpSession implements SessionInterface
      */
     public function openTransaction(iterable $statements = null): TransactionInterface
     {
-        $request = $this->factory->openTransaction($this->data);
+        $request = $this->factory->openTransaction($this->data, $statements ?? []);
         $response = $this->client->sendRequest($request);
         /** @var array{commit: string} $data */
         $data = $this->interpretResponse($response);
