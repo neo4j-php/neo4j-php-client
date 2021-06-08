@@ -1,9 +1,17 @@
 <?php
+
 declare(strict_types=1);
 
+/*
+ * This file is part of the Laudis Neo4j package.
+ *
+ * (c) Laudis technologies <http://laudis.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Laudis\Neo4j\Tests\Integration;
-
 
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -47,7 +55,7 @@ final class HttpConsistencyTest extends TestCase
     public function testConsistencyTransaction(string $alias): void
     {
         $tsx = $this->client->openTransaction([
-            Statement::create('CREATE (n:aaa) SET n.name="aaa" return n')
+            Statement::create('CREATE (n:aaa) SET n.name="aaa" return n'),
         ], $alias);
 
         $tsx->commit([Statement::create('CREATE (n:bbb) SET n.name="bbb" return n')]);
@@ -67,7 +75,7 @@ final class HttpConsistencyTest extends TestCase
         return [
             ['http'],
             ['bolt'],
-            ['neo4j']
+            ['neo4j'],
         ];
     }
 }

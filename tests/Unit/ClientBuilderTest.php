@@ -17,9 +17,6 @@ use BadMethodCallException;
 use Buzz\Exception\NetworkException;
 use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Network\Bolt\BoltInjections;
-use Laudis\Neo4j\Network\Http\HttpInjections;
 use PHPUnit\Framework\TestCase;
 
 final class ClientBuilderTest extends TestCase
