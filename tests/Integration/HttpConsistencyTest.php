@@ -58,12 +58,15 @@ final class HttpConsistencyTest extends TestCase
             Statement::create('CREATE (n:aaa) SET n.name="aaa" return n'),
         ], $alias);
 
+        $tsx->run('CREATE (n:ccc) SET n.name="ccc"');
+
         $tsx->commit([Statement::create('CREATE (n:bbb) SET n.name="bbb" return n')]);
 
         $results = $this->client->run('MATCH (n) RETURN n', ['name' => 'bbbb'], $alias);
 
-        self::assertEquals(2, $results->count());
+        self::assertEquals(3, $results->count());
         self::assertEquals(['name' => 'aaa'], $results->first()->get('n'));
+        self::assertEquals(['name' => 'ccc'], $results->get(1)->get('n'));
         self::assertEquals(['name' => 'bbb'], $results->last()->get('n'));
     }
 

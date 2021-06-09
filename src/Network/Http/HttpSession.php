@@ -129,7 +129,8 @@ final class HttpSession implements SessionInterface
      */
     public function runOverTransaction(TransactionInterface $transaction, iterable $statements): Vector
     {
-        $request = $this->factory->post($this->data, $statements);
+        $data = $this->data->withEndpoint($transaction->getDomainIdentifier());
+        $request = $this->factory->post($data, $statements);
         $response = $this->client->sendRequest($request);
         $data = $this->interpretResponse($response);
 
