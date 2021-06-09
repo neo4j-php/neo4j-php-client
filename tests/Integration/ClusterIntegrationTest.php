@@ -33,7 +33,6 @@ final class ClusterIntegrationTest extends TestCase
         $httpInjections = HttpConfig::create()->withAutoRouting(true);
         $this->client = ClientBuilder::create()
             ->addBoltConnection('cluster-bolt', 'bolt://neo4j:test@core1', $boltInjections)
-            ->addHttpConnection('cluster-http', 'http://neo4j:test@core1', $httpInjections)
             ->build();
     }
 
@@ -50,7 +49,7 @@ final class ClusterIntegrationTest extends TestCase
      */
     public function testWrite(string $connection): void
     {
-        self::assertEquals([], $this->client->run('MERGE (x:X) RETURN x', [], $connection)->first()->get('x'));
+        self::assertEquals([], $this->client->run('CREATE (x:X) RETURN x', [], $connection)->first()->get('x'));
     }
 
     /**
@@ -59,8 +58,7 @@ final class ClusterIntegrationTest extends TestCase
     public function aliasProvider(): array
     {
         return [
-            ['cluster-bolt'],
-            ['cluster-http'],
+            ['cluster-bolt']
         ];
     }
 }
