@@ -30,20 +30,20 @@ final class TransactionIntegrationTest extends TestCase
     }
 
     /**
-     * @return iterable<array-key, array>
+     * @return non-empty-list<array{0: UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>>}>
      */
-    public function makeTransactions(): iterable
+    public function makeTransactions(): array
     {
         $client = ClientBuilder::create()
             ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
             ->addHttpConnection('http', 'http://neo4j:test@neo4j')
             ->build();
 
+        /** @var non-empty-list<array{0: UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>>}> */
         $tbr = [];
         $tbr[] = [$client->openTransaction(null, 'bolt')];
         $tbr[] = [$client->openTransaction(null, 'http')];
 
-        /** @var iterable<array-key, array> */
         return $tbr;
     }
 

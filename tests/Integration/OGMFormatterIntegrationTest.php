@@ -270,7 +270,11 @@ CYPHER, [], $alias);
      */
     public function testPoint(string $alias): void
     {
-        $point = $this->client->run('RETURN point({x: 3, y: 4}) AS point', [], $alias)->first()->get('point');
+        $result = $this->client->run('RETURN point({x: 3, y: 4}) AS point', [], $alias);
+        self::assertEquals(CypherList::class, $result);
+        $row = $result->first();
+        self::assertEquals(CypherMap::class, $row);
+        $point = $row->get('point');
 
         self::assertInstanceOf(CartesianPoint::class, $point);
         self::assertEquals(3.0, $point->getX());

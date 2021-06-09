@@ -199,7 +199,7 @@ final class CypherMap implements ArrayAccess, IteratorAggregate, JsonSerializabl
     }
 
     /**
-     * @param T|null $default
+     * @param mixed $default
      *
      * @return T
      */
