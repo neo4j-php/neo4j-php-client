@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Formatter\Specialised;
 
 use Ds\Map;
 use Ds\Vector;
+use function is_array;
 use Iterator;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
@@ -26,16 +27,34 @@ use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 
+/**
+ * @psalm-type RelationshipArray = array{id: string, type: string, startNode: string, endNode: string, properties?: array<string, scalar|null|array<array-key, scalar|null|array>>}
+ * @psalm-type NodeArray = array{id: string, labels: list<string>, properties: array<string, scalar|null|array}
+ * @psalm-type MetaArray = null|array{id?: int, type: string, deleted?: bool}
+ *
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ */
 final class HttpOGMArrayTranslator
 {
+    /**
+     * @param Iterator<RelationshipArray> $relationship
+     */
     private function relationship(Iterator $relationship): Relationship
     {
         $rel = $relationship->current();
         $relationship->next();
-        /** @var Map<string, array|scalar|null> $map */
+        /** @var Map<string, OGMTypes> $map */
         $map = new Map();
         foreach ($rel['properties'] ?? [] as $key => $x) {
-            $map->put($key, $x);
+            // We only need to recurse over array types.
+            // Nested types gets erased in the legacy http api.
+            // We need to use JOLT instead for finer control,
+            // which will be a different translator.
+            if (is_array($x)) {
+                $map->put($key, $this->translateContainer($x));
+            } else {
+                $map->put($key, $x);
+            }
         }
 
         return new Relationship(
@@ -47,17 +66,35 @@ final class HttpOGMArrayTranslator
         );
     }
 
+    /**
+     * @param list<scalar|array|null> $value
+     *
+     * @return CypherList<OGMTypes>
+     */
     private function translateCypherList(array $value): CypherList
     {
+        /** @var Vector<OGMTypes> $tbr */
         $tbr = new Vector();
         foreach ($value as $x) {
-            $tbr->push($x);
+            // We only need to recurse over array types.
+            // Nested types gets erased in the legacy http api.
+            // We need to use JOLT instead for finer control,
+            // which will be a different translator.
+            if (is_array($x)) {
+                $tbr->push($this->translateContainer($value));
+            } else {
+                $tbr->push($x);
+            }
         }
 
         return new CypherList($tbr);
     }
 
     /**
+     * @param Iterator<RelationshipArray> $relationship
+     * @param Iterator<MetaArray>         $meta
+     * @param list<NodeArray>             $nodes
+     *
      * @return Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point
      */
     public function translate(Iterator $meta, Iterator $relationship, array $nodes, array $value): object
@@ -74,12 +111,9 @@ final class HttpOGMArrayTranslator
                 $tbr = $this->translatePoint($value);
                 break;
             default:
-                if (isset($value[0])) {
-                    $tbr = $this->translateCypherList($value);
-                    break;
-                }
-                $tbr = $this->translateCypherMap($value);
-                if ($type === 'node') {
+                /** @var array<array-key, array|null|scalar> $value */
+                $tbr = $this->translateContainer($value);
+                if ($type === 'node' && $tbr instanceof CypherMap && isset($currentMeta['id'])) {
                     $tbr = $this->translateNode($nodes, $currentMeta['id'], $tbr);
                 }
                 break;
@@ -88,8 +122,13 @@ final class HttpOGMArrayTranslator
         return $tbr;
     }
 
+    /**
+     * @param list<NodeArray>     $nodes
+     * @param CypherMap<OGMTypes> $tbr
+     */
     private function translateNode(array $nodes, int $id, CypherMap $tbr): Node
     {
+        /** @var list<string> $labels */
         $labels = [];
         foreach ($nodes as $node) {
             if ((int) $node['id'] === $id) {
@@ -149,16 +188,43 @@ final class HttpOGMArrayTranslator
     }
 
     /**
-     * @return CypherMap<scalar|array|null>
+     * @param array<string, scalar|array|null> $value
+     *
+     * @return CypherMap<OGMTypes>
      */
     private function translateCypherMap(array $value): CypherMap
     {
-        /** @var Map<string, scalar|array|null> $tbr */
+        /** @var Map<string, OGMTypes> $tbr */
         $tbr = new Map();
         foreach ($value as $key => $x) {
-            $tbr->put($key, $x);
+            // We only need to recurse over array types.
+            // Nested types gets erased in the legacy http api.
+            // We need to use JOLT instead for finer control,
+            // which will be a different translator.
+            if (is_array($x)) {
+                /** @var array<array-key, scalar|null|array> $x */
+                $tbr->put($key, $this->translateContainer($x));
+            } else {
+                $tbr->put($key, $x);
+            }
         }
 
         return new CypherMap($tbr);
+    }
+
+    /**
+     * @param array<array-key, scalar|null|array> $value
+     *
+     * @return CypherList<OGMTypes>|CypherMap<OGMTypes>
+     */
+    private function translateContainer(array $value)
+    {
+        if (isset($value[0])) {
+            /** @var list<scalar|array|null> $value */
+            return $this->translateCypherList($value);
+        }
+
+        /** @var array<string, scalar|array|null> $value */
+        return $this->translateCypherMap($value);
     }
 }

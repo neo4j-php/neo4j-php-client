@@ -47,6 +47,9 @@ use UnexpectedValueException;
  */
 final class BoltOGMTranslator
 {
+    /**
+     * @var array<string, callable(mixed):OGMTypes>
+     */
     private array $rawToTypes;
 
     public function __construct()
@@ -121,12 +124,22 @@ final class BoltOGMTranslator
 
     private function makeFromBoltRelationship(BoltRelationship $rel): Relationship
     {
+        /** @var Map<string, OGMTypes> $map */
+        $map = new Map();
+        /**
+         * @var string $key
+         * @var string $property
+         */
+        foreach ($rel->properties() as $key => $property) {
+            $map->put($key, $this->mapValueToType($property));
+        }
+
         return new Relationship(
             $rel->id(),
             $rel->startNodeId(),
             $rel->endNodeId(),
             $rel->type(),
-            new CypherMap(new Map($rel->properties()))
+            new CypherMap($map)
         );
     }
 
@@ -150,12 +163,14 @@ final class BoltOGMTranslator
     }
 
     /**
-     * @return CypherList|CypherMap
+     * @return CypherList<OGMTypes>|CypherMap<OGMTypes>
      */
     private function mapArray(array $value)
     {
         if (isset($value[0])) {
+            /** @var Vector<OGMTypes> $vector */
             $vector = new Vector();
+            /** @var mixed $x */
             foreach ($value as $x) {
                 $vector->push($this->mapValueToType($x));
             }
@@ -165,6 +180,10 @@ final class BoltOGMTranslator
 
         /** @var Map<string, OGMTypes> */
         $map = new Map();
+        /**
+         * @var string $key
+         * @var mixed  $x
+         */
         foreach ($value as $key => $x) {
             $map->put($key, $this->mapValueToType($x));
         }
@@ -175,7 +194,7 @@ final class BoltOGMTranslator
     /**
      * @param mixed $value
      *
-     * @return mixed
+     * @return OGMTypes
      */
     public function mapValueToType($value)
     {

@@ -21,17 +21,20 @@ use function get_class;
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
 
+/**
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ */
 final class Node
 {
     private int $id;
     /** @var CypherList<string> */
     private CypherList $labels;
-    /** @var CypherMap<scalar|array|null> */
+    /** @var CypherMap<OGMTypes> */
     private CypherMap $properties;
 
     /**
-     * @param CypherList<string>           $labels
-     * @param CypherMap<scalar|array|null> $properties
+     * @param CypherList<string>  $labels
+     * @param CypherMap<OGMTypes> $properties
      */
     public function __construct(int $id, CypherList $labels, CypherMap $properties)
     {
@@ -63,7 +66,7 @@ final class Node
     }
 
     /**
-     * @return CypherMap<scalar|array|null>
+     * @return CypherMap<OGMTypes>
      */
     public function properties(): CypherMap
     {

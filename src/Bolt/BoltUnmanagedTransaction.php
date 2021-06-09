@@ -28,6 +28,8 @@ use Throwable;
  * @template T
  *
  * @implements UnmanagedTransactionInterface<T>
+ *
+ * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
@@ -85,7 +87,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $extra = ['db' => $this->database];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             try {
-                /** @var array{fields: array<int, string>} $meta */
+                /** @var BoltMeta $meta */
                 $meta = $this->bolt->run($statement->getText(), $parameters->toArray(), $extra);
                 /** @var array<array> $results */
                 $results = $this->bolt->pullAll();

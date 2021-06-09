@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+/**
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ */
 final class Relationship
 {
     private int $id;
@@ -23,11 +26,11 @@ final class Relationship
 
     private string $type;
 
-    /** @var CypherMap<scalar|array|null> */
+    /** @var CypherMap<OGMTypes> */
     private CypherMap $properties;
 
     /**
-     * @param CypherMap<scalar|array|null> $properties
+     * @param CypherMap<OGMTypes> $properties
      */
     public function __construct(int $id, int $startNodeId, int $endNodeId, string $type, CypherMap $properties)
     {
@@ -59,7 +62,7 @@ final class Relationship
     }
 
     /**
-     * @return CypherMap<scalar|array|null>
+     * @return CypherMap<OGMTypes>
      */
     public function getProperties(): CypherMap
     {

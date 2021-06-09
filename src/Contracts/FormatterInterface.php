@@ -16,7 +16,6 @@ namespace Laudis\Neo4j\Contracts;
 use Bolt\Bolt;
 use Ds\Vector;
 use JsonException;
-use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -58,6 +57,8 @@ use Psr\Http\Message\ResponseInterface;
  * @psalm-type CypherResponse = array{columns:list<string>, data:list<CypherRowResponse>, stats?:CypherStats}
  * @psalm-type CypherResponseSet = array{results: list<CypherResponse>, errors: list<CypherError>}
  *
+ * @psalm-type BoltMeta = array{t_first: int, fields: list<string>}
+ *
  * @psalm-type
  *
  * @template T
@@ -65,8 +66,8 @@ use Psr\Http\Message\ResponseInterface;
 interface FormatterInterface
 {
     /**
-     * @param array{fields: array<int, string>} $meta
-     * @param array<array-key, array>           $results
+     * @param BoltMeta                $meta
+     * @param array<array-key, array> $results
      *
      * @return T
      */
@@ -82,7 +83,6 @@ interface FormatterInterface
     public function formatHttpResult(ResponseInterface $response, array $body): Vector;
 
     public function decorateRequest(RequestInterface $request): RequestInterface;
-
 
     /**
      * @return array{resultDataContents?: list<'GRAPH'|'ROW'|'REST'>, includeStats?:bool}
