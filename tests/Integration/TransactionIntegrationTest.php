@@ -29,6 +29,9 @@ final class TransactionIntegrationTest extends TestCase
         putenv('RES_OPTIONS=retrans:1 retry:1 timeout:1 attempts:1');
     }
 
+    /**
+     * @return iterable<array-key, array>
+     */
     public function makeTransactions(): iterable
     {
         $client = ClientBuilder::create()
@@ -40,7 +43,7 @@ final class TransactionIntegrationTest extends TestCase
         $tbr[] = [$client->openTransaction(null, 'bolt')];
         $tbr[] = [$client->openTransaction(null, 'http')];
 
-        /** @var iterable<array> */
+        /** @var iterable<array-key, array> */
         return $tbr;
     }
 
