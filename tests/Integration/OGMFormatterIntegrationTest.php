@@ -19,6 +19,10 @@ use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
+use Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator;
+use Laudis\Neo4j\Formatter\Specialised\HttpOGMStringTranslator;
+use Laudis\Neo4j\Formatter\Specialised\HttpOGMTranslator;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\Date;
@@ -44,7 +48,13 @@ final class OGMFormatterIntegrationTest extends TestCase
             ->withDriver('http', 'http://neo4j:test@neo4j')
             ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
             ->withDriver('cluster', 'neo4j://neo4j:test@core1')
-            ->withFormatter(new OGMFormatter())
+            ->withFormatter(new OGMFormatter(
+                new BoltOGMTranslator(),
+                new HttpOGMTranslator(
+                    new HttpOGMArrayTranslator(),
+                    new HttpOGMStringTranslator()
+                )
+            ))
             ->build();
 
         $this->client->run('MATCH (n) DETACH DELETE n');

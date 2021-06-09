@@ -123,7 +123,7 @@ final class BoltOGMTranslator
             $rel->startNodeId(),
             $rel->endNodeId(),
             $rel->type(),
-            new Map(new CypherMap($rel->properties()))
+            new CypherMap(new Map($rel->properties()))
         );
     }
 

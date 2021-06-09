@@ -73,10 +73,11 @@ final class HttpOGMArrayTranslator
             case 'point':
                 $tbr = $this->translatePoint($value);
                 break;
-            case isset($type[0]):
-                $tbr = $this->translateCypherList($value);
-                break;
             default:
+                if (isset($value[0])) {
+                    $tbr = $this->translateCypherList($value);
+                    break;
+                }
                 $tbr = $this->translateCypherMap($value);
                 if ($type === 'node') {
                     $tbr = $this->translateNode($nodes, $currentMeta['id'], $tbr);
