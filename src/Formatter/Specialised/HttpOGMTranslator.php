@@ -20,6 +20,9 @@ use Iterator;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type RelationshipArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
+ * @psalm-import-type NodeArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
+ * @psalm-import-type MetaArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  */
 final class HttpOGMTranslator
 {
@@ -33,7 +36,10 @@ final class HttpOGMTranslator
     }
 
     /**
-     * @param scalar|array|null $value
+     * @param scalar|array|null           $value
+     * @param Iterator<MetaArray>         $meta
+     * @param Iterator<RelationshipArray> $relationship
+     * @param list<NodeArray>             $nodes
      *
      * @throws Exception
      *
