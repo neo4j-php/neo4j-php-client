@@ -60,7 +60,7 @@ final class HttpOGMArrayTranslator
     /**
      * @return Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point
      */
-    public function translate(Iterator $meta, Iterator $relationship, array $nodes, array $value)
+    public function translate(Iterator $meta, Iterator $relationship, array $nodes, array $value): object
     {
         $currentMeta = $meta->current();
         $meta->next();
@@ -106,10 +106,9 @@ final class HttpOGMArrayTranslator
      */
     private function translatePoint(array $value): PointInterface
     {
-        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        /** @var array{type: 'point', coordinates: array{0: float, 1: float, 2?:float}, crs: array{srid: int, type: string, name: 'cartesian'|'cartesian-3d'|'wgs-84'|'wgs-84-3d', properties: array<string, string>}} $value */
         $pointType = $value['crs']['name'];
         if ($pointType === 'cartesian') {
-            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
             return new CartesianPoint(
                 $value['coordinates'][0],
                 $value['coordinates'][1],
@@ -118,17 +117,15 @@ final class HttpOGMArrayTranslator
             );
         }
         if ($pointType === 'cartesian-3d') {
-            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
             return new Cartesian3DPoint(
                 $value['coordinates'][0],
                 $value['coordinates'][1],
-                $value['coordinates'][2],
+                $value['coordinates'][2] ?? 0.0,
                 $value['crs']['name'],
                 $value['crs']['srid']
             );
         }
         if ($pointType === 'wgs-84') {
-            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
             return new WGS84Point(
                 $value['coordinates'][0],
                 $value['coordinates'][1],
@@ -139,14 +136,13 @@ final class HttpOGMArrayTranslator
             );
         }
 
-        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         return new WGS843DPoint(
             $value['coordinates'][0],
             $value['coordinates'][1],
-            $value['coordinates'][2],
+            $value['coordinates'][2] ?? 0.0,
             $value['coordinates'][0],
             $value['coordinates'][1],
-            $value['coordinates'][2],
+            $value['coordinates'][2] ?? 0.0,
             $value['crs']['name'],
             $value['crs']['srid']
         );

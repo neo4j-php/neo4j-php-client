@@ -18,7 +18,6 @@ use Ds\Vector;
 use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Http\HttpConfig;
 use PHPUnit\Framework\TestCase;
 
 final class ClusterIntegrationTest extends TestCase
@@ -30,7 +29,6 @@ final class ClusterIntegrationTest extends TestCase
     {
         parent::setUp();
         $boltInjections = BoltConfiguration::create()->withAutoRouting(true);
-        $httpInjections = HttpConfig::create()->withAutoRouting(true);
         $this->client = ClientBuilder::create()
             ->addBoltConnection('cluster-bolt', 'bolt://neo4j:test@core1', $boltInjections)
             ->build();
@@ -58,7 +56,7 @@ final class ClusterIntegrationTest extends TestCase
     public function aliasProvider(): array
     {
         return [
-            ['cluster-bolt']
+            ['cluster-bolt'],
         ];
     }
 }

@@ -148,6 +148,9 @@ final class HttpOGMStringTranslator
         return new LocalDateTime($date->getTimestamp(), (int) $milliseconds * 1000000);
     }
 
+    /**
+     * @psalm-suppress all
+     */
     private function translateLocalTime(string $value): LocalTime
     {
         throw new BadMethodCallException('TODO'); //TODO

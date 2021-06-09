@@ -42,6 +42,9 @@ use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
 use UnexpectedValueException;
 
+/**
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ */
 final class BoltOGMTranslator
 {
     private array $rawToTypes;
@@ -61,7 +64,7 @@ final class BoltOGMTranslator
             BoltPoint2D::class => [$this, 'makeFromBoltPoint2D'],
             BoltPoint3D::class => [$this, 'makeFromBoltPoint3D'],
             'array' => [$this, 'mapArray'],
-            'int' => [$this, 'mapInteger'],
+            'int' => static fn (int $x): int => $x,
             'null' => static fn (): ?object => null,
             'bool' => static fn (bool $x): bool => $x,
             'string' => static fn (string $x): string => $x,
@@ -160,17 +163,13 @@ final class BoltOGMTranslator
             return new CypherList($vector);
         }
 
+        /** @var Map<string, OGMTypes> */
         $map = new Map();
         foreach ($value as $key => $x) {
             $map->put($key, $this->mapValueToType($x));
         }
 
         return new CypherMap($map);
-    }
-
-    private function mapInteger($value): int
-    {
-        return (int) $value;
     }
 
     /**

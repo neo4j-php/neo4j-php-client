@@ -25,6 +25,7 @@ use Laudis\Neo4j\Formatter\Specialised\HttpOGMStringTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMTranslator;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Types\Duration;
@@ -36,9 +37,12 @@ use PHPUnit\Framework\TestCase;
 use function range;
 use function sprintf;
 
+/**
+ * @psalm-import-type OGMTypes from OGMFormatter
+ */
 final class OGMFormatterIntegrationTest extends TestCase
 {
-    /** @var ClientInterface<Vector<Map<string, mixed>>> */
+    /** @var ClientInterface<CypherList<CypherMap<OGMTypes>>> */
     private ClientInterface $client;
 
     protected function setUp(): void

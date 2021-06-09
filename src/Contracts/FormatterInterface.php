@@ -85,7 +85,7 @@ interface FormatterInterface
 
 
     /**
-     * @return array{resultDataContents: list<'GRAPH'|'ROW'|'REST'>}
+     * @return array{resultDataContents?: list<'GRAPH'|'ROW'|'REST'>, includeStats?:bool}
      */
     public function statementConfigOverride(): array;
 }

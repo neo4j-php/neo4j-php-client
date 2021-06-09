@@ -31,7 +31,7 @@ use Psr\Http\Message\ResponseInterface;
 /**
  * @see https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-type-mapping
  *
- * @psalm-type OGMTypes = scalar|null|\Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap|\Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\Node|\Laudis\Neo4j\Types\Relationship|\Laudis\Neo4j\Types\Path|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime
+ * @psalm-type OGMTypes = string|\Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime|\Laudis\Neo4j\Types\Time|int|float|bool|null|\Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap|\Laudis\Neo4j\Types\Node|\Laudis\Neo4j\Types\Relationship|\Laudis\Neo4j\Types\Path|\Laudis\Neo4j\Types\Cartesian3DPoint|\Laudis\Neo4j\Types\CartesianPoint|\Laudis\Neo4j\Types\WGS84Point|\Laudis\Neo4j\Types\WGS843DPoint
  * @implements FormatterInterface<CypherList<CypherMap<OGMTypes>>>
  */
 final class OGMFormatter implements FormatterInterface
@@ -50,6 +50,7 @@ final class OGMFormatter implements FormatterInterface
      */
     public function formatBoltResult(array $meta, array $results, Bolt $bolt): CypherList
     {
+        /** @var array<array> $results */
         $results = array_slice($results, 0, count($results) - 1);
 
         /** @var Vector<CypherMap<OGMTypes>> $tbr */
@@ -67,6 +68,7 @@ final class OGMFormatter implements FormatterInterface
      */
     public function formatHttpResult(ResponseInterface $response, array $body): Vector
     {
+        /** @var Vector<CypherList<CypherMap<OGMTypes>>> $tbr */
         $tbr = new Vector();
 
         foreach ($body['results'] as $results) {
@@ -78,28 +80,30 @@ final class OGMFormatter implements FormatterInterface
 
     /**
      * @throws Exception
+     *
+     * @return CypherList<CypherMap<OGMTypes>>
      */
-    private function buildResult(array $result): Vector
+    private function buildResult(array $result): CypherList
     {
+        /** @var Vector<CypherMap<OGMTypes>> $tbr */
         $tbr = new Vector();
-
-        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        /** @var array{columns: list<string>, data: list<array{row: list<scalar|array|null>, meta: array, graph: array{nodes: array, relationships: array}}>} $result */
         $columns = $result['columns'];
-        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         foreach ($result['data'] as $data) {
             $meta = new ArrayIterator($data['meta']);
             $nodes = $data['graph']['nodes'];
             $relationship = new ArrayIterator($data['graph']['relationships']);
 
+            /** @var Map<string, OGMTypes> $record */
             $record = new Map();
             foreach ($data['row'] as $i => $value) {
                 $record->put($columns[$i], $this->httpTranslator->translate($meta, $relationship, $nodes, $value));
             }
 
-            $tbr->push($record);
+            $tbr->push(new CypherMap($record));
         }
 
-        return $tbr;
+        return new CypherList($tbr);
     }
 
     /**
@@ -109,7 +113,6 @@ final class OGMFormatter implements FormatterInterface
     {
         /** @var Map<string, OGMTypes> $map */
         $map = new Map();
-        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         foreach ($meta['fields'] as $i => $column) {
             $map->put($column, $this->boltTranslator->mapValueToType($result[$i]));
         }

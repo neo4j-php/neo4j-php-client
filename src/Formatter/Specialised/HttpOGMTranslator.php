@@ -18,6 +18,9 @@ use function is_array;
 use function is_string;
 use Iterator;
 
+/**
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ */
 final class HttpOGMTranslator
 {
     private HttpOGMArrayTranslator $arrayTranslator;
@@ -30,11 +33,11 @@ final class HttpOGMTranslator
     }
 
     /**
-     * @param mixed $value
+     * @param scalar|array|null $value
      *
      * @throws Exception
      *
-     * @return mixed
+     * @return OGMTypes
      */
     public function translate(Iterator $meta, Iterator $relationship, array $nodes, $value)
     {
