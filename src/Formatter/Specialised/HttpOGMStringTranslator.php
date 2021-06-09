@@ -28,9 +28,14 @@ use Laudis\Neo4j\Types\Time;
 use function str_pad;
 use function substr;
 
+/**
+ * @psalm-import-type MetaArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
+ */
 final class HttpOGMStringTranslator
 {
     /**
+     * @param Iterator<MetaArray> $meta
+     *
      * @throws Exception
      *
      * @return string|Date|DateTime|Duration|LocalDateTime|LocalTime|Time
