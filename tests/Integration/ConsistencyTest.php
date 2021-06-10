@@ -18,7 +18,7 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\Statement;
 use PHPUnit\Framework\TestCase;
 
-final class HttpConsistencyTest extends TestCase
+final class ConsistencyTest extends TestCase
 {
     private ClientInterface $client;
 
