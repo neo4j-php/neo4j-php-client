@@ -26,7 +26,6 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\UriInterface;
-use function parse_str;
 use function str_replace;
 
 /**

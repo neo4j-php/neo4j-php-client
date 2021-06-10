@@ -15,11 +15,10 @@ namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\connection\StreamSocket;
 use Exception;
-use Laudis\Neo4j\Bolt\BoltDriver;
-use RuntimeException;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
+use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -31,7 +30,6 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Psr\Http\Message\UriInterface;
-use function parse_str;
 
 /**
  * @template T
@@ -75,6 +73,7 @@ final class Neo4jDriver implements DriverInterface
 
     /**
      * @param string|UriInterface $uri
+     *
      * @throws Exception
      */
     public static function createWithFormatter($uri, FormatterInterface $formatter, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self

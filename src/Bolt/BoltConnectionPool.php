@@ -15,12 +15,12 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\StreamSocket;
 use function explode;
-use function str_starts_with;
 use const FILTER_VALIDATE_IP;
 use function filter_var;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 use Psr\Http\Message\UriInterface;
+use function str_starts_with;
 
 /**
  * @implements ConnectionPoolInterface<StreamSocket>
