@@ -23,6 +23,7 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
 use function random_int;
+use function str_starts_with;
 use function time;
 
 /**
@@ -35,13 +36,15 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     private ?RoutingTable $table = null;
     /** @var ConnectionPoolInterface<StreamSocket> */
     private ConnectionPoolInterface $pool;
+    private string $version;
 
     /**
      * @param ConnectionPoolInterface<StreamSocket> $pool
      */
-    public function __construct(ConnectionPoolInterface $pool)
+    public function __construct(ConnectionPoolInterface $pool, string $version)
     {
         $this->pool = $pool;
+        $this->version = $version;
     }
 
     /**
@@ -78,7 +81,12 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     private function routingTable(DriverInterface $driver): RoutingTable
     {
         if ($this->table === null || $this->table->getTtl() < time()) {
-            $response = $driver->createSession()->run('CALL dbms.routing.getRoutingTable({context: []})')->first();
+            $session = $driver->createSession();
+            if (str_starts_with($this->version, '3')) {
+                $response = $session->run('CALL dbms.cluster.overview()')->first();
+            } else {
+                $response = $session->run('CALL dbms.routing.getRoutingTable({context: []})')->first();
+            }
             /** @var iterable<array{addresses: list<string>, role:string}> $values */
             $values = $response->get('servers');
             /** @var int $ttl */

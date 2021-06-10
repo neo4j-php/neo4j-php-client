@@ -28,10 +28,12 @@ final class HttpConsistencyTest extends TestCase
         $this->client = ClientBuilder::create()
             ->withDriver('http', 'http://neo4j:test@neo4j')
             ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
-            ->withDriver('neo4j', 'neo4j://neo4j:test@neo4j')
+            ->withDriver('neo4j', 'neo4j://neo4j:test@core1')
             ->build();
 
-        $this->client->run('MATCH (x) DETACH DELETE x');
+        $this->client->run('MATCH (x) DETACH DELETE x', [], 'http');
+        $this->client->run('MATCH (x) DETACH DELETE x', [], 'bolt');
+        $this->client->run('MATCH (x) DETACH DELETE x', [], 'neo4j');
     }
 
     /**

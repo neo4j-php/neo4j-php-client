@@ -15,6 +15,8 @@ namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\connection\StreamSocket;
 use Exception;
+use Laudis\Neo4j\Bolt\BoltDriver;
+use RuntimeException;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
@@ -73,6 +75,7 @@ final class Neo4jDriver implements DriverInterface
 
     /**
      * @param string|UriInterface $uri
+     * @throws Exception
      */
     public static function createWithFormatter($uri, FormatterInterface $formatter, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
@@ -80,10 +83,17 @@ final class Neo4jDriver implements DriverInterface
             $uri = Uri::create($uri);
         }
 
+        $session = BoltDriver::create($uri)->createSession();
+        $row = $session->run(
+            'CALL dbms.components() yield versions UNWIND versions as version RETURN version'
+        )->first();
+        $version = $row->get('version');
+
+        /** @psalm-suppress all */
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl(),
-            new Neo4jConnectionPool(new BoltConnectionPool()),
+            new Neo4jConnectionPool(new BoltConnectionPool(), $version),
             $configuration ?? DriverConfiguration::default(),
             $formatter
         );
