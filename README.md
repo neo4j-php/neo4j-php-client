@@ -210,6 +210,7 @@ Cypher values and types are mapped to php types and classes:
 
 |Cypher|Php|
 |---|---|
+|null|`null`|
 |string|`string`|
 |integer|`int`|
 |float|`float`|
