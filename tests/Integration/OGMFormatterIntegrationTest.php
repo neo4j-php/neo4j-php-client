@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use DateInterval;
+use Laudis\Neo4j\Tests\Helpers\TestHelper;
 use function json_encode;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -70,6 +71,8 @@ final class OGMFormatterIntegrationTest extends TestCase
      */
     public function testNull(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run('RETURN null as x', [], $alias);
 
         self::assertNull($results->first()->get('x'));
@@ -80,6 +83,8 @@ final class OGMFormatterIntegrationTest extends TestCase
      */
     public function testList(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run('RETURN range(5, 15) as list, range(16, 35) as list2', [], $alias);
 
         $list = $results->first()->get('list');
@@ -98,6 +103,8 @@ final class OGMFormatterIntegrationTest extends TestCase
      */
     public function testMap(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run('RETURN {a: "b", c: "d"} as map', [], $alias);
 
         $map = $results->first()->get('map');
@@ -111,6 +118,8 @@ final class OGMFormatterIntegrationTest extends TestCase
      */
     public function testBoolean(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run('RETURN true as bool1, false as bool2', [], $alias);
 
         self::assertEquals(1, $results->count());
@@ -123,6 +132,8 @@ final class OGMFormatterIntegrationTest extends TestCase
      */
     public function testInteger(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run(<<<CYPHER
 UNWIND [{num: 1}, {num: 2}, {num: 3}] AS x
 RETURN x.num
@@ -140,6 +151,8 @@ CYPHER, [], $alias);
      */
     public function testFloat(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run('RETURN 0.1 AS float', [], $alias);
 
         self::assertIsFloat($results->first()->get('float'));
@@ -150,6 +163,8 @@ CYPHER, [], $alias);
      */
     public function testString(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run('RETURN "abc" AS string', [], $alias);
 
         self::assertIsString($results->first()->get('string'));
@@ -160,6 +175,8 @@ CYPHER, [], $alias);
      */
     public function testDate(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $query = $this->articlesQuery();
         $query .= 'RETURN article.datePublished as published_at';
 
@@ -191,6 +208,8 @@ CYPHER, [], $alias);
      */
     public function testTime(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run('RETURN time("12:00:00.000000000") AS time', [], $alias);
 
         $time = $results->first()->get('time');
@@ -203,6 +222,8 @@ CYPHER, [], $alias);
      */
     public function testLocalTime(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run('RETURN localtime("12") AS time', [], $alias);
 
         /** @var LocalTime $time */
@@ -223,6 +244,8 @@ CYPHER, [], $alias);
      */
     public function testDateTime(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $query = $this->articlesQuery();
         $query .= 'RETURN article.created as created_at';
 
@@ -251,6 +274,8 @@ CYPHER, [], $alias);
      */
     public function testLocalDateTime(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $result = $this->client->run('RETURN localdatetime() as local', [], $alias)->first()->get('local');
 
         self::assertInstanceOf(LocalDateTime::class, $result);
@@ -263,6 +288,8 @@ CYPHER, [], $alias);
      */
     public function testDuration(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run(<<<CYPHER
 UNWIND [
   duration({days: 14, hours:16, minutes: 12}),
@@ -299,6 +326,8 @@ CYPHER, [], $alias);
      */
     public function testPoint(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $result = $this->client->run('RETURN point({x: 3, y: 4}) AS point', [], $alias);
         self::assertInstanceOf(CypherList::class, $result);
         $row = $result->first();
@@ -326,6 +355,8 @@ CYPHER, [], $alias);
      */
     public function testNode(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $uuid = 'cc60fd69-a92b-47f3-9674-2f27f3437d66';
         $email = 'a@b.c';
         $type = 'pepperoni';
@@ -371,6 +402,8 @@ CYPHER, [], $alias);
      */
     public function testRelationship(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $this->client->run('MATCH (n) DETACH DELETE n');
         $result = $this->client->run(<<<CYPHER
 MERGE (x:X {x: 1}) - [xy:XY {x: 1, y: 1}] -> (y:Y {y: 1})
@@ -397,6 +430,8 @@ CYPHER, [], $alias)->first()->get('xy');
      */
     public function testPath(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $results = $this->client->run(<<<'CYPHER'
 MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
 WITH b
@@ -413,6 +448,8 @@ CYPHER
      */
     public function testPropertyTypes(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $point = 'point({x: 3, y: 4})';
         $list = 'range(5, 15)';
         $date = 'date("2019-06-01")';

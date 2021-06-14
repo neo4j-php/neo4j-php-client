@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\Bolt;
+use Bolt\connection\StreamSocket;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
@@ -29,17 +30,17 @@ use function time;
 /**
  * @psalm-import-type BasicDriver from \Laudis\Neo4j\Contracts\DriverInterface
  *
- * @implements ConnectionPoolInterface<Bolt>
+ * @implements ConnectionPoolInterface<StreamSocket>
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
     private ?RoutingTable $table = null;
-    /** @var ConnectionPoolInterface<Bolt> */
+    /** @var ConnectionPoolInterface<StreamSocket> */
     private ConnectionPoolInterface $pool;
     private string $version;
 
     /**
-     * @param ConnectionPoolInterface<Bolt> $pool
+     * @param ConnectionPoolInterface<StreamSocket> $pool
      */
     public function __construct(ConnectionPoolInterface $pool, string $version)
     {
@@ -50,7 +51,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    public function acquire(UriInterface $uri, AccessMode $mode): Bolt
+    public function acquire(UriInterface $uri, AccessMode $mode): StreamSocket
     {
         $table = $this->routingTable(BoltDriver::create($uri));
         $server = $this->getNextServer($table, $mode);
@@ -83,15 +84,25 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         if ($this->table === null || $this->table->getTtl() < time()) {
             $session = $driver->createSession();
             if (str_starts_with($this->version, '3')) {
-                $response = $session->run('CALL dbms.cluster.overview()')->first();
+                $response = $session->run('CALL dbms.cluster.overview()');
+
+                /** @var iterable<array{addresses: list<string>, role:string}> $values */
+                $values = [];
+                foreach ($response as $server) {
+                    /** @psalm-suppress InvalidArrayAssignment */
+                    $values[] = ['addresses' => $server->get('addresses'), 'role' => $server->get('role')];
+                }
+
+                $this->table = new RoutingTable($values, time() + 3600);
             } else {
                 $response = $session->run('CALL dbms.routing.getRoutingTable({context: []})')->first();
+                /** @var iterable<array{addresses: list<string>, role:string}> $values */
+                $values = $response->get('servers');
+                /** @var int $ttl */
+                $ttl = $response->get('ttl');
+
+                $this->table = new RoutingTable($values, time() + $ttl);
             }
-            /** @var iterable<array{addresses: list<string>, role:string}> $values */
-            $values = $response->get('servers');
-            /** @var int $ttl */
-            $ttl = $response->get('ttl');
-            $this->table = new RoutingTable($values, time() + $ttl);
         }
 
         return $this->table;

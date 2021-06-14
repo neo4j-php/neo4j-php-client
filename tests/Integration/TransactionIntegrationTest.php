@@ -17,9 +17,9 @@ use Ds\Map;
 use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Tests\Helpers\TestHelper;
 use PHPUnit\Framework\TestCase;
 
 final class TransactionIntegrationTest extends TestCase
@@ -55,6 +55,8 @@ final class TransactionIntegrationTest extends TestCase
      */
     public function testValidRun(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $response = $transaction->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
@@ -79,6 +81,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
      */
     public function testInvalidRun(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $exception = false;
         try {
@@ -94,6 +98,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
      */
     public function testValidStatement(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $response = $transaction->runStatement(
             Statement::create(<<<'CYPHER'
@@ -120,6 +126,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
      */
     public function testInvalidStatement(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $exception = false;
         try {
@@ -136,6 +144,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
      */
     public function testStatements(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $params = ['test' => 'a', 'otherTest' => 'b'];
         $response = $transaction->runStatements([
@@ -168,6 +178,8 @@ CYPHER,
      */
     public function testInvalidStatements(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $exception = false;
         try {
@@ -196,6 +208,8 @@ CYPHER,
      */
     public function testCommitValidEmpty(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $result = $transaction->commit();
         self::assertEquals(0, $result->count());
@@ -206,6 +220,8 @@ CYPHER,
      */
     public function testCommitValidFilled(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $result = $transaction->commit([Statement::create(<<<'CYPHER'
 UNWIND [1, 2, 3] AS x
@@ -221,6 +237,8 @@ CYPHER
      */
     public function testCommitValidFilledWithInvalidStatement(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $exception = false;
         try {
@@ -236,6 +254,8 @@ CYPHER
      */
     public function testCommitInvalid(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $transaction->commit();
         $exception = false;
@@ -252,6 +272,8 @@ CYPHER
      */
     public function testRollbackValid(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $transaction->rollback();
         self::assertTrue(true);
@@ -262,6 +284,8 @@ CYPHER
      */
     public function testRollbackInvalid(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         $transaction = $this->client->beginTransaction(null, $alias);
         $transaction->rollback();
         $exception = false;

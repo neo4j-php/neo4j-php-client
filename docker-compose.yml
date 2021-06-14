@@ -29,7 +29,7 @@ services:
     neo4j:
         networks:
             - neo4j
-        image: neo4j:3.5-enterprise
+        image: neo4j:4.2-enterprise
         healthcheck:
             test: [ "CMD", "neo4j status" ]
             interval: 30s

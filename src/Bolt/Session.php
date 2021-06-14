@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
+use Bolt\connection\StreamSocket;
 use Closure;
 use Ds\Vector;
 use Exception;
@@ -47,8 +48,8 @@ final class Session implements SessionInterface
     private AuthenticateInterface $auth;
 
     /**
-     * @param FormatterInterface<T>         $formatter
-     * @param ConnectionPoolInterface<Bolt> $pool
+     * @param FormatterInterface<T>                 $formatter
+     * @param ConnectionPoolInterface<StreamSocket> $pool
      */
     public function __construct(
         SessionConfiguration $config,
@@ -112,10 +113,18 @@ final class Session implements SessionInterface
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         try {
-            $bolt = $this->pool->acquire($this->uri, $this->config->getAccessMode());
+            $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode()));
             $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
 
-            if (!$bolt->begin(['db' => $this->config->getDatabase()])) {
+            $protocolVersion = $bolt->getProtocolVersion();
+            if ($protocolVersion >= 4.0) {
+                $begin = $bolt->begin(['db' => $this->config->getDatabase()]);
+            } else {
+                $bolt->setProtocolVersions((int) $protocolVersion);
+                $begin = $bolt->begin();
+            }
+
+            if (!$begin) {
                 throw new Neo4jException(new Vector([new Neo4jError('', 'Cannot open new transaction')]));
             }
         } catch (Exception $e) {

@@ -44,7 +44,6 @@ final class BasicAuth implements AuthenticateInterface
      */
     public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
     {
-        $bolt->setScheme('basic');
         $bolt->init($userAgent, $this->username, $this->password);
     }
 }

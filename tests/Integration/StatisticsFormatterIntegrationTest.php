@@ -18,6 +18,7 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\StatementStatistics;
 use Laudis\Neo4j\Formatter\StatisticsFormatter;
+use Laudis\Neo4j\Tests\Helpers\TestHelper;
 use PHPUnit\Framework\TestCase;
 
 final class StatisticsFormatterIntegrationTest extends TestCase
@@ -41,6 +42,7 @@ final class StatisticsFormatterIntegrationTest extends TestCase
      */
     public function testAcceptanceRead(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
         self::assertEquals(new StatementStatistics(), $this->client->run('RETURN 1', [], $alias));
     }
 
@@ -51,6 +53,8 @@ final class StatisticsFormatterIntegrationTest extends TestCase
      */
     public function testAcceptanceWrite(string $alias): void
     {
+        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
+
         self::assertEquals(new StatementStatistics(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias));
     }
 
