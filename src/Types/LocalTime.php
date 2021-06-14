@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 
-final class LocalTime
+use JsonSerializable;
+
+final class LocalTime implements JsonSerializable
 {
     private int $nanoseconds;
 
@@ -17,5 +19,12 @@ final class LocalTime
     public function getNanoseconds(): int
     {
         return $this->nanoseconds;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'nanoseconds' => $this->nanoseconds
+        ];
     }
 }

@@ -2,9 +2,16 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Laudis Neo4j package.
+ *
+ * (c) Laudis technologies <http://laudis.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Laudis\Neo4j\Types;
-
 
 use JsonSerializable;
 
@@ -21,25 +28,16 @@ final class Path implements JsonSerializable
         $this->ids = $ids;
     }
 
-    /**
-     * @return CypherList
-     */
     public function getNodes(): CypherList
     {
         return $this->nodes;
     }
 
-    /**
-     * @return CypherList
-     */
     public function getRelationships(): CypherList
     {
         return $this->relationships;
     }
 
-    /**
-     * @return CypherList
-     */
     public function getIds(): CypherList
     {
         return $this->ids;
@@ -50,7 +48,7 @@ final class Path implements JsonSerializable
         return [
             'id' => $this->ids->jsonSerialize(),
             'nodes' => $this->nodes->jsonSerialize(),
-            'relationships' => $this->relationships->jsonSerialize()
+            'relationships' => $this->relationships->jsonSerialize(),
         ];
     }
 }

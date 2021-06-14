@@ -13,13 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\structures\DateTime as BoltDateTimeAlias;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
+use JsonSerializable;
 use Laudis\Neo4j\Exception\TimezoneOffsetException;
 use function sprintf;
-use JsonSerializable;
 
 final class DateTime implements JsonSerializable
 {
@@ -70,6 +69,10 @@ final class DateTime implements JsonSerializable
 
     public function jsonSerialize()
     {
-        return json_decode(json_encode($this->toDateTime()), true);
+        return [
+            'seconds' => $this->seconds,
+            'nanoseconds' => $this->nanoseconds,
+            'tzOffsetSeconds' => $this->tzOffsetSeconds,
+        ];
     }
 }

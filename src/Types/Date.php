@@ -42,6 +42,6 @@ final class Date implements JsonSerializable
 
     public function jsonSerialize()
     {
-        return json_decode(json_encode($this->toDateTime()), true);
+        return ['days' => $this->days];
     }
 }

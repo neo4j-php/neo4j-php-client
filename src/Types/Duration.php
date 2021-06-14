@@ -14,10 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use DateInterval;
-use Bolt\structures\Duration as BoltDuration;
 use Exception;
 use JsonSerializable;
-
 
 final class Duration implements JsonSerializable
 {
@@ -64,6 +62,11 @@ final class Duration implements JsonSerializable
 
     public function jsonSerialize()
     {
-        return json_decode(json_encode($this->toDateInterval()), true);
+        return [
+            'months' => $this->months,
+            'days' => $this->days,
+            'seconds' => $this->seconds,
+            'nanoseconds' => $this->nanoseconds,
+        ];
     }
 }

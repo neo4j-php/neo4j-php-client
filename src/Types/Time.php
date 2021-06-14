@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 
-final class Time
+use JsonSerializable;
+
+final class Time implements JsonSerializable
 {
     private float $seconds;
 
@@ -17,5 +19,12 @@ final class Time
     public function getSeconds(): float
     {
         return $this->seconds;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'seconds' => $this->seconds
+        ];
     }
 }
