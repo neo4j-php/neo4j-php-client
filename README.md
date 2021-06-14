@@ -190,7 +190,63 @@ $tsx->commit([Statement::create('MATCH (x) RETURN x LIMIT 100')]);
 
 ## Accessing the results
 
-> TODO: Rewrite this as the new standard will be the OGM.
+Results are returned in a standard format of rows and columns:
+
+```php
+// Results are a CypherList
+$results = $client->run('MATCH (node:Node) RETURN node, node.id AS id');
+
+// A row is a CypherMap
+foreach ($results as $result) {
+    // Returns a Node
+    $node = $result->get('node');
+
+    echo $node->getAttribute('id');
+    echo $result->get('id');
+}
+```
+
+Cypher values and types are mapped to php types and classes:
+
+|Cypher|Php|
+|---|---|
+|string|`string`|
+|integer|`int`|
+|float|`float`|
+|boolean|`bool`|
+|Point|`\Laudis\Neo4j\Contracts\PointInterface` *|
+|Date|`\Laudis\Neo4j\Types\Date`|
+|Time|`\Laudis\Neo4j\Types\Time`|
+|LocalTime|`\Laudis\Neo4j\Types\LocalTime`|
+|DateTime|`\Laudis\Neo4j\Types\DateTime`|
+|LocalDateTime|`\Laudis\Neo4j\Types\LocalDateTime`|
+|Duration|`\Laudis\Neo4j\Types\Duration`|
+|Node|`\Laudis\Neo4j\Types\Node`|
+|Relationship|`\Laudis\Neo4j\Types\Relationship`|
+|Path|`\Laudis\Neo4j\Types\Path`|
+
+(*) A point can be one of four types implementing PointInterface: `\Laudis\Neo4j\Types\CartesianPoint` `\Laudis\Neo4j\Types\Cartesian3DPoint` `\Laudis\Neo4j\Types\WGS84Point` `\Laudis\Neo4j\Types\WGS843DPoint`
+
+If you want the results to be just a set of rows, columns, arrays and scalar types you can use a BasicFormatter:
+
+```php
+use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Formatter\BasicFormatter;
+
+$client = ClientBuilder::create()->withFormatter(BasicFormatter::class)->build();
+
+// Results are a CypherList
+$results = $client->run('MATCH (node:Node) RETURN node, node.id AS id');
+
+// A row is a CypherMap
+foreach ($results as $result) {
+    // Returns an array of attributes instead of a Node.
+    $node = $result->get('node');
+
+    echo $node['id'];
+    echo $result->get('id');
+}
+```
 
 ## Diving Deeper
 
