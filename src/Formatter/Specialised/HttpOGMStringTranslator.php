@@ -158,6 +158,21 @@ final class HttpOGMStringTranslator
      */
     private function translateLocalTime(string $value): LocalTime
     {
-        throw new BadMethodCallException('TODO'); //TODO
+        $date = new DateTimeImmutable($value);
+        $timestamp = $date->getTimestamp();
+
+        $hours = (int) date('H', $timestamp);
+        $minutes = (int) date('i', $timestamp);
+        $seconds = (int) date('s', $timestamp);
+        $milliseconds = 0;
+
+        $values = explode('.', $value);
+        if (count($values) > 1) {
+            $milliseconds = $values[1];
+        }
+
+        $totalSeconds = ($hours * 3600) + ($minutes * 60) + $seconds + ($milliseconds / 1000);
+
+        return new LocalTime((int) $totalSeconds * 1000000000);
     }
 }

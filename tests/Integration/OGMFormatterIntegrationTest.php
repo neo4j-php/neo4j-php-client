@@ -17,6 +17,7 @@ use DateInterval;
 use Ds\Map;
 use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
@@ -188,11 +189,19 @@ CYPHER, [], $alias);
      */
     public function testLocalTime(string $alias): void
     {
-        $results = $this->client->run('RETURN time("12:00:00.000000000") AS time', [], $alias);
+        $results = $this->client->run('RETURN localtime("12") AS time', [], $alias);
 
+        /** @var LocalTime $time */
         $time = $results->first()->get('time');
-        self::assertInstanceOf(Time::class, $time);
-        self::assertEquals((float) 12 * 60 * 60, $time->getSeconds());
+        self::assertInstanceOf(LocalTime::class, $time);
+        self::assertEquals(43200000000000, $time->getNanoseconds());
+
+        $results = $this->client->run('RETURN localtime("09:23:42.000") AS time', [], $alias);
+
+        /** @var LocalTime $time */
+        $time = $results->first()->get('time');
+        self::assertInstanceOf(LocalTime::class, $time);
+        self::assertEquals(33822000000000, $time->getNanoseconds());
     }
 
     /**
