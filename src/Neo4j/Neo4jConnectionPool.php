@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;

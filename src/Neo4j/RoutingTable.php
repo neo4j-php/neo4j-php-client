@@ -56,7 +56,6 @@ final class RoutingTable
                     $tbr->add($address);
                 }
             }
-
         }
 
         return $tbr;

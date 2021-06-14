@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use DateInterval;
-use Laudis\Neo4j\Tests\Helpers\TestHelper;
 use function json_encode;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -24,6 +23,7 @@ use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMStringTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMTranslator;
+use Laudis\Neo4j\Tests\Helpers\TestHelper;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;

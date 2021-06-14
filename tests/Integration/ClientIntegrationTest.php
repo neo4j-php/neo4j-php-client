@@ -149,7 +149,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'], $alias);
     public function testValidStatement(string $alias): void
     {
         TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
-        
+
         $response = $this->client->runStatement(
             Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
