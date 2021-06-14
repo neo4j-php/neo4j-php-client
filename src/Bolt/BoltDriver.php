@@ -101,6 +101,7 @@ final class BoltDriver implements DriverInterface
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
         $config ??= SessionConfiguration::default();
+        $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl));
 
         return new Session(
             $config,

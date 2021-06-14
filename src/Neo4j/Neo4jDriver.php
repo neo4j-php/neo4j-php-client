@@ -18,6 +18,7 @@ use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
+use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -72,6 +73,8 @@ final class Neo4jDriver implements DriverInterface
 
     /**
      * @param string|UriInterface $uri
+     *
+     * @throws Exception
      */
     public static function createWithFormatter($uri, FormatterInterface $formatter, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
@@ -79,10 +82,17 @@ final class Neo4jDriver implements DriverInterface
             $uri = Uri::create($uri);
         }
 
+        $session = BoltDriver::create($uri)->createSession();
+        $row = $session->run(
+            'CALL dbms.components() yield versions UNWIND versions as version RETURN version'
+        )->first();
+        $version = $row->get('version');
+
+        /** @psalm-suppress all */
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl(),
-            new Neo4jConnectionPool(new BoltConnectionPool()),
+            new Neo4jConnectionPool(new BoltConnectionPool(), $version),
             $configuration ?? DriverConfiguration::default(),
             $formatter
         );
@@ -94,6 +104,7 @@ final class Neo4jDriver implements DriverInterface
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
         $config ??= SessionConfiguration::default();
+        $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl));
 
         return new Session(
             $config,

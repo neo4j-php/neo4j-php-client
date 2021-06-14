@@ -117,16 +117,18 @@ final class HttpDriver implements DriverInterface
         $bindings = $this->config->getHttpPsrBindings();
         $psrFactory = $bindings->getRequestFactory();
         $factory = new RequestFactory($psrFactory, $this->auth, $this->uri, $this->config->getUserAgent());
-        $sessionConfiguration = $config ?? SessionConfiguration::default();
+        $config ??= SessionConfiguration::default();
 
         if ($this->transactionUrl === null) {
-            $this->transactionUrl = $this->transactionUrl($factory, $sessionConfiguration);
+            $this->transactionUrl = $this->transactionUrl($factory, $config);
         }
+
+        $config = $config->merge(SessionConfiguration::fromUri($this->uri));
 
         return new HttpSession(
             $bindings->getStreamFactory(),
             new HttpConnectionPool($bindings->getClient()),
-            $sessionConfiguration,
+            $config,
             $this->formatter,
             $factory,
             $this->transactionUrl

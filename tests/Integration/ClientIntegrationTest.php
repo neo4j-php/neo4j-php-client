@@ -30,7 +30,7 @@ final class ClientIntegrationTest extends TestCase
     private ClientInterface $client;
 
     /**
-     * @return iterable<array-key, array{0: string}>
+     * @return non-empty-array<array-key, array{0: string}>
      */
     public function connectionAliases(): iterable
     {

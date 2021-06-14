@@ -16,6 +16,8 @@ namespace Laudis\Neo4j\Databags;
 use function call_user_func;
 use function is_callable;
 use Laudis\Neo4j\Enum\AccessMode;
+use function parse_str;
+use Psr\Http\Message\UriInterface;
 
 final class SessionConfiguration
 {
@@ -127,5 +129,27 @@ final class SessionConfiguration
         $bookmarks = is_callable($this->bookmarks) ? call_user_func($this->bookmarks) : $this->bookmarks;
 
         return $bookmarks ?? [];
+    }
+
+    public function merge(SessionConfiguration $config): self
+    {
+        return new self(
+            $this->database ?? $config->database,
+            $this->fetchSize ?? $config->fetchSize,
+            $this->accessMode ?? $config->accessMode,
+            $this->bookmarks ?? $config->bookmarks
+        );
+    }
+
+    public static function fromUri(UriInterface $uri): self
+    {
+        parse_str($uri->getQuery(), $query);
+        $tbr = SessionConfiguration::default();
+        if (isset($query['database'])) {
+            $database = (string) $query['database'];
+            $tbr = $tbr->withDatabase($database);
+        }
+
+        return $tbr;
     }
 }

@@ -134,6 +134,7 @@ final class HttpSession implements SessionInterface
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         $request = $this->requestFactory->createRequest('POST', $this->uri);
+        $request->getBody()->write(HttpHelper::statementsToString($this->formatter, $statements ?? []));
         $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode());
         $response = $client->sendRequest($request);
 
