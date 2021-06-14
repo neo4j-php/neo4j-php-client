@@ -100,8 +100,10 @@ final class OGMFormatterIntegrationTest extends TestCase
     {
         $results = $this->client->run('RETURN {a: "b", c: "d"} as map', [], $alias);
 
-        self::assertEquals(['a' => 'b', 'c' => 'd'], $results->first()->get('map')->toArray());
-        self::assertEquals(json_encode(['a' => 'b', 'c' => 'd']), json_encode($results->first()->get('map')));
+        $map = $results->first()->get('map');
+        self::assertInstanceOf(CypherMap::class, $map);
+        self::assertEquals(['a' => 'b', 'c' => 'd'], $map->toArray());
+        self::assertEquals(json_encode(['a' => 'b', 'c' => 'd']), json_encode($map));
     }
 
     /**
@@ -275,19 +277,21 @@ CYPHER, [], $alias);
 
         self::assertEquals(6, $results->count());
         self::assertEquals(new Duration(0, 14, 58320, 0), $results[0]['aDuration']);
-        self::assertEquals(new Duration(5, 1, 43200, 0), $results[1]['aDuration']);
+        $duration = $results[1]['aDuration'];
+        self::assertInstanceOf(Duration::class, $duration);
+        self::assertEquals(new Duration(5, 1, 43200, 0), $duration);
         self::assertEquals(new Duration(0, 22, 71509, 500000000), $results[2]['aDuration']);
         self::assertEquals(new Duration(0, 17, 43200, 0), $results[3]['aDuration']);
         self::assertEquals(new Duration(0, 0, 91, 123456789), $results[4]['aDuration']);
         self::assertEquals(new Duration(0, 0, 91, 123456789), $results[5]['aDuration']);
 
-        self::assertEquals(5, $results[1]['aDuration']->getMonths());
-        self::assertEquals(1, $results[1]['aDuration']->getDays());
-        self::assertEquals(43200, $results[1]['aDuration']->getSeconds());
-        self::assertEquals(0, $results[1]['aDuration']->getNanoseconds());
+        self::assertEquals(5, $duration->getMonths());
+        self::assertEquals(1, $duration->getDays());
+        self::assertEquals(43200, $duration->getSeconds());
+        self::assertEquals(0, $duration->getNanoseconds());
         $interval = new DateInterval(sprintf('P%dM%dDT%dS', 5, 1, 43200));
-        self::assertEquals($interval, $results[1]['aDuration']->toDateInterval());
-        self::assertEquals('{"months":5,"days":1,"seconds":43200,"nanoseconds":0}', json_encode($results[1]['aDuration']));
+        self::assertEquals($interval, $duration->toDateInterval());
+        self::assertEquals('{"months":5,"days":1,"seconds":43200,"nanoseconds":0}', json_encode($duration));
     }
 
     /**
@@ -407,7 +411,7 @@ CYPHER
     /**
      * @dataProvider transactionProvider
      */
-    public function testPropertyTypes(string $alias)
+    public function testPropertyTypes(string $alias): void
     {
         $point = 'point({x: 3, y: 4})';
         $list = 'range(5, 15)';
@@ -449,6 +453,7 @@ CYPHER,
         if ($alias === 'http') {
             self::markTestSkipped('Http does not support nested properties');
         } else {
+            self::assertInstanceOf(Node::class, $node);
             self::assertInstanceOf(PointInterface::class, $node->thePoint);
             self::assertInstanceOf(CypherList::class, $node->theList);
             self::assertInstanceOf(Date::class, $node->theDate);

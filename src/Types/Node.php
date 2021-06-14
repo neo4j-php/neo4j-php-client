@@ -79,9 +79,9 @@ final class Node implements JsonSerializable
     }
 
     /**
-     * @return scalar|array|null
+     * @return OGMTypes
      */
-    public function property(string $key)
+    public function getProperty(string $key)
     {
         if (!$this->properties->hasKey($key)) {
             throw new PropertyDoesNotExistException(sprintf('Property "%s" does not exist on node', $key));
@@ -100,15 +100,15 @@ final class Node implements JsonSerializable
     }
 
     /**
-     * @return scalar|array|null
+     * @return OGMTypes
      */
     public function __get(string $key)
     {
-        return $this->property($key);
+        return $this->getProperty($key);
     }
 
     /**
-     * @param scalar|array|null $value
+     * @param OGMTypes $value
      */
     public function __set(string $key, $value)
     {
