@@ -59,7 +59,7 @@ final class DateTime implements JsonSerializable
             /** @psalm-suppress all */
             if ($tz['offset'] === $this->getTimeZoneOffsetSeconds()) {
                 return (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))
-                    ->modify(sprintf('+%s nanoseconds', $this->nanoseconds))
+                    ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000))
                     ->setTimezone(new DateTimeZone($tz['timezone_id']));
             }
         }
