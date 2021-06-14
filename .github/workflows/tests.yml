@@ -108,6 +108,7 @@ jobs:
             zip \
             unzip \
             wget \
+            git \
             && docker-php-ext-install -j$(nproc) gd sockets bcmath \
             && pecl install ds xdebug \
             && docker-php-ext-enable ds xdebug
