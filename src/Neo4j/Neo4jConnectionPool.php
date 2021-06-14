@@ -83,15 +83,29 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         if ($this->table === null || $this->table->getTtl() < time()) {
             $session = $driver->createSession();
             if (str_starts_with($this->version, '3')) {
-                $response = $session->run('CALL dbms.cluster.overview()')->first();
+                $response = $session->run('CALL dbms.cluster.overview()');
+
+                /** @var iterable<array{addresses: list<string>, role:string}> $values */
+                $values = [];
+                foreach ($response as $server) {
+                    /**
+                     * @psalm-suppress InvalidArrayAssignment
+                     *
+                     * @var array{addresses: list<string>, role:string}
+                     */
+                    $values[] = ['addresses' => $server->get('addresses'), 'role' => $server->get('role')];
+                }
+
+                $this->table = new RoutingTable($values, time() + 3600);
             } else {
                 $response = $session->run('CALL dbms.routing.getRoutingTable({context: []})')->first();
+                /** @var iterable<array{addresses: list<string>, role:string}> $values */
+                $values = $response->get('servers');
+                /** @var int $ttl */
+                $ttl = $response->get('ttl');
+
+                $this->table = new RoutingTable($values, time() + $ttl);
             }
-            /** @var iterable<array{addresses: list<string>, role:string}> $values */
-            $values = $response->get('servers');
-            /** @var int $ttl */
-            $ttl = $response->get('ttl');
-            $this->table = new RoutingTable($values, time() + $ttl);
         }
 
         return $this->table;

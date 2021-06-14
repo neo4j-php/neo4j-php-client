@@ -48,6 +48,13 @@ final class RoutingTable
                 foreach ($server['addresses'] as $address) {
                     $tbr->add($address);
                 }
+            } elseif (
+                ($role === RoutingRoles::LEADER() && $server['role'] === 'LEADER') ||
+                ($role === RoutingRoles::FOLLOWER() && $server['role'] === 'FOLLOWER')
+            ) {
+                foreach ($server['addresses'] as $address) {
+                    $tbr->add($address);
+                }
             }
         }
 

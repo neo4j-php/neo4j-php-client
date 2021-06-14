@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use function count;
 use Ds\Map;
 use Ds\Sequence;
 use Ds\Vector;
@@ -43,8 +44,8 @@ final class ParameterHelper
      */
     public static function asParameter($value)
     {
-        return self::emptySequenceToArray($value) ??
-            self::emptyDictionaryToStdClass($value) ??
+        return self::emptyDictionaryToStdClass($value) ??
+            self::emptySequenceToArray($value) ??
             self::filledIterableToArray($value) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
@@ -53,7 +54,7 @@ final class ParameterHelper
     /**
      * @param mixed $value
      */
-    private static function stringableToString($value): ?string
+    private static function stringAbleToString($value): ?string
     {
         if (is_object($value) && method_exists($value, '__toString')) {
             return (string) $value;
@@ -94,9 +95,7 @@ final class ParameterHelper
      */
     private static function emptyDictionaryToStdClass($value): ?stdClass
     {
-        if ((!$value && is_array($value)) ||
-            ($value instanceof Map && $value->count() === 0)
-        ) {
+        if ($value instanceof Map && $value->count() === 0) {
             return new stdClass();
         }
 

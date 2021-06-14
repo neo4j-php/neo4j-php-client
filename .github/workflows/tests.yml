@@ -108,9 +108,10 @@ jobs:
             zip \
             unzip \
             wget \
+            git \
             && docker-php-ext-install -j$(nproc) gd sockets bcmath \
-            && pecl install ds \
-            && docker-php-ext-enable ds
+            && pecl install ds xdebug \
+            && docker-php-ext-enable ds xdebug
       - name: Install Composer
         run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       - name: Install dependencies
@@ -125,7 +126,7 @@ jobs:
               && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
               && chmod +x /usr/bin/cc-test-reporter \
               && cc-test-reporter before-build \
-              && vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M \
+              && XDEBUG_MODE=coverage vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M \
               && mkdir -p out/phpunit \
               && cp out/phpunit/clover.xml clover.xml \
               && cc-test-reporter after-build --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28 --exit-code 0

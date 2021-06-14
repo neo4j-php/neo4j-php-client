@@ -84,7 +84,7 @@ final class Client implements ClientInterface
         return $this->startSession($alias)->runStatements($statements);
     }
 
-    public function openTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface
+    public function beginTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface
     {
         return $this->startSession($alias)->beginTransaction($statements);
     }

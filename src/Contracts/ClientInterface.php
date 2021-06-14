@@ -63,7 +63,7 @@ interface ClientInterface
      *
      * @return UnmanagedTransactionInterface<T>
      */
-    public function openTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface;
+    public function beginTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface;
 
     /**
      * @return DriverInterface<T>

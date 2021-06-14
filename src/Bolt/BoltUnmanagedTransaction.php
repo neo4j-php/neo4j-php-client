@@ -28,12 +28,15 @@ use Throwable;
  * @template T
  *
  * @implements UnmanagedTransactionInterface<T>
+ *
+ * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
     private FormatterInterface $formatter;
     private Bolt $bolt;
     private string $database;
+    private bool $finished = false;
 
     /**
      * @param FormatterInterface<T> $formatter
@@ -49,8 +52,13 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         $tbr = $this->runStatements($statements);
 
+        if ($this->finished) {
+            throw new Neo4jException(new Vector([new Neo4jError('0', 'Transaction already finished')]));
+        }
+
         try {
             $this->bolt->commit();
+            $this->finished = true;
         } catch (Exception $e) {
             throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
         }
@@ -60,8 +68,13 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     public function rollback(): void
     {
+        if ($this->finished) {
+            throw new Neo4jException(new Vector([new Neo4jError('0', 'Transaction already finished')]));
+        }
+
         try {
             $this->bolt->rollback();
+            $this->finished = true;
         } catch (Exception $e) {
             throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
         }
@@ -85,7 +98,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $extra = ['db' => $this->database];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             try {
-                /** @var array{fields: array<int, string>} $meta */
+                /** @var BoltMeta $meta */
                 $meta = $this->bolt->run($statement->getText(), $parameters->toArray(), $extra);
                 /** @var array<array> $results */
                 $results = $this->bolt->pullAll();
