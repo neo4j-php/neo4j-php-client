@@ -404,6 +404,58 @@ CYPHER
         self::assertEquals(1, $results->count());
     }
 
+    /**
+     * @dataProvider transactionProvider
+     */
+    public function testPropertyTypes()
+    {
+        $point = 'point({x: 3, y: 4})';
+        $list = 'range(5, 15)';
+        $date = 'date("2019-06-01")';
+        $dateTime = 'datetime("2019-06-01T18:40:32.142+0100")';
+        $duration = 'duration({days: 14, hours:16, minutes: 12})';
+        $localDateTime = 'localdatetime()';
+        $localTime = 'localtime("12")';
+        $time = 'time("12:00:00.000000000")';
+
+        $result = $this->client->run(<<<CYPHER
+WITH
+    $point as p,
+    $list as l,
+    $date as d,
+    $dateTime as dt,
+    $duration as du,
+    $localDateTime as ldt,
+    $localTime as lt,
+    $time as t
+MERGE (a:AllInOne {
+    thePoint: p,
+    theList: l,
+    theDate: d,
+    theDateTime: dt,
+    theDuration: du,
+    theLocalDateTime: ldt,
+    theLocalTime: lt,
+    theTime: t
+})
+
+RETURN a
+CYPHER,
+            compact('point', 'list', 'date', 'dateTime', 'duration', 'localDateTime', 'localTime', 'time')
+        );
+
+        $node = $result->first()->get('a');
+
+        self::assertInstanceOf(CypherMap::class, $node->thePoint);
+        self::assertInstanceOf(CypherList::class, $node->theList);
+        self::assertInstanceOf(Date::class, $node->theDate);
+        self::assertInstanceOf(DateTime::class, $node->theDateTime);
+        self::assertInstanceOf(Duration::class, $node->theDuration);
+        self::assertInstanceOf(LocalDateTime::class, $node->theLocalDateTime);
+        self::assertInstanceOf(LocalTime::class, $node->theLocalTime);
+        self::assertInstanceOf(Time::class, $node->theTime);
+    }
+
     private function articlesQuery(): string
     {
         return <<<CYPHER
