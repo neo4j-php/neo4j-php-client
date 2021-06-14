@@ -13,9 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use JsonSerializable;
 use Laudis\Neo4j\Contracts\PointInterface;
 
-final class WGS843DPoint implements PointInterface
+final class WGS843DPoint implements PointInterface, JsonSerializable
 {
     private float $latitude;
     private float $longitude;
@@ -81,5 +82,19 @@ final class WGS843DPoint implements PointInterface
     public function getSrid(): int
     {
         return $this->srid;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'latitude' => $this->getLatitude(),
+            'longitude' => $this->getLongitude(),
+            'height' => $this->getHeight(),
+            'x' => $this->getX(),
+            'y' => $this->getY(),
+            'z' => $this->getZ(),
+            'crs' => $this->getCrs(),
+            'srid' => $this->getSrid(),
+        ];
     }
 }

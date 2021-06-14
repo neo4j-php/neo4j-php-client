@@ -6,7 +6,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 
-final class Path
+use JsonSerializable;
+
+final class Path implements JsonSerializable
 {
     private CypherList $nodes;
     private CypherList $relationships;
@@ -41,5 +43,14 @@ final class Path
     public function getIds(): CypherList
     {
         return $this->ids;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'id' => $this->ids->jsonSerialize(),
+            'nodes' => $this->nodes->jsonSerialize(),
+            'relationships' => $this->relationships->jsonSerialize()
+        ];
     }
 }

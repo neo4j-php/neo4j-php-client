@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 
-final class UnboundRelationship
+use JsonSerializable;
+
+final class UnboundRelationship implements JsonSerializable
 {
     private int $id;
     private string $type;
@@ -34,5 +36,14 @@ final class UnboundRelationship
     public function getProperties(): CypherMap
     {
         return $this->properties;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'id' => $this->getId(),
+            'type' => $this->getType(),
+            'properties' => $this->getProperties(),
+        ];
     }
 }

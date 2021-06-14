@@ -20,11 +20,12 @@ use Ds\Vector;
 use function get_class;
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
+use JsonSerializable;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
-final class Node
+final class Node implements JsonSerializable
 {
     private int $id;
     /** @var CypherList<string> */
@@ -88,6 +89,15 @@ final class Node
         }
 
         return $this->properties->get($key);
+    }
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'id' => $this->id,
+            'labels' => $this->labels->jsonSerialize(),
+            'properties' => $this->properties->jsonSerialize(),
+        ];
     }
 
     /**

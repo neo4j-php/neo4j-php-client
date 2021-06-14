@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 
+use JsonSerializable;
 use Laudis\Neo4j\Contracts\PointInterface;
 
-final class Cartesian3DPoint implements PointInterface
+final class Cartesian3DPoint implements PointInterface, JsonSerializable
 {
     private float $z;
     private float $x;
@@ -51,5 +52,16 @@ final class Cartesian3DPoint implements PointInterface
     public function getSrid(): int
     {
         return $this->srid;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'x' => $this->getX(),
+            'y' => $this->getY(),
+            'z' => $this->getZ(),
+            'crs' => $this->getCrs(),
+            'srid' => $this->getSrid(),
+        ];
     }
 }

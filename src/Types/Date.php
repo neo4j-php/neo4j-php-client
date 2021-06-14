@@ -15,9 +15,10 @@ namespace Laudis\Neo4j\Types;
 
 use Bolt\structures\Date as BoltDate;
 use DateTimeImmutable;
+use JsonSerializable;
 use Exception;
 
-final class Date
+final class Date implements JsonSerializable
 {
     private int $days;
 
@@ -37,5 +38,10 @@ final class Date
     public function toDateTime(): DateTimeImmutable
     {
         return (new DateTimeImmutable('@0'))->modify(sprintf('+%s days', $this->days));
+    }
+
+    public function jsonSerialize()
+    {
+        return json_decode(json_encode($this->toDateTime()), true);
     }
 }

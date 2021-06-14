@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 use DateInterval;
 use Ds\Map;
 use Ds\Vector;
+use DateTimeImmutable;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -89,6 +90,8 @@ final class OGMFormatterIntegrationTest extends TestCase
         self::assertInstanceOf(CypherList::class, $list2);
         self::assertEquals(range(5, 15), $list->toArray());
         self::assertEquals(range(16, 35), $list2->toArray());
+        self::assertEquals(json_encode(range(5,15)), json_encode($list));
+        self::assertEquals(json_encode(range(16,35)), json_encode($list2));
     }
 
     /**
@@ -99,6 +102,7 @@ final class OGMFormatterIntegrationTest extends TestCase
         $results = $this->client->run('RETURN {a: "b", c: "d"} as map', [], $alias);
 
         self::assertEquals(['a' => 'b', 'c' => 'd'], $results->first()->get('map')->toArray());
+        self::assertEquals(json_encode(['a' => 'b', 'c' => 'd']), json_encode($results->first()->get('map')));
     }
 
     /**
@@ -164,12 +168,21 @@ CYPHER, [], $alias);
 
         self::assertInstanceOf(Date::class, $results[0]['published_at']);
         self::assertEquals(18048, $results[0]['published_at']->getDays());
+        self::assertEquals(
+            json_encode((new DateTimeImmutable('@0'))->modify(sprintf('+%s days', 18048))),
+            json_encode($results[0]['published_at']));
 
         self::assertInstanceOf(Date::class, $results[1]['published_at']);
         self::assertEquals(18049, $results[1]['published_at']->getDays());
+        self::assertEquals(
+            json_encode((new DateTimeImmutable('@0'))->modify(sprintf('+%s days', 18049))),
+            json_encode($results[1]['published_at']));
 
         self::assertInstanceOf(Date::class, $results[2]['published_at']);
         self::assertEquals(18742, $results[2]['published_at']->getDays());
+        self::assertEquals(
+            json_encode((new DateTimeImmutable('@0'))->modify(sprintf('+%s days', 18742))),
+            json_encode($results[2]['published_at']));
     }
 
     /**
@@ -229,6 +242,7 @@ CYPHER, [], $alias);
         self::assertInstanceOf(DateTime::class, $results[2]['created_at']);
         self::assertGreaterThan(0, $results[2]['created_at']->getSeconds());
         self::assertGreaterThan(0, $results[2]['created_at']->getNanoseconds());
+        $this->markTestIncomplete('could not test JSON serialisation due to errors when calling ->toDateTime()');
     }
 
     /**
@@ -239,6 +253,7 @@ CYPHER, [], $alias);
         $result = $this->client->run('RETURN localdatetime() as local', [], $alias)->first()->get('local');
 
         self::assertInstanceOf(LocalDateTime::class, $result);
+        var_dump($result->toDateTime());
     }
 
     /**
@@ -272,6 +287,7 @@ CYPHER, [], $alias);
         self::assertEquals(0, $results[1]['aDuration']->getNanoseconds());
         $interval = new DateInterval(sprintf('P%dM%dDT%dS', 5, 1, 43200));
         self::assertEquals($interval, $results[1]['aDuration']->toDateInterval());
+        self::assertEquals(json_encode($interval), json_encode($results[1]['aDuration']));
     }
 
     /**
@@ -280,9 +296,9 @@ CYPHER, [], $alias);
     public function testPoint(string $alias): void
     {
         $result = $this->client->run('RETURN point({x: 3, y: 4}) AS point', [], $alias);
-        self::assertEquals(CypherList::class, $result);
+        self::assertInstanceOf(CypherList::class, $result);
         $row = $result->first();
-        self::assertEquals(CypherMap::class, $row);
+        self::assertInstanceOf(CypherMap::class, $row);
         $point = $row->get('point');
 
         self::assertInstanceOf(CartesianPoint::class, $point);
@@ -290,6 +306,15 @@ CYPHER, [], $alias);
         self::assertEquals(4.0, $point->getY());
         self::assertEquals('cartesian', $point->getCrs());
         self::assertGreaterThan(0, $point->getSrid());
+        self::assertEquals(
+            json_encode([
+                'x' => 3,
+                'y' => 4,
+                'crs' => 'cartesian',
+                'srid' => 7203,
+            ]),
+            json_encode($point)
+        );
     }
 
     /**
@@ -314,12 +339,27 @@ CYPHER, [], $alias);
         self::assertEquals(['User'], $u->labels()->toArray());
         self::assertEquals($email, $u->properties()['email']);
         self::assertEquals($uuid, $u->properties()['uuid']);
+        self::assertEquals(
+            json_encode([
+                'id' => $u->id(),
+                'labels' => $u->labels()->jsonSerialize(),
+                'properties' => $u->properties()->jsonSerialize(),
+            ]),
+            json_encode($u));
 
         /** @var Node $p */
         $p = $results[0]['p'];
         self::assertInstanceOf(Node::class, $p);
         self::assertEquals(['Food', 'Pizza'], $p->labels()->toArray());
         self::assertEquals($type, $p->properties()['type']);
+        self::assertEquals(
+            json_encode([
+                'id' => $p->id(),
+                'labels' => $p->labels()->jsonSerialize(),
+                'properties' => $p->properties()->jsonSerialize(),
+            ]),
+            json_encode($p)
+        );
     }
 
     /**
@@ -336,6 +376,16 @@ CYPHER, [], $alias)->first()->get('xy');
         self::assertInstanceOf(Relationship::class, $result);
         self::assertEquals('XY', $result->getType());
         self::assertEquals(['x' => 1, 'y' => 1], $result->getProperties()->toArray());
+        self::assertEquals(
+            json_encode([
+                'id' => $result->getId(),
+                'type' => $result->getType(),
+                'startNodeId' => $result->getStartNodeId(),
+                'endNodeId' => $result->getEndNodeId(),
+                'properties' => $result->getProperties()
+            ]),
+            json_encode($result)
+        );
     }
 
     /**

@@ -19,8 +19,9 @@ use DateTimeZone;
 use Exception;
 use Laudis\Neo4j\Exception\TimezoneOffsetException;
 use function sprintf;
+use JsonSerializable;
 
-final class DateTime
+final class DateTime implements JsonSerializable
 {
     private int $seconds;
     private int $nanoseconds;
@@ -65,5 +66,10 @@ final class DateTime
 
         $message = sprintf('Cannot find an timezone with %s seconds as offset.', $this->tzOffsetSeconds);
         throw new TimezoneOffsetException($message);
+    }
+
+    public function jsonSerialize()
+    {
+        return json_decode(json_encode($this->toDateTime()), true);
     }
 }
