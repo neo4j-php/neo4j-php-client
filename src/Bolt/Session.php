@@ -39,7 +39,7 @@ use Psr\Http\Message\UriInterface;
 final class Session implements SessionInterface
 {
     private SessionConfiguration $config;
-    /** @var ConnectionPoolInterface<Bolt> */
+    /** @var ConnectionPoolInterface<StreamSocket> */
     private ConnectionPoolInterface $pool;
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;

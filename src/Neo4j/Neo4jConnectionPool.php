@@ -88,7 +88,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 /** @var iterable<array{addresses: list<string>, role:string}> $values */
                 $values = [];
                 foreach ($response as $server) {
-                    /** @psalm-suppress InvalidArrayAssignment */
+                    /**
+                     * @psalm-suppress InvalidArrayAssignment
+                     *
+                     * @var array{addresses: list<string>, role:string}
+                     */
                     $values[] = ['addresses' => $server->get('addresses'), 'role' => $server->get('role')];
                 }
 
