@@ -14,11 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use DateInterval;
-use Ds\Map;
-use Ds\Vector;
-use DateTimeImmutable;
+use Laudis\Neo4j\Contracts\PointInterface;
+use function json_encode;
 use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
@@ -32,6 +30,7 @@ use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
+use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
@@ -90,8 +89,8 @@ final class OGMFormatterIntegrationTest extends TestCase
         self::assertInstanceOf(CypherList::class, $list2);
         self::assertEquals(range(5, 15), $list->toArray());
         self::assertEquals(range(16, 35), $list2->toArray());
-        self::assertEquals(json_encode(range(5,15)), json_encode($list));
-        self::assertEquals(json_encode(range(16,35)), json_encode($list2));
+        self::assertEquals(json_encode(range(5, 15)), json_encode($list));
+        self::assertEquals(json_encode(range(16, 35)), json_encode($list2));
     }
 
     /**
@@ -169,19 +168,19 @@ CYPHER, [], $alias);
         self::assertInstanceOf(Date::class, $results[0]['published_at']);
         self::assertEquals(18048, $results[0]['published_at']->getDays());
         self::assertEquals(
-            json_encode((new DateTimeImmutable('@0'))->modify(sprintf('+%s days', 18048))),
+            json_encode(['days' => 18048]),
             json_encode($results[0]['published_at']));
 
         self::assertInstanceOf(Date::class, $results[1]['published_at']);
         self::assertEquals(18049, $results[1]['published_at']->getDays());
         self::assertEquals(
-            json_encode((new DateTimeImmutable('@0'))->modify(sprintf('+%s days', 18049))),
+            json_encode(['days' => 18049]),
             json_encode($results[1]['published_at']));
 
         self::assertInstanceOf(Date::class, $results[2]['published_at']);
         self::assertEquals(18742, $results[2]['published_at']->getDays());
         self::assertEquals(
-            json_encode((new DateTimeImmutable('@0'))->modify(sprintf('+%s days', 18742))),
+            json_encode(['days' => 18742]),
             json_encode($results[2]['published_at']));
     }
 
@@ -233,16 +232,16 @@ CYPHER, [], $alias);
         self::assertEquals(1559414432, $results[0]['created_at']->getSeconds());
         self::assertEquals(142000000, $results[0]['created_at']->getNanoseconds());
         self::assertEquals(3600, $results[0]['created_at']->getTimeZoneOffsetSeconds());
+        self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($results[0]['created_at']));
 
         self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
         self::assertEquals(1559471012, $results[1]['created_at']->getSeconds());
         self::assertEquals(122000000, $results[1]['created_at']->getNanoseconds());
-        self::assertEquals(3600, $results[1]['created_at']->getTimeZoneOffsetSeconds());
+        self::assertEquals('{"seconds":1559471012,"nanoseconds":122000000,"tzOffsetSeconds":3600}', json_encode($results[1]['created_at']));
 
         self::assertInstanceOf(DateTime::class, $results[2]['created_at']);
         self::assertGreaterThan(0, $results[2]['created_at']->getSeconds());
         self::assertGreaterThan(0, $results[2]['created_at']->getNanoseconds());
-        $this->markTestIncomplete('could not test JSON serialisation due to errors when calling ->toDateTime()');
     }
 
     /**
@@ -288,7 +287,7 @@ CYPHER, [], $alias);
         self::assertEquals(0, $results[1]['aDuration']->getNanoseconds());
         $interval = new DateInterval(sprintf('P%dM%dDT%dS', 5, 1, 43200));
         self::assertEquals($interval, $results[1]['aDuration']->toDateInterval());
-        self::assertEquals(json_encode($interval), json_encode($results[1]['aDuration']));
+        self::assertEquals('{"months":5,"days":1,"seconds":43200,"nanoseconds":0}', json_encode($results[1]['aDuration']));
     }
 
     /**
@@ -383,7 +382,7 @@ CYPHER, [], $alias)->first()->get('xy');
                 'type' => $result->getType(),
                 'startNodeId' => $result->getStartNodeId(),
                 'endNodeId' => $result->getEndNodeId(),
-                'properties' => $result->getProperties()
+                'properties' => $result->getProperties(),
             ]),
             json_encode($result)
         );
@@ -408,7 +407,7 @@ CYPHER
     /**
      * @dataProvider transactionProvider
      */
-    public function testPropertyTypes()
+    public function testPropertyTypes(string $alias)
     {
         $point = 'point({x: 3, y: 4})';
         $list = 'range(5, 15)';
@@ -442,19 +441,23 @@ MERGE (a:AllInOne {
 
 RETURN a
 CYPHER,
-            compact('point', 'list', 'date', 'dateTime', 'duration', 'localDateTime', 'localTime', 'time')
+            compact('point', 'list', 'date', 'dateTime', 'duration', 'localDateTime', 'localTime', 'time'), $alias
         );
 
         $node = $result->first()->get('a');
 
-        self::assertInstanceOf(CypherMap::class, $node->thePoint);
-        self::assertInstanceOf(CypherList::class, $node->theList);
-        self::assertInstanceOf(Date::class, $node->theDate);
-        self::assertInstanceOf(DateTime::class, $node->theDateTime);
-        self::assertInstanceOf(Duration::class, $node->theDuration);
-        self::assertInstanceOf(LocalDateTime::class, $node->theLocalDateTime);
-        self::assertInstanceOf(LocalTime::class, $node->theLocalTime);
-        self::assertInstanceOf(Time::class, $node->theTime);
+        if ($alias === 'http') {
+            self::markTestSkipped('Http does not support nested properties');
+        } else {
+            self::assertInstanceOf(PointInterface::class, $node->thePoint);
+            self::assertInstanceOf(CypherList::class, $node->theList);
+            self::assertInstanceOf(Date::class, $node->theDate);
+            self::assertInstanceOf(DateTime::class, $node->theDateTime);
+            self::assertInstanceOf(Duration::class, $node->theDuration);
+            self::assertInstanceOf(LocalDateTime::class, $node->theLocalDateTime);
+            self::assertInstanceOf(LocalTime::class, $node->theLocalTime);
+            self::assertInstanceOf(Time::class, $node->theTime);
+        }
     }
 
     private function articlesQuery(): string

@@ -21,6 +21,7 @@ use Ds\Sequence;
 use Ds\Set;
 use IteratorAggregate;
 use JsonSerializable;
+use OutOfBoundsException;
 use Traversable;
 
 /**
@@ -199,9 +200,19 @@ final class CypherMap implements ArrayAccess, IteratorAggregate, JsonSerializabl
     }
 
     /**
-     * @param mixed $default
+     * @template TDefault
      *
-     * @return T
+     * @param TDefault $default
+     *
+     * @throws OutOfBoundsException
+     *
+     * @return (
+     *           func_num_args() is 1
+     *           ? T
+     *           : T|TDefault
+     *           )
+     *
+     * @psalm-mutation-free
      */
     public function get(string $key, $default = null)
     {

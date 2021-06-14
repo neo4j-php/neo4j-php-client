@@ -56,10 +56,10 @@ final class DateTime implements JsonSerializable
         /** @psalm-suppress PossiblyFalseIterator */
         foreach (DateTimeZone::listAbbreviations() as $tz) {
             /** @psalm-suppress all */
-            if ($tz['offset'] === $this->getTimeZoneOffsetSeconds()) {
+            if ($tz[0]['offset'] === $this->getTimeZoneOffsetSeconds()) {
                 return (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))
                     ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000))
-                    ->setTimezone(new DateTimeZone($tz['timezone_id']));
+                    ->setTimezone(new DateTimeZone($tz[0]['timezone_id']));
             }
         }
 

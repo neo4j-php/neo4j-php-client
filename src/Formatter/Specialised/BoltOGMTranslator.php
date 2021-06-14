@@ -77,13 +77,23 @@ final class BoltOGMTranslator
 
     private function makeFromBoltNode(BoltNode $node): Node
     {
+        /** @var Map<string, OGMTypes> $properties */
+        $properties = new Map();
+        /**
+         * @var string $name
+         * @var mixed  $property
+         */
+        foreach ($node->properties() as $name => $property) {
+            $properties->put($name, $this->mapValueToType($property));
+        }
+
         /**
          * @psalm-suppress MixedArgumentTypeCoercion
          */
         return new Node(
             $node->id(),
             new CypherList(new Vector($node->labels())),
-            new CypherMap(new Map($node->properties()))
+            new CypherMap($properties)
         );
     }
 
@@ -128,7 +138,7 @@ final class BoltOGMTranslator
         $map = new Map();
         /**
          * @var string $key
-         * @var string $property
+         * @var mixed  $property
          */
         foreach ($rel->properties() as $key => $property) {
             $map->put($key, $this->mapValueToType($property));
