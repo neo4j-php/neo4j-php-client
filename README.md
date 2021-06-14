@@ -215,6 +215,8 @@ Cypher values and types are mapped to php types and classes:
 |integer|`int`|
 |float|`float`|
 |boolean|`bool`|
+|Map|`\Laudis\Neo4j\Types\CypherMap`|
+|List|`\Laudis\Neo4j\Types\CypherList`|
 |Point|`\Laudis\Neo4j\Contracts\PointInterface` *|
 |Date|`\Laudis\Neo4j\Types\Date`|
 |Time|`\Laudis\Neo4j\Types\Time`|
