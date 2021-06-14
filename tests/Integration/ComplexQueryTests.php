@@ -76,28 +76,14 @@ CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b', 'c' => 'd'])], $alia
     /**
      * @dataProvider transactionProvider
      */
-    public function testMapParameterHelper(string $alias): void
-    {
-        $this->expectException(Neo4jException::class);
-
-        $this->client->run(<<<'CYPHER'
-MERGE (x:Node {slug: 'a'})
-WITH x
-MATCH (x) WHERE x.slug IN $listOrMap RETURN x
-CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b'])], $alias);
-    }
-
-    /**
-     * @dataProvider transactionProvider
-     */
     public function testArrayParameterHelper(string $alias): void
     {
-        $this->expectException(Neo4jException::class);
         $this->client->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
 CYPHER, ['listOrMap' => []], $alias);
+        self::assertTrue(true);
     }
 
     /**

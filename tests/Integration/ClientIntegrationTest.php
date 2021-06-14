@@ -240,8 +240,8 @@ CYPHER,
      */
     public function testMultipleTransactions(string $alias): void
     {
-        $x = $this->client->openTransaction(null, $alias);
-        $y = $this->client->openTransaction(null, $alias);
+        $x = $this->client->beginTransaction(null, $alias);
+        $y = $this->client->beginTransaction(null, $alias);
         self::assertNotSame($x, $y);
         $x->rollback();
         $y->rollback();

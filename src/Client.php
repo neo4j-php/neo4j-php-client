@@ -15,6 +15,8 @@ namespace Laudis\Neo4j;
 
 use Ds\Map;
 use Ds\Vector;
+use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Enum\AccessMode;
 use function in_array;
 use InvalidArgumentException;
 use function is_array;
@@ -84,7 +86,7 @@ final class Client implements ClientInterface
         return $this->startSession($alias)->runStatements($statements);
     }
 
-    public function openTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface
+    public function beginTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface
     {
         return $this->startSession($alias)->beginTransaction($statements);
     }

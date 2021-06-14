@@ -58,7 +58,7 @@ final class ConsistencyTest extends TestCase
      */
     public function testConsistencyTransaction(string $alias): void
     {
-        $tsx = $this->client->openTransaction([
+        $tsx = $this->client->beginTransaction([
             Statement::create('CREATE (n:aaa) SET n.name="aaa" return n'),
         ], $alias);
 

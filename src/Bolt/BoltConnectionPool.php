@@ -13,21 +13,35 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
-use function explode;
-use const FILTER_VALIDATE_IP;
-use function filter_var;
+use Ds\Map;
+use Exception;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 use Psr\Http\Message\UriInterface;
+use function explode;
+use function filter_var;
 use function str_starts_with;
+use const FILTER_VALIDATE_IP;
 
 /**
- * @implements ConnectionPoolInterface<StreamSocket>
+ * @implements ConnectionPoolInterface<Bolt>
  */
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
-    public function acquire(UriInterface $uri, AccessMode $mode): StreamSocket
+    /** @var Map<string, Bolt> */
+    private Map $map;
+
+    public function __construct()
+    {
+        $this->map = new Map();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function acquire(UriInterface $uri, AccessMode $mode): Bolt
     {
         $host = $uri->getHost();
         $socket = new StreamSocket($host, $uri->getPort() ?? 7687);
@@ -40,7 +54,10 @@ final class BoltConnectionPool implements ConnectionPoolInterface
             $this->enableSsl($host, $sslConfig, $socket);
         }
 
-        return $socket;
+        $bolt = new Bolt($socket);
+        $this->map->put($uri->__toString(), $bolt);
+
+        return $bolt;
     }
 
     private function enableSsl(string $host, string $sslConfig, StreamSocket $sock): void

@@ -21,7 +21,7 @@ final class ClientBuilderTest extends TestCase
     public function testBoltSetupWithScheme(): void
     {
         $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j:7687')->build();
-        $tsx = $client->openTransaction();
+        $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
     }
@@ -29,7 +29,7 @@ final class ClientBuilderTest extends TestCase
     public function testBoltSetupWithoutPort(): void
     {
         $client = ClientBuilder::create()->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')->build();
-        $tsx = $client->openTransaction();
+        $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
     }
@@ -37,7 +37,7 @@ final class ClientBuilderTest extends TestCase
     public function testBoltSetupWrongScheme(): void
     {
         $client = ClientBuilder::create()->addBoltConnection('bolt', 'neo4j://neo4j:test@neo4j:7687')->build();
-        $tsx = $client->openTransaction();
+        $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
     }

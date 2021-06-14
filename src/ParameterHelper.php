@@ -44,8 +44,8 @@ final class ParameterHelper
      */
     public static function asParameter($value)
     {
-        return self::emptySequenceToArray($value) ??
-            self::emptyDictionaryToStdClass($value) ??
+        return self::emptyDictionaryToStdClass($value) ??
+            self::emptySequenceToArray($value) ??
             self::filledIterableToArray($value) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
@@ -95,9 +95,7 @@ final class ParameterHelper
      */
     private static function emptyDictionaryToStdClass($value): ?stdClass
     {
-        if ((!$value && is_array($value)) ||
-            ($value instanceof Map && $value->count() === 0)
-        ) {
+        if ($value instanceof Map && $value->count() === 0) {
             return new stdClass();
         }
 

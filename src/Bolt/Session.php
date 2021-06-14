@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
-use Bolt\connection\StreamSocket;
 use Closure;
 use Ds\Vector;
 use Exception;
@@ -39,7 +38,7 @@ use Psr\Http\Message\UriInterface;
 final class Session implements SessionInterface
 {
     private SessionConfiguration $config;
-    /** @var ConnectionPoolInterface<StreamSocket> */
+    /** @var ConnectionPoolInterface<Bolt> */
     private ConnectionPoolInterface $pool;
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
@@ -48,8 +47,8 @@ final class Session implements SessionInterface
     private AuthenticateInterface $auth;
 
     /**
-     * @param FormatterInterface<T>                 $formatter
-     * @param ConnectionPoolInterface<StreamSocket> $pool
+     * @param FormatterInterface<T>         $formatter
+     * @param ConnectionPoolInterface<Bolt> $pool
      */
     public function __construct(
         SessionConfiguration $config,
@@ -113,7 +112,7 @@ final class Session implements SessionInterface
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         try {
-            $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode()));
+            $bolt = $this->pool->acquire($this->uri, $this->config->getAccessMode());
             $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
 
             if (!$bolt->begin(['db' => $this->config->getDatabase()])) {

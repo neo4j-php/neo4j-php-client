@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Bolt\connection\StreamSocket;
+use Bolt\Bolt;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
@@ -29,17 +29,17 @@ use function time;
 /**
  * @psalm-import-type BasicDriver from \Laudis\Neo4j\Contracts\DriverInterface
  *
- * @implements ConnectionPoolInterface<StreamSocket>
+ * @implements ConnectionPoolInterface<Bolt>
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
     private ?RoutingTable $table = null;
-    /** @var ConnectionPoolInterface<StreamSocket> */
+    /** @var ConnectionPoolInterface<Bolt> */
     private ConnectionPoolInterface $pool;
     private string $version;
 
     /**
-     * @param ConnectionPoolInterface<StreamSocket> $pool
+     * @param ConnectionPoolInterface<Bolt> $pool
      */
     public function __construct(ConnectionPoolInterface $pool, string $version)
     {
@@ -50,7 +50,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    public function acquire(UriInterface $uri, AccessMode $mode): StreamSocket
+    public function acquire(UriInterface $uri, AccessMode $mode): Bolt
     {
         $table = $this->routingTable(BoltDriver::create($uri));
         $server = $this->getNextServer($table, $mode);
