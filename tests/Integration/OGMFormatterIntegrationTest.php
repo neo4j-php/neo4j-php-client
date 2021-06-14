@@ -14,10 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use DateInterval;
-use Laudis\Neo4j\Contracts\PointInterface;
 use function json_encode;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator;

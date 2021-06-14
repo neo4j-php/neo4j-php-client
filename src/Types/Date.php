@@ -13,10 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\structures\Date as BoltDate;
 use DateTimeImmutable;
-use JsonSerializable;
 use Exception;
+use JsonSerializable;
 
 final class Date implements JsonSerializable
 {

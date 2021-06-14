@@ -13,10 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use function count;
 use Ds\Map;
 use Ds\Sequence;
 use Ds\Vector;
-use function count;
 use function gettype;
 use InvalidArgumentException;
 use function is_array;

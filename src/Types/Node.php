@@ -14,13 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use BadMethodCallException;
-use Bolt\structures\Node as BoltNode;
 use Ds\Map;
 use Ds\Vector;
 use function get_class;
+use JsonSerializable;
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
-use JsonSerializable;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter

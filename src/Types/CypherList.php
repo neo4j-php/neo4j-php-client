@@ -211,11 +211,6 @@ final class CypherList implements IteratorAggregate, ArrayAccess, JsonSerializab
         return new CypherList($this->vector->reversed());
     }
 
-    /**
-     * @param int $index
-     * @param int|null $length
-     * @return CypherList
-     */
     public function slice(int $index, int $length = null): CypherList
     {
         return new CypherList($this->vector->slice($index, $length));

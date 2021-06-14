@@ -73,7 +73,6 @@ final class WGS843DPoint implements PointInterface, JsonSerializable
         return $this->y;
     }
 
-
     public function getCrs(): string
     {
         return $this->crs;
