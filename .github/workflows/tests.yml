@@ -109,8 +109,8 @@ jobs:
             unzip \
             wget \
             && docker-php-ext-install -j$(nproc) gd sockets bcmath \
-            && pecl install ds \
-            && docker-php-ext-enable ds
+            && pecl install ds xdebug \
+            && docker-php-ext-enable ds xdebug
       - name: Install Composer
         run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       - name: Install dependencies
