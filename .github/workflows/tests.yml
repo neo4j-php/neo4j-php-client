@@ -96,14 +96,7 @@ jobs:
           NEO4J_dbms_connectors_default__advertised__address: readreplica1
 
     steps:
-      - name: Force Install GIT latest
-        run: |
-          apt-get update \
-          && apt-get install -y software-properties-common \
-          && add-apt-repository -y ppa:git-core/ppa \
-          && apt-get update \
-          && apt-get install -y git
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v1
       - name: Setup PHP
         run: |
           apt-get update && apt-get install -y \
