@@ -96,8 +96,15 @@ jobs:
           NEO4J_dbms_connectors_default__advertised__address: readreplica1
 
     steps:
+      - name: Force Install GIT latest
+        run: |
+          apt-get install -y software-properties-common \
+          && apt-get update \
+          && add-apt-repository -y ppa:git-core/ppa \
+          && apt-get update \
+          && apt-get install -y git
       - uses: actions/checkout@v2
-      - name: Setup PHP
+        name: Setup PHP
         run: |
           apt-get update && apt-get install -y \
             libfreetype6-dev \
@@ -108,7 +115,6 @@ jobs:
             zip \
             unzip \
             wget \
-            git \
             && docker-php-ext-install -j$(nproc) gd sockets bcmath \
             && pecl install ds xdebug \
             && docker-php-ext-enable ds xdebug
@@ -133,6 +139,5 @@ jobs:
               && cp out/phpunit/clover.xml clover.xml
       - name: Run Code Climate Test Reporter
         run: |
-          GIT_BRANCH=$GITHUB_HEAD_REF GIT_COMMIT_SHA=$(git rev-parse origin/$GITHUB_HEAD_REF) \
-            cc-test-reporter after-build --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28 --exit-code 0
+          cc-test-reporter after-build --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28 --exit-code 0
 
