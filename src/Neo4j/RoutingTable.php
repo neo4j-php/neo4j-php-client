@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Neo4j;
 
 use Ds\Set;
 use Laudis\Neo4j\Enum\RoutingRoles;
+use function in_array;
 
 final class RoutingTable
 {
@@ -44,14 +45,7 @@ final class RoutingTable
         /** @psalm-var Set<string> $tbr */
         $tbr = new Set();
         foreach ($this->servers as $server) {
-            if ($server['role'] === $role->getValue()) {
-                foreach ($server['addresses'] as $address) {
-                    $tbr->add($address);
-                }
-            } elseif (
-                ($role === RoutingRoles::LEADER() && $server['role'] === 'LEADER') ||
-                ($role === RoutingRoles::FOLLOWER() && $server['role'] === 'FOLLOWER')
-            ) {
+            if (in_array($server['role'], $role->getValue(), true)) {
                 foreach ($server['addresses'] as $address) {
                     $tbr->add($address);
                 }
