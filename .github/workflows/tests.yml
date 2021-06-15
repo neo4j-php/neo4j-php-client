@@ -122,12 +122,11 @@ jobs:
         run: vendor/bin/phpunit tests/Integration
       - name: Coverage
         run: |
-          wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 \
-              && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
-              && chmod +x /usr/bin/cc-test-reporter \
-              && cc-test-reporter before-build \
-              && XDEBUG_MODE=coverage vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M \
-              && mkdir -p out/phpunit \
-              && cp out/phpunit/clover.xml clover.xml \
-              && cc-test-reporter after-build --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28 --exit-code 0
-
+          vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M \
+            && mkdir -p out/phpunit \
+            && cp out/phpunit/clover.xml clover.xml
+      - name: Code Climate Test Reporter
+        uses: aktions/codeclimate-test-reporter@v1
+        with:
+          codeclimate-test-reporter-id: ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28
+          command: after-build
