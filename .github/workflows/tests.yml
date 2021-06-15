@@ -120,13 +120,18 @@ jobs:
         run: vendor/bin/phpunit tests/Unit
       - name: Run Integration tests
         run: vendor/bin/phpunit tests/Integration
-      - name: Code Coverage
-        uses: paambaati/codeclimate-action@v2.7.5
-        env:
-          CC_TEST_REPORTER_ID: ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28
-        with:
-          coverageCommand: |
-            XDEBUG_MODE=coverage vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M \
+      - name: Install Code Climate Test Reporter
+        run: |
+          wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 \
+              && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
+              && chmod +x /usr/bin/cc-test-reporter
+      - name: Run PHPUnit Coverage
+        run: |
+            cc-test-reporter before-build \
+              && XDEBUG_MODE=coverage vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M \
               && mkdir -p out/phpunit \
               && cp out/phpunit/clover.xml clover.xml
-          debug: true
+      - name: Run Code Climate Test Reporter
+        run: |
+          cc-test-reporter after-build --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28 --exit-code 0
+
