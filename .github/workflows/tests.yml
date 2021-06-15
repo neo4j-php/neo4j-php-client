@@ -98,8 +98,8 @@ jobs:
     steps:
       - name: Force Install GIT latest
         run: |
-          apt-get install -y software-properties-common \
-          && apt-get update \
+          apt-get update \
+          && apt-get install -y software-properties-common \
           && add-apt-repository -y ppa:git-core/ppa \
           && apt-get update \
           && apt-get install -y git
