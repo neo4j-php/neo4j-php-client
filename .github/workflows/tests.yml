@@ -129,4 +129,4 @@ jobs:
         uses: aktions/codeclimate-test-reporter@v1
         with:
           codeclimate-test-reporter-id: ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28
-          command: after-build
+          command: after-build --exit-code 0
