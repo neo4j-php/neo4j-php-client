@@ -104,7 +104,7 @@ jobs:
           && apt-get update \
           && apt-get install -y git
       - uses: actions/checkout@v2
-        name: Setup PHP
+      - name: Setup PHP
         run: |
           apt-get update && apt-get install -y \
             libfreetype6-dev \
