@@ -116,13 +116,7 @@ final class Session implements SessionInterface
             $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode()));
             $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
 
-            $protocolVersion = $bolt->getProtocolVersion();
-            if ($protocolVersion >= 4.0) {
-                $begin = $bolt->begin(['db' => $this->config->getDatabase()]);
-            } else {
-                $bolt->setProtocolVersions((int) $protocolVersion);
-                $begin = $bolt->begin();
-            }
+            $begin = $bolt->begin(['db' => $this->config->getDatabase()]);
 
             if (!$begin) {
                 throw new Neo4jException(new Vector([new Neo4jError('', 'Cannot open new transaction')]));

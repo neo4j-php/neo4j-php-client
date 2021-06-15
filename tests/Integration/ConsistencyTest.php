@@ -18,7 +18,6 @@ use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Tests\Helpers\TestHelper;
 use PHPUnit\Framework\TestCase;
 
 final class ConsistencyTest extends TestCase
@@ -41,8 +40,6 @@ final class ConsistencyTest extends TestCase
      */
     public function testConsistency(string $alias): void
     {
-        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
-
         $this->client->run('MATCH (x) DETACH DELETE x', [], $alias);
         $res = $this->client->run('MERGE (n:zzz {name: "bbbb"}) RETURN n', [], $alias);
         self::assertEquals(1, $res->count());
@@ -58,8 +55,6 @@ final class ConsistencyTest extends TestCase
      */
     public function testConsistencyTransaction(string $alias): void
     {
-        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
-
         $this->client->run('MATCH (x) DETACH DELETE x', [], $alias);
         $tsx = $this->client->beginTransaction([
             Statement::create('CREATE (n:aaa) SET n.name="aaa" return n'),
