@@ -18,7 +18,6 @@ use Ds\Vector;
 use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Tests\Helpers\TestHelper;
 use PHPUnit\Framework\TestCase;
 
 final class ClusterIntegrationTest extends TestCase
@@ -40,8 +39,6 @@ final class ClusterIntegrationTest extends TestCase
      */
     public function testAcceptance(string $connection): void
     {
-        TestHelper::skipIfUnsupportedVersion($connection, __CLASS__);
-
         self::assertEquals(1, $this->client->run('RETURN 1 as x', [], $connection)->first()->get('x'));
     }
 
@@ -50,8 +47,6 @@ final class ClusterIntegrationTest extends TestCase
      */
     public function testWrite(string $connection): void
     {
-        TestHelper::skipIfUnsupportedVersion($connection, __CLASS__);
-
         self::assertEquals([], $this->client->run('CREATE (x:X) RETURN x', [], $connection)->first()->get('x'));
     }
 

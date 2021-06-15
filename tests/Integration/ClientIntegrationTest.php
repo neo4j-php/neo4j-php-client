@@ -22,7 +22,6 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Tests\Helpers\TestHelper;
 use PHPUnit\Framework\TestCase;
 
 final class ClientIntegrationTest extends TestCase
@@ -72,7 +71,6 @@ final class ClientIntegrationTest extends TestCase
 
     public function testAvailabilityFullImplementation(): void
     {
-        TestHelper::skipIfUnsupportedVersion('cluster', __CLASS__);
         $results = $this->client->getDriver('cluster')
             ->createSession()
             ->beginTransaction()
@@ -109,8 +107,6 @@ final class ClientIntegrationTest extends TestCase
      */
     public function testValidRun(string $alias): void
     {
-        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
-
         $response = $this->client->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
@@ -148,8 +144,6 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'], $alias);
      */
     public function testValidStatement(string $alias): void
     {
-        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
-
         $response = $this->client->runStatement(
             Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
@@ -191,8 +185,6 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']),
      */
     public function testStatements(string $alias): void
     {
-        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
-
         $params = ['test' => 'a', 'otherTest' => 'b'];
         $response = $this->client->runStatements([
             Statement::create(<<<'CYPHER'
@@ -248,8 +240,6 @@ CYPHER,
      */
     public function testMultipleTransactions(string $alias): void
     {
-        TestHelper::skipIfUnsupportedVersion($alias, __CLASS__);
-
         $x = $this->client->beginTransaction(null, $alias);
         $y = $this->client->beginTransaction(null, $alias);
         self::assertNotSame($x, $y);

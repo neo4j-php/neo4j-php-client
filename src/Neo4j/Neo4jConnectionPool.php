@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use function array_filter;
 use Bolt\connection\StreamSocket;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
@@ -36,15 +37,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     private ?RoutingTable $table = null;
     /** @var ConnectionPoolInterface<StreamSocket> */
     private ConnectionPoolInterface $pool;
-    private string $version;
 
     /**
      * @param ConnectionPoolInterface<StreamSocket> $pool
      */
-    public function __construct(ConnectionPoolInterface $pool, string $version)
+    public function __construct(ConnectionPoolInterface $pool)
     {
         $this->pool = $pool;
-        $this->version = $version;
     }
 
     /**
@@ -82,18 +81,27 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         if ($this->table === null || $this->table->getTtl() < time()) {
             $session = $driver->createSession();
-            if (str_starts_with($this->version, '3')) {
+            $row = $session->run(
+                'CALL dbms.components() yield versions UNWIND versions as version RETURN version'
+            )->first();
+            /** @var string */
+            $version = $row->get('version');
+
+            if (str_starts_with($version, '3')) {
                 $response = $session->run('CALL dbms.cluster.overview()');
 
                 /** @var iterable<array{addresses: list<string>, role:string}> $values */
                 $values = [];
                 foreach ($response as $server) {
+                    /** @var list<string> $addresses */
+                    $addresses = $server->get('addresses');
+                    $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
                     /**
                      * @psalm-suppress InvalidArrayAssignment
                      *
                      * @var array{addresses: list<string>, role:string}
                      */
-                    $values[] = ['addresses' => $server->get('addresses'), 'role' => $server->get('role')];
+                    $values[] = ['addresses' => $addresses, 'role' => $server->get('role')];
                 }
 
                 $this->table = new RoutingTable($values, time() + 3600);
