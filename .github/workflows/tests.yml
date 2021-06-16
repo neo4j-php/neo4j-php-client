@@ -2,7 +2,7 @@ name: Unit and Integration Tests
 
 on:
   push:
-    branches: ["main"]
+    branches: [ '**' ]
 
 jobs:
   tests:
