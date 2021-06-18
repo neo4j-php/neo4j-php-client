@@ -13,10 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use ArrayIterator;
 use DateInterval;
 use Exception;
-use Traversable;
 
 final class Duration extends AbstractCypherContainer
 {
