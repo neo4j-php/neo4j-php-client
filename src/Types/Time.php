@@ -13,9 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use JsonSerializable;
-
-final class Time implements JsonSerializable
+final class Time extends AbstractCypherContainer
 {
     private float $seconds;
 
@@ -29,10 +27,8 @@ final class Time implements JsonSerializable
         return $this->seconds;
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return [
-            'seconds' => $this->seconds,
-        ];
+        yield 'seconds' => $this->seconds;
     }
 }

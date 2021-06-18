@@ -17,14 +17,13 @@ use BadMethodCallException;
 use Ds\Map;
 use Ds\Vector;
 use function get_class;
-use JsonSerializable;
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
-final class Node implements JsonSerializable
+final class Node extends AbstractCypherContainer
 {
     private int $id;
     /** @var CypherList<string> */
@@ -90,13 +89,11 @@ final class Node implements JsonSerializable
         return $this->properties->get($key);
     }
 
-    public function jsonSerialize(): array
+    public function getIterator()
     {
-        return [
-            'id' => $this->id,
-            'labels' => $this->labels->jsonSerialize(),
-            'properties' => $this->properties->jsonSerialize(),
-        ];
+        yield 'id' => $this->id;
+        yield 'labels' => $this->labels;
+        yield 'properties' => $this->properties;
     }
 
     /**

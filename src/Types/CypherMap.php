@@ -13,24 +13,21 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use ArrayAccess;
 use BadMethodCallException;
 use Ds\Map;
 use Ds\Pair;
 use Ds\Sequence;
 use Ds\Set;
-use IteratorAggregate;
-use JsonSerializable;
+use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use OutOfBoundsException;
 use Traversable;
 
 /**
  * @template T
  *
- * @implements ArrayAccess<string, T>
- * @implements IteratorAggregate<T>
+ * @implements CypherContainerInterface<string, T>
  */
-final class CypherMap implements ArrayAccess, IteratorAggregate, JsonSerializable
+final class CypherMap implements CypherContainerInterface
 {
     /** @var Map<string, T> */
     private Map $map;
@@ -69,8 +66,9 @@ final class CypherMap implements ArrayAccess, IteratorAggregate, JsonSerializabl
         return $this->map->toArray();
     }
 
-    public function getIterator(): Traversable
+    public function getIterator()
     {
+        /** @var Traversable<string, T> */
         return $this->map->getIterator();
     }
 

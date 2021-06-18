@@ -13,9 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use JsonSerializable;
-
-final class UnboundRelationship implements JsonSerializable
+final class UnboundRelationship extends AbstractCypherContainer
 {
     private int $id;
     private string $type;
@@ -43,12 +41,10 @@ final class UnboundRelationship implements JsonSerializable
         return $this->properties;
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return [
-            'id' => $this->getId(),
-            'type' => $this->getType(),
-            'properties' => $this->getProperties(),
-        ];
+        yield 'id' => $this->getId();
+        yield 'type' => $this->getType();
+        yield 'properties' => $this->getProperties();
     }
 }

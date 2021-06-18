@@ -15,10 +15,9 @@ namespace Laudis\Neo4j\Types;
 
 use DateTimeImmutable;
 use Exception;
-use JsonSerializable;
 use function sprintf;
 
-final class LocalDateTime implements JsonSerializable
+final class LocalDateTime extends AbstractCypherContainer
 {
     private int $seconds;
     private int $nanoseconds;
@@ -48,8 +47,9 @@ final class LocalDateTime implements JsonSerializable
                     ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return ['seconds' => $this->seconds, 'nanoseconds' => $this->nanoseconds];
+        yield 'seconds' => $this->seconds;
+        yield 'nanoseconds' => $this->nanoseconds;
     }
 }

@@ -13,12 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use JsonSerializable;
-
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
-final class Relationship implements JsonSerializable
+final class Relationship extends AbstractCypherContainer
 {
     private int $id;
 
@@ -71,14 +69,12 @@ final class Relationship implements JsonSerializable
         return $this->properties;
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return [
-            'id' => $this->getId(),
-            'type' => $this->getType(),
-            'startNodeId' => $this->getStartNodeId(),
-            'endNodeId' => $this->getEndNodeId(),
-            'properties' => $this->getProperties(),
-        ];
+        yield 'id' => $this->getId();
+        yield 'type' => $this->getType();
+        yield 'startNodeId' => $this->getStartNodeId();
+        yield 'endNodeId' => $this->getEndNodeId();
+        yield 'properties' => $this->getProperties();
     }
 }

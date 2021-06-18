@@ -13,9 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use JsonSerializable;
-
-final class LocalTime implements JsonSerializable
+final class LocalTime extends AbstractCypherContainer
 {
     private int $nanoseconds;
 
@@ -29,10 +27,8 @@ final class LocalTime implements JsonSerializable
         return $this->nanoseconds;
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return [
-            'nanoseconds' => $this->nanoseconds,
-        ];
+        yield 'nanoseconds' => $this->nanoseconds;
     }
 }
