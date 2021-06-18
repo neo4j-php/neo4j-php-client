@@ -1,7 +1,7 @@
 name: Unit and Integration Tests
 
 on:
-  pull_request:
+  push:
     branches: [ '**' ]
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         php-version: ['7.4', '8']
-        neo4j-version: ["3.5", "4.0", "4.1", "4.2"]
+        neo4j-version: ["3.5", "4.0", "4.1", "4.2", "4.3"]
     name: "Running Tests for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }}"
 
     container:
@@ -109,8 +109,8 @@ jobs:
             unzip \
             wget \
             && docker-php-ext-install -j$(nproc) gd sockets bcmath \
-            && pecl install ds \
-            && docker-php-ext-enable ds
+            && pecl install ds xdebug \
+            && docker-php-ext-enable ds xdebug
       - name: Install Composer
         run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       - name: Install dependencies
@@ -119,14 +119,3 @@ jobs:
         run: vendor/bin/phpunit tests/Unit
       - name: Run Integration tests
         run: vendor/bin/phpunit tests/Integration
-      - name: Coverage
-        run: |
-          wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 \
-              && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
-              && chmod +x /usr/bin/cc-test-reporter \
-              && cc-test-reporter before-build \
-              && vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M \
-              && mkdir -p out/phpunit \
-              && cp out/phpunit/clover.xml clover.xml \
-              && cc-test-reporter after-build --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28 --exit-code 0
-

@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Ds\Map;
-use Ds\Vector;
 use InvalidArgumentException;
 use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ClientBuilder;
@@ -22,15 +20,19 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ */
 final class ClientIntegrationTest extends TestCase
 {
-    /** @var ClientInterface<Vector<Map<string, scalar|array|null>>> */
+    /** @var ClientInterface<BasicResults> */
     private ClientInterface $client;
 
     /**
-     * @return iterable<list<string>>
+     * @return non-empty-array<array-key, array{0: string}>
      */
     public function connectionAliases(): iterable
     {
@@ -44,7 +46,7 @@ final class ClientIntegrationTest extends TestCase
     }
 
     /**
-     * @return ClientInterface<Vector<Map<string, scalar|array|null>>>
+     * @return ClientInterface<BasicResults>
      */
     public function createClient(): ClientInterface
     {
@@ -52,6 +54,7 @@ final class ClientIntegrationTest extends TestCase
             ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
             ->addHttpConnection('http', 'http://neo4j:test@neo4j')
             ->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true))
+            ->withFormatter(new BasicFormatter())
             ->build();
     }
 
@@ -240,8 +243,8 @@ CYPHER,
      */
     public function testMultipleTransactions(string $alias): void
     {
-        $x = $this->client->openTransaction(null, $alias);
-        $y = $this->client->openTransaction(null, $alias);
+        $x = $this->client->beginTransaction(null, $alias);
+        $y = $this->client->beginTransaction(null, $alias);
         self::assertNotSame($x, $y);
         $x->rollback();
         $y->rollback();

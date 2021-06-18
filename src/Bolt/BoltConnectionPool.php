@@ -14,18 +14,23 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\StreamSocket;
+use Exception;
 use function explode;
 use const FILTER_VALIDATE_IP;
 use function filter_var;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 use Psr\Http\Message\UriInterface;
+use function str_starts_with;
 
 /**
  * @implements ConnectionPoolInterface<StreamSocket>
  */
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
+    /**
+     * @throws Exception
+     */
     public function acquire(UriInterface $uri, AccessMode $mode): StreamSocket
     {
         $host = $uri->getHost();

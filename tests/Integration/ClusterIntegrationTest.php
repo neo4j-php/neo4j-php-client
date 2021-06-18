@@ -13,27 +13,27 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Ds\Map;
-use Ds\Vector;
 use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Http\HttpConfig;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ */
 final class ClusterIntegrationTest extends TestCase
 {
-    /** @var ClientInterface<Vector<Map<string, scalar|array|null>>> */
+    /** @var ClientInterface<BasicResults> */
     private ClientInterface $client;
 
     protected function setUp(): void
     {
         parent::setUp();
         $boltInjections = BoltConfiguration::create()->withAutoRouting(true);
-        $httpInjections = HttpConfig::create()->withAutoRouting(true);
         $this->client = ClientBuilder::create()
-            ->addBoltConnection('cluster-bolt', 'bolt://neo4j:test@core1', $boltInjections)
-            ->addHttpConnection('cluster-http', 'http://neo4j:test@core1', $httpInjections)
+            ->addBoltConnection('cluster', 'bolt://neo4j:test@core1', $boltInjections)
+            ->withFormatter(new BasicFormatter())
             ->build();
     }
 
@@ -50,7 +50,7 @@ final class ClusterIntegrationTest extends TestCase
      */
     public function testWrite(string $connection): void
     {
-        self::assertEquals([], $this->client->run('MERGE (x:X) RETURN x', [], $connection)->first()->get('x'));
+        self::assertEquals([], $this->client->run('CREATE (x:X) RETURN x', [], $connection)->first()->get('x'));
     }
 
     /**
@@ -59,8 +59,7 @@ final class ClusterIntegrationTest extends TestCase
     public function aliasProvider(): array
     {
         return [
-            ['cluster-bolt'],
-            ['cluster-http'],
+            ['cluster'],
         ];
     }
 }

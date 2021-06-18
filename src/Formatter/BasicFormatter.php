@@ -24,6 +24,8 @@ use function gettype;
 use function is_array;
 use function is_object;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use UnexpectedValueException;
@@ -33,7 +35,10 @@ use UnexpectedValueException;
  * @psalm-import-type CypherRowResponse from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
- * @implements FormatterInterface<Vector<Map<string, scalar|array|null>>>
+ *
+ * @psalm-type BasicResults = CypherList<CypherMap<scalar|array|null>>
+ *
+ * @implements FormatterInterface<BasicResults>
  */
 final class BasicFormatter implements FormatterInterface
 {
@@ -41,38 +46,41 @@ final class BasicFormatter implements FormatterInterface
      * @param array{fields: array<int, string>} $meta
      * @param array<array-key, array>           $results
      *
-     * @return Vector<Map<string, scalar|array|null>>
+     * @return CypherList<CypherMap<array|scalar|null>>
      */
-    public function formatBoltResult(array $meta, array $results, Bolt $bolt): Vector
+    public function formatBoltResult(array $meta, array $results, Bolt $bolt): CypherList
     {
         $results = array_slice($results, 0, count($results) - 1);
 
+        /** @var Vector<CypherMap<scalar|array|null>> */
         $tbr = new Vector();
         foreach ($results as $result) {
             $tbr->push($this->formatRow($meta, $result));
         }
 
-        return $tbr;
+        return new CypherList($tbr);
     }
 
-    public function formatHttpResult(ResponseInterface $response, array $body): Vector
+    public function formatHttpResult(ResponseInterface $response, array $body): CypherList
     {
+        /** @var Vector<CypherList<CypherMap<scalar|array|null>>> */
         $tbr = new Vector();
 
         foreach ($body['results'] as $results) {
             $tbr->push($this->buildResult($results));
         }
 
-        return $tbr;
+        return new CypherList($tbr);
     }
 
     /**
      * @psalm-param CypherResponse $result
      *
-     * @return Vector<Map<string, scalar|array|null>>
+     * @return CypherList<CypherMap<scalar|array|null>>
      */
-    private function buildResult(array $result): Vector
+    private function buildResult(array $result): CypherList
     {
+        /** @psalm-var Vector<CypherMap<null|scalar|array>> */
         $tbr = new Vector();
 
         $columns = $result['columns'];
@@ -84,18 +92,18 @@ final class BasicFormatter implements FormatterInterface
             foreach ($columns as $index => $key) {
                 $map->put($key, $vector->get($index));
             }
-            $tbr->push($map);
+            $tbr->push(new CypherMap($map));
         }
 
-        return $tbr;
+        return new CypherList($tbr);
     }
 
     /**
      * @param array{fields: array<int, string>} $meta
      *
-     * @return Map<string, scalar|array|null>
+     * @return CypherMap<scalar|array|null>
      */
-    private function formatRow(array $meta, array $result): Map
+    private function formatRow(array $meta, array $result): CypherMap
     {
         /** @var Map<string, scalar|array|null> $map */
         $map = new Map();
@@ -103,7 +111,7 @@ final class BasicFormatter implements FormatterInterface
             $map->put($column, $this->mapValue($result[$i]));
         }
 
-        return $map;
+        return new CypherMap($map);
     }
 
     private function mapPath(Path $path): array

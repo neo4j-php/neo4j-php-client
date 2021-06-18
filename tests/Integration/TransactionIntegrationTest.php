@@ -13,44 +13,51 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Ds\Map;
-use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ */
 final class TransactionIntegrationTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
+    /** @var ClientInterface<BasicResults> */
+    private ClientInterface $client;
+
+    public function setUp(): void
     {
-        parent::setUpBeforeClass();
-        putenv('RES_OPTIONS=retrans:1 retry:1 timeout:1 attempts:1');
+        parent::setUp();
+
+        $this->client = ClientBuilder::create()
+            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
+            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
+            ->withDriver('http', 'http://neo4j:test@neo4j')
+            ->withFormatter(new BasicFormatter())
+            ->build();
     }
 
-    public function makeTransactions(): iterable
+    /**
+     * @return non-empty-list<array{0: string}>
+     */
+    public function makeTransactions(): array
     {
-        $client = ClientBuilder::create()
-            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
-            ->addHttpConnection('http', 'http://neo4j:test@neo4j')
-            ->build();
-
-        $tbr = [];
-        $tbr[] = [$client->openTransaction(null, 'bolt')];
-        $tbr[] = [$client->openTransaction(null, 'http')];
-
-        /** @var iterable<array> */
-        return $tbr;
+        return [
+            ['bolt'],
+            ['http'],
+            ['cluster'],
+        ];
     }
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testValidRun(UnmanagedTransactionInterface $transaction): void
+    public function testValidRun(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $response = $transaction->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
@@ -71,11 +78,10 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testInvalidRun(UnmanagedTransactionInterface $transaction): void
+    public function testInvalidRun(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $exception = false;
         try {
             $transaction->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
@@ -87,11 +93,10 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testValidStatement(UnmanagedTransactionInterface $transaction): void
+    public function testValidStatement(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $response = $transaction->runStatement(
             Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
@@ -114,11 +119,10 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testInvalidStatement(UnmanagedTransactionInterface $transaction): void
+    public function testInvalidStatement(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $exception = false;
         try {
             $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
@@ -131,11 +135,10 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testStatements(UnmanagedTransactionInterface $transaction): void
+    public function testStatements(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $params = ['test' => 'a', 'otherTest' => 'b'];
         $response = $transaction->runStatements([
             Statement::create(<<<'CYPHER'
@@ -164,11 +167,10 @@ CYPHER,
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testInvalidStatements(UnmanagedTransactionInterface $transaction): void
+    public function testInvalidStatements(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $exception = false;
         try {
             $params = ['test' => 'a', 'otherTest' => 'b'];
@@ -193,22 +195,20 @@ CYPHER,
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testCommitValidEmpty(UnmanagedTransactionInterface $transaction): void
+    public function testCommitValidEmpty(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $result = $transaction->commit();
         self::assertEquals(0, $result->count());
     }
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testCommitValidFilled(UnmanagedTransactionInterface $transaction): void
+    public function testCommitValidFilled(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $result = $transaction->commit([Statement::create(<<<'CYPHER'
 UNWIND [1, 2, 3] AS x
 RETURN x
@@ -220,11 +220,10 @@ CYPHER
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testCommitValidFilledWithInvalidStatement(UnmanagedTransactionInterface $transaction): void
+    public function testCommitValidFilledWithInvalidStatement(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $exception = false;
         try {
             $transaction->commit([Statement::create('adkjbehqjk')]);
@@ -236,11 +235,10 @@ CYPHER
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testCommitInvalid(UnmanagedTransactionInterface $transaction): void
+    public function testCommitInvalid(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $transaction->commit();
         $exception = false;
         try {
@@ -253,22 +251,20 @@ CYPHER
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testRollbackValid(UnmanagedTransactionInterface $transaction): void
+    public function testRollbackValid(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $transaction->rollback();
         self::assertTrue(true);
     }
 
     /**
      * @dataProvider makeTransactions
-     *
-     * @param UnmanagedTransactionInterface<Vector<Map<string, scalar|array|null>>> $transaction
      */
-    public function testRollbackInvalid(UnmanagedTransactionInterface $transaction): void
+    public function testRollbackInvalid(string $alias): void
     {
+        $transaction = $this->client->beginTransaction(null, $alias);
         $transaction->rollback();
         $exception = false;
         try {

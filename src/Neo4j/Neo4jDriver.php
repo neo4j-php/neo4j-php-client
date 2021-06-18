@@ -72,6 +72,8 @@ final class Neo4jDriver implements DriverInterface
 
     /**
      * @param string|UriInterface $uri
+     *
+     * @throws Exception
      */
     public static function createWithFormatter($uri, FormatterInterface $formatter, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
@@ -94,6 +96,7 @@ final class Neo4jDriver implements DriverInterface
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
         $config ??= SessionConfiguration::default();
+        $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl));
 
         return new Session(
             $config,

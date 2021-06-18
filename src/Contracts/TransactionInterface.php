@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Types\CypherList;
 
 /**
  * @template T
@@ -39,7 +39,7 @@ interface TransactionInterface
      *
      * @throws Neo4jException
      *
-     * @return Vector<T>
+     * @return CypherList<T>
      */
-    public function runStatements(iterable $statements): Vector;
+    public function runStatements(iterable $statements): CypherList;
 }
