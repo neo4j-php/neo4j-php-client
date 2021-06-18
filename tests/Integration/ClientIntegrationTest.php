@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Ds\Map;
-use Ds\Vector;
 use InvalidArgumentException;
 use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ClientBuilder;
@@ -25,9 +23,12 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ */
 final class ClientIntegrationTest extends TestCase
 {
-    /** @var ClientInterface<Vector<Map<string, scalar|array|null>>> */
+    /** @var ClientInterface<BasicResults> */
     private ClientInterface $client;
 
     /**
@@ -45,7 +46,7 @@ final class ClientIntegrationTest extends TestCase
     }
 
     /**
-     * @return ClientInterface<Vector<Map<string, scalar|array|null>>>
+     * @return ClientInterface<BasicResults>
      */
     public function createClient(): ClientInterface
     {

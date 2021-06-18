@@ -19,6 +19,7 @@ use function in_array;
 use function is_int;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\StatementStatistics;
+use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use UnexpectedValueException;
@@ -107,15 +108,16 @@ final class StatisticsFormatter implements FormatterInterface
         return $this->formatBoltStats($response);
     }
 
-    public function formatHttpResult(ResponseInterface $response, array $body): Vector
+    public function formatHttpResult(ResponseInterface $response, array $body): CypherList
     {
+        /** @var Vector<StatementStatistics> $tbr */
         $tbr = new Vector();
 
         foreach ($body['results'] as $results) {
             $tbr->push($this->formatHttpStats($results));
         }
 
-        return $tbr;
+        return new CypherList($tbr);
     }
 
     public function decorateRequest(RequestInterface $request): RequestInterface

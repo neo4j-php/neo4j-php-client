@@ -14,8 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\StreamSocket;
-use Ds\Map;
-use Ds\Vector;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -27,13 +25,15 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Formatter\BasicFormatter;
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
 
 /**
  * @template T
  *
  * @implements DriverInterface<T>
+ *
+ * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
  */
 final class BoltDriver implements DriverInterface
 {
@@ -65,11 +65,11 @@ final class BoltDriver implements DriverInterface
     /**
      * @param string|UriInterface $uri
      *
-     * @return self<Vector<Map<string, scalar|array|null>>>
+     * @return self<OGMResults>
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
-        return self::createWithFormatter($uri, new BasicFormatter(), $configuration, $authenticate);
+        return self::createWithFormatter($uri, OGMFormatter::create(), $configuration, $authenticate);
     }
 
     /**

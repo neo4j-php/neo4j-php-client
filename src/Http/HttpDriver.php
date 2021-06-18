@@ -23,7 +23,7 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Formatter\BasicFormatter;
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\UriInterface;
 use function str_replace;
@@ -59,6 +59,8 @@ use function str_replace;
  *     node_labels: string,
  *     neo4j_version: string
  * }
+ *
+ * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
  */
 final class HttpDriver implements DriverInterface
 {
@@ -86,14 +88,21 @@ final class HttpDriver implements DriverInterface
 
     /**
      * @param string|UriInterface $uri
+     *
+     * @return self<OGMResults>
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
-        return self::createWithFormatter($uri, new BasicFormatter(), $configuration, $authenticate);
+        return self::createWithFormatter($uri, OGMFormatter::create(), $configuration, $authenticate);
     }
 
     /**
-     * @param string|UriInterface $uri
+     * @template U
+     *
+     * @param string|UriInterface   $uri
+     * @param FormatterInterface<U> $formatter
+     *
+     * @return self<U>
      */
     public static function createWithFormatter($uri, FormatterInterface $formatter, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {

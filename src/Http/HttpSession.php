@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
-use Ds\Vector;
 use JsonException;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -23,6 +22,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Types\CypherList;
 use function parse_url;
 use const PHP_URL_PATH;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -67,7 +67,7 @@ final class HttpSession implements SessionInterface
     /**
      * @throws ClientExceptionInterface|JsonException
      */
-    public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): Vector
+    public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
         $request = $this->requestFactory->createRequest('POST', $this->uri);
         $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode());

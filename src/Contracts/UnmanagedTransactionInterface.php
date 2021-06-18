@@ -13,8 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Types\CypherList;
 
 /**
  * @template T
@@ -26,9 +26,9 @@ interface UnmanagedTransactionInterface extends TransactionInterface
     /**
      * @param iterable<Statement> $statements
      *
-     * @return Vector<T>
+     * @return CypherList<T>
      */
-    public function commit(iterable $statements = []): Vector;
+    public function commit(iterable $statements = []): CypherList;
 
     public function rollback(): void;
 }

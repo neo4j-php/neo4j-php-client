@@ -13,11 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
-use Ds\Vector;
 use JsonException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -70,7 +70,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @throws JsonException|ClientExceptionInterface
      */
-    public function runStatements(iterable $statements): Vector
+    public function runStatements(iterable $statements): CypherList
     {
         $request = $this->request->withMethod('POST');
 
@@ -86,7 +86,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @throws JsonException|ClientExceptionInterface
      */
-    public function commit(iterable $statements = []): Vector
+    public function commit(iterable $statements = []): CypherList
     {
         $uri = $this->request->getUri();
         $request = $this->request->withUri($uri->withPath($uri->getPath().'/commit'))->withMethod('POST');

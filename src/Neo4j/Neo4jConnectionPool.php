@@ -19,7 +19,6 @@ use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
-use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
@@ -51,7 +50,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     public function acquire(UriInterface $uri, AccessMode $mode): StreamSocket
     {
-        $table = $this->routingTable(BoltDriver::create($uri));
+        $table = $this->routingTable($uri);
         $server = $this->getNextServer($table, $mode);
         $uri = Uri::create($server);
 
@@ -77,10 +76,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      *
      * @throws Exception
      */
-    private function routingTable(DriverInterface $driver): RoutingTable
+    private function routingTable(UriInterface $uri): RoutingTable
     {
         if ($this->table === null || $this->table->getTtl() < time()) {
-            $session = $driver->createSession();
+            $session = BoltDriver::create($uri)->createSession();
             $row = $session->run(
                 'CALL dbms.components() yield versions UNWIND versions as version RETURN version'
             )->first();

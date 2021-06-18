@@ -13,10 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Types\CypherList;
 
 /**
  * @template T
@@ -50,9 +50,9 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return Vector<T>
+     * @return CypherList<T>
      */
-    public function runStatements(iterable $statements, ?string $alias = null): Vector;
+    public function runStatements(iterable $statements, ?string $alias = null): CypherList;
 
     /**
      * Opens a transaction over the connection with the given alias if provided, the master alias otherwise.

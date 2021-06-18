@@ -23,18 +23,20 @@ use function is_array;
 use function is_int;
 use function is_object;
 use function is_string;
+use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\CypherMap;
 use stdClass;
 
 final class ParameterHelper
 {
-    public static function asList(iterable $iterable): Vector
+    public static function asList(iterable $iterable): CypherList
     {
-        return new Vector($iterable);
+        return new CypherList(new Vector($iterable));
     }
 
-    public static function asMap(iterable $iterable): Map
+    public static function asMap(iterable $iterable): CypherMap
     {
-        return new Map($iterable);
+        return new CypherMap(new Map($iterable));
     }
 
     /**
@@ -95,7 +97,7 @@ final class ParameterHelper
      */
     private static function emptyDictionaryToStdClass($value): ?stdClass
     {
-        if ($value instanceof Map && $value->count() === 0) {
+        if (($value instanceof Map || $value instanceof CypherMap) && $value->count() === 0) {
             return new stdClass();
         }
 

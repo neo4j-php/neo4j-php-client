@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Bolt\Bolt;
-use Ds\Vector;
 use JsonException;
+use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -78,9 +78,9 @@ interface FormatterInterface
      *
      * @throws JsonException
      *
-     * @return Vector<T>
+     * @return CypherList<T>
      */
-    public function formatHttpResult(ResponseInterface $response, array $body): Vector;
+    public function formatHttpResult(ResponseInterface $response, array $body): CypherList;
 
     public function decorateRequest(RequestInterface $request): RequestInterface;
 

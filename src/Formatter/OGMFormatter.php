@@ -36,6 +36,8 @@ use Psr\Http\Message\ResponseInterface;
  * @psalm-type OGMTypes = string|\Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime|\Laudis\Neo4j\Types\Time|int|float|bool|null|\Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap|\Laudis\Neo4j\Types\Node|\Laudis\Neo4j\Types\Relationship|\Laudis\Neo4j\Types\Path|\Laudis\Neo4j\Types\Cartesian3DPoint|\Laudis\Neo4j\Types\CartesianPoint|\Laudis\Neo4j\Types\WGS84Point|\Laudis\Neo4j\Types\WGS843DPoint
  * @implements FormatterInterface<CypherList<CypherMap<OGMTypes>>>
  *
+ * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
+ *
  * @psalm-import-type NodeArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  * @psalm-import-type RelationshipArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  *
@@ -88,7 +90,7 @@ final class OGMFormatter implements FormatterInterface
     /**
      * @throws Exception
      */
-    public function formatHttpResult(ResponseInterface $response, array $body): Vector
+    public function formatHttpResult(ResponseInterface $response, array $body): CypherList
     {
         /** @var Vector<CypherList<CypherMap<OGMTypes>>> $tbr */
         $tbr = new Vector();
@@ -98,7 +100,7 @@ final class OGMFormatter implements FormatterInterface
             $tbr->push($this->buildResult($results));
         }
 
-        return $tbr;
+        return new CypherList($tbr);
     }
 
     /**

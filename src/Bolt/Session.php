@@ -29,6 +29,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -67,13 +68,9 @@ final class Session implements SessionInterface
         $this->auth = $auth;
     }
 
-    public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): Vector
+    public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
-        $transaction = $this->openTransaction();
-        $tbr = $transaction->runStatements($statements);
-        $transaction->commit();
-
-        return $tbr;
+        return $this->openTransaction()->commit($statements);
     }
 
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface

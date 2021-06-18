@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use Ds\Map;
-use Ds\Vector;
 use function in_array;
 use InvalidArgumentException;
 use function is_array;
@@ -32,6 +31,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Http\HttpDriver;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
+use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 use function sprintf;
 
@@ -79,7 +79,7 @@ final class Client implements ClientInterface
         return $this->startSession($alias)->runStatement($statement);
     }
 
-    public function runStatements(iterable $statements, ?string $alias = null): Vector
+    public function runStatements(iterable $statements, ?string $alias = null): CypherList
     {
         return $this->startSession($alias)->runStatements($statements);
     }

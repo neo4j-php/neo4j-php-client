@@ -22,6 +22,7 @@ use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
+use Laudis\Neo4j\Types\CypherList;
 use Throwable;
 
 /**
@@ -48,7 +49,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $this->database = $database;
     }
 
-    public function commit(iterable $statements = []): Vector
+    public function commit(iterable $statements = []): CypherList
     {
         $tbr = $this->runStatements($statements);
 
@@ -90,7 +91,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         return $this->runStatements([$statement])->first();
     }
 
-    public function runStatements(iterable $statements): Vector
+    public function runStatements(iterable $statements): CypherList
     {
         /** @var Vector<T> $tbr */
         $tbr = new Vector();
@@ -108,6 +109,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $tbr->push($this->formatter->formatBoltResult($meta, $results, $this->bolt));
         }
 
-        return $tbr;
+        return new CypherList($tbr);
     }
 }
