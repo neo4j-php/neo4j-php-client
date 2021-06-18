@@ -15,9 +15,8 @@ namespace Laudis\Neo4j\Types;
 
 use DateInterval;
 use Exception;
-use JsonSerializable;
 
-final class Duration implements JsonSerializable
+final class Duration extends AbstractCypherContainer
 {
     private int $months;
     private int $days;
@@ -60,13 +59,11 @@ final class Duration implements JsonSerializable
         return new DateInterval(sprintf('P%dM%dDT%dS', $this->months, $this->days, $this->seconds));
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return [
-            'months' => $this->months,
-            'days' => $this->days,
-            'seconds' => $this->seconds,
-            'nanoseconds' => $this->nanoseconds,
-        ];
+        yield 'months' => $this->months;
+        yield 'days' => $this->days;
+        yield 'seconds' => $this->seconds;
+        yield 'nanoseconds' => $this->nanoseconds;
     }
 }

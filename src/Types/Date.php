@@ -15,9 +15,8 @@ namespace Laudis\Neo4j\Types;
 
 use DateTimeImmutable;
 use Exception;
-use JsonSerializable;
 
-final class Date implements JsonSerializable
+final class Date extends AbstractCypherContainer
 {
     private int $days;
 
@@ -39,8 +38,8 @@ final class Date implements JsonSerializable
         return (new DateTimeImmutable('@0'))->modify(sprintf('+%s days', $this->days));
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return ['days' => $this->days];
+        yield 'days' => $this->days;
     }
 }

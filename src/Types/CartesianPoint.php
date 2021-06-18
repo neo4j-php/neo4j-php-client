@@ -13,10 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use JsonSerializable;
 use Laudis\Neo4j\Contracts\PointInterface;
 
-final class CartesianPoint implements PointInterface, JsonSerializable
+final class CartesianPoint extends AbstractCypherContainer implements PointInterface
 {
     private float $x;
     private float $y;
@@ -55,13 +54,11 @@ final class CartesianPoint implements PointInterface, JsonSerializable
         return $this->srid;
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return [
-            'x' => $this->getX(),
-            'y' => $this->getY(),
-            'crs' => $this->getCrs(),
-            'srid' => $this->getSrid(),
-        ];
+        yield 'x' => $this->getX();
+        yield 'y' => $this->getY();
+        yield 'crs' => $this->getCrs();
+        yield 'srid' => $this->getSrid();
     }
 }

@@ -13,21 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use ArrayAccess;
 use BadMethodCallException;
 use Ds\Vector;
-use Generator;
-use IteratorAggregate;
-use JsonSerializable;
+use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use Traversable;
 
 /**
  * @template T
  *
- * @implements IteratorAggregate<T>
- * @implements ArrayAccess<int, T>
+ * @implements CypherContainerInterface<int, T>
  */
-final class CypherList implements IteratorAggregate, ArrayAccess, JsonSerializable
+final class CypherList implements CypherContainerInterface
 {
     /** @var Vector<T> */
     private Vector $vector;
@@ -66,11 +62,9 @@ final class CypherList implements IteratorAggregate, ArrayAccess, JsonSerializab
         return $this->vector->toArray();
     }
 
-    /**
-     * @return Generator<T>|Traversable<T>
-     */
     public function getIterator()
     {
+        /** @var Traversable<int, T> */
         return $this->vector->getIterator();
     }
 

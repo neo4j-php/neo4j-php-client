@@ -16,11 +16,10 @@ namespace Laudis\Neo4j\Types;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
-use JsonSerializable;
 use Laudis\Neo4j\Exception\TimezoneOffsetException;
 use function sprintf;
 
-final class DateTime implements JsonSerializable
+final class DateTime extends AbstractCypherContainer
 {
     private int $seconds;
     private int $nanoseconds;
@@ -67,12 +66,10 @@ final class DateTime implements JsonSerializable
         throw new TimezoneOffsetException($message);
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return [
-            'seconds' => $this->seconds,
-            'nanoseconds' => $this->nanoseconds,
-            'tzOffsetSeconds' => $this->tzOffsetSeconds,
-        ];
+        yield 'seconds' => $this->seconds;
+        yield 'nanoseconds' => $this->nanoseconds;
+        yield 'tzOffsetSeconds' => $this->tzOffsetSeconds;
     }
 }

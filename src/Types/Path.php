@@ -13,9 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use JsonSerializable;
-
-final class Path implements JsonSerializable
+final class Path extends AbstractCypherContainer
 {
     private CypherList $nodes;
     private CypherList $relationships;
@@ -43,12 +41,10 @@ final class Path implements JsonSerializable
         return $this->ids;
     }
 
-    public function jsonSerialize()
+    public function getIterator()
     {
-        return [
-            'id' => $this->ids->jsonSerialize(),
-            'nodes' => $this->nodes->jsonSerialize(),
-            'relationships' => $this->relationships->jsonSerialize(),
-        ];
+        yield 'id' => $this->ids;
+        yield 'nodes' => $this->nodes;
+        yield 'relationships' => $this->relationships;
     }
 }
