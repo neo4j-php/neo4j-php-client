@@ -8,17 +8,17 @@
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/laudis-technologies/neo4j-php-client/blob/main/LICENSE)
 
 ## Effortlessly control to worlds' most powerful graph database
- - Pick and choose your drivers with easy configuration
- - Intuitive API
- - Extensible
- - Designed, built and tested under close supervision with the official neo4j driver team
- - Validated with [testkit](https://github.com/neo4j-drivers/testkit)*
- - Fully typed with [psalm](https://psalm.dev/)
+- Pick and choose your drivers with easy configuration
+- Intuitive API
+- Extensible
+- Designed, built and tested under close supervision with the official neo4j driver team
+- Validated with [testkit](https://github.com/neo4j-drivers/testkit)*
+- Fully typed with [psalm](https://psalm.dev/)
 
-*(\*) full testkit integration is planned for version 2.1*
+*(\*) version 2.1 will integrate psalm *
 ## See the driver in action
 
-An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an api for the classic movies example of neo4j.
+An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
 
 ## Start your driving experience in three easy steps
 
@@ -43,9 +43,9 @@ $client = ClientBuilder::create()
     ->build();
 ```
 
-You have now created a client with **bolt, https and neo4j drivers**. The default driver that the client will use is **bolt**.
+You have now created a client with **bolt, HTTPS and neo4j drivers**. The default driver that the client will use is **bolt**.
 
-Read more about the urls and how to use them to configure drivers [here]().
+Read more about the URLs and how to use them to configure drivers [here]().
 
 ### Step 3: run a transaction
 
@@ -63,19 +63,19 @@ echo $result; // echos 'z'
 ## Decide how to send your Cypher queries
 
 You can control the driver using three different approaches:
- - *Transaction functions* (recommended and portable)
- - *Auto committed queries* (easiest and most intuitive)
- - *Unmanaged transactions* (for the highest degree of control)
+- *Transaction functions* (recommended and portable)
+- *Auto committed queries* (easiest and most intuitive)
+- *Unmanaged transactions* (for the highest degree of control)
 
 ### Transaction functions
 
 Transaction functions are the **de facto** standard when using the driver. It is the most portable as it is resistant to a lot of the pitfalls when first developing with high availability solutions such as [Neo4j aura](https://neo4j.com/blog/neo4j-aura-enterprise-ga-release/) or a [cluster](https://neo4j.com/docs/operations-manual/current/clustering/).
 
-Transaction functions are managed by the driver:
- - It **re-executes** the function in case of a [transient error](https://neo4j.com/docs/status-codes/current/#_classifications).
- - It **commits** the transaction on successful execution
- - It **rolls back** the transaction in case of a timeout.
- - It **routes** the execution to a relevant follower or leader server when the neo4j protocol is enabled.
+The driver manages transaction functions:
+- It **re-executes** the function in case of a [transient error](https://neo4j.com/docs/status-codes/current/#_classifications).
+- It **commits** the transaction on successful execution
+- It **rolls back** the transaction in case of a timeout.
+- It **routes** the execution to a relevant follower or leader server when the neo4j protocol is enabled.
 
 > ATTENTION: Because of the automatic retry functionality, the function should produce the same result on subsequent recalls, or in more technical terms: should be **idempotent**. Always remember this when designing the execution logic within the function.
 
@@ -111,7 +111,7 @@ $externalCounter->incrementNodesCreated();
 
 ### Auto committed queries
 
-Auto committed queries are the simplest and most intuitive, but have a lot of drawbacks when running complex business logic or within a high availability environment.
+Auto committed queries are the most straightforward and most intuitive but have many drawbacks when running complex business logic or within a high availability environment.
 
 #### Run a simple cypher query
 
@@ -134,7 +134,7 @@ $client->runStatement($statement, 'default');
 
 #### Running multiple queries at once
 
-The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database calls, especially useful when using the HTTP protocol.
+The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database calls, especially when using the HTTP protocol.
 
 ```php
 use Laudis\Neo4j\Databags\Statement;
@@ -147,7 +147,7 @@ $results = $client->runStatements([
 
 ### Unmanaged transactions
 
-If you need lower level access to the drivers capabilities, then you want unmanaged transactions. They allow for completely controllable commits and rollbacks.
+If you need lower-level access to the drivers' capabilities, then you want unmanaged transactions. They allow for completely controllable commits and rollbacks.
 
 #### Opening a transaction
 
@@ -207,7 +207,7 @@ foreach ($results as $result) {
 }
 ```
 
-Cypher values and types are mapped to php types and classes:
+Cypher values and types map to these php types and classes:
 
 |Cypher|Php|
 |---|---|
@@ -231,7 +231,7 @@ Cypher values and types are mapped to php types and classes:
 
 (*) A point can be one of four types implementing PointInterface: `\Laudis\Neo4j\Types\CartesianPoint` `\Laudis\Neo4j\Types\Cartesian3DPoint` `\Laudis\Neo4j\Types\WGS84Point` `\Laudis\Neo4j\Types\WGS843DPoint`
 
-If you want the results to be just a set of rows, columns, arrays and scalar types you can use a BasicFormatter:
+If you want the results to be just a set of rows, columns, arrays and scalar types, you can use a BasicFormatter:
 
 ```php
 use Laudis\Neo4j\ClientBuilder;
@@ -256,7 +256,7 @@ foreach ($results as $result) {
 
 ### Differentiating between parameter type
 
-Cypher has lists and maps. This notion can be problematic as the standard php arrays encapsulate both. When you provide an empty array as a parameter, it will be impossible to determine if it is an empty list or map.
+Cypher has lists and maps. This notion can be problematic as the standard php arrays encapsulate both. When you provide an empty array as a parameter, it will be impossible to determine an empty list or map.
 
 The `ParameterHelper` class is the ideal companion for this:
 
@@ -288,7 +288,7 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 | Aura                 |  Yes           |
 | Jolt Protocol        |  Roadmap       |
 
-## In depth requirements
+## In-depth requirements
 
 * PHP >= 7.4
 * A Neo4j database (minimum version 3.5)
@@ -316,9 +316,9 @@ If you plan on using the Bolt protocol, make sure you have the sockets extension
 
 ## Concepts
 
-The client is based on the driver api found [here](https://neo4j.com/docs/driver-manual/current/). Because of this, the client is nothing more than a driver manager. The driver creates sessions. A session runs queries through a transaction.
+The driver API described [here](https://neo4j.com/docs/driver-manual/current/) is the main target of the driver. Because of this, the client is nothing more than a driver manager. The driver creates sessions. A session runs queries through a transaction.
 
-Because of this behavior you can access each concept starting from the client like this:
+Because of this behaviour, you can access each concept starting from the client like this:
 
 ```php
 use Laudis\Neo4j\ClientBuilder;
@@ -345,7 +345,7 @@ A **client** manages **drivers** and routes the queries to the correct drivers b
 
 ### Driver
 
-The **Driver** object is the thread-safe backbone that gives access to Neo4j. It owns a connection pool, through which all database connectivity occurs, and can spawn **sessions** for carrying out work
+The ** driver** object is the thread-safe backbone that gives access to Neo4j. It owns a connection pool and can spawn **sessions** for carrying out work.
 
 ### Session
 
@@ -357,18 +357,18 @@ The **Driver** object is the thread-safe backbone that gives access to Neo4j. It
 
 ### Statement
 
-**Queries** are executable units within **transactions**, and are comprised of a Cypher string and a keyed parameter set. Each query outputs a **result** that may contain zero or more **records**.
+**Queries** are executable units within **transactions** and consist of a Cypher string and a keyed parameter set. Each query outputs a **result** that may contain zero or more **records**.
 
 ### Result
 
 A **result** contains the output from a **query**, made up of header metadata, content **records** and summary metadata. In Neo4j 4.0 and above, applications have control over the flow of result data.
 
 
-## In depth configuration
+## In-depth configuration
 
 ### Url Schemes
 
-The url scheme is the easiest way to configure the driver.
+The URL scheme is the easiest way to configure the driver.
 
 Configuration format:
 ```
