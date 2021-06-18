@@ -12,10 +12,9 @@
 - Intuitive API
 - Extensible
 - Designed, built and tested under close supervision with the official neo4j driver team
-- Validated with [testkit](https://github.com/neo4j-drivers/testkit)*
+- Validated with [testkit](https://github.com/neo4j-drivers/testkit)
 - Fully typed with [psalm](https://psalm.dev/)
 
-*(\*) version 2.1 will integrate psalm*
 ## See the driver in action
 
 An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
