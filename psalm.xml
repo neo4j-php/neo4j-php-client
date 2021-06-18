@@ -2,7 +2,6 @@
 <psalm
     checkForThrowsInGlobalScope="true"
     loadXdebugStub="true"
-    resolveFromConfigFile="true"
     findUnusedVariablesAndParams="true"
     ensureArrayIntOffsetsExist="true"
     ensureArrayStringOffsetsExist="true"
@@ -18,7 +17,35 @@
             <directory name="vendor"/>
         </ignoreFiles>
     </projectFiles>
+    <issueHandlers>
+        <UnusedMethodCall>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+            </errorLevel>
+        </UnusedMethodCall>
+        <DeprecatedMethod>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+                <directory name="src"/>
+            </errorLevel>
+        </DeprecatedMethod>
+        <DeprecatedClass>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+                <directory name="src"/>
+            </errorLevel>
+        </DeprecatedClass>
+        <DeprecatedInterface>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+                <directory name="src"/>
+            </errorLevel>
+        </DeprecatedInterface>
+    </issueHandlers>
     <stubs>
         <file name="./vendor/vimeo/psalm/stubs/ext-ds.phpstub"/>
     </stubs>
-<plugins><pluginClass class="Psalm\PhpUnitPlugin\Plugin"/></plugins></psalm>
+    <plugins>
+        <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
+    </plugins>
+</psalm>

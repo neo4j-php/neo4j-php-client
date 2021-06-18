@@ -13,10 +13,16 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use function count;
 use Ds\Map;
 use Ds\Sequence;
 use Ds\Vector;
+use function gettype;
 use InvalidArgumentException;
+use function is_array;
+use function is_int;
+use function is_object;
+use function is_string;
 use stdClass;
 
 final class ParameterHelper
@@ -38,17 +44,17 @@ final class ParameterHelper
      */
     public static function asParameter($value)
     {
-        return self::emptySequenceToArray($value) ??
-            self::emptyDictionaryToStdClass($value) ??
+        return self::emptyDictionaryToStdClass($value) ??
+            self::emptySequenceToArray($value) ??
             self::filledIterableToArray($value) ??
-            self::stringableToString($value) ??
+            self::stringAbleToString($value) ??
             self::filterInvalidType($value);
     }
 
     /**
      * @param mixed $value
      */
-    private static function stringableToString($value): ?string
+    private static function stringAbleToString($value): ?string
     {
         if (is_object($value) && method_exists($value, '__toString')) {
             return (string) $value;

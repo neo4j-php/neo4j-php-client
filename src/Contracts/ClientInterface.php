@@ -13,34 +13,35 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Ds\Map;
 use Ds\Vector;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 
+/**
+ * @template T
+ */
 interface ClientInterface
 {
-    public const VERSION = '1.0.0-rc1';
-
     /**
-     * Runs a one off transaction with the provided query and parameters over the connection with the provided alias or the master alias othwerise.
+     * Runs a one off transaction with the provided query and parameters over the connection with the provided alias or the master alias otherwise.
      *
      * @param iterable<string, scalar|iterable|null> $parameters
      *
      * @throws Neo4jException
      *
-     * @return Vector<Map<string, scalar|array|null>>
+     * @return T
      */
-    public function run(string $query, iterable $parameters = [], ?string $alias = null): Vector;
+    public function run(string $query, iterable $parameters = [], ?string $alias = null);
 
     /**
      * Runs a one off transaction with the provided statement over the connection with the provided alias or the master alias othwerise.
      *
      * @throws Neo4jException
      *
-     * @return Vector<Map<string, scalar|array|null>>
+     * @return T
      */
-    public function runStatement(Statement $statement, ?string $alias = null): Vector;
+    public function runStatement(Statement $statement, ?string $alias = null);
 
     /**
      * Runs a one off transaction with the provided statements over the connection with the provided alias or the master alias othwerise.
@@ -49,7 +50,7 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return Vector<Vector<Map<string, scalar|array|null>>>
+     * @return Vector<T>
      */
     public function runStatements(iterable $statements, ?string $alias = null): Vector;
 
@@ -59,6 +60,42 @@ interface ClientInterface
      * @param iterable<Statement>|null $statements
      *
      * @throws Neo4jException
+     *
+     * @return UnmanagedTransactionInterface<T>
      */
-    public function openTransaction(?iterable $statements = null, ?string $connectionAlias = null): TransactionInterface;
+    public function beginTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface;
+
+    /**
+     * @return DriverInterface<T>
+     */
+    public function getDriver(?string $alias): DriverInterface;
+
+    /**
+     * @template U
+     *
+     * @param callable(TransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
+
+    /**
+     * @template U
+     *
+     * @param callable(TransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function readTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
+
+    /**
+     * Alias for write transaction.
+     *
+     * @template U
+     *
+     * @param callable(TransactionInterface<T>):U $tsxHandler
+     *
+     * @return U
+     */
+    public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
 }

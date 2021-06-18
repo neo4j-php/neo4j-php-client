@@ -13,22 +13,264 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Ds\Map;
+use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Tests\Base\TransactionTest;
+use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\BasicFormatter;
+use PHPUnit\Framework\TestCase;
 
-final class TransactionIntegrationTest extends TransactionTest
+final class TransactionIntegrationTest extends TestCase
 {
-    protected function makeTransactions(): iterable
+    /** @var ClientInterface<Vector<Map<string, scalar|array|null>>> */
+    private ClientInterface $client;
+
+    public function setUp(): void
     {
-        $builder = ClientBuilder::create();
-        $builder->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j');
-        $builder->addHttpConnection('http', 'http://neo4j:test@neo4j');
-        $client = $builder->build();
+        parent::setUp();
 
-        $tbr = [];
-        $tbr[] = $client->openTransaction(null, 'bolt');
-        $tbr[] = $client->openTransaction(null, 'http');
+        $this->client = ClientBuilder::create()
+            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
+            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
+            ->withDriver('http', 'http://neo4j:test@neo4j')
+            ->withFormatter(new BasicFormatter())
+            ->build();
+    }
 
-        return $tbr;
+    /**
+     * @return non-empty-list<array{0: string}>
+     */
+    public function makeTransactions(): array
+    {
+        return [
+            ['bolt'],
+            ['http'],
+            ['cluster'],
+        ];
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testValidRun(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $response = $transaction->run(<<<'CYPHER'
+MERGE (x:TestNode {test: $test})
+WITH x
+MERGE (y:OtherTestNode {test: $otherTest})
+WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
+RETURN x, y, x.test AS test, map, list
+CYPHER, ['test' => 'a', 'otherTest' => 'b']);
+
+        self::assertEquals(1, $response->count());
+        $map = $response->first();
+        self::assertEquals(5, $map->count());
+        self::assertEquals(['test' => 'a'], $map->get('x'));
+        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals('a', $map->get('test'));
+        self::assertEquals(['c' => 'd'], $map->get('map'));
+        self::assertEquals([1, 2, 3], $map->get('list'));
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testInvalidRun(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $exception = false;
+        try {
+            $transaction->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testValidStatement(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $response = $transaction->runStatement(
+            Statement::create(<<<'CYPHER'
+MERGE (x:TestNode {test: $test})
+WITH x
+MERGE (y:OtherTestNode {test: $otherTest})
+WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
+RETURN x, y, x.test AS test, map, list
+CYPHER, ['test' => 'a', 'otherTest' => 'b'])
+        );
+
+        self::assertEquals(1, $response->count());
+        $map = $response->first();
+        self::assertEquals(5, $map->count());
+        self::assertEquals(['test' => 'a'], $map->get('x'));
+        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals('a', $map->get('test'));
+        self::assertEquals(['c' => 'd'], $map->get('map'));
+        self::assertEquals([1, 2, 3], $map->get('list'));
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testInvalidStatement(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $exception = false;
+        try {
+            $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
+            $transaction->runStatement($statement);
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testStatements(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $params = ['test' => 'a', 'otherTest' => 'b'];
+        $response = $transaction->runStatements([
+            Statement::create(<<<'CYPHER'
+MERGE (x:TestNode {test: $test})
+CYPHER,
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
+MERGE (x:OtherTestNode {test: $otherTest})
+CYPHER,
+                $params
+            ),
+            Statement::create(<<<'CYPHER'
+RETURN 1 AS x
+CYPHER,
+                []
+            ),
+        ]);
+
+        self::assertEquals(3, $response->count());
+        self::assertEquals(0, $response->get(0)->count());
+        self::assertEquals(0, $response->get(1)->count());
+        self::assertEquals(1, $response->get(2)->count());
+        self::assertEquals(1, $response->get(2)->first()->get('x'));
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testInvalidStatements(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $exception = false;
+        try {
+            $params = ['test' => 'a', 'otherTest' => 'b'];
+            $transaction->runStatements([
+                Statement::create(<<<'CYPHER'
+MERGE (x:TestNode {test: $test})
+CYPHER,
+                    $params
+                ),
+                Statement::create(<<<'CYPHER'
+MERGE (x:OtherTestNode {test: $otherTest})
+CYPHER,
+                    $params
+                ),
+                Statement::create('1 AS x;erns', []),
+            ]);
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testCommitValidEmpty(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $result = $transaction->commit();
+        self::assertEquals(0, $result->count());
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testCommitValidFilled(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $result = $transaction->commit([Statement::create(<<<'CYPHER'
+UNWIND [1, 2, 3] AS x
+RETURN x
+CYPHER
+        )]);
+        self::assertEquals(1, $result->count());
+        self::assertEquals(3, $result->first()->count());
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testCommitValidFilledWithInvalidStatement(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $exception = false;
+        try {
+            $transaction->commit([Statement::create('adkjbehqjk')]);
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testCommitInvalid(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction->commit();
+        $exception = false;
+        try {
+            $transaction->commit();
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testRollbackValid(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction->rollback();
+        self::assertTrue(true);
+    }
+
+    /**
+     * @dataProvider makeTransactions
+     */
+    public function testRollbackInvalid(string $alias): void
+    {
+        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction->rollback();
+        $exception = false;
+        try {
+            $transaction->rollback();
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
     }
 }

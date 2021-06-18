@@ -54,20 +54,20 @@ final class StatementStatistics implements IteratorAggregate
     private int $systemUpdates;
 
     public function __construct(
-        int $nodesCreated,
-        int $nodesDeleted,
-        int $relationshipsCreated,
-        int $relationshipsDeleted,
-        int $propertiesSet,
-        int $labelsAdded,
-        int $labelsRemoved,
-        int $indexesAdded,
-        int $indexesRemoved,
-        int $constraintsAdded,
-        int $constraintsRemoved,
-        bool $containsUpdates,
-        bool $containsSystemUpdates,
-        int $systemUpdates
+        int $nodesCreated = 0,
+        int $nodesDeleted = 0,
+        int $relationshipsCreated = 0,
+        int $relationshipsDeleted = 0,
+        int $propertiesSet = 0,
+        int $labelsAdded = 0,
+        int $labelsRemoved = 0,
+        int $indexesAdded = 0,
+        int $indexesRemoved = 0,
+        int $constraintsAdded = 0,
+        int $constraintsRemoved = 0,
+        bool $containsUpdates = false,
+        bool $containsSystemUpdates = false,
+        int $systemUpdates = 0
     ) {
         $this->nodesCreated = $nodesCreated;
         $this->nodesDeleted = $nodesDeleted;
@@ -173,6 +173,19 @@ final class StatementStatistics implements IteratorAggregate
             $this->containsSystemUpdates || $resultStats->containsSystemUpdates,
             $this->systemUpdates + $resultStats->systemUpdates
         );
+    }
+
+    /**
+     * @param iterable<StatementStatistics> $stats
+     */
+    public static function aggregate(iterable $stats): StatementStatistics
+    {
+        $tbr = new StatementStatistics();
+        foreach ($stats as $stat) {
+            $tbr = $tbr->merge($stat);
+        }
+
+        return $tbr;
     }
 
     public function getIterator(): ArrayIterator

@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+/**
+ * @todo deprecate and create Query Object
+ */
 final class Statement
 {
     private string $text;

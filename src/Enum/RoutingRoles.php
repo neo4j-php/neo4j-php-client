@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Laudis Neo4j package.
  *
@@ -18,11 +20,11 @@ use Laudis\TypedEnum\TypedEnum;
  * @method static RoutingRoles FOLLOWER()
  * @method static RoutingRoles ROUTE()
  *
- * @extends TypedEnum<string>
+ * @extends TypedEnum<list<string>>
  */
 final class RoutingRoles extends TypedEnum
 {
-    private const LEADER = 'WRITE';
-    private const FOLLOWER = 'READ';
-    private const ROUTE = 'ROUTE';
+    private const LEADER = ['WRITE', 'LEADER'];
+    private const FOLLOWER = ['READ', 'FOLLOWER'];
+    private const ROUTE = ['ROUTE'];
 }

@@ -20,6 +20,7 @@ services:
             - 9000
         environment:
             - XDEBUG_MODE=coverage
+            - NEO4J_VERSIONS_AVAILABLE=42,41,40,35
     client-80:
         build:
             context: ../
@@ -34,6 +35,8 @@ services:
             - neo4j-41
             - neo4j-40
             - neo4j-35
+        environment:
+            - NEO4J_VERSIONS_AVAILABLE=42,41,40,35
     client-74:
         build:
             context: ../
@@ -48,6 +51,8 @@ services:
             - neo4j-41
             - neo4j-40
             - neo4j-35
+        environment:
+            - NEO4J_VERSIONS_AVAILABLE=42,41,40,35
     neo4j-42:
         networks:
             - neo4j

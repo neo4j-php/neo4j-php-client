@@ -1,4 +1,4 @@
-FROM php:7.4-cli
+FROM php:8.0-cli
 RUN apt-get update && apt-get install -y \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
@@ -16,17 +16,14 @@ RUN apt-get update && apt-get install -y \
     && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
     && chmod +x /usr/bin/cc-test-reporter
 
-ARG WITH_XDEBUG=false
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug
 
-RUN if [ $WITH_XDEBUG = "true" ] ; then \
-        pecl install channel://pecl.php.net/xdebug-2.9.3; \
-        docker-php-ext-enable xdebug; \
-fi;
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /opt/project
 
-COPY composer.json composer.lock phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php_cs ./
+COPY composer.json composer.lock phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.php ./
 COPY src/ src/
 COPY tests/ tests/
 COPY .git/ .git/

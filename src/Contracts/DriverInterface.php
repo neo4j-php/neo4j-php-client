@@ -13,7 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+use Laudis\Neo4j\Databags\SessionConfiguration;
+
+/**
+ * @template T
+ *
+ * @psalm-type ParsedUrl = array{host: string, pass: string|null, path: string, port: int, query: array<string,string>, scheme: string, user: string|null}
+ *
+ * @psalm-type BasicDriver = DriverInterface<\Ds\Vector<\Ds\Map<string, scalar|array|null>>>
+ */
 interface DriverInterface
 {
-    public function aquireSession(): SessionInterface;
+    /**
+     * @return SessionInterface<T>
+     */
+    public function createSession(?SessionConfiguration $config = null): SessionInterface;
 }

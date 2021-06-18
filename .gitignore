@@ -6,3 +6,5 @@ phpunit.xml
 .idea/
 clover.xml
 cc-test-reporter
+/run-pipeline.sh
+composer.lock
