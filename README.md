@@ -12,9 +12,10 @@
  - Intuitive API
  - Extensible
  - Designed, built and tested under close supervision with the official neo4j driver team
- - Validated with [testkit]()
- - Fully typed with [psalm]()
+ - Validated with [testkit](https://github.com/neo4j-drivers/testkit)*
+ - Fully typed with [psalm](https://psalm.dev/)
 
+*(\*) full testkit integration is planned for version 2.1*
 ## See the driver in action
 
 An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an api for the classic movies example of neo4j.
@@ -26,7 +27,7 @@ An example project exists on the [neo4j github](https://github.com/neo4j-example
 ```bash
 composer require laudis/neo4j-php-client
 ```
-Find more details [here]()
+Find more details [here](#in-depth-requirements)
 
 ### Step 2: create a client
 
@@ -68,10 +69,10 @@ You can control the driver using three different approaches:
 
 ### Transaction functions
 
-Transaction functions are the **de facto** standard when using the driver. It is the most portable as it is resistant to a lot of the pitfalls when first developing with high availability solutions such as [Neo4j aura]() or a [cluster]().
+Transaction functions are the **de facto** standard when using the driver. It is the most portable as it is resistant to a lot of the pitfalls when first developing with high availability solutions such as [Neo4j aura](https://neo4j.com/blog/neo4j-aura-enterprise-ga-release/) or a [cluster](https://neo4j.com/docs/operations-manual/current/clustering/).
 
 Transaction functions are managed by the driver:
- - It **re-executes** the function in case of a [transient error]().
+ - It **re-executes** the function in case of a [transient error](https://neo4j.com/docs/status-codes/current/#_classifications).
  - It **commits** the transaction on successful execution
  - It **rolls back** the transaction in case of a timeout.
  - It **routes** the execution to a relevant follower or leader server when the neo4j protocol is enabled.
