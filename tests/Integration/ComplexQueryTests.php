@@ -19,6 +19,7 @@ use Generator;
 use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\ParameterHelper;
 use PHPUnit\Framework\TestCase;
 
@@ -34,6 +35,7 @@ final class ComplexQueryTests extends TestCase
             ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
             ->withDriver('http', 'http://neo4j:test@neo4j')
             ->withDriver('cluster', 'neo4j://neo4j:test@core1')
+            ->withFormatter(new BasicFormatter())
             ->build();
     }
 

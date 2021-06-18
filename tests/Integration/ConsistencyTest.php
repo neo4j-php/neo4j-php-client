@@ -18,6 +18,7 @@ use Ds\Vector;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
 
 final class ConsistencyTest extends TestCase
@@ -32,6 +33,7 @@ final class ConsistencyTest extends TestCase
             ->withDriver('http', 'http://neo4j:test@neo4j')
             ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
             ->withDriver('cluster', 'neo4j://neo4j:test@core1')
+            ->withFormatter(new BasicFormatter())
             ->build();
     }
 

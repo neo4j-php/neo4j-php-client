@@ -22,6 +22,7 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
 
 final class ClientIntegrationTest extends TestCase
@@ -52,6 +53,7 @@ final class ClientIntegrationTest extends TestCase
             ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
             ->addHttpConnection('http', 'http://neo4j:test@neo4j')
             ->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true))
+            ->withFormatter(new BasicFormatter())
             ->build();
     }
 

@@ -19,6 +19,7 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
 
 final class TransactionIntegrationTest extends TestCase
@@ -34,6 +35,7 @@ final class TransactionIntegrationTest extends TestCase
             ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
             ->withDriver('cluster', 'neo4j://neo4j:test@core1')
             ->withDriver('http', 'http://neo4j:test@neo4j')
+            ->withFormatter(new BasicFormatter())
             ->build();
     }
 

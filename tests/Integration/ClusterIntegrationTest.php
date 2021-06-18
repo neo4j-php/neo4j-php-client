@@ -18,6 +18,7 @@ use Ds\Vector;
 use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
 
 final class ClusterIntegrationTest extends TestCase
@@ -31,6 +32,7 @@ final class ClusterIntegrationTest extends TestCase
         $boltInjections = BoltConfiguration::create()->withAutoRouting(true);
         $this->client = ClientBuilder::create()
             ->addBoltConnection('cluster', 'bolt://neo4j:test@core1', $boltInjections)
+            ->withFormatter(new BasicFormatter())
             ->build();
     }
 

@@ -22,6 +22,8 @@ use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
+use Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator;
+use Laudis\Neo4j\Formatter\Specialised\HttpOGMStringTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMTranslator;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -50,6 +52,17 @@ final class OGMFormatter implements FormatterInterface
     {
         $this->boltTranslator = $boltTranslator;
         $this->httpTranslator = $httpTranslator;
+    }
+
+    public static function create(): OGMFormatter
+    {
+        return new self(
+            new BoltOGMTranslator(),
+            new HttpOGMTranslator(
+                new HttpOGMArrayTranslator(),
+                new HttpOGMStringTranslator()
+            )
+        );
     }
 
     /**

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use Ds\Map;
-use Ds\Vector;
 use function http_build_query;
 use function in_array;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -26,13 +25,15 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\HttpPsrBindings;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
-use Laudis\Neo4j\Formatter\BasicFormatter;
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Http\HttpConfig;
+use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\CypherMap;
 
 /**
  * @template T
  *
- * @see Client::create()
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
 final class ClientBuilder
 {
@@ -57,11 +58,11 @@ final class ClientBuilder
     }
 
     /**
-     * @return ClientBuilder<Vector<Map<string, scalar|array|null>>>
+     * @return ClientBuilder<CypherList<CypherMap<OGMTypes>>>
      */
     public static function create(): ClientBuilder
     {
-        return new self(DriverConfiguration::default(), new BasicFormatter(), new Map(), null);
+        return new self(DriverConfiguration::default(), OGMFormatter::create(), new Map(), null);
     }
 
     /**
