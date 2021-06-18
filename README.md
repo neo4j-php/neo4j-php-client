@@ -7,7 +7,7 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/275c2269aa54c2c43210/test_coverage)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/test_coverage)
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/laudis-technologies/neo4j-php-client/blob/main/LICENSE)
 
-## Effortlessly control to worlds' most powerful graph database
+## Control to worlds' most powerful graph database
 - Pick and choose your drivers with easy configuration
 - Intuitive API
 - Extensible
@@ -15,7 +15,7 @@
 - Validated with [testkit](https://github.com/neo4j-drivers/testkit)*
 - Fully typed with [psalm](https://psalm.dev/)
 
-*(\*) version 2.1 will integrate psalm *
+*(\*) version 2.1 will integrate psalm*
 ## See the driver in action
 
 An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
@@ -45,7 +45,7 @@ $client = ClientBuilder::create()
 
 You have now created a client with **bolt, HTTPS and neo4j drivers**. The default driver that the client will use is **bolt**.
 
-Read more about the URLs and how to use them to configure drivers [here]().
+Read more about the URLs and how to use them to configure drivers [here](#in-depth-configuration).
 
 ### Step 3: run a transaction
 
@@ -82,28 +82,28 @@ The driver manages transaction functions:
 Some examples:
 
 ```php
-use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 
 // Do a simple merge and return the result
-$result = $client->writeTransaction(static function (UnmanagedTransactionInterface $tsx) {
+$result = $client->writeTransaction(static function (TransactionInterface $tsx) {
     $result = $tsx->run('MERGE (x {y: "z"}:X) return x');
     return $result->first()->get('x')['y'];
 });
 
 // Will result in an error
-$client->readTransaction(static function (UnmanagedTransactionInterface $tsx) {
+$client->readTransaction(static function (TransactionInterface $tsx) {
     $tsx->run('MERGE (x {y: "z"}:X) return x');
 });
 
 // This is a poorly designed transaction function
-$client->writeTransaction(static function (UnmanagedTransactionInterface $tsx) use ($externalCounter) {
+$client->writeTransaction(static function (TransactionInterface $tsx) use ($externalCounter) {
     $externalCounter->incrementNodesCreated();
     $tsx->run('MERGE (x {y: $id}:X) return x', ['id' => Uuid::v4()]);
 });
 
 // This achieves the same effect but is safe in case it should be retried. The function is now idempotent.
 $id = Uuid::v4();
-$client->writeTransaction(static function (UnmanagedTransactionInterface $tsx) use ($id) {
+$client->writeTransaction(static function (TransactionInterface $tsx) use ($id) {
     $tsx->run('MERGE (x {y: $id}:X) return x', ['id' => $id]);
 });
 $externalCounter->incrementNodesCreated();
