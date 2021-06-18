@@ -13,17 +13,23 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
+use function count;
+use function date_get_last_errors;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
 use function explode;
 use Iterator;
+use function json_encode;
+use const JSON_THROW_ON_ERROR;
+use JsonException;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Time;
+use RuntimeException;
 use function str_pad;
 use function substr;
 
@@ -101,11 +107,17 @@ final class HttpOGMStringTranslator
         return new Duration($months, $days, $seconds, $nanoseconds);
     }
 
+    /**
+     * @throws JsonException
+     */
     private function translateDate(string $value): Date
     {
         $epoch = new DateTimeImmutable('@0');
-        /** @psalm-suppress PossiblyFalseReference */
-        $diff = DateTimeImmutable::createFromFormat('Y-m-d', $value)->diff($epoch);
+        $date = DateTimeImmutable::createFromFormat('Y-m-d', $value);
+        if ($date === false) {
+            throw new RuntimeException(json_encode(date_get_last_errors(), JSON_THROW_ON_ERROR));
+        }
+        $diff = $date->diff($epoch);
 
         return new Date((int) $diff->format('%a'));
     }
@@ -119,6 +131,9 @@ final class HttpOGMStringTranslator
         return new Time(((int) $values[0]) * 60 * 60 + ((int) $values[1]) * 60);
     }
 
+    /**
+     * @throws Exception
+     */
     private function translateDateTime(string $value): DateTime
     {
         [$date, $time] = explode('T', $value);
@@ -131,34 +146,41 @@ final class HttpOGMStringTranslator
         [$time, $milliseconds] = explode('.', $time);
 
         $date = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
+        if ($date === false) {
+            throw new RuntimeException(json_encode(date_get_last_errors(), JSON_THROW_ON_ERROR));
+        }
 
         if ($tz !== null) {
-            /** @psalm-suppress PossiblyFalseReference */
             return new DateTime($date->getTimestamp(), (int) $milliseconds * 1000000, $tz);
         }
 
-        /** @psalm-suppress PossiblyFalseReference */
         return new DateTime($date->getTimestamp(), (int) $milliseconds * 1000000, 0);
     }
 
+    /**
+     * @throws JsonException
+     */
     private function translateLocalDateTime(string $value): LocalDateTime
     {
         [$date, $time] = explode('T', $value);
         [$time, $milliseconds] = explode('.', $time);
 
         $date = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
+        if ($date === false) {
+            throw new RuntimeException(json_encode(date_get_last_errors(), JSON_THROW_ON_ERROR));
+        }
 
-        /** @psalm-suppress PossiblyFalseReference */
         return new LocalDateTime($date->getTimestamp(), (int) $milliseconds * 1000000);
     }
 
     /**
      * @psalm-suppress all
+     *
+     * @throws Exception
      */
     private function translateLocalTime(string $value): LocalTime
     {
-        $date = new DateTimeImmutable($value);
-        $timestamp = $date->getTimestamp();
+        $timestamp = (new DateTimeImmutable($value))->getTimestamp();
 
         $hours = (int) date('H', $timestamp);
         $minutes = (int) date('i', $timestamp);
