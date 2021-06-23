@@ -107,7 +107,7 @@ final class ClientBuilder
         $parsedUrl = Uri::create($url);
         $options = $config->getSslContextOptions();
         $postScheme = '';
-        if ($options !== []) {
+        if ($options && $options !== []) {
             if (($options['allow_self_signed'] ?? false) === true) {
                 $postScheme = '+ssc';
             } else {
