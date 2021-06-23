@@ -40,7 +40,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         $explosion = explode('+', $scheme, 2);
         $sslConfig = $explosion[1] ?? '';
 
-        if (str_starts_with('s', $host)) {
+        if (str_starts_with('s', $sslConfig)) {
             $this->enableSsl($host, $sslConfig, $socket);
         }
 
