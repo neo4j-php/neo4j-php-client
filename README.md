@@ -15,6 +15,7 @@
 - Designed, built and tested under close supervision with the official neo4j driver team
 - Validated with [testkit](https://github.com/neo4j-drivers/testkit)
 - Fully typed with [psalm](https://psalm.dev/)
+- Bolt, HTTP and auto routed drivers available
 
 ## See the driver in action
 
@@ -36,9 +37,9 @@ use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\ClientBuilder;
 
 $client = ClientBuilder::create()
-    ->withDriver('bolt', 'bolt+s://user:password@localhost')
-    ->withDriver('https', 'https://test.com', Authenticate::basic('user', 'password'))
-    ->withDriver('neo4j', 'neo4j://neo4j.test.com?database=my-database', Authenticate::kerberos('token'))
+    ->withDriver('bolt', 'bolt+s://user:password@localhost') // creates a bolt driver
+    ->withDriver('https', 'https://test.com', Authenticate::basic('user', 'password')) // creates an http driver
+    ->withDriver('neo4j', 'neo4j://neo4j.test.com?database=my-database', Authenticate::kerberos('token')) // creates an auto routed driver
     ->withDefaultDriver('bolt')
     ->build();
 ```
@@ -50,9 +51,9 @@ Read more about the URLs and how to use them to configure drivers [here](#in-dep
 ### Step 3: run a transaction
 
 ```php
-use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 
-$result = $client->writeTransaction(static function (UnmanagedTransactionInterface $tsx) {
+$result = $client->writeTransaction(static function (TransactionInterface $tsx) {
     $result = $tsx->run('MERGE (x {y: "z"}:X) return x');
     return $result->first()->get('x')['y'];
 });
@@ -377,14 +378,15 @@ Configuration format:
 
 Default configuration:
 ```
-neo4j://localhost:7678?database=neo4j
+bolt://localhost:7687?database=neo4j
 ```
-
 
 #### Scheme configuration matrix
 
-| driver| scheme| valid certificate | self-signed certificate                       |
-|-------|-------|-------------------|-----------------------------------------------|
-| neo4j | neo4j | neo4j+s           | neo4j+ssc                                     |
-| bolt  | bolt  | bolt+s            | bolt+ssc                                      |
-| http  | http  | https             | configured through PSR Client implementation  |
+This library supports three drivers: bolt, HTTP and neo4j. The scheme part of the url determines the driver.
+
+| driver| scheme| valid certificate | self-signed certificate                       | function                      |
+|-------|-------|-------------------|-----------------------------------------------|-------------------------------|
+| neo4j | neo4j | neo4j+s           | neo4j+ssc                                     | Client side routing over bolt |
+| bolt  | bolt  | bolt+s            | bolt+ssc                                      | Single server over bolt       |
+| http  | http  | https             | configured through PSR Client implementation  | Single server over HTTP       |
