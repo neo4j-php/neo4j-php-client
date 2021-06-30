@@ -14,11 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use Ds\Map;
-use function in_array;
 use InvalidArgumentException;
 use function is_array;
 use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -29,10 +27,7 @@ use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
-use Laudis\Neo4j\Http\HttpDriver;
-use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Laudis\Neo4j\Types\CypherList;
-use Psr\Http\Message\UriInterface;
 use function sprintf;
 
 /**
@@ -136,24 +131,6 @@ final class Client implements ClientInterface
     }
 
     /**
-     * @param ParsedUrl $parsedUrl
-     *
-     * @return HttpDriver<T>
-     */
-    private function makeHttpDriver(Uri $uri, AuthenticateInterface $authenticate): HttpDriver
-    {
-        return HttpDriver::createWithFormatter($uri, $this->formatter, $this->configuration, $authenticate);
-    }
-
-    /**
-     * @return BoltDriver<T>
-     */
-    private function makeBoltDriver(Uri $uri, AuthenticateInterface $authenticate): BoltDriver
-    {
-        return BoltDriver::createWithFormatter($uri, $this->formatter, $this->configuration, $authenticate);
-    }
-
-    /**
      * @template U as DriverInterface
      *
      * @param callable():U $factory
@@ -172,37 +149,14 @@ final class Client implements ClientInterface
     }
 
     /**
-     * @return Neo4jDriver<T>
-     */
-    private function makeNeo4jDriver(UriInterface $uri, AuthenticateInterface $authenticate): Neo4jDriver
-    {
-        return Neo4jDriver::createWithFormatter($uri, $this->formatter, $this->configuration, $authenticate);
-    }
-
-    /**
      * @param ParsedUrl $parsedUrl
      *
      * @return DriverInterface<T>
      */
     private function makeDriver(Uri $uri, string $alias, AuthenticateInterface $authentication): DriverInterface
     {
-        $scheme = $uri->getScheme();
-        $scheme = $scheme === '' ? 'bolt' : $scheme;
-
-        if (in_array($scheme, ['bolt', 'bolt+s', 'bolt+ssc'])) {
-            return $this->cacheDriver($alias, function () use ($uri, $authentication) {
-                return $this->makeBoltDriver($uri, $authentication);
-            });
-        }
-
-        if (in_array($scheme, ['neo4j', 'neo4j+s', 'neo4j+ssc'])) {
-            return $this->cacheDriver($alias, function () use ($uri, $authentication) {
-                return $this->makeNeo4jDriver($uri, $authentication);
-            });
-        }
-
         return $this->cacheDriver($alias, function () use ($uri, $authentication) {
-            return $this->makeHttpDriver($uri, $authentication);
+            return DriverFactory::create($uri, $this->configuration, $authentication, $this->formatter);
         });
     }
 }
