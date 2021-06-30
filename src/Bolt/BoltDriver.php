@@ -91,7 +91,6 @@ final class BoltDriver implements DriverInterface
             );
         }
 
-
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl(),
