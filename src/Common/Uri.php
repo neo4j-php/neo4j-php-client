@@ -20,6 +20,9 @@ use Psr\Http\Message\UriInterface;
 use function sprintf;
 use function strtolower;
 
+/**
+ * @psalm-immutable
+ */
 final class Uri implements UriInterface
 {
     private string $scheme;
@@ -48,6 +51,9 @@ final class Uri implements UriInterface
         $this->fragment = $fragment;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function create(string $uri = ''): self
     {
         $parsedUrl = parse_url($uri);
@@ -261,6 +267,9 @@ final class Uri implements UriInterface
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function filterPort(?int $port): ?int
     {
         if ($port === null) {

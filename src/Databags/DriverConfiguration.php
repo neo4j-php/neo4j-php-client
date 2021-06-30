@@ -44,6 +44,9 @@ final class DriverConfiguration
         return new self($userAgent, $httpPsrBindings);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function default(): self
     {
         return new self(
