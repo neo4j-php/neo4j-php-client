@@ -29,14 +29,34 @@ use stdClass;
 
 final class ParameterHelper
 {
+    /**
+     * @template T
+     *
+     * @param iterable<array-key, T> $iterable
+     *
+     * @return CypherList<T>
+     */
     public static function asList(iterable $iterable): CypherList
     {
         return new CypherList(new Vector($iterable));
     }
 
+    /**
+     * @template T
+     *
+     * @param iterable<array-key, T> $iterable
+     *
+     * @return CypherMap<T>
+     */
     public static function asMap(iterable $iterable): CypherMap
     {
-        return new CypherMap(new Map($iterable));
+        /** @var Map<string, mixed> $map */
+        $map = new Map();
+        foreach ($iterable as $key => $value) {
+            $map->put((string) $key, $value);
+        }
+
+        return new CypherMap($map);
     }
 
     /**
