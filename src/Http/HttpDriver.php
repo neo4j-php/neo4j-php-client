@@ -87,33 +87,37 @@ final class HttpDriver implements DriverInterface
     }
 
     /**
-     * @param string|UriInterface $uri
-     *
-     * @return self<OGMResults>
-     */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
-    {
-        return self::createWithFormatter($uri, OGMFormatter::create(), $configuration, $authenticate);
-    }
-
-    /**
      * @template U
      *
-     * @param string|UriInterface   $uri
      * @param FormatterInterface<U> $formatter
+     * @param string|UriInterface   $uri
      *
-     * @return self<U>
+     * @return (
+     *           func_num_args() is 4
+     *           ? self<U>
+     *           : self<OGMResults>
+     *           )
+     * @psalm-mutation-free
      */
-    public static function createWithFormatter($uri, FormatterInterface $formatter, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
+    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
         }
 
+        if ($formatter !== null) {
+            return new self(
+                $uri,
+                $configuration ?? DriverConfiguration::default(),
+                $formatter,
+                $authenticate ?? Authenticate::fromUrl()
+            );
+        }
+
         return new self(
             $uri,
             $configuration ?? DriverConfiguration::default(),
-            $formatter,
+            OGMFormatter::create(),
             $authenticate ?? Authenticate::fromUrl()
         );
     }
