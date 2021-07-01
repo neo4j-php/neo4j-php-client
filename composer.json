@@ -48,7 +48,8 @@
         "kriswallsmith/buzz": "^1.2",
         "vimeo/psalm": "^4.7",
         "friendsofphp/php-cs-fixer": "^2.19",
-        "psalm/plugin-phpunit": "^0.15.1"
+        "psalm/plugin-phpunit": "^0.15.1",
+        "vlucas/phpdotenv": "^5.0"
     },
     "autoload": {
         "psr-4": {

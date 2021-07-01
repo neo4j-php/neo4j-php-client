@@ -13,9 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Dotenv\Dotenv;
+use function explode;
 use InvalidArgumentException;
-use Laudis\Neo4j\Bolt\BoltConfiguration;
+use function is_string;
 use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
@@ -36,7 +39,17 @@ final class ClientIntegrationTest extends TestCase
      */
     public function connectionAliases(): iterable
     {
-        return [['bolt'], ['http'], ['cluster']];
+        Dotenv::createImmutable(__DIR__.'/../../')->safeLoad();
+        $connections = $this->getConnections();
+
+        $tbr = [];
+        foreach ($connections as $i => $connection) {
+            $uri = Uri::create($connection);
+            $tbr[] = [$uri->getScheme().'_'.$i];
+        }
+
+        /** @var non-empty-array<array-key, array{0: string}> */
+        return $tbr;
     }
 
     protected function setUp(): void
@@ -50,12 +63,15 @@ final class ClientIntegrationTest extends TestCase
      */
     public function createClient(): ClientInterface
     {
-        return ClientBuilder::create()
-            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
-            ->addHttpConnection('http', 'http://neo4j:test@neo4j')
-            ->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true))
-            ->withFormatter(new BasicFormatter())
-            ->build();
+        $connections = $this->getConnections();
+
+        $builder = ClientBuilder::create();
+        foreach ($connections as $i => $connection) {
+            $uri = Uri::create($connection);
+            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection);
+        }
+
+        return $builder->withFormatter(new BasicFormatter())->build();
     }
 
     public function testEqualEffect(): void
@@ -65,16 +81,25 @@ final class ClientIntegrationTest extends TestCase
             ['email' => 'a@b.c', 'uuid' => 'cc60fd69-a92b-47f3-9674-2f27f3437d66']
         );
 
-        $x = $this->client->runStatement($statement, 'bolt');
-        $y = $this->client->runStatement($statement, 'http');
+        $prev = null;
+        foreach ($this->connectionAliases() as $current) {
+            if ($prev !== null) {
+                $x = $this->client->runStatement($statement, $prev);
+                $y = $this->client->runStatement($statement, $current[0]);
 
-        self::assertEquals($x, $y);
-        self::assertEquals($x->toArray(), $y->toArray());
+                self::assertEquals($x, $y);
+                self::assertEquals($x->toArray(), $y->toArray());
+            }
+            $prev = $current[0];
+        }
     }
 
-    public function testAvailabilityFullImplementation(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testAvailabilityFullImplementation(string $alias): void
     {
-        $results = $this->client->getDriver('cluster')
+        $results = $this->client->getDriver($alias)
             ->createSession()
             ->beginTransaction()
             ->run('UNWIND [1] AS x RETURN x')
@@ -84,23 +109,26 @@ final class ClientIntegrationTest extends TestCase
         self::assertEquals(1, $results);
     }
 
-    public function testTransactionFunction(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testTransactionFunction(string $alias): void
     {
         $result = $this->client->transaction(static function (TransactionInterface $tsx) {
             return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
-        });
+        }, $alias);
 
         self::assertEquals(1, $result);
 
         $result = $this->client->readTransaction(static function (TransactionInterface $tsx) {
             return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
-        });
+        }, $alias);
 
         self::assertEquals(1, $result);
 
         $result = $this->client->writeTransaction(static function (TransactionInterface $tsx) {
             return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
-        });
+        }, $alias);
 
         self::assertEquals(1, $result);
     }
@@ -256,5 +284,18 @@ CYPHER,
         $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the connection pool');
 
         $this->client->run('RETURN 1 AS x', [], 'ghqkneq;tr');
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function getConnections(): array
+    {
+        $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+        if (!is_string($connections)) {
+            return [];
+        }
+
+        return explode(',', $connections);
     }
 }
