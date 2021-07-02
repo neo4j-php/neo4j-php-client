@@ -6,6 +6,8 @@ on:
 
 jobs:
   tests:
+    env:
+      NEO4J_CONNECTIONS: bolt://neo4j:test@neo4j,http://neo4j:test@neo4j,neo4j://neo4j:test@core1
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
