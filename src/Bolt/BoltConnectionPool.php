@@ -52,7 +52,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         // Pass a standard option to enable ssl as there is no direct flag
         // and \Bolt\Bolt only turns on ssl if an option is passed.
         $options = ['verify_peer' => true];
-        if (filter_var($host, FILTER_VALIDATE_IP)) {
+        if (!filter_var($host, FILTER_VALIDATE_IP)) {
             $options['SNI_enabled'] = true;
         }
         if ($sslConfig === 's') {
