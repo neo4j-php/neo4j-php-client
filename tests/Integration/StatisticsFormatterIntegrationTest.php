@@ -14,26 +14,15 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Exception;
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\StatementStatistics;
 use Laudis\Neo4j\Formatter\StatisticsFormatter;
-use PHPUnit\Framework\TestCase;
 
-final class StatisticsFormatterIntegrationTest extends TestCase
+final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    /** @var ClientInterface<StatementStatistics> */
-    private ClientInterface $client;
-
-    protected function setUp(): void
+    protected function formatter(): FormatterInterface
     {
-        parent::setUp();
-        $this->client = ClientBuilder::create()
-            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
-            ->withDriver('http', 'http://neo4j:test@neo4j')
-            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
-            ->withFormatter(new StatisticsFormatter())
-            ->build();
+        return new StatisticsFormatter();
     }
 
     /**
@@ -52,13 +41,5 @@ final class StatisticsFormatterIntegrationTest extends TestCase
     public function testAcceptanceWrite(string $alias): void
     {
         self::assertEquals(new StatementStatistics(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias));
-    }
-
-    /**
-     * @return array<array{0: string}>
-     */
-    public function connectionAliases(): array
-    {
-        return [['bolt'], ['http'], ['cluster']];
     }
 }

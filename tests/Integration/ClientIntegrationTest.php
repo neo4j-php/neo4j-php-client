@@ -13,69 +13,32 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Dotenv\Dotenv;
-use function explode;
+use function count;
 use InvalidArgumentException;
-use function is_string;
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ *
+ * @extends EnvironmentAwareIntegrationTest<BasicResults>
  */
-final class ClientIntegrationTest extends TestCase
+final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    /** @var ClientInterface<BasicResults> */
-    private ClientInterface $client;
-
-    /**
-     * @return non-empty-array<array-key, array{0: string}>
-     */
-    public function connectionAliases(): iterable
+    protected function formatter(): FormatterInterface
     {
-        Dotenv::createImmutable(__DIR__.'/../../')->safeLoad();
-        $connections = $this->getConnections();
-
-        $tbr = [];
-        foreach ($connections as $i => $connection) {
-            $uri = Uri::create($connection);
-            $tbr[] = [$uri->getScheme().'_'.$i];
-        }
-
-        /** @var non-empty-array<array-key, array{0: string}> */
-        return $tbr;
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->client = $this->createClient();
-    }
-
-    /**
-     * @return ClientInterface<BasicResults>
-     */
-    public function createClient(): ClientInterface
-    {
-        $connections = $this->getConnections();
-
-        $builder = ClientBuilder::create();
-        foreach ($connections as $i => $connection) {
-            $uri = Uri::create($connection);
-            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection);
-        }
-
-        return $builder->withFormatter(new BasicFormatter())->build();
+        /** @psalm-suppress InvalidReturnStatement */
+        return new BasicFormatter();
     }
 
     public function testEqualEffect(): void
     {
+        if (count($this->connectionAliases()) === 1) {
+            self::markTestSkipped('Only one connection alias provided. Comparison is impossible.');
+        }
         $statement = new Statement(
             'merge(u:User{email: $email}) on create set u.uuid=$uuid return u',
             ['email' => 'a@b.c', 'uuid' => 'cc60fd69-a92b-47f3-9674-2f27f3437d66']
@@ -284,18 +247,5 @@ CYPHER,
         $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the connection pool');
 
         $this->client->run('RETURN 1 AS x', [], 'ghqkneq;tr');
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function getConnections(): array
-    {
-        $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
-        if (!is_string($connections)) {
-            return [];
-        }
-
-        return explode(',', $connections);
     }
 }
