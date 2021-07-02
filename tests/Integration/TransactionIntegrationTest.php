@@ -13,52 +13,29 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ *
+ * @extends EnvironmentAwareIntegrationTest<\Laudis\Neo4j\Types\CypherList<\Laudis\Neo4j\Types\CypherMap<scalar|array|null>>>
  */
-final class TransactionIntegrationTest extends TestCase
+final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    /** @var ClientInterface<BasicResults> */
-    private ClientInterface $client;
-
-    public function setUp(): void
+    protected function formatter(): FormatterInterface
     {
-        parent::setUp();
-
-        $this->client = ClientBuilder::create()
-            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
-            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
-            ->withDriver('http', 'http://neo4j:test@neo4j')
-            ->withFormatter(new BasicFormatter())
-            ->build();
+        return new BasicFormatter();
     }
 
     /**
-     * @return non-empty-list<array{0: string}>
-     */
-    public function makeTransactions(): array
-    {
-        return [
-            ['bolt'],
-            ['http'],
-            ['cluster'],
-        ];
-    }
-
-    /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testValidRun(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
-        $response = $transaction->run(<<<'CYPHER'
+        $response = $this->client->beginTransaction(null, $alias)->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
@@ -77,7 +54,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testInvalidRun(string $alias): void
     {
@@ -92,12 +69,11 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testValidStatement(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
-        $response = $transaction->runStatement(
+        $response = $this->client->beginTransaction(null, $alias)->runStatement(
             Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
@@ -118,7 +94,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testInvalidStatement(string $alias): void
     {
@@ -134,7 +110,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testStatements(string $alias): void
     {
@@ -166,7 +142,7 @@ CYPHER,
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testInvalidStatements(string $alias): void
     {
@@ -194,22 +170,20 @@ CYPHER,
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testCommitValidEmpty(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
-        $result = $transaction->commit();
+        $result = $this->client->beginTransaction(null, $alias)->commit();
         self::assertEquals(0, $result->count());
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testCommitValidFilled(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
-        $result = $transaction->commit([Statement::create(<<<'CYPHER'
+        $result = $this->client->beginTransaction(null, $alias)->commit([Statement::create(<<<'CYPHER'
 UNWIND [1, 2, 3] AS x
 RETURN x
 CYPHER
@@ -219,7 +193,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testCommitValidFilledWithInvalidStatement(string $alias): void
     {
@@ -234,7 +208,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testCommitInvalid(string $alias): void
     {
@@ -250,7 +224,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testRollbackValid(string $alias): void
     {
@@ -260,7 +234,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider makeTransactions
+     * @dataProvider connectionAliases
      */
     public function testRollbackInvalid(string $alias): void
     {

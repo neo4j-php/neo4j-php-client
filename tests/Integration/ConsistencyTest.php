@@ -13,33 +13,25 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ *
+ * @extends EnvironmentAwareIntegrationTest<BasicResults>
  */
-final class ConsistencyTest extends TestCase
+final class ConsistencyTest extends EnvironmentAwareIntegrationTest
 {
-    /** @var ClientInterface<BasicResults> */
-    private ClientInterface $client;
-
-    protected function setUp(): void
+    protected function formatter(): FormatterInterface
     {
-        parent::setUp();
-        $this->client = ClientBuilder::create()
-            ->withDriver('http', 'http://neo4j:test@neo4j')
-            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
-            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
-            ->withFormatter(new BasicFormatter())
-            ->build();
+        /** @psalm-suppress InvalidReturnStatement */
+        return new BasicFormatter();
     }
 
     /**
-     * @dataProvider aliases
+     * @dataProvider connectionAliases
      */
     public function testConsistency(string $alias): void
     {
@@ -54,7 +46,7 @@ final class ConsistencyTest extends TestCase
     }
 
     /**
-     * @dataProvider aliases
+     * @dataProvider connectionAliases
      */
     public function testConsistencyTransaction(string $alias): void
     {
@@ -73,17 +65,5 @@ final class ConsistencyTest extends TestCase
         self::assertEquals(['name' => 'aaa'], $results->first()->get('n'));
         self::assertEquals(['name' => 'bbb'], $results->get(1)->get('n'));
         self::assertEquals(['name' => 'ccc'], $results->last()->get('n'));
-    }
-
-    /**
-     * @return list<list<string>>
-     */
-    public function aliases(): array
-    {
-        return [
-            ['http'],
-            ['bolt'],
-            ['cluster'],
-        ];
     }
 }

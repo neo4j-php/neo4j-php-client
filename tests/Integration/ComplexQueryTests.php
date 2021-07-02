@@ -15,33 +15,25 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Generator;
 use InvalidArgumentException;
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\ParameterHelper;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ *
+ * @extends EnvironmentAwareIntegrationTest<BasicResults>
  */
-final class ComplexQueryTests extends TestCase
+final class ComplexQueryTests extends EnvironmentAwareIntegrationTest
 {
-    /** @var ClientInterface<BasicResults> */
-    private ClientInterface $client;
-
-    protected function setUp(): void
+    protected function formatter(): FormatterInterface
     {
-        parent::setUp();
-        $this->client = ClientBuilder::create()
-            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
-            ->withDriver('http', 'http://neo4j:test@neo4j')
-            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
-            ->withFormatter(new BasicFormatter())
-            ->build();
+        /** @psalm-suppress InvalidReturnStatement */
+        return new BasicFormatter();
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testListParameterHelper(string $alias): void
     {
@@ -52,7 +44,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asList([])], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testValidListParameterHelper(string $alias): void
     {
@@ -64,7 +56,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asList([1, 2, 3])], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testValidMapParameterHelper(string $alias): void
     {
@@ -76,7 +68,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b', 'c' => 'd'])], $alia
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testArrayParameterHelper(string $alias): void
     {
@@ -89,7 +81,7 @@ CYPHER, ['listOrMap' => []], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testInvalidParameter(string $alias): void
     {
@@ -109,7 +101,7 @@ CYPHER, ['listOrMap' => self::generate()], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testInvalidParameters(string $alias): void
     {
@@ -124,7 +116,7 @@ CYPHER, $generator, $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testCreationAndResult(string $alias): void
     {
@@ -138,7 +130,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testPath(string $alias): void
     {
@@ -159,7 +151,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testNullListAndMap(string $alias): void
     {
@@ -177,7 +169,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testListAndMapInput(string $alias): void
     {
@@ -198,7 +190,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testPathReturnType(string $alias): void
     {
@@ -225,17 +217,5 @@ CYPHER
             [],
             ['x' => 'z'],
         ], $result->get('p'));
-    }
-
-    /**
-     * @return array<int, array<int, string>>
-     */
-    public function transactionProvider(): array
-    {
-        return [
-            ['http'],
-            ['bolt'],
-            ['cluster'],
-        ];
     }
 }

@@ -14,15 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use DateInterval;
+use Exception;
 use function json_encode;
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Contracts\ClientInterface;
+use JsonException;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
-use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
-use Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator;
-use Laudis\Neo4j\Formatter\Specialised\HttpOGMStringTranslator;
-use Laudis\Neo4j\Formatter\Specialised\HttpOGMTranslator;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -34,39 +31,31 @@ use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
-use PHPUnit\Framework\TestCase;
 use function range;
 use function sprintf;
+use function str_contains;
 
 /**
- * @psalm-import-type OGMTypes from OGMFormatter
+ * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @extends EnvironmentAwareIntegrationTest<OGMResults>
  */
-final class OGMFormatterIntegrationTest extends TestCase
+final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    /** @var ClientInterface<CypherList<CypherMap<OGMTypes>>> */
-    private ClientInterface $client;
+    protected function formatter(): FormatterInterface
+    {
+        /** @psalm-suppress InvalidReturnStatement */
+        return OGMFormatter::create();
+    }
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = ClientBuilder::create()
-            ->withDriver('http', 'http://neo4j:test@neo4j')
-            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
-            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
-            ->withFormatter(new OGMFormatter(
-                new BoltOGMTranslator(),
-                new HttpOGMTranslator(
-                    new HttpOGMArrayTranslator(),
-                    new HttpOGMStringTranslator()
-                )
-            ))
-            ->build();
-
         $this->client->run('MATCH (n) DETACH DELETE n');
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testNull(string $alias): void
     {
@@ -76,7 +65,12 @@ final class OGMFormatterIntegrationTest extends TestCase
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
+     *
+     * @throws JsonException
+     * @throws JsonException
+     * @throws JsonException
+     * @throws JsonException
      */
     public function testList(string $alias): void
     {
@@ -89,25 +83,25 @@ final class OGMFormatterIntegrationTest extends TestCase
         self::assertInstanceOf(CypherList::class, $list2);
         self::assertEquals(range(5, 15), $list->toArray());
         self::assertEquals(range(16, 35), $list2->toArray());
-        self::assertEquals(json_encode(range(5, 15)), json_encode($list));
-        self::assertEquals(json_encode(range(16, 35)), json_encode($list2));
+        self::assertEquals(json_encode(range(5, 15), JSON_THROW_ON_ERROR), json_encode($list, JSON_THROW_ON_ERROR));
+        self::assertEquals(json_encode(range(16, 35), JSON_THROW_ON_ERROR), json_encode($list2, JSON_THROW_ON_ERROR));
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
+     *
+     * @throws JsonException
      */
     public function testMap(string $alias): void
     {
-        $results = $this->client->run('RETURN {a: "b", c: "d"} as map', [], $alias);
-
-        $map = $results->first()->get('map');
+        $map = $this->client->run('RETURN {a: "b", c: "d"} as map', [], $alias)->first()->get('map');
         self::assertInstanceOf(CypherMap::class, $map);
         self::assertEquals(['a' => 'b', 'c' => 'd'], $map->toArray());
-        self::assertEquals(json_encode(['a' => 'b', 'c' => 'd']), json_encode($map));
+        self::assertEquals(json_encode(['a' => 'b', 'c' => 'd'], JSON_THROW_ON_ERROR), json_encode($map, JSON_THROW_ON_ERROR));
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testBoolean(string $alias): void
     {
@@ -119,7 +113,7 @@ final class OGMFormatterIntegrationTest extends TestCase
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testInteger(string $alias): void
     {
@@ -136,7 +130,7 @@ CYPHER, [], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testFloat(string $alias): void
     {
@@ -146,7 +140,7 @@ CYPHER, [], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testString(string $alias): void
     {
@@ -156,7 +150,14 @@ CYPHER, [], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
+     *
+     * @throws JsonException
+     * @throws JsonException
+     * @throws JsonException
+     * @throws JsonException
+     * @throws JsonException
+     * @throws JsonException
      */
     public function testDate(string $alias): void
     {
@@ -170,24 +171,24 @@ CYPHER, [], $alias);
         self::assertInstanceOf(Date::class, $results[0]['published_at']);
         self::assertEquals(18048, $results[0]['published_at']->getDays());
         self::assertEquals(
-            json_encode(['days' => 18048]),
-            json_encode($results[0]['published_at']));
+            json_encode(['days' => 18048], JSON_THROW_ON_ERROR),
+            json_encode($results[0]['published_at'], JSON_THROW_ON_ERROR));
 
         self::assertInstanceOf(Date::class, $results[1]['published_at']);
         self::assertEquals(18049, $results[1]['published_at']->getDays());
         self::assertEquals(
-            json_encode(['days' => 18049]),
-            json_encode($results[1]['published_at']));
+            json_encode(['days' => 18049], JSON_THROW_ON_ERROR),
+            json_encode($results[1]['published_at'], JSON_THROW_ON_ERROR));
 
         self::assertInstanceOf(Date::class, $results[2]['published_at']);
         self::assertEquals(18742, $results[2]['published_at']->getDays());
         self::assertEquals(
-            json_encode(['days' => 18742]),
-            json_encode($results[2]['published_at']));
+            json_encode(['days' => 18742], JSON_THROW_ON_ERROR),
+            json_encode($results[2]['published_at'], JSON_THROW_ON_ERROR));
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testTime(string $alias): void
     {
@@ -199,7 +200,7 @@ CYPHER, [], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testLocalTime(string $alias): void
     {
@@ -219,7 +220,10 @@ CYPHER, [], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
+     *
+     * @throws JsonException
+     * @throws JsonException
      */
     public function testDateTime(string $alias): void
     {
@@ -234,12 +238,12 @@ CYPHER, [], $alias);
         self::assertEquals(1559414432, $results[0]['created_at']->getSeconds());
         self::assertEquals(142000000, $results[0]['created_at']->getNanoseconds());
         self::assertEquals(3600, $results[0]['created_at']->getTimeZoneOffsetSeconds());
-        self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($results[0]['created_at']));
+        self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($results[0]['created_at'], JSON_THROW_ON_ERROR));
 
         self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
         self::assertEquals(1559471012, $results[1]['created_at']->getSeconds());
         self::assertEquals(122000000, $results[1]['created_at']->getNanoseconds());
-        self::assertEquals('{"seconds":1559471012,"nanoseconds":122000000,"tzOffsetSeconds":3600}', json_encode($results[1]['created_at']));
+        self::assertEquals('{"seconds":1559471012,"nanoseconds":122000000,"tzOffsetSeconds":3600}', json_encode($results[1]['created_at'], JSON_THROW_ON_ERROR));
 
         self::assertInstanceOf(DateTime::class, $results[2]['created_at']);
         self::assertGreaterThan(0, $results[2]['created_at']->getSeconds());
@@ -247,7 +251,7 @@ CYPHER, [], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testLocalDateTime(string $alias): void
     {
@@ -259,7 +263,10 @@ CYPHER, [], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
+     *
+     * @throws JsonException
+     * @throws Exception
      */
     public function testDuration(string $alias): void
     {
@@ -291,11 +298,14 @@ CYPHER, [], $alias);
         self::assertEquals(0, $duration->getNanoseconds());
         $interval = new DateInterval(sprintf('P%dM%dDT%dS', 5, 1, 43200));
         self::assertEquals($interval, $duration->toDateInterval());
-        self::assertEquals('{"months":5,"days":1,"seconds":43200,"nanoseconds":0}', json_encode($duration));
+        self::assertEquals('{"months":5,"days":1,"seconds":43200,"nanoseconds":0}', json_encode($duration, JSON_THROW_ON_ERROR));
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
+     *
+     * @throws JsonException
+     * @throws JsonException
      */
     public function testPoint(string $alias): void
     {
@@ -316,13 +326,18 @@ CYPHER, [], $alias);
                 'y' => 4,
                 'crs' => 'cartesian',
                 'srid' => 7203,
-            ]),
-            json_encode($point)
+            ], JSON_THROW_ON_ERROR),
+            json_encode($point, JSON_THROW_ON_ERROR)
         );
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
+     *
+     * @throws JsonException
+     * @throws JsonException
+     * @throws JsonException
+     * @throws JsonException
      */
     public function testNode(string $alias): void
     {
@@ -332,7 +347,7 @@ CYPHER, [], $alias);
 
         $results = $this->client->run(
             'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
-            ['email' => $email, 'uuid' => $uuid, 'type' => $type], $alias
+            compact('email', 'uuid', 'type'), $alias
         );
 
         self::assertEquals(1, $results->count());
@@ -348,8 +363,8 @@ CYPHER, [], $alias);
                 'id' => $u->id(),
                 'labels' => $u->labels()->jsonSerialize(),
                 'properties' => $u->properties()->jsonSerialize(),
-            ]),
-            json_encode($u));
+            ], JSON_THROW_ON_ERROR),
+            json_encode($u, JSON_THROW_ON_ERROR));
 
         /** @var Node $p */
         $p = $results[0]['p'];
@@ -361,13 +376,16 @@ CYPHER, [], $alias);
                 'id' => $p->id(),
                 'labels' => $p->labels()->jsonSerialize(),
                 'properties' => $p->properties()->jsonSerialize(),
-            ]),
-            json_encode($p)
+            ], JSON_THROW_ON_ERROR),
+            json_encode($p, JSON_THROW_ON_ERROR)
         );
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
+     *
+     * @throws JsonException
+     * @throws JsonException
      */
     public function testRelationship(string $alias): void
     {
@@ -387,13 +405,13 @@ CYPHER, [], $alias)->first()->get('xy');
                 'startNodeId' => $result->getStartNodeId(),
                 'endNodeId' => $result->getEndNodeId(),
                 'properties' => $result->getProperties(),
-            ]),
-            json_encode($result)
+            ], JSON_THROW_ON_ERROR),
+            json_encode($result, JSON_THROW_ON_ERROR)
         );
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testPath(string $alias): void
     {
@@ -409,7 +427,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testPropertyTypes(string $alias): void
     {
@@ -450,7 +468,7 @@ CYPHER,
 
         $node = $result->first()->get('a');
 
-        if ($alias === 'http') {
+        if (str_contains($alias, 'http')) {
             self::markTestSkipped('Http does not support nested properties');
         } else {
             self::assertInstanceOf(Node::class, $node);
@@ -488,17 +506,5 @@ SET article.created = articleProperties.created,
     article.datePublished = articleProperties.datePublished,
     article.readingTime = duration(articleProperties.readingTime)
 CYPHER;
-    }
-
-    /**
-     * @return array<int, array<int, string>>
-     */
-    public function transactionProvider(): array
-    {
-        return [
-            ['http'],
-            ['bolt'],
-            ['cluster'],
-        ];
     }
 }
