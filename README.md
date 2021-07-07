@@ -238,7 +238,7 @@ If you want the results to be just a set of rows, columns, arrays and scalar typ
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 
-$client = ClientBuilder::create()->withFormatter(BasicFormatter::class)->build();
+$client = ClientBuilder::create()->withFormatter(new BasicFormatter())->build();
 
 // Results are a CypherList
 $results = $client->run('MATCH (node:Node) RETURN node, node.id AS id');
