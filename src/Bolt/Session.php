@@ -110,7 +110,7 @@ final class Session implements SessionInterface
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         try {
-            $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode()));
+            $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode(), $this->auth));
             $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
 
             $begin = $bolt->begin(['db' => $this->config->getDatabase()]);

@@ -20,6 +20,7 @@ use const FILTER_VALIDATE_IP;
 use function filter_var;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
@@ -51,12 +52,12 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    public function acquire(UriInterface $uri, AccessMode $mode): StreamSocket
+    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate): StreamSocket
     {
-        $table = $this->routingTable($uri);
+        $table = $this->routingTable($uri, $authenticate);
         $server = $this->getNextServer($table, $mode);
 
-        $socket = $this->pool->acquire(Uri::create($server), $mode);
+        $socket = $this->pool->acquire(Uri::create($server), $mode, $authenticate);
 
         $scheme = $uri->getScheme();
         $explosion = explode('+', $scheme, 2);
@@ -107,10 +108,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      *
      * @throws Exception
      */
-    private function routingTable(UriInterface $uri): RoutingTable
+    private function routingTable(UriInterface $uri, AuthenticateInterface $authenticate): RoutingTable
     {
         if ($this->table === null || $this->table->getTtl() < time()) {
-            $session = BoltDriver::create($uri)->createSession();
+            $session = BoltDriver::create($uri, null, $authenticate)->createSession();
             $row = $session->run(
                 'CALL dbms.components() yield versions UNWIND versions as version RETURN version'
             )->first();

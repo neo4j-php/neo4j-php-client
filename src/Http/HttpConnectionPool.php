@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 use Psr\Http\Client\ClientInterface;
@@ -30,7 +31,7 @@ final class HttpConnectionPool implements ConnectionPoolInterface
         $this->client = $client;
     }
 
-    public function acquire(UriInterface $uri, AccessMode $mode): ClientInterface
+    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate): ClientInterface
     {
         return $this->client;
     }

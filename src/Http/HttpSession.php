@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Http;
 
 use JsonException;
 use Laudis\Neo4j\Common\TransactionHelper;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -44,6 +45,7 @@ final class HttpSession implements SessionInterface
     private FormatterInterface $formatter;
     private RequestFactory $requestFactory;
     private string $uri;
+    private AuthenticateInterface $auth;
 
     /**
      * @param FormatterInterface<T> $formatter
@@ -54,7 +56,8 @@ final class HttpSession implements SessionInterface
         SessionConfiguration $config,
         FormatterInterface $formatter,
         RequestFactory $requestFactory,
-        string $uri
+        string $uri,
+        AuthenticateInterface $auth
     ) {
         $this->streamFactory = $factory;
         $this->config = $config;
@@ -62,6 +65,7 @@ final class HttpSession implements SessionInterface
         $this->formatter = $formatter;
         $this->requestFactory = $requestFactory;
         $this->uri = $uri;
+        $this->auth = $auth;
     }
 
     /**
@@ -70,7 +74,7 @@ final class HttpSession implements SessionInterface
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
         $request = $this->requestFactory->createRequest('POST', $this->uri);
-        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode());
+        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth);
         $content = HttpHelper::statementsToString($this->formatter, $statements);
         $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->createStream($content));
 
@@ -135,7 +139,7 @@ final class HttpSession implements SessionInterface
     {
         $request = $this->requestFactory->createRequest('POST', $this->uri);
         $request->getBody()->write(HttpHelper::statementsToString($this->formatter, $statements ?? []));
-        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode());
+        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth);
         $response = $client->sendRequest($request);
 
         /** @var array{commit: string} $data */
