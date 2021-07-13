@@ -16,9 +16,8 @@ namespace Laudis\Neo4j\Neo4j;
 use Bolt\connection\StreamSocket;
 use Exception;
 use function explode;
-use const FILTER_VALIDATE_IP;
-use function filter_var;
 use Laudis\Neo4j\Bolt\BoltDriver;
+use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -57,42 +56,31 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $table = $this->routingTable($uri, $authenticate);
         $server = $this->getNextServer($table, $mode);
 
-        $socket = $this->pool->acquire(Uri::create($server), $mode, $authenticate);
+        $socket = $this->pool->acquire($server, $mode, $authenticate);
 
         $scheme = $uri->getScheme();
         $explosion = explode('+', $scheme, 2);
         $sslConfig = $explosion[1] ?? '';
 
         if (str_starts_with('s', $sslConfig)) {
-            $this->enableSsl($server, $sslConfig, $socket, $uri);
+            // We have to pass a different host when working with ssl on aura.
+            // There is a strange behaviour where if we pass the uri host on a single
+            // instance aura deployment, we need to pass the original uri for the
+            // ssl configuration to be valid.
+            if ($table->getWithRole()->count() > 1) {
+                TransactionHelper::enableSsl($server->getHost(), $sslConfig, $socket);
+            } else {
+                TransactionHelper::enableSsl($uri->getHost(), $sslConfig, $socket);
+            }
         }
 
         return $socket;
     }
 
-    private function enableSsl(string $host, string $sslConfig, StreamSocket $sock, UriInterface $uri): void
-    {
-        // Pass a standard option to enable ssl as there is no direct flag
-        // and \Bolt\Bolt only turns on ssl if an option is passed.
-        $options = [
-            'verify_peer' => true,
-            'peer_name' => $uri->getHost(),
-        ];
-        if (!filter_var($host, FILTER_VALIDATE_IP)) {
-            $options['SNI_enabled'] = true;
-        }
-        if ($sslConfig === 's') {
-            $sock->setSslContextOptions($options);
-        } elseif ($sslConfig === 'ssc') {
-            $options['allow_self_signed'] = true;
-            $sock->setSslContextOptions($options);
-        }
-    }
-
     /**
      * @throws Exception
      */
-    private function getNextServer(RoutingTable $table, AccessMode $mode): string
+    private function getNextServer(RoutingTable $table, AccessMode $mode): Uri
     {
         if (AccessMode::WRITE() === $mode) {
             $servers = $table->getWithRole(RoutingRoles::LEADER());
@@ -100,7 +88,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $servers = $table->getWithRole(RoutingRoles::FOLLOWER());
         }
 
-        return $servers->get(random_int(0, $servers->count() - 1));
+        return Uri::create($servers->get(random_int(0, $servers->count() - 1)));
     }
 
     /**

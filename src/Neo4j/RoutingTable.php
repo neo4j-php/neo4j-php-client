@@ -40,12 +40,12 @@ final class RoutingTable
     /**
      * @return Set<string>
      */
-    public function getWithRole(RoutingRoles $role): Set
+    public function getWithRole(RoutingRoles $role = null): Set
     {
         /** @psalm-var Set<string> $tbr */
         $tbr = new Set();
         foreach ($this->servers as $server) {
-            if (in_array($server['role'], $role->getValue(), true)) {
+            if ($role === null || in_array($server['role'], $role->getValue(), true)) {
                 foreach ($server['addresses'] as $address) {
                     $tbr->add($address);
                 }
