@@ -73,8 +73,10 @@ final class HttpSession implements SessionInterface
      */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
+        $config ??= TransactionConfiguration::default();
+
         $request = $this->requestFactory->createRequest('POST', $this->uri);
-        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth);
+        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth, $config);
         $content = HttpHelper::statementsToString($this->formatter, $statements);
         $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->createStream($content));
 
@@ -137,9 +139,11 @@ final class HttpSession implements SessionInterface
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
+        $config ??= TransactionConfiguration::default();
+
         $request = $this->requestFactory->createRequest('POST', $this->uri);
         $request->getBody()->write(HttpHelper::statementsToString($this->formatter, $statements ?? []));
-        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth);
+        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth, $config);
         $response = $client->sendRequest($request);
 
         /** @var array{commit: string} $data */

@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
-use Closure;
 use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;
@@ -92,7 +91,7 @@ final class Session implements SessionInterface
     public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
         return TransactionHelper::retry(
-            Closure::fromCallable([$this, 'beginTransaction']),
+            fn () => $this->beginTransaction([], $config),
             $tsxHandler,
             $config ?? TransactionConfiguration::default()
         );
@@ -110,8 +109,9 @@ final class Session implements SessionInterface
 
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
+        $config ??= TransactionConfiguration::default();
         try {
-            $bolt = $this->acquireBolt();
+            $bolt = $this->acquireBolt($config);
 
             $begin = $bolt->begin(['db' => $this->config->getDatabase()]);
 
@@ -137,12 +137,12 @@ final class Session implements SessionInterface
      */
     private function beginInstantTransaction(): TransactionInterface
     {
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $this->acquireBolt());
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $this->acquireBolt(TransactionConfiguration::default()));
     }
 
-    private function acquireBolt(): Bolt
+    private function acquireBolt(TransactionConfiguration $config): Bolt
     {
-        $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode(), $this->auth));
+        $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode(), $this->auth, $config));
         $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
 
         return $bolt;

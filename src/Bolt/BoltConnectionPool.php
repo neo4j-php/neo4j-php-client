@@ -19,6 +19,7 @@ use function explode;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Psr\Http\Message\UriInterface;
 use function str_starts_with;
@@ -31,10 +32,10 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate): StreamSocket
+    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate, TransactionConfiguration $config): StreamSocket
     {
         $host = $uri->getHost();
-        $socket = new StreamSocket($host, $uri->getPort() ?? 7687);
+        $socket = new StreamSocket($host, $uri->getPort() ?? 7687, $config->getTimeout());
 
         $scheme = $uri->getScheme();
         $explosion = explode('+', $scheme, 2);

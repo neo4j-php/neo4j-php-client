@@ -21,6 +21,7 @@ use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Laudis\Neo4j\Types\CypherList;
@@ -51,12 +52,12 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate): StreamSocket
+    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate, TransactionConfiguration $config): StreamSocket
     {
         $table = $this->routingTable($uri, $authenticate);
         $server = $this->getNextServer($table, $mode);
 
-        $socket = $this->pool->acquire($server, $mode, $authenticate);
+        $socket = $this->pool->acquire($server, $mode, $authenticate, $config);
 
         $scheme = $uri->getScheme();
         $explosion = explode('+', $scheme, 2);

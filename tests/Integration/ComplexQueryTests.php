@@ -17,6 +17,8 @@ use Generator;
 use function getenv;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\ParameterHelper;
@@ -263,5 +265,16 @@ LOAD CSV FROM 'file:///csv-example.csv' AS line
 MERGE (n:File {name: line[0]});
 CYPHER);
         $tsx->commit();
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQuery(string $alias): void
+    {
+        $this->client->writeTransaction(static function (TransactionInterface $tsx) {
+            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        }, $alias, TransactionConfiguration::default()->withTimeout(100000));
+        self::assertTrue(true);
     }
 }
