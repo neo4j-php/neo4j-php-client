@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Bolt\error\ConnectException;
 use Generator;
 use function getenv;
 use InvalidArgumentException;
@@ -270,11 +271,50 @@ CYPHER);
     /**
      * @dataProvider connectionAliases
      */
-    public function testLongQuery(string $alias): void
+    public function testLongQueryFunction(string $alias): void
     {
         $this->client->writeTransaction(static function (TransactionInterface $tsx) {
             $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
         }, $alias, TransactionConfiguration::default()->withTimeout(100000));
         self::assertTrue(true);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryFunctionNegative(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
+        }
+
+        $this->expectException(ConnectException::class);
+        $this->client->writeTransaction(static function (TransactionInterface $tsx) {
+            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        }, $alias, TransactionConfiguration::default()->withTimeout(1));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryUnmanaged(string $alias): void
+    {
+        $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
+        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        self::assertTrue(true);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryUnmanagedNegative(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
+        }
+
+        $this->expectException(ConnectException::class);
+        $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
     }
 }
