@@ -17,8 +17,10 @@ use Generator;
 use function getenv;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\ParameterHelper;
+use function str_starts_with;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
@@ -237,5 +239,29 @@ CYPHER, [], $alias);
 
         $result = $this->client->run('MATCH (n:File) RETURN count(n) AS count');
         self::assertEquals(20, $result->first()->get('count'));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testPeriodicCommitFail(string $alias): void
+    {
+        if (getenv('TESTING_ENVIRONMENT') !== 'local') {
+            self::markTestSkipped('Only local environment has access to local files');
+        }
+
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP allows periodic commits during an actual transaction');
+        }
+
+        $this->expectException(Neo4jException::class);
+
+        $tsx = $this->client->beginTransaction([], $alias);
+        $tsx->run(<<<CYPHER
+USING PERIODIC COMMIT 10
+LOAD CSV FROM 'file:///csv-example.csv' AS line
+MERGE (n:File {name: line[0]});
+CYPHER);
+        $tsx->commit();
     }
 }
