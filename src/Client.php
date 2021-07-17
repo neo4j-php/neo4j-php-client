@@ -81,9 +81,9 @@ final class Client implements ClientInterface
         return $this->startSession($alias, SessionConfiguration::default())->runStatements($statements);
     }
 
-    public function beginTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface
+    public function beginTransaction(?iterable $statements = null, ?string $alias = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        return $this->startSession($alias, SessionConfiguration::default())->beginTransaction($statements);
+        return $this->startSession($alias, SessionConfiguration::default())->beginTransaction($statements, $config);
     }
 
     public function getDriver(?string $alias): DriverInterface
