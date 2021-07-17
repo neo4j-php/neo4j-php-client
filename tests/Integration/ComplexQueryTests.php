@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Generator;
+use function getenv;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Formatter\BasicFormatter;
@@ -217,5 +218,24 @@ CYPHER
             [],
             ['x' => 'z'],
         ], $result->get('p'));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testPeriodicCommit(string $alias): void
+    {
+        if (getenv('TESTING_ENVIRONMENT') !== 'local') {
+            self::markTestSkipped('Only local environment has access to local files');
+        }
+
+        $this->client->run(<<<CYPHER
+USING PERIODIC COMMIT 10
+LOAD CSV FROM 'file:///csv-example.csv' AS line
+MERGE (n:File {name: line[0]});
+CYPHER, [], $alias);
+
+        $result = $this->client->run('MATCH (n:File) RETURN count(n) AS count');
+        self::assertEquals(20, $result->first()->get('count'));
     }
 }

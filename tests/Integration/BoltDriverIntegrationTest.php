@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Bolt\error\ConnectException;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
-use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
 
 final class BoltDriverIntegrationTest extends TestCase
@@ -49,7 +49,7 @@ CYPHER);
     public function testInvalidIp(): void
     {
         $driver = BoltDriver::create('bolt://neo4j:test@127.0.0.0');
-        $this->expectException(Neo4jException::class);
+        $this->expectException(ConnectException::class);
         $driver->createSession()->run('RETURN 1');
     }
 
@@ -59,7 +59,7 @@ CYPHER);
     public function testInvalidSocket(): void
     {
         $driver = BoltDriver::create('bolt://neo4j:test@127.0.0.0');
-        $this->expectException(Neo4jException::class);
+        $this->expectException(ConnectException::class);
         $driver->createSession()->run('RETURN 1');
     }
 }

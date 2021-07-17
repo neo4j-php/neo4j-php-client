@@ -23,6 +23,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SessionConfiguration;
@@ -70,7 +71,7 @@ final class Session implements SessionInterface
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
-        return $this->openTransaction()->commit($statements);
+        return $this->beginInstantTransaction()->runStatements($statements);
     }
 
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
@@ -110,8 +111,7 @@ final class Session implements SessionInterface
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         try {
-            $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode(), $this->auth));
-            $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
+            $bolt = $this->acquireBolt();
 
             $begin = $bolt->begin(['db' => $this->config->getDatabase()]);
 
@@ -130,5 +130,21 @@ final class Session implements SessionInterface
         $tsx->runStatements($statements ?? []);
 
         return $tsx;
+    }
+
+    /**
+     * @return UnmanagedTransactionInterface<T>
+     */
+    private function beginInstantTransaction(): TransactionInterface
+    {
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $this->acquireBolt());
+    }
+
+    private function acquireBolt(): Bolt
+    {
+        $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode(), $this->auth));
+        $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
+
+        return $bolt;
     }
 }
