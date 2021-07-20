@@ -18,7 +18,7 @@ use function is_callable;
 
 final class DriverConfiguration
 {
-    public const DEFAULT_USER_AGENT = 'neo4j-php-client/2.0.6';
+    public const DEFAULT_USER_AGENT = 'neo4j-php-client/2.0.7';
 
     /** @var callable():(string|null)|string|null */
     private $userAgent;
