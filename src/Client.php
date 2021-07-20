@@ -25,8 +25,10 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
 use function sprintf;
 
@@ -66,22 +68,22 @@ final class Client implements ClientInterface
 
     public function run(string $query, iterable $parameters = [], ?string $alias = null)
     {
-        return $this->startSession($alias)->run($query, $parameters);
+        return $this->startSession($alias, SessionConfiguration::default())->run($query, $parameters);
     }
 
     public function runStatement(Statement $statement, ?string $alias = null)
     {
-        return $this->startSession($alias)->runStatement($statement);
+        return $this->startSession($alias, SessionConfiguration::default())->runStatement($statement);
     }
 
     public function runStatements(iterable $statements, ?string $alias = null): CypherList
     {
-        return $this->startSession($alias)->runStatements($statements);
+        return $this->startSession($alias, SessionConfiguration::default())->runStatements($statements);
     }
 
-    public function beginTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface
+    public function beginTransaction(?iterable $statements = null, ?string $alias = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        return $this->startSession($alias)->beginTransaction($statements);
+        return $this->startSession($alias, SessionConfiguration::default())->beginTransaction($statements, $config);
     }
 
     public function getDriver(?string $alias): DriverInterface
@@ -110,24 +112,24 @@ final class Client implements ClientInterface
     /**
      * @return SessionInterface<T>
      */
-    private function startSession(?string $alias = null): SessionInterface
+    private function startSession(?string $alias = null, SessionConfiguration $configuration = null): SessionInterface
     {
-        return $this->getDriver($alias)->createSession();
+        return $this->getDriver($alias)->createSession($configuration ?? SessionConfiguration::default());
     }
 
     public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
-        return $this->startSession($alias)->writeTransaction($tsxHandler, $config);
+        return $this->startSession($alias, SessionConfiguration::default()->withAccessMode(AccessMode::WRITE()))->writeTransaction($tsxHandler, $config);
     }
 
     public function readTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
-        return $this->startSession($alias)->readTransaction($tsxHandler, $config);
+        return $this->startSession($alias, SessionConfiguration::default()->withAccessMode(AccessMode::READ()))->readTransaction($tsxHandler, $config);
     }
 
     public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
-        return $this->startSession($alias)->transaction($tsxHandler, $config);
+        return $this->writeTransaction($tsxHandler, $alias, $config);
     }
 
     /**

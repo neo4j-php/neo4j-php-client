@@ -144,7 +144,8 @@ final class HttpDriver implements DriverInterface
             $config,
             $this->formatter,
             $factory,
-            $this->transactionUrl
+            $this->transactionUrl,
+            $this->auth
         );
     }
 

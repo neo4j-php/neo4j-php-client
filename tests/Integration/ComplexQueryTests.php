@@ -13,11 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Bolt\error\ConnectException;
 use Generator;
+use function getenv;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\ParameterHelper;
+use function str_starts_with;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
@@ -217,5 +223,98 @@ CYPHER
             [],
             ['x' => 'z'],
         ], $result->get('p'));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testPeriodicCommit(string $alias): void
+    {
+        if (getenv('TESTING_ENVIRONMENT') !== 'local') {
+            self::markTestSkipped('Only local environment has access to local files');
+        }
+
+        $this->client->run(<<<CYPHER
+USING PERIODIC COMMIT 10
+LOAD CSV FROM 'file:///csv-example.csv' AS line
+MERGE (n:File {name: line[0]});
+CYPHER, [], $alias);
+
+        $result = $this->client->run('MATCH (n:File) RETURN count(n) AS count');
+        self::assertEquals(20, $result->first()->get('count'));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testPeriodicCommitFail(string $alias): void
+    {
+        if (getenv('TESTING_ENVIRONMENT') !== 'local') {
+            self::markTestSkipped('Only local environment has access to local files');
+        }
+
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP allows periodic commits during an actual transaction');
+        }
+
+        $this->expectException(Neo4jException::class);
+
+        $tsx = $this->client->beginTransaction([], $alias);
+        $tsx->run(<<<CYPHER
+USING PERIODIC COMMIT 10
+LOAD CSV FROM 'file:///csv-example.csv' AS line
+MERGE (n:File {name: line[0]});
+CYPHER);
+        $tsx->commit();
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryFunction(string $alias): void
+    {
+        $this->client->writeTransaction(static function (TransactionInterface $tsx) {
+            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        }, $alias, TransactionConfiguration::default()->withTimeout(100000));
+        self::assertTrue(true);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryFunctionNegative(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
+        }
+
+        $this->expectException(ConnectException::class);
+        $this->client->writeTransaction(static function (TransactionInterface $tsx) {
+            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        }, $alias, TransactionConfiguration::default()->withTimeout(1));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryUnmanaged(string $alias): void
+    {
+        $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
+        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        self::assertTrue(true);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryUnmanagedNegative(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
+        }
+
+        $this->expectException(ConnectException::class);
+        $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
     }
 }

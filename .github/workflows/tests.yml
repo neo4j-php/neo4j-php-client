@@ -15,9 +15,6 @@ jobs:
         php-version: ['7.4', '8']
         neo4j-version: ["3.5", "4.0", "4.1", "4.2", "4.3"]
     name: "Running Tests for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }}"
-    env:
-      NEO4J_CONNECTIONS: bolt://neo4j:test@neo4j,http://neo4j:test@neo4j,neo4j://neo4j:test@core1
-
     container:
       image:  php:${{ matrix.php-version }}-cli
 

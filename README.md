@@ -152,19 +152,19 @@ If you need lower-level access to the drivers' capabilities, then you want unman
 
 #### Opening a transaction
 
-The `openTransaction` method will start a transaction with the relevant driver.
+The `beginTransaction` method will start a transaction with the relevant driver.
 
 ```php
 use Laudis\Neo4j\Databags\Statement;
 
-$tsx = $client->openTransaction(
+$tsx = $client->beginTransaction(
     // This is an optional set of statements to execute while opening the transaction
     [Statement::create('MERGE (x:Person({email: $email})', ['email' => 'abc@hotmail.com'])],
     'backup' // This is the optional connection alias
 );
 ```
 
-> Note that `openTransaction` only returns the transaction object, not the results of the provided statements.
+> Note that `beginTransaction` only returns the transaction object, not the results of the provided statements.
 
 #### Running statements within a transaction
 
@@ -238,7 +238,7 @@ If you want the results to be just a set of rows, columns, arrays and scalar typ
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 
-$client = ClientBuilder::create()->withFormatter(BasicFormatter::class)->build();
+$client = ClientBuilder::create()->withFormatter(new BasicFormatter())->build();
 
 // Results are a CypherList
 $results = $client->run('MATCH (node:Node) RETURN node, node.id AS id');
