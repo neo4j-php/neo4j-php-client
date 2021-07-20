@@ -15,7 +15,6 @@ namespace Laudis\Neo4j;
 
 use Ds\Map;
 use InvalidArgumentException;
-use function is_array;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -25,11 +24,13 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
+use Psr\Http\Message\UriInterface;
 use function sprintf;
 
 /**
@@ -41,7 +42,7 @@ final class Client implements ClientInterface
 {
     private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
 
-    /** @var Map<string, array{0: Uri, 1:AuthenticateInterface, 2:TransactionConfiguration}|DriverInterface<T>> */
+    /** @var Map<string, DriverSetup|DriverInterface<T>> */
     private Map $driverConfigurations;
     /** @var Map<string, DriverInterface> */
     private Map $drivers;
@@ -51,8 +52,8 @@ final class Client implements ClientInterface
     private ?string $default;
 
     /**
-     * @param Map<string, array{0: Uri, 1:AuthenticateInterface, 2:TransactionConfiguration}> $driverConfigurations
-     * @param FormatterInterface<T>                                                           $formatter
+     * @param Map<string, DriverSetup> $driverConfigurations
+     * @param FormatterInterface<T>    $formatter
      */
     public function __construct(Map $driverConfigurations, DriverConfiguration $configuration, FormatterInterface $formatter, ?string $default)
     {
@@ -99,14 +100,13 @@ final class Client implements ClientInterface
             throw new InvalidArgumentException($key);
         }
 
-        $driverOrConfig = $this->driverConfigurations->get($alias);
-        if (is_array($driverOrConfig)) {
-            [$parsedUrl, $authentication, $tsxConfiguration] = $driverOrConfig;
-            $driverOrConfig = $this->makeDriver($parsedUrl, $alias, $authentication, $tsxConfiguration);
-            $this->driverConfigurations->put($alias, $driverOrConfig);
+        $driverOrSetup = $this->driverConfigurations->get($alias);
+        if ($driverOrSetup instanceof DriverSetup) {
+            $driverOrSetup = $this->makeDriver($driverOrSetup->getUri(), $alias, $driverOrSetup->getAuth(), $driverOrSetup->getDefaultTransactionConfig());
+            $this->driverConfigurations->put($alias, $driverOrSetup);
         }
 
-        return $driverOrConfig;
+        return $driverOrSetup;
     }
 
     /**
@@ -155,7 +155,7 @@ final class Client implements ClientInterface
      *
      * @return DriverInterface<T>
      */
-    private function makeDriver(Uri $uri, string $alias, AuthenticateInterface $authentication, TransactionConfiguration $config): DriverInterface
+    private function makeDriver(UriInterface $uri, string $alias, AuthenticateInterface $authentication, TransactionConfiguration $config): DriverInterface
     {
         return $this->cacheDriver($alias, function () use ($uri, $authentication, $config) {
             return DriverFactory::create($uri, $this->configuration, $authentication, $config, $this->formatter);

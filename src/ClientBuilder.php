@@ -23,6 +23,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\HttpPsrBindings;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
@@ -40,15 +41,15 @@ final class ClientBuilder
 {
     public const SUPPORTED_SCHEMES = ['', 'bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https'];
 
-    /** @var Map<string, array{0: Uri, 1:AuthenticateInterface, 2:TransactionConfiguration}> */
+    /** @var Map<string, DriverSetup> */
     private Map $driverConfigurations;
     private DriverConfiguration $configuration;
     private ?string $defaultDriver;
     private FormatterInterface $formatter;
 
     /**
-     * @param Map<string, array{0: Uri, 1:AuthenticateInterface, 2:TransactionConfiguration}> $driverConfigurations
-     * @param FormatterInterface<T>                                                           $formatter
+     * @param Map<string, DriverSetup> $driverConfigurations
+     * @param FormatterInterface<T>    $formatter
      */
     public function __construct(DriverConfiguration $configuration, FormatterInterface $formatter, Map $driverConfigurations, ?string $defaultDriver)
     {
@@ -89,7 +90,7 @@ final class ClientBuilder
         }
 
         $configs = $this->driverConfigurations->copy();
-        $configs->put($alias, [$uri, $authentication, $defaultTransactionConfig]);
+        $configs->put($alias, new DriverSetup($uri, $authentication, $defaultTransactionConfig));
 
         return new self($this->configuration, $this->formatter, $configs, $this->defaultDriver);
     }
