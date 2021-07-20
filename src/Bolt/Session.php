@@ -48,7 +48,7 @@ final class Session implements SessionInterface
     private string $userAgent;
     private UriInterface $uri;
     private AuthenticateInterface $auth;
-    private TransactionConfiguration $defaultTransactionConfig;
+    private float $socketTimeout;
 
     /**
      * @param FormatterInterface<T>                 $formatter
@@ -61,7 +61,7 @@ final class Session implements SessionInterface
         string $userAgent,
         UriInterface $uri,
         AuthenticateInterface $auth,
-        TransactionConfiguration $defaultTransactionConfig
+        float $socketTimeout
     ) {
         $this->config = $config;
         $this->pool = $pool;
@@ -69,7 +69,7 @@ final class Session implements SessionInterface
         $this->userAgent = $userAgent;
         $this->uri = $uri;
         $this->auth = $auth;
-        $this->defaultTransactionConfig = $defaultTransactionConfig;
+        $this->socketTimeout = $socketTimeout;
     }
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
@@ -137,13 +137,15 @@ final class Session implements SessionInterface
         return new BoltUnmanagedTransaction(
             $this->config->getDatabase(),
             $this->formatter,
-            $this->acquireBolt($this->defaultTransactionConfig, $config)
+            $this->acquireBolt(TransactionConfiguration::default(), $config)
         );
     }
 
     private function acquireBolt(TransactionConfiguration $config, SessionConfiguration $sessionConfig): Bolt
     {
-        $bolt = new Bolt($this->pool->acquire($this->uri, $sessionConfig->getAccessMode(), $this->auth, $config));
+        $timeout = max($this->socketTimeout, $config->getTimeout());
+
+        $bolt = new Bolt($this->pool->acquire($this->uri, $sessionConfig->getAccessMode(), $this->auth, $timeout));
         $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
 
         return $bolt;

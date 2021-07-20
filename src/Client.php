@@ -90,7 +90,7 @@ final class Client implements ClientInterface
     public function getDriver(?string $alias): DriverInterface
     {
         if ($this->driverConfigurations->count() === 0) {
-            $driver = $this->makeDriver(Uri::create('bolt://localhost:7687'), 'default', Authenticate::disabled(), TransactionConfiguration::default());
+            $driver = $this->makeDriver(Uri::create('bolt://localhost:7687'), 'default', Authenticate::disabled(), TransactionConfiguration::DEFAULT_TIMEOUT);
             $this->driverConfigurations->put('default', $driver);
         }
 
@@ -102,7 +102,7 @@ final class Client implements ClientInterface
 
         $driverOrSetup = $this->driverConfigurations->get($alias);
         if ($driverOrSetup instanceof DriverSetup) {
-            $driverOrSetup = $this->makeDriver($driverOrSetup->getUri(), $alias, $driverOrSetup->getAuth(), $driverOrSetup->getDefaultTransactionConfig());
+            $driverOrSetup = $this->makeDriver($driverOrSetup->getUri(), $alias, $driverOrSetup->getAuth(), $driverOrSetup->getSocketTimeout());
             $this->driverConfigurations->put($alias, $driverOrSetup);
         }
 
@@ -155,10 +155,10 @@ final class Client implements ClientInterface
      *
      * @return DriverInterface<T>
      */
-    private function makeDriver(UriInterface $uri, string $alias, AuthenticateInterface $authentication, TransactionConfiguration $config): DriverInterface
+    private function makeDriver(UriInterface $uri, string $alias, AuthenticateInterface $authentication, float $socketTimeout): DriverInterface
     {
-        return $this->cacheDriver($alias, function () use ($uri, $authentication, $config) {
-            return DriverFactory::create($uri, $this->configuration, $authentication, $config, $this->formatter);
+        return $this->cacheDriver($alias, function () use ($uri, $authentication, $socketTimeout) {
+            return DriverFactory::create($uri, $this->configuration, $authentication, $socketTimeout, $this->formatter);
         });
     }
 }

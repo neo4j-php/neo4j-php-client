@@ -76,7 +76,7 @@ final class HttpSession implements SessionInterface
         $config ??= TransactionConfiguration::default();
 
         $request = $this->requestFactory->createRequest('POST', $this->uri);
-        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth, $config);
+        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth, $config->getTimeout());
         $content = HttpHelper::statementsToString($this->formatter, $statements);
         $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->createStream($content));
 
@@ -143,7 +143,7 @@ final class HttpSession implements SessionInterface
 
         $request = $this->requestFactory->createRequest('POST', $this->uri);
         $request->getBody()->write(HttpHelper::statementsToString($this->formatter, $statements ?? []));
-        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth, $config);
+        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth, $config->getTimeout());
         $response = $client->sendRequest($request);
 
         /** @var array{commit: string} $data */

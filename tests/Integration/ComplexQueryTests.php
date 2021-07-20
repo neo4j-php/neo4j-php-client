@@ -15,11 +15,11 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Bolt\error\ConnectException;
 use Generator;
+use function getenv;
+use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use function getenv;
-use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -41,9 +41,6 @@ final class ComplexQueryTests extends EnvironmentAwareIntegrationTest
         return new BasicFormatter();
     }
 
-    /**
-     * @return ClientInterface<T>
-     */
     protected function createClient(): ClientInterface
     {
         $connections = $this->getConnections();
@@ -51,9 +48,10 @@ final class ComplexQueryTests extends EnvironmentAwareIntegrationTest
         $builder = ClientBuilder::create();
         foreach ($connections as $i => $connection) {
             $uri = Uri::create($connection);
-            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection, null, TransactionConfiguration::default()->withTimeout(1000000));
+            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection, null, 1000000);
         }
 
+        /** @psalm-suppress InvalidReturnStatement */
         return $builder->withFormatter($this->formatter())->build();
     }
 
@@ -346,5 +344,4 @@ CYPHER);
         $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
         $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
     }
-
 }

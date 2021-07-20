@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Psr\Http\Message\UriInterface;
 
@@ -25,5 +24,5 @@ interface ConnectionPoolInterface
     /**
      * @return T
      */
-    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate, TransactionConfiguration $config);
+    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate, float $socketTimeout);
 }

@@ -20,13 +20,13 @@ final class DriverSetup
 {
     private UriInterface $uri;
     private AuthenticateInterface $auth;
-    private TransactionConfiguration $defaultTransactionConfig;
+    private float $socketTimeout;
 
-    public function __construct(UriInterface $uri, AuthenticateInterface $auth, TransactionConfiguration $defaultTransactionConfig)
+    public function __construct(UriInterface $uri, AuthenticateInterface $auth, float $socketTimeout)
     {
         $this->uri = $uri;
         $this->auth = $auth;
-        $this->defaultTransactionConfig = $defaultTransactionConfig;
+        $this->socketTimeout = $socketTimeout;
     }
 
     public function getAuth(): AuthenticateInterface
@@ -39,8 +39,8 @@ final class DriverSetup
         return $this->uri;
     }
 
-    public function getDefaultTransactionConfig(): TransactionConfiguration
+    public function getSocketTimeout(): float
     {
-        return $this->defaultTransactionConfig;
+        return $this->socketTimeout;
     }
 }

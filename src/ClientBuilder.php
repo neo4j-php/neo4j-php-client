@@ -70,18 +70,18 @@ final class ClientBuilder
     /**
      * @return self<T>
      */
-    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?TransactionConfiguration $defaultTransactionConfig = null): self
+    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?float $socketTimeout = null): self
     {
         $authentication ??= Authenticate::fromUrl();
-        $defaultTransactionConfig ??= TransactionConfiguration::default();
+        $socketTimeout ??= TransactionConfiguration::DEFAULT_TIMEOUT;
 
-        return $this->withParsedUrl($alias, Uri::create($url), $authentication, $defaultTransactionConfig);
+        return $this->withParsedUrl($alias, Uri::create($url), $authentication, $socketTimeout);
     }
 
     /**
      * @return self<T>
      */
-    private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication, TransactionConfiguration $defaultTransactionConfig): self
+    private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication, float $socketTimeout): self
     {
         $scheme = $uri->getScheme();
 
@@ -90,7 +90,7 @@ final class ClientBuilder
         }
 
         $configs = $this->driverConfigurations->copy();
-        $configs->put($alias, new DriverSetup($uri, $authentication, $defaultTransactionConfig));
+        $configs->put($alias, new DriverSetup($uri, $authentication, $socketTimeout));
 
         return new self($this->configuration, $this->formatter, $configs, $this->defaultDriver);
     }
@@ -131,7 +131,7 @@ final class ClientBuilder
             $parsedUrl = $parsedUrl->withScheme('bolt'.$postScheme);
         }
 
-        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl(), TransactionConfiguration::default());
+        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl(), TransactionConfiguration::DEFAULT_TIMEOUT);
     }
 
     /**
@@ -163,7 +163,7 @@ final class ClientBuilder
             $this->defaultDriver
         );
 
-        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl(), TransactionConfiguration::default());
+        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl(), TransactionConfiguration::DEFAULT_TIMEOUT);
     }
 
     /**

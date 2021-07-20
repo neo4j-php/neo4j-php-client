@@ -44,7 +44,7 @@ final class BoltDriver implements DriverInterface
     private ConnectionPoolInterface $pool;
     private DriverConfiguration $config;
     private FormatterInterface $formatter;
-    private TransactionConfiguration $defaultTransactionConfiguration;
+    private float $socketTimeout;
 
     /**
      * @param FormatterInterface<T>                 $formatter
@@ -56,14 +56,14 @@ final class BoltDriver implements DriverInterface
         ConnectionPoolInterface $pool,
         DriverConfiguration $config,
         FormatterInterface $formatter,
-        TransactionConfiguration $defaultTransactionConfiguration
+        float $socketTimeout
     ) {
         $this->parsedUrl = $parsedUrl;
         $this->auth = $auth;
         $this->pool = $pool;
         $this->config = $config;
         $this->formatter = $formatter;
-        $this->defaultTransactionConfiguration = $defaultTransactionConfiguration;
+        $this->socketTimeout = $socketTimeout;
     }
 
     /**
@@ -79,13 +79,13 @@ final class BoltDriver implements DriverInterface
      *           )
      * @psalm-mutation-free
      */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?TransactionConfiguration $defaultTransactionConfig = null, FormatterInterface $formatter = null): self
+    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
         }
 
-        $defaultTransactionConfig ??= TransactionConfiguration::default();
+        $socketTimeout ??= TransactionConfiguration::DEFAULT_TIMEOUT;
 
         if ($formatter !== null) {
             return new self(
@@ -94,7 +94,7 @@ final class BoltDriver implements DriverInterface
                 new BoltConnectionPool(),
                 $configuration ?? DriverConfiguration::default(),
                 $formatter,
-                $defaultTransactionConfig
+                $socketTimeout
             );
         }
 
@@ -104,7 +104,7 @@ final class BoltDriver implements DriverInterface
             new BoltConnectionPool(),
             $configuration ?? DriverConfiguration::default(),
             OGMFormatter::create(),
-            $defaultTransactionConfig
+            $socketTimeout
         );
     }
 
@@ -123,7 +123,7 @@ final class BoltDriver implements DriverInterface
             $this->config->getUserAgent(),
             $this->parsedUrl,
             $this->auth,
-            $this->defaultTransactionConfiguration
+            $this->socketTimeout
         );
     }
 }
