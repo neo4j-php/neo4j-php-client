@@ -15,6 +15,9 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Bolt\error\ConnectException;
 use Generator;
+use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\ClientInterface;
 use function getenv;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -36,6 +39,22 @@ final class ComplexQueryTests extends EnvironmentAwareIntegrationTest
     {
         /** @psalm-suppress InvalidReturnStatement */
         return new BasicFormatter();
+    }
+
+    /**
+     * @return ClientInterface<T>
+     */
+    protected function createClient(): ClientInterface
+    {
+        $connections = $this->getConnections();
+
+        $builder = ClientBuilder::create();
+        foreach ($connections as $i => $connection) {
+            $uri = Uri::create($connection);
+            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection, null, TransactionConfiguration::default()->withTimeout(1000000));
+        }
+
+        return $builder->withFormatter($this->formatter())->build();
     }
 
     /**
@@ -307,6 +326,16 @@ CYPHER);
     /**
      * @dataProvider connectionAliases
      */
+    public function testLongQueryAuto(string $alias): void
+    {
+        $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
+        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        self::assertTrue(true);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
     public function testLongQueryUnmanagedNegative(string $alias): void
     {
         if (str_starts_with($alias, 'http')) {
@@ -317,4 +346,5 @@ CYPHER);
         $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
         $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
     }
+
 }
