@@ -25,6 +25,7 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
 
@@ -43,6 +44,7 @@ final class BoltDriver implements DriverInterface
     private ConnectionPoolInterface $pool;
     private DriverConfiguration $config;
     private FormatterInterface $formatter;
+    private TransactionConfiguration $defaultTransactionConfiguration;
 
     /**
      * @param FormatterInterface<T>                 $formatter
@@ -53,13 +55,15 @@ final class BoltDriver implements DriverInterface
         AuthenticateInterface $auth,
         ConnectionPoolInterface $pool,
         DriverConfiguration $config,
-        FormatterInterface $formatter
+        FormatterInterface $formatter,
+        TransactionConfiguration $defaultTransactionConfiguration
     ) {
         $this->parsedUrl = $parsedUrl;
         $this->auth = $auth;
         $this->pool = $pool;
         $this->config = $config;
         $this->formatter = $formatter;
+        $this->defaultTransactionConfiguration = $defaultTransactionConfiguration;
     }
 
     /**
@@ -69,17 +73,19 @@ final class BoltDriver implements DriverInterface
      * @param string|UriInterface   $uri
      *
      * @return (
-     *           func_num_args() is 4
+     *           func_num_args() is 5
      *           ? self<U>
      *           : self<OGMResults>
      *           )
      * @psalm-mutation-free
      */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
+    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?TransactionConfiguration $defaultTransactionConfig = null, FormatterInterface $formatter = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
         }
+
+        $defaultTransactionConfig ??= TransactionConfiguration::default();
 
         if ($formatter !== null) {
             return new self(
@@ -87,7 +93,8 @@ final class BoltDriver implements DriverInterface
                 $authenticate ?? Authenticate::fromUrl(),
                 new BoltConnectionPool(),
                 $configuration ?? DriverConfiguration::default(),
-                $formatter
+                $formatter,
+                $defaultTransactionConfig
             );
         }
 
@@ -96,7 +103,8 @@ final class BoltDriver implements DriverInterface
             $authenticate ?? Authenticate::fromUrl(),
             new BoltConnectionPool(),
             $configuration ?? DriverConfiguration::default(),
-            OGMFormatter::create()
+            OGMFormatter::create(),
+            $defaultTransactionConfig
         );
     }
 
@@ -114,7 +122,8 @@ final class BoltDriver implements DriverInterface
             $this->formatter,
             $this->config->getUserAgent(),
             $this->parsedUrl,
-            $this->auth
+            $this->auth,
+            $this->defaultTransactionConfiguration
         );
     }
 }

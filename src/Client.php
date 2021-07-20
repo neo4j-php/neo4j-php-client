@@ -41,7 +41,7 @@ final class Client implements ClientInterface
 {
     private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
 
-    /** @var Map<string, array{0: Uri, 1:AuthenticateInterface}|DriverInterface<T>> */
+    /** @var Map<string, array{0: Uri, 1:AuthenticateInterface, 2:TransactionConfiguration}|DriverInterface<T>> */
     private Map $driverConfigurations;
     /** @var Map<string, DriverInterface> */
     private Map $drivers;
@@ -51,8 +51,8 @@ final class Client implements ClientInterface
     private ?string $default;
 
     /**
-     * @param Map<string, array{0: Uri, 1:AuthenticateInterface}> $driverConfigurations
-     * @param FormatterInterface<T>                               $formatter
+     * @param Map<string, array{0: Uri, 1:AuthenticateInterface, 2:TransactionConfiguration}> $driverConfigurations
+     * @param FormatterInterface<T>                                                           $formatter
      */
     public function __construct(Map $driverConfigurations, DriverConfiguration $configuration, FormatterInterface $formatter, ?string $default)
     {
@@ -89,7 +89,7 @@ final class Client implements ClientInterface
     public function getDriver(?string $alias): DriverInterface
     {
         if ($this->driverConfigurations->count() === 0) {
-            $driver = $this->makeDriver(Uri::create('bolt://localhost:7687'), 'default', Authenticate::disabled());
+            $driver = $this->makeDriver(Uri::create('bolt://localhost:7687'), 'default', Authenticate::disabled(), TransactionConfiguration::default());
             $this->driverConfigurations->put('default', $driver);
         }
 
@@ -101,8 +101,8 @@ final class Client implements ClientInterface
 
         $driverOrConfig = $this->driverConfigurations->get($alias);
         if (is_array($driverOrConfig)) {
-            [$parsedUrl, $authentication] = $driverOrConfig;
-            $driverOrConfig = $this->makeDriver($parsedUrl, $alias, $authentication);
+            [$parsedUrl, $authentication, $tsxConfiguration] = $driverOrConfig;
+            $driverOrConfig = $this->makeDriver($parsedUrl, $alias, $authentication, $tsxConfiguration);
             $this->driverConfigurations->put($alias, $driverOrConfig);
         }
 
@@ -155,10 +155,10 @@ final class Client implements ClientInterface
      *
      * @return DriverInterface<T>
      */
-    private function makeDriver(Uri $uri, string $alias, AuthenticateInterface $authentication): DriverInterface
+    private function makeDriver(Uri $uri, string $alias, AuthenticateInterface $authentication, TransactionConfiguration $config): DriverInterface
     {
-        return $this->cacheDriver($alias, function () use ($uri, $authentication) {
-            return DriverFactory::create($uri, $this->configuration, $authentication, $this->formatter);
+        return $this->cacheDriver($alias, function () use ($uri, $authentication, $config) {
+            return DriverFactory::create($uri, $this->configuration, $authentication, $config, $this->formatter);
         });
     }
 }

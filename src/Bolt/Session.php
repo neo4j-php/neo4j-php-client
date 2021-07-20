@@ -48,6 +48,7 @@ final class Session implements SessionInterface
     private string $userAgent;
     private UriInterface $uri;
     private AuthenticateInterface $auth;
+    private TransactionConfiguration $defaultTransactionConfig;
 
     /**
      * @param FormatterInterface<T>                 $formatter
@@ -59,7 +60,8 @@ final class Session implements SessionInterface
         FormatterInterface $formatter,
         string $userAgent,
         UriInterface $uri,
-        AuthenticateInterface $auth
+        AuthenticateInterface $auth,
+        TransactionConfiguration $defaultTransactionConfig
     ) {
         $this->config = $config;
         $this->pool = $pool;
@@ -67,6 +69,7 @@ final class Session implements SessionInterface
         $this->userAgent = $userAgent;
         $this->uri = $uri;
         $this->auth = $auth;
+        $this->defaultTransactionConfig = $defaultTransactionConfig;
     }
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
@@ -134,7 +137,7 @@ final class Session implements SessionInterface
         return new BoltUnmanagedTransaction(
             $this->config->getDatabase(),
             $this->formatter,
-            $this->acquireBolt(TransactionConfiguration::default(), $config)
+            $this->acquireBolt($this->defaultTransactionConfig, $config)
         );
     }
 

@@ -21,6 +21,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Http\HttpDriver;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Psr\Http\Message\UriInterface;
@@ -37,12 +38,12 @@ final class DriverFactory
      * @param string|UriInterface   $uri
      *
      * @return (
-     *           func_num_args() is 4
+     *           func_num_args() is 5
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
      */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): DriverInterface
+    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?TransactionConfiguration $defaultTransactionConfig = null, FormatterInterface $formatter = null): DriverInterface
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
@@ -51,11 +52,11 @@ final class DriverFactory
         $scheme = $scheme === '' ? 'bolt' : $scheme;
 
         if (in_array($scheme, ['bolt', 'bolt+s', 'bolt+ssc'])) {
-            return self::createBoltDriver($uri, $configuration, $authenticate, $formatter);
+            return self::createBoltDriver($uri, $configuration, $authenticate, $defaultTransactionConfig, $formatter);
         }
 
         if (in_array($scheme, ['neo4j', 'neo4j+s', 'neo4j+ssc'])) {
-            return self::createNeo4jDriver($uri, $configuration, $authenticate, $formatter);
+            return self::createNeo4jDriver($uri, $configuration, $authenticate, $defaultTransactionConfig, $formatter);
         }
 
         return self::createHttpDriver($uri, $configuration, $authenticate, $formatter);
@@ -68,19 +69,19 @@ final class DriverFactory
      * @param string|UriInterface   $uri
      *
      * @return (
-     *           func_num_args() is 4
+     *           func_num_args() is 5
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
      * @psalm-mutation-free
      */
-    private static function createBoltDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
+    private static function createBoltDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?TransactionConfiguration $defaultTransactionConfig, FormatterInterface $formatter = null): DriverInterface
     {
         if ($formatter !== null) {
-            return BoltDriver::create($uri, $configuration, $authenticate, $formatter);
+            return BoltDriver::create($uri, $configuration, $authenticate, $defaultTransactionConfig, $formatter);
         }
 
-        return BoltDriver::create($uri, $configuration, $authenticate);
+        return BoltDriver::create($uri, $configuration, $authenticate, $defaultTransactionConfig);
     }
 
     /**
@@ -90,19 +91,19 @@ final class DriverFactory
      * @param string|UriInterface   $uri
      *
      * @return (
-     *           func_num_args() is 4
+     *           func_num_args() is 5
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
      * @psalm-mutation-free
      */
-    private static function createNeo4jDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
+    private static function createNeo4jDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?TransactionConfiguration $defaultTransactionConfig = null, FormatterInterface $formatter = null): DriverInterface
     {
         if ($formatter !== null) {
-            return Neo4jDriver::create($uri, $configuration, $authenticate, $formatter);
+            return Neo4jDriver::create($uri, $configuration, $authenticate, $defaultTransactionConfig, $formatter);
         }
 
-        return Neo4jDriver::create($uri, $configuration, $authenticate);
+        return Neo4jDriver::create($uri, $configuration, $authenticate, $defaultTransactionConfig);
     }
 
     /**
