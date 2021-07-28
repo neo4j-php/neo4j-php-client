@@ -60,6 +60,9 @@ final class HttpPsrBindings
         return new self($client, $streamFactory, $requestFactory);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function default(): self
     {
         return new self();

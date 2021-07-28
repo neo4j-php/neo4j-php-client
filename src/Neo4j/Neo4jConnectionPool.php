@@ -15,8 +15,11 @@ namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\connection\StreamSocket;
 use Exception;
+use function explode;
 use Laudis\Neo4j\Bolt\BoltDriver;
+use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
@@ -48,19 +51,36 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    public function acquire(UriInterface $uri, AccessMode $mode): StreamSocket
+    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate, float $socketTimeout): StreamSocket
     {
-        $table = $this->routingTable($uri);
+        $table = $this->routingTable($uri, $authenticate);
         $server = $this->getNextServer($table, $mode);
-        $uri = Uri::create($server);
 
-        return $this->pool->acquire($uri, $mode);
+        $socket = $this->pool->acquire($server, $mode, $authenticate, $socketTimeout);
+
+        $scheme = $uri->getScheme();
+        $explosion = explode('+', $scheme, 2);
+        $sslConfig = $explosion[1] ?? '';
+
+        if (str_starts_with('s', $sslConfig)) {
+            // We have to pass a different host when working with ssl on aura.
+            // There is a strange behaviour where if we pass the uri host on a single
+            // instance aura deployment, we need to pass the original uri for the
+            // ssl configuration to be valid.
+            if ($table->getWithRole()->count() > 1) {
+                TransactionHelper::enableSsl($server->getHost(), $sslConfig, $socket);
+            } else {
+                TransactionHelper::enableSsl($uri->getHost(), $sslConfig, $socket);
+            }
+        }
+
+        return $socket;
     }
 
     /**
      * @throws Exception
      */
-    private function getNextServer(RoutingTable $table, AccessMode $mode): string
+    private function getNextServer(RoutingTable $table, AccessMode $mode): Uri
     {
         if (AccessMode::WRITE() === $mode) {
             $servers = $table->getWithRole(RoutingRoles::LEADER());
@@ -68,7 +88,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $servers = $table->getWithRole(RoutingRoles::FOLLOWER());
         }
 
-        return $servers->get(random_int(0, $servers->count() - 1));
+        return Uri::create($servers->get(random_int(0, $servers->count() - 1)));
     }
 
     /**
@@ -76,10 +96,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      *
      * @throws Exception
      */
-    private function routingTable(UriInterface $uri): RoutingTable
+    private function routingTable(UriInterface $uri, AuthenticateInterface $authenticate): RoutingTable
     {
         if ($this->table === null || $this->table->getTtl() < time()) {
-            $session = BoltDriver::create($uri)->createSession();
+            $session = BoltDriver::create($uri, null, $authenticate)->createSession();
             $row = $session->run(
                 'CALL dbms.components() yield versions UNWIND versions as version RETURN version'
             )->first();

@@ -51,7 +51,9 @@
         "psalm/plugin-phpunit": "^0.15.1",
         "monolog/monolog": "^2.2",
         "psr/log": "^1.1",
-        "php-di/php-di": "^6.3"
+        "php-di/php-di": "^6.3",
+        "psalm/plugin-phpunit": "^0.15.1",
+        "vlucas/phpdotenv": "^5.0"
     },
     "autoload": {
         "psr-4": {

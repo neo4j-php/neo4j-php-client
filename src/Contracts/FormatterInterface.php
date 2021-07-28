@@ -59,8 +59,6 @@ use Psr\Http\Message\ResponseInterface;
  *
  * @psalm-type BoltMeta = array{t_first: int, fields: list<string>}
  *
- * @psalm-type
- *
  * @template T
  */
 interface FormatterInterface

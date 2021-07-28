@@ -24,5 +24,5 @@ interface ConnectionPoolInterface
     /**
      * @return T
      */
-    public function acquire(UriInterface $uri, AccessMode $mode);
+    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate, float $socketTimeout);
 }

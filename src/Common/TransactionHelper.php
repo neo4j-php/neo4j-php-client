@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use Bolt\connection\StreamSocket;
+use const FILTER_VALIDATE_IP;
+use function filter_var;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -46,10 +49,28 @@ final class TransactionHelper
 
                 return $tbr;
             } catch (Neo4jException $e) {
-                if (microtime(true) > $limit) {
+                if (microtime(true) > $limit || !str_contains($e->getMessage(), '(Neo.ClientError.Cluster.NotALeader)')) {
                     throw $e;
                 }
             }
+        }
+    }
+
+    public static function enableSsl(string $host, string $sslConfig, StreamSocket $sock): void
+    {
+        $options = [
+            'verify_peer' => true,
+//            'verify_peer_name' => false,
+            'peer_name' => $host,
+        ];
+        if (!filter_var($host, FILTER_VALIDATE_IP)) {
+            $options['SNI_enabled'] = true;
+        }
+        if ($sslConfig === 's') {
+            $sock->setSslContextOptions($options);
+        } elseif ($sslConfig === 'ssc') {
+            $options['allow_self_signed'] = true;
+            $sock->setSslContextOptions($options);
         }
     }
 }

@@ -18,7 +18,7 @@ use function is_callable;
 
 final class DriverConfiguration
 {
-    public const DEFAULT_USER_AGENT = 'neo4j-php-client/2.0.0-alpha';
+    public const DEFAULT_USER_AGENT = 'neo4j-php-client/2.0.7';
 
     /** @var callable():(string|null)|string|null */
     private $userAgent;
@@ -44,6 +44,9 @@ final class DriverConfiguration
         return new self($userAgent, $httpPsrBindings);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function default(): self
     {
         return new self(

@@ -14,11 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use Ds\Map;
-use function in_array;
 use InvalidArgumentException;
-use function is_array;
 use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -27,10 +24,11 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\DriverSetup;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
-use Laudis\Neo4j\Http\HttpDriver;
-use Laudis\Neo4j\Neo4j\Neo4jDriver;
+use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 use function sprintf;
@@ -44,7 +42,7 @@ final class Client implements ClientInterface
 {
     private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
 
-    /** @var Map<string, array{0: Uri, 1:AuthenticateInterface}|DriverInterface<T>> */
+    /** @var Map<string, DriverSetup|DriverInterface<T>> */
     private Map $driverConfigurations;
     /** @var Map<string, DriverInterface> */
     private Map $drivers;
@@ -54,8 +52,8 @@ final class Client implements ClientInterface
     private ?string $default;
 
     /**
-     * @param Map<string, array{0: Uri, 1:AuthenticateInterface}> $driverConfigurations
-     * @param FormatterInterface<T>                               $formatter
+     * @param Map<string, DriverSetup> $driverConfigurations
+     * @param FormatterInterface<T>    $formatter
      */
     public function __construct(Map $driverConfigurations, DriverConfiguration $configuration, FormatterInterface $formatter, ?string $default)
     {
@@ -71,28 +69,28 @@ final class Client implements ClientInterface
 
     public function run(string $query, iterable $parameters = [], ?string $alias = null)
     {
-        return $this->startSession($alias)->run($query, $parameters);
+        return $this->startSession($alias, SessionConfiguration::default())->run($query, $parameters);
     }
 
     public function runStatement(Statement $statement, ?string $alias = null)
     {
-        return $this->startSession($alias)->runStatement($statement);
+        return $this->startSession($alias, SessionConfiguration::default())->runStatement($statement);
     }
 
     public function runStatements(iterable $statements, ?string $alias = null): CypherList
     {
-        return $this->startSession($alias)->runStatements($statements);
+        return $this->startSession($alias, SessionConfiguration::default())->runStatements($statements);
     }
 
-    public function beginTransaction(?iterable $statements = null, ?string $alias = null): UnmanagedTransactionInterface
+    public function beginTransaction(?iterable $statements = null, ?string $alias = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        return $this->startSession($alias)->beginTransaction($statements);
+        return $this->startSession($alias, SessionConfiguration::default())->beginTransaction($statements, $config);
     }
 
     public function getDriver(?string $alias): DriverInterface
     {
         if ($this->driverConfigurations->count() === 0) {
-            $driver = $this->makeDriver(Uri::create('bolt://localhost:7687'), 'default', Authenticate::disabled());
+            $driver = $this->makeDriver(Uri::create('bolt://localhost:7687'), 'default', Authenticate::disabled(), TransactionConfiguration::DEFAULT_TIMEOUT);
             $this->driverConfigurations->put('default', $driver);
         }
 
@@ -102,55 +100,36 @@ final class Client implements ClientInterface
             throw new InvalidArgumentException($key);
         }
 
-        $driverOrConfig = $this->driverConfigurations->get($alias);
-        if (is_array($driverOrConfig)) {
-            [$parsedUrl, $authentication] = $driverOrConfig;
-            $driverOrConfig = $this->makeDriver($parsedUrl, $alias, $authentication);
-            $this->driverConfigurations->put($alias, $driverOrConfig);
+        $driverOrSetup = $this->driverConfigurations->get($alias);
+        if ($driverOrSetup instanceof DriverSetup) {
+            $driverOrSetup = $this->makeDriver($driverOrSetup->getUri(), $alias, $driverOrSetup->getAuth(), $driverOrSetup->getSocketTimeout());
+            $this->driverConfigurations->put($alias, $driverOrSetup);
         }
 
-        return $driverOrConfig;
+        return $driverOrSetup;
     }
 
     /**
      * @return SessionInterface<T>
      */
-    private function startSession(?string $alias = null): SessionInterface
+    private function startSession(?string $alias = null, SessionConfiguration $configuration = null): SessionInterface
     {
-        return $this->getDriver($alias)->createSession();
+        return $this->getDriver($alias)->createSession($configuration ?? SessionConfiguration::default());
     }
 
     public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
-        return $this->startSession($alias)->writeTransaction($tsxHandler, $config);
+        return $this->startSession($alias, SessionConfiguration::default()->withAccessMode(AccessMode::WRITE()))->writeTransaction($tsxHandler, $config);
     }
 
     public function readTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
-        return $this->startSession($alias)->readTransaction($tsxHandler, $config);
+        return $this->startSession($alias, SessionConfiguration::default()->withAccessMode(AccessMode::READ()))->readTransaction($tsxHandler, $config);
     }
 
     public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
-        return $this->startSession($alias)->transaction($tsxHandler, $config);
-    }
-
-    /**
-     * @param ParsedUrl $parsedUrl
-     *
-     * @return HttpDriver<T>
-     */
-    private function makeHttpDriver(Uri $uri, AuthenticateInterface $authenticate): HttpDriver
-    {
-        return HttpDriver::createWithFormatter($uri, $this->formatter, $this->configuration, $authenticate);
-    }
-
-    /**
-     * @return BoltDriver<T>
-     */
-    private function makeBoltDriver(Uri $uri, AuthenticateInterface $authenticate): BoltDriver
-    {
-        return BoltDriver::createWithFormatter($uri, $this->formatter, $this->configuration, $authenticate);
+        return $this->writeTransaction($tsxHandler, $alias, $config);
     }
 
     /**
@@ -172,37 +151,14 @@ final class Client implements ClientInterface
     }
 
     /**
-     * @return Neo4jDriver<T>
-     */
-    private function makeNeo4jDriver(UriInterface $uri, AuthenticateInterface $authenticate): Neo4jDriver
-    {
-        return Neo4jDriver::createWithFormatter($uri, $this->formatter, $this->configuration, $authenticate);
-    }
-
-    /**
      * @param ParsedUrl $parsedUrl
      *
      * @return DriverInterface<T>
      */
-    private function makeDriver(Uri $uri, string $alias, AuthenticateInterface $authentication): DriverInterface
+    private function makeDriver(UriInterface $uri, string $alias, AuthenticateInterface $authentication, float $socketTimeout): DriverInterface
     {
-        $scheme = $uri->getScheme();
-        $scheme = $scheme === '' ? 'bolt' : $scheme;
-
-        if (in_array($scheme, ['bolt', 'bolt+s', 'bolt+ssc'])) {
-            return $this->cacheDriver($alias, function () use ($uri, $authentication) {
-                return $this->makeBoltDriver($uri, $authentication);
-            });
-        }
-
-        if (in_array($scheme, ['neo4j', 'neo4j+s', 'neo4j+ssc'])) {
-            return $this->cacheDriver($alias, function () use ($uri, $authentication) {
-                return $this->makeNeo4jDriver($uri, $authentication);
-            });
-        }
-
-        return $this->cacheDriver($alias, function () use ($uri, $authentication) {
-            return $this->makeHttpDriver($uri, $authentication);
+        return $this->cacheDriver($alias, function () use ($uri, $authentication, $socketTimeout) {
+            return DriverFactory::create($uri, $this->configuration, $authentication, $socketTimeout, $this->formatter);
         });
     }
 }

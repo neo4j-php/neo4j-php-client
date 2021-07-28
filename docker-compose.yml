@@ -24,6 +24,8 @@ services:
             - readreplica1
         expose:
             - 9000
+        env_file:
+          - .env
     testkit-backend:
         build:
             context: .
@@ -38,7 +40,7 @@ services:
     neo4j:
         networks:
             - neo4j
-        image: neo4j:4.2-enterprise
+        image: neo4j:4.3-enterprise
         healthcheck:
             test: [ "CMD", "neo4j status" ]
             interval: 30s
@@ -53,8 +55,11 @@ services:
         environment:
             - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
             - NEO4J_AUTH=neo4j/test
+            - NEO4J_dbms_security_allow__csv__import__from__file__urls=true
+        volumes:
+          - ./tests/resources:/import
     core1:
-        image: neo4j:4.2-enterprise
+        image: neo4j:4.3-enterprise
         healthcheck:
             test: [ "CMD", "neo4j status" ]
             interval: 30s
@@ -71,6 +76,8 @@ services:
         ports:
             - "7475:7474"
             - "7688:7687"
+        volumes:
+          - ./tests/resources:/import
         environment:
             - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
             - NEO4J_AUTH=neo4j/test
@@ -81,8 +88,9 @@ services:
             - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
             - NEO4J_causal__clustering_disable__middleware__logging=false
             - NEO4J_dbms_connectors_default__advertised__address=core1
+            - NEO4J_dbms_security_allow__csv__import__from__file__urls=true
     core2:
-        image: neo4j:4.2-enterprise
+        image: neo4j:4.3-enterprise
         healthcheck:
             test: [ "CMD", "neo4j status" ]
             interval: 30s
@@ -105,9 +113,12 @@ services:
             - NEO4J_causalClustering_raftAdvertisedAddress=core2:7000
             - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
             - NEO4J_dbms_connectors_default__advertised__address=core2
+            - NEO4J_dbms_security_allow__csv__import__from__file__urls=true
+        volumes:
+          - ./tests/resources:/import
 
     core3:
-        image: neo4j:4.2-enterprise
+        image: neo4j:4.3-enterprise
         healthcheck:
             test: [ "CMD", "neo4j status" ]
             interval: 30s
@@ -130,9 +141,12 @@ services:
             - NEO4J_causalClustering_raftAdvertisedAddress=core3:7000
             - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
             - NEO4J_dbms_connectors_default__advertised__address=core3
+            - NEO4J_dbms_security_allow__csv__import__from__file__urls=true
+        volumes:
+          - ./tests/resources:/import
 
     readreplica1:
-        image: neo4j:4.2-enterprise
+        image: neo4j:4.3-enterprise
         healthcheck:
             test: [ "CMD", "neo4j status" ]
             interval: 30s
@@ -155,3 +169,6 @@ services:
             - NEO4J_causalClustering_raftAdvertisedAddress=readreplica1:7000
             - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
             - NEO4J_dbms_connectors_default__advertised__address=readreplica1
+            - NEO4J_dbms_security_allow__csv__import__from__file__urls=true
+        volumes:
+          - ./tests/resources:/import

@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
-use Closure;
 use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;
@@ -23,11 +22,13 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
@@ -47,6 +48,7 @@ final class Session implements SessionInterface
     private string $userAgent;
     private UriInterface $uri;
     private AuthenticateInterface $auth;
+    private float $socketTimeout;
 
     /**
      * @param FormatterInterface<T>                 $formatter
@@ -58,7 +60,8 @@ final class Session implements SessionInterface
         FormatterInterface $formatter,
         string $userAgent,
         UriInterface $uri,
-        AuthenticateInterface $auth
+        AuthenticateInterface $auth,
+        float $socketTimeout
     ) {
         $this->config = $config;
         $this->pool = $pool;
@@ -66,11 +69,12 @@ final class Session implements SessionInterface
         $this->userAgent = $userAgent;
         $this->uri = $uri;
         $this->auth = $auth;
+        $this->socketTimeout = $socketTimeout;
     }
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
-        return $this->openTransaction()->commit($statements);
+        return $this->beginInstantTransaction($this->config)->runStatements($statements);
     }
 
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
@@ -90,16 +94,24 @@ final class Session implements SessionInterface
 
     public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
+        $config ??= TransactionConfiguration::default();
+
         return TransactionHelper::retry(
-            Closure::fromCallable([$this, 'beginTransaction']),
+            fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE())),
             $tsxHandler,
-            $config ?? TransactionConfiguration::default()
+            $config
         );
     }
 
     public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
-        return $this->writeTransaction($tsxHandler);
+        $config ??= TransactionConfiguration::default();
+
+        return TransactionHelper::retry(
+            fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ())),
+            $tsxHandler,
+            $config
+        );
     }
 
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
@@ -109,9 +121,40 @@ final class Session implements SessionInterface
 
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
+        $config ??= TransactionConfiguration::default();
+        $tsx = $this->startTransaction($config, $this->config);
+
+        $tsx->runStatements($statements ?? []);
+
+        return $tsx;
+    }
+
+    /**
+     * @return UnmanagedTransactionInterface<T>
+     */
+    private function beginInstantTransaction(SessionConfiguration $config): TransactionInterface
+    {
+        return new BoltUnmanagedTransaction(
+            $this->config->getDatabase(),
+            $this->formatter,
+            $this->acquireBolt(TransactionConfiguration::default(), $config)
+        );
+    }
+
+    private function acquireBolt(TransactionConfiguration $config, SessionConfiguration $sessionConfig): Bolt
+    {
+        $timeout = max($this->socketTimeout, $config->getTimeout());
+
+        $bolt = new Bolt($this->pool->acquire($this->uri, $sessionConfig->getAccessMode(), $this->auth, $timeout));
+        $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
+
+        return $bolt;
+    }
+
+    private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig): UnmanagedTransactionInterface
+    {
         try {
-            $bolt = new Bolt($this->pool->acquire($this->uri, $this->config->getAccessMode()));
-            $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
+            $bolt = $this->acquireBolt($config, $sessionConfig);
 
             $begin = $bolt->begin(['db' => $this->config->getDatabase()]);
 
@@ -125,10 +168,6 @@ final class Session implements SessionInterface
             throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
         }
 
-        $tsx = new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $bolt);
-
-        $tsx->runStatements($statements ?? []);
-
-        return $tsx;
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $bolt);
     }
 }

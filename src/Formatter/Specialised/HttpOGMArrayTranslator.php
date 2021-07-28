@@ -81,7 +81,8 @@ final class HttpOGMArrayTranslator
             // We need to use JOLT instead for finer control,
             // which will be a different translator.
             if (is_array($x)) {
-                $tbr->push($this->translateContainer($value));
+                /** @var array<array-key, array|null|scalar> $x */
+                $tbr->push($this->translateContainer($x));
             } else {
                 $tbr->push($x);
             }

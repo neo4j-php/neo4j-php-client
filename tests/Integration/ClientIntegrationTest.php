@@ -13,68 +13,56 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use function count;
 use InvalidArgumentException;
-use Laudis\Neo4j\Bolt\BoltConfiguration;
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ *
+ * @extends EnvironmentAwareIntegrationTest<BasicResults>
  */
-final class ClientIntegrationTest extends TestCase
+final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    /** @var ClientInterface<BasicResults> */
-    private ClientInterface $client;
-
-    /**
-     * @return non-empty-array<array-key, array{0: string}>
-     */
-    public function connectionAliases(): iterable
+    protected function formatter(): FormatterInterface
     {
-        return [['bolt'], ['http'], ['cluster']];
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->client = $this->createClient();
-    }
-
-    /**
-     * @return ClientInterface<BasicResults>
-     */
-    public function createClient(): ClientInterface
-    {
-        return ClientBuilder::create()
-            ->addBoltConnection('bolt', 'bolt://neo4j:test@neo4j')
-            ->addHttpConnection('http', 'http://neo4j:test@neo4j')
-            ->addBoltConnection('cluster', 'bolt://neo4j:test@core1', BoltConfiguration::create()->withAutoRouting(true))
-            ->withFormatter(new BasicFormatter())
-            ->build();
+        /** @psalm-suppress InvalidReturnStatement */
+        return new BasicFormatter();
     }
 
     public function testEqualEffect(): void
     {
+        if (count($this->connectionAliases()) === 1) {
+            self::markTestSkipped('Only one connection alias provided. Comparison is impossible.');
+        }
         $statement = new Statement(
             'merge(u:User{email: $email}) on create set u.uuid=$uuid return u',
             ['email' => 'a@b.c', 'uuid' => 'cc60fd69-a92b-47f3-9674-2f27f3437d66']
         );
 
-        $x = $this->client->runStatement($statement, 'bolt');
-        $y = $this->client->runStatement($statement, 'http');
+        $prev = null;
+        foreach ($this->connectionAliases() as $current) {
+            if ($prev !== null) {
+                $x = $this->client->runStatement($statement, $prev);
+                $y = $this->client->runStatement($statement, $current[0]);
 
-        self::assertEquals($x, $y);
-        self::assertEquals($x->toArray(), $y->toArray());
+                self::assertEquals($x, $y);
+                self::assertEquals($x->toArray(), $y->toArray());
+            }
+            $prev = $current[0];
+        }
     }
 
-    public function testAvailabilityFullImplementation(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testAvailabilityFullImplementation(string $alias): void
     {
-        $results = $this->client->getDriver('cluster')
+        $results = $this->client->getDriver($alias)
             ->createSession()
             ->beginTransaction()
             ->run('UNWIND [1] AS x RETURN x')
@@ -84,23 +72,26 @@ final class ClientIntegrationTest extends TestCase
         self::assertEquals(1, $results);
     }
 
-    public function testTransactionFunction(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testTransactionFunction(string $alias): void
     {
         $result = $this->client->transaction(static function (TransactionInterface $tsx) {
             return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
-        });
+        }, $alias);
 
         self::assertEquals(1, $result);
 
         $result = $this->client->readTransaction(static function (TransactionInterface $tsx) {
             return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
-        });
+        }, $alias);
 
         self::assertEquals(1, $result);
 
         $result = $this->client->writeTransaction(static function (TransactionInterface $tsx) {
             return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
-        });
+        }, $alias);
 
         self::assertEquals(1, $result);
     }

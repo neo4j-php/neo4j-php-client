@@ -56,6 +56,9 @@ final class OGMFormatter implements FormatterInterface
         $this->httpTranslator = $httpTranslator;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function create(): OGMFormatter
     {
         return new self(

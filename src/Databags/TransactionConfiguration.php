@@ -45,6 +45,9 @@ final class TransactionConfiguration
         return new self($timeout, $metaData);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function default(): self
     {
         return new self();

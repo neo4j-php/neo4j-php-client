@@ -13,35 +13,50 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Bolt\error\ConnectException;
 use Generator;
+use function getenv;
 use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\ParameterHelper;
-use PHPUnit\Framework\TestCase;
+use function str_starts_with;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ *
+ * @extends EnvironmentAwareIntegrationTest<BasicResults>
  */
-final class ComplexQueryTests extends TestCase
+final class ComplexQueryTests extends EnvironmentAwareIntegrationTest
 {
-    /** @var ClientInterface<BasicResults> */
-    private ClientInterface $client;
-
-    protected function setUp(): void
+    protected function formatter(): FormatterInterface
     {
-        parent::setUp();
-        $this->client = ClientBuilder::create()
-            ->withDriver('bolt', 'bolt://neo4j:test@neo4j')
-            ->withDriver('http', 'http://neo4j:test@neo4j')
-            ->withDriver('cluster', 'neo4j://neo4j:test@core1')
-            ->withFormatter(new BasicFormatter())
-            ->build();
+        /** @psalm-suppress InvalidReturnStatement */
+        return new BasicFormatter();
+    }
+
+    protected function createClient(): ClientInterface
+    {
+        $connections = $this->getConnections();
+
+        $builder = ClientBuilder::create();
+        foreach ($connections as $i => $connection) {
+            $uri = Uri::create($connection);
+            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection, null, 1000000);
+        }
+
+        /** @psalm-suppress InvalidReturnStatement */
+        return $builder->withFormatter($this->formatter())->build();
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testListParameterHelper(string $alias): void
     {
@@ -52,7 +67,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asList([])], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testValidListParameterHelper(string $alias): void
     {
@@ -64,7 +79,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asList([1, 2, 3])], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testValidMapParameterHelper(string $alias): void
     {
@@ -76,7 +91,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b', 'c' => 'd'])], $alia
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testArrayParameterHelper(string $alias): void
     {
@@ -89,7 +104,7 @@ CYPHER, ['listOrMap' => []], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testInvalidParameter(string $alias): void
     {
@@ -109,7 +124,7 @@ CYPHER, ['listOrMap' => self::generate()], $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testInvalidParameters(string $alias): void
     {
@@ -124,7 +139,7 @@ CYPHER, $generator, $alias);
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testCreationAndResult(string $alias): void
     {
@@ -138,7 +153,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testPath(string $alias): void
     {
@@ -159,7 +174,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testNullListAndMap(string $alias): void
     {
@@ -177,7 +192,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testListAndMapInput(string $alias): void
     {
@@ -198,7 +213,7 @@ CYPHER
     }
 
     /**
-     * @dataProvider transactionProvider
+     * @dataProvider connectionAliases
      */
     public function testPathReturnType(string $alias): void
     {
@@ -228,14 +243,105 @@ CYPHER
     }
 
     /**
-     * @return array<int, array<int, string>>
+     * @dataProvider connectionAliases
      */
-    public function transactionProvider(): array
+    public function testPeriodicCommit(string $alias): void
     {
-        return [
-            ['http'],
-            ['bolt'],
-            ['cluster'],
-        ];
+        if (getenv('TESTING_ENVIRONMENT') !== 'local') {
+            self::markTestSkipped('Only local environment has access to local files');
+        }
+
+        $this->client->run(<<<CYPHER
+USING PERIODIC COMMIT 10
+LOAD CSV FROM 'file:///csv-example.csv' AS line
+MERGE (n:File {name: line[0]});
+CYPHER, [], $alias);
+
+        $result = $this->client->run('MATCH (n:File) RETURN count(n) AS count');
+        self::assertEquals(20, $result->first()->get('count'));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testPeriodicCommitFail(string $alias): void
+    {
+        if (getenv('TESTING_ENVIRONMENT') !== 'local') {
+            self::markTestSkipped('Only local environment has access to local files');
+        }
+
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP allows periodic commits during an actual transaction');
+        }
+
+        $this->expectException(Neo4jException::class);
+
+        $tsx = $this->client->beginTransaction([], $alias);
+        $tsx->run(<<<CYPHER
+USING PERIODIC COMMIT 10
+LOAD CSV FROM 'file:///csv-example.csv' AS line
+MERGE (n:File {name: line[0]});
+CYPHER);
+        $tsx->commit();
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryFunction(string $alias): void
+    {
+        $this->client->writeTransaction(static function (TransactionInterface $tsx) {
+            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        }, $alias, TransactionConfiguration::default()->withTimeout(100000));
+        self::assertTrue(true);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryFunctionNegative(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
+        }
+
+        $this->expectException(ConnectException::class);
+        $this->client->writeTransaction(static function (TransactionInterface $tsx) {
+            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        }, $alias, TransactionConfiguration::default()->withTimeout(1));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryUnmanaged(string $alias): void
+    {
+        $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
+        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        self::assertTrue(true);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryAuto(string $alias): void
+    {
+        $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
+        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        self::assertTrue(true);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testLongQueryUnmanagedNegative(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
+        }
+
+        $this->expectException(ConnectException::class);
+        $tsx = $this->client->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
     }
 }

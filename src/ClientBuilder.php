@@ -23,7 +23,9 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\HttpPsrBindings;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Http\HttpConfig;
@@ -39,15 +41,15 @@ final class ClientBuilder
 {
     public const SUPPORTED_SCHEMES = ['', 'bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https'];
 
-    /** @var Map<string, array{0: Uri, 1:AuthenticateInterface}> */
+    /** @var Map<string, DriverSetup> */
     private Map $driverConfigurations;
     private DriverConfiguration $configuration;
     private ?string $defaultDriver;
     private FormatterInterface $formatter;
 
     /**
-     * @param Map<string, array{0: Uri, 1:AuthenticateInterface}> $driverConfigurations
-     * @param FormatterInterface<T>                               $formatter
+     * @param Map<string, DriverSetup> $driverConfigurations
+     * @param FormatterInterface<T>    $formatter
      */
     public function __construct(DriverConfiguration $configuration, FormatterInterface $formatter, Map $driverConfigurations, ?string $defaultDriver)
     {
@@ -68,25 +70,27 @@ final class ClientBuilder
     /**
      * @return self<T>
      */
-    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null): self
+    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?float $socketTimeout = null): self
     {
-        return $this->withParsedUrl($alias, Uri::create($url), $authentication);
+        $authentication ??= Authenticate::fromUrl();
+        $socketTimeout ??= TransactionConfiguration::DEFAULT_TIMEOUT;
+
+        return $this->withParsedUrl($alias, Uri::create($url), $authentication, $socketTimeout);
     }
 
     /**
      * @return self<T>
      */
-    private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication = null): self
+    private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication, float $socketTimeout): self
     {
         $scheme = $uri->getScheme();
-        $authentication ??= Authenticate::fromUrl();
 
         if (!in_array($scheme, self::SUPPORTED_SCHEMES, true)) {
             throw UnsupportedScheme::make($scheme, self::SUPPORTED_SCHEMES);
         }
 
         $configs = $this->driverConfigurations->copy();
-        $configs->put($alias, [$uri, $authentication]);
+        $configs->put($alias, new DriverSetup($uri, $authentication, $socketTimeout));
 
         return new self($this->configuration, $this->formatter, $configs, $this->defaultDriver);
     }
@@ -107,7 +111,7 @@ final class ClientBuilder
         $parsedUrl = Uri::create($url);
         $options = $config->getSslContextOptions();
         $postScheme = '';
-        if ($options !== []) {
+        if ($options && $options !== []) {
             if (($options['allow_self_signed'] ?? false) === true) {
                 $postScheme = '+ssc';
             } else {
@@ -127,7 +131,7 @@ final class ClientBuilder
             $parsedUrl = $parsedUrl->withScheme('bolt'.$postScheme);
         }
 
-        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl());
+        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl(), TransactionConfiguration::DEFAULT_TIMEOUT);
     }
 
     /**
@@ -159,7 +163,7 @@ final class ClientBuilder
             $this->defaultDriver
         );
 
-        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl());
+        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl(), TransactionConfiguration::DEFAULT_TIMEOUT);
     }
 
     /**

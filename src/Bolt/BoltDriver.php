@@ -25,6 +25,7 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
 
@@ -43,6 +44,7 @@ final class BoltDriver implements DriverInterface
     private ConnectionPoolInterface $pool;
     private DriverConfiguration $config;
     private FormatterInterface $formatter;
+    private float $socketTimeout;
 
     /**
      * @param FormatterInterface<T>                 $formatter
@@ -53,37 +55,47 @@ final class BoltDriver implements DriverInterface
         AuthenticateInterface $auth,
         ConnectionPoolInterface $pool,
         DriverConfiguration $config,
-        FormatterInterface $formatter
+        FormatterInterface $formatter,
+        float $socketTimeout
     ) {
         $this->parsedUrl = $parsedUrl;
         $this->auth = $auth;
         $this->pool = $pool;
         $this->config = $config;
         $this->formatter = $formatter;
-    }
-
-    /**
-     * @param string|UriInterface $uri
-     *
-     * @return self<OGMResults>
-     */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
-    {
-        return self::createWithFormatter($uri, OGMFormatter::create(), $configuration, $authenticate);
+        $this->socketTimeout = $socketTimeout;
     }
 
     /**
      * @template U
      *
-     * @param string|UriInterface   $uri
      * @param FormatterInterface<U> $formatter
+     * @param string|UriInterface   $uri
      *
-     * @return self<U>
+     * @return (
+     *           func_num_args() is 5
+     *           ? self<U>
+     *           : self<OGMResults>
+     *           )
+     * @psalm-mutation-free
      */
-    public static function createWithFormatter($uri, FormatterInterface $formatter, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
+    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
+        }
+
+        $socketTimeout ??= TransactionConfiguration::DEFAULT_TIMEOUT;
+
+        if ($formatter !== null) {
+            return new self(
+                $uri,
+                $authenticate ?? Authenticate::fromUrl(),
+                new BoltConnectionPool(),
+                $configuration ?? DriverConfiguration::default(),
+                $formatter,
+                $socketTimeout
+            );
         }
 
         return new self(
@@ -91,7 +103,8 @@ final class BoltDriver implements DriverInterface
             $authenticate ?? Authenticate::fromUrl(),
             new BoltConnectionPool(),
             $configuration ?? DriverConfiguration::default(),
-            $formatter
+            OGMFormatter::create(),
+            $socketTimeout
         );
     }
 
@@ -109,7 +122,8 @@ final class BoltDriver implements DriverInterface
             $this->formatter,
             $this->config->getUserAgent(),
             $this->parsedUrl,
-            $this->auth
+            $this->auth,
+            $this->socketTimeout
         );
     }
 }
