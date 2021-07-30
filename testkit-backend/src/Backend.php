@@ -14,13 +14,21 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend;
 
 use DI\ContainerBuilder;
+use Exception;
+use function get_debug_type;
+use function getenv;
+use function is_array;
+use function is_numeric;
+use function is_string;
 use function json_decode;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
+use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
 use const PHP_EOL;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use UnexpectedValueException;
 
 final class Backend
 {
@@ -35,6 +43,9 @@ final class Backend
         $this->container = $container;
     }
 
+    /**
+     * @throws Exception
+     */
     public static function boot(): self
     {
         Socket::setupEnvironment();
@@ -44,7 +55,30 @@ final class Backend
         $builder->useAutowiring(true);
         $container = $builder->build();
 
-        return new self(Socket::fromAddressAndPort(), $container->get(LoggerInterface::class), $container);
+        $address = self::loadAddress();
+        $port = self::loadPort();
+
+        return new self(Socket::fromAddressAndPort($address, $port), $container->get(LoggerInterface::class), $container);
+    }
+
+    private static function loadAddress(): string
+    {
+        $address = getenv('TESTKIT_BACKEND_ADDRESS');
+        if (!is_string($address)) {
+            $address = '127.0.0.1';
+        }
+
+        return $address;
+    }
+
+    private static function loadPort(): int
+    {
+        $port = getenv('TESTKIT_BACKEND_PORT');
+        if (!is_numeric($port)) {
+            $port = 9876;
+        }
+
+        return (int) $port;
     }
 
     /**
@@ -68,11 +102,16 @@ final class Backend
         $this->logger->debug($message);
         $response = json_decode($message, true, 512, JSON_THROW_ON_ERROR);
 
-        if (!isset($response['name'])) {
+        if (!is_array($response)) {
+            throw new RuntimeException('Did not receive an array');
+        }
+
+        $name = $response['name'] ?? null;
+        if (!is_string($name)) {
             throw new RuntimeException('Did not receive a name');
         }
 
-        $action = $this->container->get($response['name']);
+        $action = $this->loadAction($name);
 
         $message = json_encode($action->handle($response), JSON_THROW_ON_ERROR);
         $this->logger->debug($message);
@@ -80,5 +119,23 @@ final class Backend
         $this->socket->write('#response begin'.PHP_EOL);
         $this->socket->write($message.PHP_EOL);
         $this->socket->write('#response end'.PHP_EOL);
+    }
+
+    /**
+     * @param string $name
+     * @return ActionInterface
+     */
+    private function loadAction(string $name): ActionInterface
+    {
+        $action = $this->container->get($name);
+        if (!$action instanceof ActionInterface) {
+            $str = printf(
+                'Expected action to be an instance of %s, received %s instead',
+                ActionInterface::class,
+                get_debug_type($action)
+            );
+            throw new UnexpectedValueException($str);
+        }
+        return $action;
     }
 }

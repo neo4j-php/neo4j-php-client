@@ -17,6 +17,5 @@ require_once __DIR__.'/../vendor/autoload.php';
 
 $backend = Backend::boot();
 do {
-    /** @psalm-suppress UncaughtThrowInGlobalScope */
     $backend->handle();
 } while (true);

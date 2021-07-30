@@ -44,7 +44,7 @@ final class Socket
         $this->socket = $socket;
     }
 
-    public static function fromAddressAndPort(string $address = '127.0.0.1', int $port = 9876): self
+    public static function fromAddressAndPort(string $address, int $port): self
     {
         $baseSocket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if ($baseSocket === false) {

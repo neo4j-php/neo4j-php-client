@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Actions;
 
 
-final class GetFeatures
+use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+
+final class GetFeatures implements ActionInterface
 {
-    public function handle(): array
+    public function handle(array $parameters): array
     {
         return ['name' => 'FeatureList', 'data' => ['features' => []]];
     }
