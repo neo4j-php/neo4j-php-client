@@ -52,7 +52,8 @@
         "monolog/monolog": "^2.2",
         "psr/log": "^1.1",
         "php-di/php-di": "^6.3",
-        "vlucas/phpdotenv": "^5.0"
+        "vlucas/phpdotenv": "^5.0",
+        "psr/container": "^1.1"
     },
     "autoload": {
         "psr-4": {
