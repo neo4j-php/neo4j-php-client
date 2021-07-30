@@ -16,9 +16,7 @@ namespace Laudis\Neo4j\TestkitBackend;
 use DI\ContainerBuilder;
 use Exception;
 use function get_debug_type;
-use function getenv;
 use function is_array;
-use function is_numeric;
 use function is_string;
 use function json_decode;
 use const JSON_THROW_ON_ERROR;
@@ -48,37 +46,18 @@ final class Backend
      */
     public static function boot(): self
     {
-        Socket::setupEnvironment();
-
         $builder = new ContainerBuilder();
         $builder->addDefinitions(__DIR__.'/../register.php');
         $builder->useAutowiring(true);
         $container = $builder->build();
 
-        $address = self::loadAddress();
-        $port = self::loadPort();
+        $logger = $container->get(LoggerInterface::class);
+        $logger->info('Booting testkit backend ...');
+        Socket::setupEnvironment();
+        $tbr = new self(Socket::fromEnvironment(), $logger, $container);
+        $logger->info('Testkit booted');
 
-        return new self(Socket::fromAddressAndPort($address, $port), $container->get(LoggerInterface::class), $container);
-    }
-
-    private static function loadAddress(): string
-    {
-        $address = getenv('TESTKIT_BACKEND_ADDRESS');
-        if (!is_string($address)) {
-            $address = '127.0.0.1';
-        }
-
-        return $address;
-    }
-
-    private static function loadPort(): int
-    {
-        $port = getenv('TESTKIT_BACKEND_PORT');
-        if (!is_numeric($port)) {
-            $port = 9876;
-        }
-
-        return (int) $port;
+        return $tbr;
     }
 
     /**
@@ -90,7 +69,19 @@ final class Backend
         $message = '';
 
         while (true) {
-            $buffer = $this->socket->read();
+            try {
+                $buffer = $this->socket->read();
+            } catch (RuntimeException $e) {
+                if ($e->getMessage() === 'socket_read() failed: reason: Connection reset by peer') {
+                    $this->logger->info('Connection reset by peer, resetting socket...');
+                    $this->socket->reset();
+                    $this->logger->info('Socket reset successfully');
+
+                    continue;
+                }
+
+                throw $e;
+            }
             if (!str_starts_with($buffer, '#')) {
                 $message .= substr($buffer, 0, -1);
             }
@@ -121,10 +112,6 @@ final class Backend
         $this->socket->write('#response end'.PHP_EOL);
     }
 
-    /**
-     * @param string $name
-     * @return ActionInterface
-     */
     private function loadAction(string $name): ActionInterface
     {
         $action = $this->container->get($name);
@@ -136,6 +123,7 @@ final class Backend
             );
             throw new UnexpectedValueException($str);
         }
+
         return $action;
     }
 }

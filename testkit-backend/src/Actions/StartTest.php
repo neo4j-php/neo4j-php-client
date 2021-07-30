@@ -9,8 +9,8 @@ use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
 
 final class StartTest implements ActionInterface
 {
-    public function handle(array $parameters): array
+    public function handle(array $parameters)
     {
-        return [];
+        return 'SkipTest';
     }
 }

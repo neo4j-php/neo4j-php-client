@@ -7,5 +7,8 @@ namespace Laudis\Neo4j\TestkitBackend\Contracts;
 
 interface ActionInterface
 {
-    public function handle(array $parameters): array;
+    /**
+     * @return mixed
+     */
+    public function handle(array $parameters);
 }

@@ -16,6 +16,9 @@ namespace Laudis\Neo4j\TestkitBackend;
 use const AF_INET;
 use const E_ALL;
 use function error_reporting;
+use function getenv;
+use function is_numeric;
+use function is_string;
 use RuntimeException;
 use const SOCK_STREAM;
 use function socket_accept;
@@ -31,17 +34,44 @@ final class Socket
 {
     /** @var resource */
     private $baseSocket;
-    /** @var resource */
+    /** @var resource|null */
     private $socket;
 
     /**
      * @param resource $baseSocket
      * @param resource $socket
      */
-    public function __construct($baseSocket, $socket)
+    public function __construct($baseSocket)
     {
         $this->baseSocket = $baseSocket;
-        $this->socket = $socket;
+    }
+
+    public static function fromEnvironment(): self
+    {
+        $address = self::loadAddress();
+        $port = self::loadPort();
+
+        return self::fromAddressAndPort($address, $port);
+    }
+
+    private static function loadAddress(): string
+    {
+        $address = getenv('TESTKIT_BACKEND_ADDRESS');
+        if (!is_string($address)) {
+            $address = '127.0.0.1';
+        }
+
+        return $address;
+    }
+
+    private static function loadPort(): int
+    {
+        $port = getenv('TESTKIT_BACKEND_PORT');
+        if (!is_numeric($port)) {
+            $port = 9876;
+        }
+
+        return (int) $port;
     }
 
     public static function fromAddressAndPort(string $address, int $port): self
@@ -59,16 +89,29 @@ final class Socket
             throw new RuntimeException('socket_listen() failed: reason: '.socket_strerror(socket_last_error($baseSocket)));
         }
 
-        $socket = socket_accept($baseSocket);
-        if ($socket === false) {
-            throw new RuntimeException('socket_accept() failed: reason: '.socket_strerror(socket_last_error($baseSocket)));
+        return new self($baseSocket);
+    }
+
+    public function reset(): void
+    {
+        if ($this->socket !== null) {
+            socket_close($this->socket);
         }
 
-        return new self($baseSocket, $socket);
+        $this->socket = null;
     }
 
     public function read(int $length = 2048): string
     {
+        if ($this->socket === null) {
+            $socket = socket_accept($this->baseSocket);
+            if ($socket === false) {
+                throw new RuntimeException('socket_accept() failed: reason: '.socket_strerror(socket_last_error($this->baseSocket)));
+            }
+
+            $this->socket = $socket;
+        }
+
         $buffer = socket_read($this->socket, $length, PHP_NORMAL_READ);
         if ($buffer === false) {
             $error = socket_strerror(socket_last_error($this->socket));
@@ -89,7 +132,7 @@ final class Socket
 
     public static function setupEnvironment(): void
     {
-        error_reporting(E_ALL);
+//        error_reporting(E_ALL);
         // Allow the script to hang around waiting for connections.
         set_time_limit(0);
         // Turn on implicit output flushing so we see what we're getting as it comes in.
@@ -98,7 +141,7 @@ final class Socket
 
     public function __destruct()
     {
-        socket_close($this->socket);
+        $this->reset();
         socket_close($this->baseSocket);
     }
 }
