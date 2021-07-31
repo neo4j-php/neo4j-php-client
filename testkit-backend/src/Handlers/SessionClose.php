@@ -13,8 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Ds\Map;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionCloseRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\SessionResponse;
 
@@ -23,11 +23,11 @@ use Laudis\Neo4j\TestkitBackend\Responses\SessionResponse;
  */
 final class SessionClose implements RequestHandlerInterface
 {
-    private Map $sessions;
+    private MainRepository $repository;
 
-    public function __construct(Map $sessions)
+    public function __construct(MainRepository $repository)
     {
-        $this->sessions = $sessions;
+        $this->repository = $repository;
     }
 
     /**
@@ -35,7 +35,7 @@ final class SessionClose implements RequestHandlerInterface
      */
     public function handle($request): SessionResponse
     {
-        $this->sessions->remove($request->getSessionId()->toRfc4122());
+        $this->repository->removeSession($request->getSessionId());
 
         return new SessionResponse($request->getSessionId());
     }

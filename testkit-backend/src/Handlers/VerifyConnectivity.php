@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 
-use Ds\Map;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\VerifyConnectivityRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
 
@@ -16,11 +16,11 @@ use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
  */
 final class VerifyConnectivity implements RequestHandlerInterface
 {
-    private Map $drivers;
+    private MainRepository $repository;
 
-    public function __construct(Map $drivers)
+    public function __construct(MainRepository $repository)
     {
-        $this->drivers = $drivers;
+        $this->repository = $repository;
     }
 
     /**
@@ -28,9 +28,9 @@ final class VerifyConnectivity implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        $driver = $this->drivers->get($request->getDriverId()->toRfc4122());
+        $driver = $this->repository->getDriver($request->getDriverId());
 
-        $driver->acquireSession()->run('RETURN 2 as x');
+        $driver->createSession()->run('RETURN 2 as x');
 
         return new DriverResponse($request->getDriverId());
     }

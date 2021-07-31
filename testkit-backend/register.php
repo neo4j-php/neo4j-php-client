@@ -11,7 +11,6 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-use Ds\Map;
 use Laudis\Neo4j\TestkitBackend\Handlers\DriverClose;
 use Laudis\Neo4j\TestkitBackend\Handlers\GetFeatures;
 use Laudis\Neo4j\TestkitBackend\Handlers\NewDriver;
@@ -20,6 +19,8 @@ use Laudis\Neo4j\TestkitBackend\Handlers\ResultNext;
 use Laudis\Neo4j\TestkitBackend\Handlers\SessionClose;
 use Laudis\Neo4j\TestkitBackend\Handlers\SessionRun;
 use Laudis\Neo4j\TestkitBackend\Handlers\StartTest;
+use Laudis\Neo4j\TestkitBackend\Handlers\VerifyConnectivity;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Container\ContainerInterface;
@@ -46,38 +47,30 @@ return [
     },
 
     'NewDriver' => static function (ContainerInterface $container) {
-        return new NewDriver($container->get('drivers'));
+        return new NewDriver($container->get(MainRepository::class));
     },
 
     'NewSession' => static function (ContainerInterface $container) {
-        return new NewSession($container->get('drivers'), $container->get('sessions'));
+        return new NewSession($container->get(MainRepository::class));
     },
 
     'SessionRun' => static function (ContainerInterface $container) {
-        return new SessionRun($container->get('sessions'), $container->get('results'));
+        return new SessionRun($container->get(MainRepository::class));
     },
 
     'ResultNext' => static function (ContainerInterface $container) {
-        return new ResultNext($container->get('results'));
+        return new ResultNext($container->get(MainRepository::class));
     },
 
     'SessionClose' => static function (ContainerInterface $container) {
-        return new SessionClose($container->get('sessions'));
+        return new SessionClose($container->get(MainRepository::class));
     },
 
     'DriverClose' => static function (ContainerInterface $container) {
-        return new DriverClose($container->get('drivers'));
+        return new DriverClose($container->get(MainRepository::class));
     },
 
-    'drivers' => static function () {
-        return new Map();
-    },
-
-    'sessions' => static function () {
-        return new Map();
-    },
-
-    'results' => static function () {
-        return new Map();
+    'VerifyConnectivity' => static function (ContainerInterface $container) {
+        return new VerifyConnectivity($container->get(MainRepository::class));
     },
 ];

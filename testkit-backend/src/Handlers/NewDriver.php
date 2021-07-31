@@ -13,10 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Ds\Map;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\DriverFactory;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
 use Symfony\Component\Uid\Uuid;
@@ -26,11 +26,11 @@ use Symfony\Component\Uid\Uuid;
  */
 final class NewDriver implements RequestHandlerInterface
 {
-    private Map $drivers;
+    private MainRepository $repository;
 
-    public function __construct(Map $drivers)
+    public function __construct(MainRepository $repository)
     {
-        $this->drivers = $drivers;
+        $this->repository = $repository;
     }
 
     /**
@@ -43,7 +43,7 @@ final class NewDriver implements RequestHandlerInterface
 
         $driver = DriverFactory::create($request->getUri(), null, Authenticate::basic($user, $pass));
         $id = Uuid::v4();
-        $this->drivers->put($id->toRfc4122(), $driver);
+        $this->repository->addDriver($id, $driver);
 
         return new DriverResponse($id);
     }

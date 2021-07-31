@@ -14,10 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Bolt\error\MessageException;
-use Ds\Map;
-use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
@@ -28,13 +27,11 @@ use Symfony\Component\Uid\Uuid;
  */
 final class SessionRun implements RequestHandlerInterface
 {
-    private Map $sessions;
-    private Map $results;
+    private MainRepository $repository;
 
-    public function __construct(Map $sessions, Map $results)
+    public function __construct(MainRepository $repository)
     {
-        $this->sessions = $sessions;
-        $this->results = $results;
+        $this->repository = $repository;
     }
 
     /**
@@ -42,8 +39,7 @@ final class SessionRun implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        /** @var SessionInterface $session */
-        $session = $this->sessions->get($request->getSessionId()->toRfc4122());
+        $session = $this->repository->getSession($request->getSessionId());
         try {
             $result = $session->run($request->getCypher(), $request->getParams());
         } catch (MessageException $exception) {
@@ -55,7 +51,7 @@ final class SessionRun implements RequestHandlerInterface
             );
         }
         $id = Uuid::v4();
-        $this->results->put($id->toRfc4122(), $result->getIterator());
+        $this->repository->addRecords($id, $result->getIterator());
 
         return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
     }

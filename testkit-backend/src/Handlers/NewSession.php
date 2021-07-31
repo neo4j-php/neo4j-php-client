@@ -18,6 +18,7 @@ use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\NewSessionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\SessionResponse;
 use Symfony\Component\Uid\Uuid;
@@ -27,17 +28,14 @@ use Symfony\Component\Uid\Uuid;
  */
 final class NewSession implements RequestHandlerInterface
 {
-    /** @var Map<string, DriverInterface> */
-    private Map $drivers;
-    private Map $sessions;
+    private MainRepository $repository;
 
     /**
      * @param Map<string, DriverInterface> $drivers
      */
-    public function __construct(Map $drivers, Map $sessions)
+    public function __construct(MainRepository $repository)
     {
-        $this->drivers = $drivers;
-        $this->sessions = $sessions;
+        $this->repository = $repository;
     }
 
     /**
@@ -45,7 +43,7 @@ final class NewSession implements RequestHandlerInterface
      */
     public function handle($request): SessionResponse
     {
-        $driver = $this->drivers->get($request->getDriverId()->toRfc4122());
+        $driver = $this->repository->getDriver($request->getDriverId());
 
         $config = SessionConfiguration::default()
             ->withAccessMode($request->getAccessMode() === 'r' ? AccessMode::READ() : AccessMode::WRITE());
@@ -64,7 +62,7 @@ final class NewSession implements RequestHandlerInterface
 
         $session = $driver->createSession($config);
         $id = Uuid::v4();
-        $this->sessions->put($id->toRfc4122(), $session);
+        $this->repository->addSession($id, $session);
 
         return new SessionResponse($id);
     }

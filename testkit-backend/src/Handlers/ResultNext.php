@@ -13,10 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Ds\Map;
-use Iterator;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\ResultNextRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\NullRecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
@@ -27,11 +26,11 @@ use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
  */
 final class ResultNext implements RequestHandlerInterface
 {
-    private Map $results;
+    private MainRepository $repository;
 
-    public function __construct(Map $results)
+    public function __construct(MainRepository $repository)
     {
-        $this->results = $results;
+        $this->repository = $repository;
     }
 
     /**
@@ -39,8 +38,7 @@ final class ResultNext implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        /** @var Iterator $iterator */
-        $iterator = $this->results->get($request->getResultId()->toRfc4122());
+        $iterator = $this->repository->getRecords($request->getResultId());
 
         if (!$iterator->valid()) {
             return new NullRecordResponse();

@@ -7,6 +7,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Ds\Map;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
 
@@ -15,11 +16,11 @@ use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
  */
 final class DriverClose implements RequestHandlerInterface
 {
-    private Map $drivers;
+    private MainRepository $repository;
 
-    public function __construct(Map $drivers)
+    public function __construct(MainRepository $repository)
     {
-        $this->drivers = $drivers;
+        $this->repository = $repository;
     }
 
     /**
@@ -27,7 +28,7 @@ final class DriverClose implements RequestHandlerInterface
      */
     public function handle($request): DriverResponse
     {
-        $this->drivers->remove($request->getDriverId()->toRfc4122());
+        $this->repository->removeDriver($request->getDriverId());
 
         return new DriverResponse($request->getDriverId());
     }
