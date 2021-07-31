@@ -2,12 +2,12 @@
 declare(strict_types=1);
 
 
-namespace Laudis\Neo4j\TestkitBackend\Input;
+namespace Laudis\Neo4j\TestkitBackend\Requests;
 
 
 use Symfony\Component\Uid\Uuid;
 
-final class ForcedRoutingTableUpdateInput
+final class ForcedRoutingTableUpdateRequest
 {
     private Uuid $driverId;
     private string $database;

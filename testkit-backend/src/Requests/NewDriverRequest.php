@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Laudis\Neo4j\TestkitBackend\Input;
+namespace Laudis\Neo4j\TestkitBackend\Requests;
 
 /*
  * This file is part of the Laudis Neo4j package.
@@ -13,7 +13,7 @@ namespace Laudis\Neo4j\TestkitBackend\Input;
  * file that was distributed with this source code.
  */
 
-final class NewDriverInput
+final class NewDriverRequest
 {
     private string $uri;
     private string $authToken;

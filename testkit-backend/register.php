@@ -12,14 +12,14 @@ declare(strict_types=1);
  */
 
 use Ds\Map;
-use Laudis\Neo4j\TestkitBackend\Actions\DriverClose;
-use Laudis\Neo4j\TestkitBackend\Actions\GetFeatures;
-use Laudis\Neo4j\TestkitBackend\Actions\NewDriver;
-use Laudis\Neo4j\TestkitBackend\Actions\NewSession;
-use Laudis\Neo4j\TestkitBackend\Actions\ResultNext;
-use Laudis\Neo4j\TestkitBackend\Actions\SessionClose;
-use Laudis\Neo4j\TestkitBackend\Actions\SessionRun;
-use Laudis\Neo4j\TestkitBackend\Actions\StartTest;
+use Laudis\Neo4j\TestkitBackend\Handlers\DriverClose;
+use Laudis\Neo4j\TestkitBackend\Handlers\GetFeatures;
+use Laudis\Neo4j\TestkitBackend\Handlers\NewDriver;
+use Laudis\Neo4j\TestkitBackend\Handlers\NewSession;
+use Laudis\Neo4j\TestkitBackend\Handlers\ResultNext;
+use Laudis\Neo4j\TestkitBackend\Handlers\SessionClose;
+use Laudis\Neo4j\TestkitBackend\Handlers\SessionRun;
+use Laudis\Neo4j\TestkitBackend\Handlers\StartTest;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Container\ContainerInterface;

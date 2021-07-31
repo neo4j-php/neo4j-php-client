@@ -2,12 +2,12 @@
 declare(strict_types=1);
 
 
-namespace Laudis\Neo4j\TestkitBackend\Input;
+namespace Laudis\Neo4j\TestkitBackend\Requests;
 
 
 use Symfony\Component\Uid\Uuid;
 
-final class ResolverResolutionCompletedInput
+final class DomainNameResolutionCompletedRequest
 {
     private Uuid $requestId;
     /** @var iterable<string> */

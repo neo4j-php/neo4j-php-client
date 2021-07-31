@@ -11,11 +11,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\TestkitBackend\Input;
+namespace Laudis\Neo4j\TestkitBackend\Requests;
 
 use Symfony\Component\Uid\Uuid;
 
-final class NewSessionInput
+final class NewSessionRequest
 {
     private Uuid $driverId;
     private string $accessMode;

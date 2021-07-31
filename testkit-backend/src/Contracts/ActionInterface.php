@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Contracts;
 
-
+/**
+ * @template T
+ */
 interface ActionInterface
 {
-    public function handle(array $data): TestkitResponseInterface;
+    /**
+     * @param T $input
+     */
+    public function handle($input): TestkitResponseInterface;
 }

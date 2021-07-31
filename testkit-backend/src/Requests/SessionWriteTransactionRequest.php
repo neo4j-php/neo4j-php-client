@@ -11,24 +11,22 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\TestkitBackend\Input;
+namespace Laudis\Neo4j\TestkitBackend\Requests;
 
 use Symfony\Component\Uid\Uuid;
 
-final class SessionRunInput
+final class SessionWriteTransactionRequest
 {
     private Uuid $sessionId;
-    private string $cypher;
-    private iterable $params;
-    /** @var mixed */
-    private $txMeta;
-    private ?int $timeout;
+    private array $txMeta;
+    private int $timeout;
 
-    public function __construct(Uuid $sessionId, string $cypher, iterable $params, array $txMeta, ?int $timeout)
-    {
+    public function __construct(
+        Uuid $sessionId,
+        array $txMeta,
+        int $timeout
+    ) {
         $this->sessionId = $sessionId;
-        $this->cypher = $cypher;
-        $this->params = $params;
         $this->txMeta = $txMeta;
         $this->timeout = $timeout;
     }
@@ -38,22 +36,12 @@ final class SessionRunInput
         return $this->sessionId;
     }
 
-    public function getCypher(): string
-    {
-        return $this->cypher;
-    }
-
-    public function getParams(): iterable
-    {
-        return $this->params;
-    }
-
     public function getTxMeta(): array
     {
         return $this->txMeta;
     }
 
-    public function getTimeout(): ?int
+    public function getTimeout(): int
     {
         return $this->timeout;
     }
