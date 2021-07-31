@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Actions;
 
+use Bolt\error\MessageException;
 use Ds\Map;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
@@ -41,17 +42,23 @@ final class SessionRun implements ActionInterface
 
         /** @var SessionInterface $session */
         $session = $this->sessions->get($id);
-        /** @var CypherList $result */
-        $result = $session->run($cypher, $params);
+        try {
+            /** @var CypherList $result */
+            $result = $session->run($cypher, $params);
+        } catch (MessageException $messageException) {
+            return [
+                'name' => 'DriverError',
+            ];
+        }
         $id = Uuid::v4()->toRfc4122();
         $this->results->put($id, $result->getIterator());
 
         return [
-        'name' => 'Result',
-        'data' => [
-            'id' => $id,
-            'keys' => $result->isEmpty() ? [] : $result->first()->keys(),
-        ],
-    ];
+            'name' => 'Result',
+            'data' => [
+                'id' => $id,
+                'keys' => $result->isEmpty() ? [] : $result->first()->keys(),
+            ],
+        ];
     }
 }

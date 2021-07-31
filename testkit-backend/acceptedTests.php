@@ -6,6 +6,8 @@ return [
         'authentication' => [
             'TestAuthenticationBasic' => [
                 'testSuccessOnProvideRealmWithBasicToken' => true,
+                'testSuccessOnBasicToken' => true,
+                'testErrorOnIncorrectCredentials' => true,
             ],
         ],
     ],
