@@ -16,15 +16,15 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 use Ds\Map;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\DriverFactory;
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @implements ActionInterface<NewDriverRequest>
+ * @implements RequestHandlerInterface<NewDriverRequest>
  */
-final class NewDriver implements ActionInterface
+final class NewDriver implements RequestHandlerInterface
 {
     private Map $drivers;
 

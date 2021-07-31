@@ -7,7 +7,7 @@ namespace Laudis\Neo4j\TestkitBackend\Contracts;
 /**
  * @template T
  */
-interface ActionInterface
+interface RequestHandlerInterface
 {
     /**
      * @param T $request

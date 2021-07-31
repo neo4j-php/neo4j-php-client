@@ -17,15 +17,15 @@ use Ds\Map;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\NewSessionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\SessionResponse;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @implements ActionInterface<NewSessionRequest>
+ * @implements RequestHandlerInterface<NewSessionRequest>
  */
-final class NewSession implements ActionInterface
+final class NewSession implements RequestHandlerInterface
 {
     /** @var Map<string, DriverInterface> */
     private Map $drivers;

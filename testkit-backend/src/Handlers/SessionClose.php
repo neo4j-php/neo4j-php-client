@@ -14,14 +14,14 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Ds\Map;
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionCloseRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\SessionResponse;
 
 /**
- * @implements ActionInterface<SessionCloseRequest>
+ * @implements RequestHandlerInterface<SessionCloseRequest>
  */
-final class SessionClose implements ActionInterface
+final class SessionClose implements RequestHandlerInterface
 {
     private Map $sessions;
 

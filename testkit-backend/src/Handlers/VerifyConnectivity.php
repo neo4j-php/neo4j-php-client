@@ -6,15 +6,15 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 
 use Ds\Map;
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\VerifyConnectivityRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
 
 /**
- * @implements ActionInterface<VerifyConnectivityRequest>
+ * @implements RequestHandlerInterface<VerifyConnectivityRequest>
  */
-final class VerifyConnectivity implements ActionInterface
+final class VerifyConnectivity implements RequestHandlerInterface
 {
     private Map $drivers;
 

@@ -16,7 +16,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 use Bolt\error\MessageException;
 use Ds\Map;
 use Laudis\Neo4j\Contracts\SessionInterface;
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
@@ -24,9 +24,9 @@ use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @implements ActionInterface<SessionRunRequest>
+ * @implements RequestHandlerInterface<SessionRunRequest>
  */
-final class SessionRun implements ActionInterface
+final class SessionRun implements RequestHandlerInterface
 {
     private Map $sessions;
     private Map $results;

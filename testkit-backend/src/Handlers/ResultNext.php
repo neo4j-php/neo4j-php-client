@@ -15,7 +15,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Ds\Map;
 use Iterator;
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\ResultNextRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\NullRecordResponse;
@@ -23,9 +23,9 @@ use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
 
 /**
- * @implements ActionInterface<ResultNextRequest>
+ * @implements RequestHandlerInterface<ResultNextRequest>
  */
-final class ResultNext implements ActionInterface
+final class ResultNext implements RequestHandlerInterface
 {
     private Map $results;
 

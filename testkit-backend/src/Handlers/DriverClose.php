@@ -6,14 +6,14 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 
 use Ds\Map;
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
 
 /**
- * @implements ActionInterface<DriverCloseRequest>
+ * @implements RequestHandlerInterface<DriverCloseRequest>
  */
-final class DriverClose implements ActionInterface
+final class DriverClose implements RequestHandlerInterface
 {
     private Map $drivers;
 

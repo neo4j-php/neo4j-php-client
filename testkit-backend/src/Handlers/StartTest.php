@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\StartTestRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\RunTestResponse;
@@ -21,9 +21,9 @@ use Laudis\Neo4j\TestkitBackend\Responses\SkipTestResponse;
 use function is_string;
 
 /**
- * @implements ActionInterface<StartTestRequest>
+ * @implements RequestHandlerInterface<StartTestRequest>
  */
-final class StartTest implements ActionInterface
+final class StartTest implements RequestHandlerInterface
 {
     private array $acceptedTests;
 

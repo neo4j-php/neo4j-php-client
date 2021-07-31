@@ -13,14 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\FeatureListResponse;
 
 /**
- * @implements ActionInterface<GetFeaturesRequest>
+ * @implements RequestHandlerInterface<GetFeaturesRequest>
  */
-final class GetFeatures implements ActionInterface
+final class GetFeatures implements RequestHandlerInterface
 {
     private array $featuresConfig;
 

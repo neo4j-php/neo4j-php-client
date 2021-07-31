@@ -19,7 +19,7 @@ use function get_debug_type;
 use function json_decode;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
-use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use const PHP_EOL;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -110,13 +110,13 @@ final class Backend
         $this->socket->write('#response end'.PHP_EOL);
     }
 
-    private function loadRequestHandler(string $name): ActionInterface
+    private function loadRequestHandler(string $name): RequestHandlerInterface
     {
         $action = $this->container->get($name);
-        if (!$action instanceof ActionInterface) {
+        if (!$action instanceof RequestHandlerInterface) {
             $str = printf(
                 'Expected action to be an instance of %s, received %s instead',
-                ActionInterface::class,
+                RequestHandlerInterface::class,
                 get_debug_type($action)
             );
             throw new UnexpectedValueException($str);
