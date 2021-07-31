@@ -112,7 +112,7 @@ final class Backend
 
     private function loadRequestHandler(string $name): RequestHandlerInterface
     {
-        $action = $this->container->get($name);
+        $action = $this->container->get('Laudis\\Neo4j\\TestkitBackend\\Handlers\\'.$name);
         if (!$action instanceof RequestHandlerInterface) {
             $str = printf(
                 'Expected action to be an instance of %s, received %s instead',
