@@ -37,12 +37,10 @@ return [
         return new GetFeatures();
     },
 
-    'StartTest' => static function (ContainerInterface $container) {
-        return new StartTest($container);
-    },
+    'StartTest' => static function () {
+        $acceptedTests = require __DIR__.'/acceptedTests.php';
 
-    'neo4j.authentication.TestAuthenticationBasic.testSuccessOnProvideRealmWithBasicToken' => static function (ContainerInterface $container) {
-        return null;
+        return new StartTest($acceptedTests);
     },
 
     'NewDriver' => static function (ContainerInterface $container) {

@@ -14,23 +14,29 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Actions;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
-use Psr\Container\ContainerInterface;
 
 final class StartTest implements ActionInterface
 {
-    private ContainerInterface $container;
+    private array $acceptedTests;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(array $acceptedTests)
     {
-        $this->container = $container;
+        $this->acceptedTests = $acceptedTests;
     }
 
     public function handle(array $data): array
     {
-        if ($this->container->has($data['testName'] ?? '')) {
-            return ['name' => 'RunTest'];
+        $section = $this->acceptedTests;
+        foreach (explode('.', $data['testName'] ?? '') as $key) {
+            if (!isset($section[$key])) {
+                return ['name' => 'SkipTest', 'data' => ['reason' => 'Test not registered in backend']];
+            }
+            if ($section[$key] === false) {
+                return ['name' => 'SkipTest', 'data' => ['reason' => 'Test disabled in backend']];
+            }
+            $section = $section[$key];
         }
 
-        return ['name' => 'SkipTest', 'data' => ['reason' => 'Not Implemented']];
+        return ['name' => 'RunTest'];
     }
 }
