@@ -13,24 +13,27 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Actions;
 
+use Ds\Map;
 use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
-use Psr\Container\ContainerInterface;
 
-final class StartTest implements ActionInterface
+final class SessionClose implements ActionInterface
 {
-    private ContainerInterface $container;
+    private Map $sessions;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(Map $sessions)
     {
-        $this->container = $container;
+        $this->sessions = $sessions;
     }
 
     public function handle(array $data): array
     {
-        if ($this->container->has($data['testName'] ?? '')) {
-            return ['name' => 'RunTest'];
-        }
+        $this->sessions->remove($data['sessionId']);
 
-        return ['name' => 'SkipTest', 'data' => ['reason' => 'Not Implemented']];
+        return [
+            'name' => 'Session',
+            'data' => [
+                'id' => $data['sessionId'],
+            ],
+        ];
     }
 }

@@ -11,10 +11,18 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
+use Ds\Map;
+use Laudis\Neo4j\TestkitBackend\Actions\DriverClose;
 use Laudis\Neo4j\TestkitBackend\Actions\GetFeatures;
+use Laudis\Neo4j\TestkitBackend\Actions\NewDriver;
+use Laudis\Neo4j\TestkitBackend\Actions\NewSession;
+use Laudis\Neo4j\TestkitBackend\Actions\ResultNext;
+use Laudis\Neo4j\TestkitBackend\Actions\SessionClose;
+use Laudis\Neo4j\TestkitBackend\Actions\SessionRun;
 use Laudis\Neo4j\TestkitBackend\Actions\StartTest;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 return [
@@ -29,7 +37,47 @@ return [
         return new GetFeatures();
     },
 
-    'StartTest' => static function () {
-        return new StartTest();
+    'StartTest' => static function (ContainerInterface $container) {
+        return new StartTest($container);
+    },
+
+    'neo4j.authentication.TestAuthenticationBasic.testSuccessOnProvideRealmWithBasicToken' => static function (ContainerInterface $container) {
+        return null;
+    },
+
+    'NewDriver' => static function (ContainerInterface $container) {
+        return new NewDriver($container->get('drivers'));
+    },
+
+    'NewSession' => static function (ContainerInterface $container) {
+        return new NewSession($container->get('drivers'), $container->get('sessions'));
+    },
+
+    'SessionRun' => static function (ContainerInterface $container) {
+        return new SessionRun($container->get('sessions'), $container->get('results'));
+    },
+
+    'ResultNext' => static function (ContainerInterface $container) {
+        return new ResultNext($container->get('results'));
+    },
+
+    'SessionClose' => static function (ContainerInterface $container) {
+        return new SessionClose($container->get('sessions'));
+    },
+
+    'DriverClose' => static function (ContainerInterface $container) {
+        return new DriverClose($container->get('drivers'));
+    },
+
+    'drivers' => static function () {
+        return new Map();
+    },
+
+    'sessions' => static function () {
+        return new Map();
+    },
+
+    'results' => static function () {
+        return new Map();
     },
 ];

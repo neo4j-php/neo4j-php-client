@@ -65,7 +65,6 @@ final class Backend
      */
     public function handle(): void
     {
-        $this->logger->debug('Accepting connection');
         $message = '';
 
         while (true) {
@@ -90,22 +89,14 @@ final class Backend
             }
         }
 
-        $this->logger->debug($message);
+        $this->logger->debug('Received: '.$message);
+        /** @var array{name: string, data: array} $response */
         $response = json_decode($message, true, 512, JSON_THROW_ON_ERROR);
 
-        if (!is_array($response)) {
-            throw new RuntimeException('Did not receive an array');
-        }
+        $action = $this->loadAction($response['name']);
 
-        $name = $response['name'] ?? null;
-        if (!is_string($name)) {
-            throw new RuntimeException('Did not receive a name');
-        }
-
-        $action = $this->loadAction($name);
-
-        $message = json_encode($action->handle($response), JSON_THROW_ON_ERROR);
-        $this->logger->debug($message);
+        $message = json_encode($action->handle($response['data']), JSON_THROW_ON_ERROR);
+        $this->logger->debug('Sent: '.$message);
 
         $this->socket->write('#response begin'.PHP_EOL);
         $this->socket->write($message.PHP_EOL);
