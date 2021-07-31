@@ -21,9 +21,9 @@ final class CypherRelationship implements TestkitResponseInterface
     private int $startNodeId;
     private int $endNodeId;
     private string $type;
-    private iterable $props;
+    private CypherObject $props;
 
-    public function __construct(int $id, int $startNodeId, int $endNodeId, string $type, iterable $props)
+    public function __construct(int $id, int $startNodeId, int $endNodeId, string $type, CypherObject $props)
     {
         $this->id = $id;
         $this->startNodeId = $startNodeId;

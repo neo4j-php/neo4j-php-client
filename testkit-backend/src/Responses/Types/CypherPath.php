@@ -17,10 +17,10 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 
 final class CypherPath implements TestkitResponseInterface
 {
-    private iterable $nodes;
-    private iterable $relationships;
+    private CypherObject $nodes;
+    private CypherObject $relationships;
 
-    public function __construct(iterable $nodes, iterable $relationships)
+    public function __construct(CypherObject $nodes, CypherObject $relationships)
     {
         $this->nodes = $nodes;
         $this->relationships = $relationships;

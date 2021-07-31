@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Responses\Types;
 
+use Ds\Map;
+use Ds\Vector;
 use function get_debug_type;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherList;
@@ -38,19 +40,41 @@ final class CypherObject implements TestkitResponseInterface
     }
 
     /**
+     * @return bool|float|int|CypherList|CypherMap|Node|Path|Relationship|string|null
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
+
+    /**
      * @param CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null $value
      */
     public static function autoDetect($value): TestkitResponseInterface
     {
         switch (get_debug_type($value)) {
-            case null:
+            case 'null':
                 $tbr = new CypherObject('CypherNull', $value);
                 break;
             case CypherList::class:
-                $tbr = new CypherObject('CypherList', $value);
+                $list = [];
+                foreach ($value as $item) {
+                    $list[] = self::autoDetect($item);
+                }
+
+                $tbr = new CypherObject('CypherList', new CypherList(new Vector($list)));
                 break;
             case CypherMap::class:
-                $tbr = new CypherObject('CypherMap', $value);
+                if ($value->count() === 2 && $value->hasKey('name') && $value->hasKey('data')) {
+                    $tbr = new CypherObject('CypherMap', $value);
+                } else {
+                    $map = [];
+                    foreach ($value as $key => $item) {
+                        $map[$key] = self::autoDetect($item);
+                    }
+
+                    $tbr = new CypherObject('CypherMap', new CypherMap(new Map($map)));
+                }
                 break;
             case 'int':
                 $tbr = new CypherObject('CypherInt', $value);
@@ -65,19 +89,40 @@ final class CypherObject implements TestkitResponseInterface
                 $tbr = new CypherObject('CypherString', $value);
                 break;
             case Node::class:
-                $tbr = new CypherNode($value->id(), $value->labels(), $value->properties());
+                $labels = [];
+                foreach ($value->labels() as $label) {
+                    $labels[] = self::autoDetect($label);
+                }
+                $props = [];
+                foreach ($value->properties() as $key => $property) {
+                    $props[$key] = self::autoDetect($property);
+                }
+
+                $tbr = new CypherNode(
+                    $value->id(),
+                    new CypherObject('CypherList', new CypherList(new Vector($labels))),
+                    new CypherObject('CypherMap', new CypherMap(new Map($props)))
+                );
                 break;
             case Relationship::class:
+                $props = [];
+                foreach ($value->getProperties() as $key => $property) {
+                    $props[$key] = self::autoDetect($property);
+                }
+
                 $tbr = new CypherRelationship(
                     $value->getId(),
                     $value->getStartNodeId(),
                     $value->getEndNodeId(),
                     $value->getType(),
-                    $value->getProperties()
+                    new CypherObject('CypherMap', new CypherMap(new Map($props))),
                 );
                 break;
             case Path::class:
-                $tbr = new CypherPath($value->getNodes(), $value->getRelationships());
+                $tbr = new CypherPath(
+                    new CypherObject('CypherList', $value->getNodes()),
+                    new CypherObject('CypherList', $value->getRelationships())
+                );
                 break;
             default:
                 throw new RuntimeException('Unexpected type: '.get_debug_type($value));

@@ -17,11 +17,11 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 
 final class CypherNode implements TestkitResponseInterface
 {
-    private string $id;
-    private iterable $labels;
-    private iterable $props;
+    private int $id;
+    private CypherObject $labels;
+    private CypherObject $props;
 
-    public function __construct(int $id, iterable $labels, iterable $props)
+    public function __construct(int $id, CypherObject $labels, CypherObject $props)
     {
         $this->id = $id;
         $this->labels = $labels;

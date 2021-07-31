@@ -23,6 +23,14 @@ return [
         'datatypes' => [
             'TestDataTypes' => [
                 'test_should_echo_back' => true,
+                'test_should_echo_very_long_list' => true,
+                'test_should_echo_very_long_string' => true,
+                'test_should_echo_node' => true,
+                'test_should_echo_list_of_maps' => true,
+                'test_should_echo_map_of_lists' => true,
+                'test_should_echo_nested_lists' => true,
+                'test_should_echo_nested_map' => true,
+                'test_should_echo_very_long_map' => 'Work in progress on testkit frontend',
             ],
         ],
     ],

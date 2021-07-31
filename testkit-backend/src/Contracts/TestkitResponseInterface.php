@@ -10,7 +10,7 @@ use JsonSerializable;
 interface TestkitResponseInterface extends JsonSerializable
 {
     /**
-     * @return array{name:string, data?:array}
+     * @return array{name:string, data?:iterable}
      */
     public function jsonSerialize(): array;
 }

@@ -44,7 +44,7 @@ final class ResultNext implements RequestHandlerInterface
             return new NullRecordResponse();
         }
 
-        $current = $iterator->current()->values();
+        $current = $iterator->current();
         $iterator->next();
 
         $values = [];

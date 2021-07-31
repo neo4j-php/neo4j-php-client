@@ -26,6 +26,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use function substr;
 use UnexpectedValueException;
+use const PHP_INT_MAX;
 
 final class Backend
 {
@@ -74,7 +75,7 @@ final class Backend
 
         while (true) {
             try {
-                $buffer = $this->socket->read();
+                $buffer = $this->socket->read(200000);
 
                 if (!str_starts_with($buffer, '#')) {
                     $message .= substr($buffer, 0, -1);

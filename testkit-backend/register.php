@@ -11,8 +11,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
+use Ds\Map;
 use Laudis\Neo4j\TestkitBackend\Handlers\GetFeatures;
 use Laudis\Neo4j\TestkitBackend\Handlers\StartTest;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
@@ -35,5 +37,14 @@ return [
         $acceptedTests = require __DIR__.'/acceptedTests.php';
 
         return new StartTest($acceptedTests);
+    },
+
+    MainRepository::class => static function () {
+        return new MainRepository(
+            new Map(),
+            new Map(),
+            new Map(),
+            new Map(),
+        );
     },
 ];
