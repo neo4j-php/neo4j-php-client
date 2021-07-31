@@ -17,6 +17,7 @@ use Ds\Map;
 use Iterator;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Symfony\Component\Uid\Uuid;
 
 final class MainRepository
@@ -27,12 +28,15 @@ final class MainRepository
     private Map $sessions;
     /** @var Map<string, Iterator> */
     private Map $records;
+    /** @var Map<string, UnmanagedTransactionInterface> */
+    private Map $transactions;
 
-    public function __construct(Map $drivers, Map $sessions, Map $records)
+    public function __construct(Map $drivers, Map $sessions, Map $records, Map $transactions)
     {
         $this->drivers = $drivers;
         $this->sessions = $sessions;
         $this->records = $records;
+        $this->transactions = $transactions;
     }
 
     public function addDriver(Uuid $id, DriverInterface $driver): void
@@ -50,9 +54,9 @@ final class MainRepository
         return $this->drivers->get($id->toRfc4122());
     }
 
-    public function addSession(Uuid $id, SessionInterface $driver): void
+    public function addSession(Uuid $id, SessionInterface $session): void
     {
-        $this->sessions->put($id->toRfc4122(), $driver);
+        $this->sessions->put($id->toRfc4122(), $session);
     }
 
     public function removeSession(Uuid $id): void
@@ -65,9 +69,9 @@ final class MainRepository
         return $this->sessions->get($id->toRfc4122());
     }
 
-    public function addRecords(Uuid $id, Iterator $driver): void
+    public function addRecords(Uuid $id, Iterator $iterator): void
     {
-        $this->records->put($id->toRfc4122(), $driver);
+        $this->records->put($id->toRfc4122(), $iterator);
     }
 
     public function removeRecords(Uuid $id): void
@@ -78,5 +82,20 @@ final class MainRepository
     public function getRecords(Uuid $id): Iterator
     {
         return $this->records->get($id->toRfc4122());
+    }
+
+    public function addTransaction(Uuid $id, UnmanagedTransactionInterface $transaction): void
+    {
+        $this->transactions->put($id->toRfc4122(), $transaction);
+    }
+
+    public function removeTransaction(Uuid $id): void
+    {
+        $this->transactions->remove($id->toRfc4122());
+    }
+
+    public function getTransaction(Uuid $id): UnmanagedTransactionInterface
+    {
+        return $this->transactions->get($id->toRfc4122());
     }
 }

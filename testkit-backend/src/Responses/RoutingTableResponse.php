@@ -20,7 +20,7 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
  */
 final class RoutingTableResponse implements TestkitResponseInterface
 {
-    private string $database;
+    private ?string $database;
     private int $ttl;
     /** @var iterable<string> */
     private iterable $routers;
@@ -34,7 +34,7 @@ final class RoutingTableResponse implements TestkitResponseInterface
      * @param iterable<string> $readers
      * @param iterable<string> $writers
      */
-    public function __construct(string $database, int $ttl, iterable $routers, iterable $readers, iterable $writers)
+    public function __construct(?string $database, int $ttl, iterable $routers, iterable $readers, iterable $writers)
     {
         $this->database = $database;
         $this->ttl = $ttl;
