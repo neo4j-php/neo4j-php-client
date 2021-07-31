@@ -10,7 +10,7 @@ namespace Laudis\Neo4j\TestkitBackend\Contracts;
 interface ActionInterface
 {
     /**
-     * @param T $input
+     * @param T $request
      */
-    public function handle($input): TestkitResponseInterface;
+    public function handle($request): TestkitResponseInterface;
 }

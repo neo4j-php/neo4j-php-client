@@ -14,11 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\ActionInterface;
-use Laudis\Neo4j\TestkitBackend\Input\GetFeaturesInput;
+use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\FeatureListResponse;
 
 /**
- * @implements ActionInterface<GetFeaturesInput>
+ * @implements ActionInterface<GetFeaturesRequest>
  */
 final class GetFeatures implements ActionInterface
 {
@@ -30,9 +30,9 @@ final class GetFeatures implements ActionInterface
     }
 
     /**
-     * @param GetFeaturesInput $input
+     * @param GetFeaturesRequest $request
      */
-    public function handle($input): FeatureListResponse
+    public function handle($request): FeatureListResponse
     {
         $features = [];
         foreach ($this->featuresConfig as $feature => $available) {
