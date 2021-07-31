@@ -24,6 +24,7 @@ use Bolt\structures\Point2D as BoltPoint2D;
 use Bolt\structures\Point3D as BoltPoint3D;
 use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
+use function array_key_exists;
 use function call_user_func;
 use Ds\Map;
 use Ds\Vector;
@@ -177,7 +178,7 @@ final class BoltOGMTranslator
      */
     private function mapArray(array $value)
     {
-        if (isset($value[0])) {
+        if (array_key_exists(0, $value)) {
             /** @var Vector<OGMTypes> $vector */
             $vector = new Vector();
             /** @var mixed $x */
