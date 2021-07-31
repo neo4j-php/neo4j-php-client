@@ -16,8 +16,6 @@ namespace Laudis\Neo4j\TestkitBackend;
 use DI\ContainerBuilder;
 use Exception;
 use function get_debug_type;
-use function is_array;
-use function is_string;
 use function json_decode;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
@@ -26,6 +24,7 @@ use const PHP_EOL;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use function substr;
 use UnexpectedValueException;
 
 final class Backend
@@ -33,12 +32,18 @@ final class Backend
     private Socket $socket;
     private LoggerInterface $logger;
     private ContainerInterface $container;
+    private RequestFactory $factory;
 
-    public function __construct(Socket $socket, LoggerInterface $logger, ContainerInterface $container)
-    {
+    public function __construct(
+        Socket $socket,
+        LoggerInterface $logger,
+        ContainerInterface $container,
+        RequestFactory $factory
+    ) {
         $this->socket = $socket;
         $this->logger = $logger;
         $this->container = $container;
+        $this->factory = $factory;
     }
 
     /**
@@ -54,7 +59,7 @@ final class Backend
         $logger = $container->get(LoggerInterface::class);
         $logger->info('Booting testkit backend ...');
         Socket::setupEnvironment();
-        $tbr = new self(Socket::fromEnvironment(), $logger, $container);
+        $tbr = new self(Socket::fromEnvironment(), $logger, $container, new RequestFactory());
         $logger->info('Testkit booted');
 
         return $tbr;
@@ -70,6 +75,13 @@ final class Backend
         while (true) {
             try {
                 $buffer = $this->socket->read();
+
+                if (!str_starts_with($buffer, '#')) {
+                    $message .= substr($buffer, 0, -1);
+                }
+                if ($buffer === '#request end'.PHP_EOL) {
+                    break;
+                }
             } catch (RuntimeException $e) {
                 if ($e->getMessage() === 'socket_read() failed: reason: Connection reset by peer') {
                     $this->logger->info('Connection reset by peer, resetting socket...');
@@ -81,21 +93,16 @@ final class Backend
 
                 throw $e;
             }
-            if (!str_starts_with($buffer, '#')) {
-                $message .= substr($buffer, 0, -1);
-            }
-            if ($buffer === '#request end'.PHP_EOL) {
-                break;
-            }
         }
 
         $this->logger->debug('Received: '.$message);
         /** @var array{name: string, data: array} $response */
         $response = json_decode($message, true, 512, JSON_THROW_ON_ERROR);
 
-        $action = $this->loadAction($response['name']);
+        $handler = $this->loadRequestHandler($response['name']);
+        $request = $this->factory->create($response['name'], $response['data']);
 
-        $message = json_encode($action->handle($response['data']), JSON_THROW_ON_ERROR);
+        $message = json_encode($handler->handle($request), JSON_THROW_ON_ERROR);
         $this->logger->debug('Sent: '.$message);
 
         $this->socket->write('#response begin'.PHP_EOL);
@@ -103,7 +110,7 @@ final class Backend
         $this->socket->write('#response end'.PHP_EOL);
     }
 
-    private function loadAction(string $name): ActionInterface
+    private function loadRequestHandler(string $name): ActionInterface
     {
         $action = $this->container->get($name);
         if (!$action instanceof ActionInterface) {

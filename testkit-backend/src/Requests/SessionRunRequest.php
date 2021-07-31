@@ -19,12 +19,12 @@ final class SessionRunRequest
 {
     private Uuid $sessionId;
     private string $cypher;
-    private iterable $params;
+    private ?iterable $params;
     /** @var mixed */
     private $txMeta;
     private ?int $timeout;
 
-    public function __construct(Uuid $sessionId, string $cypher, iterable $params, array $txMeta, ?int $timeout)
+    public function __construct(Uuid $sessionId, string $cypher, ?iterable $params, ?array $txMeta, ?int $timeout)
     {
         $this->sessionId = $sessionId;
         $this->cypher = $cypher;
@@ -45,7 +45,7 @@ final class SessionRunRequest
 
     public function getParams(): iterable
     {
-        return $this->params;
+        return $this->params ?? [];
     }
 
     public function getTxMeta(): array

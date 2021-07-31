@@ -22,12 +22,12 @@ use Symfony\Component\Uid\Uuid;
 final class ResultResponse implements TestkitResponseInterface
 {
     private Uuid $id;
-    private array $keys;
+    private iterable $keys;
 
     /**
-     * @param list<string> $keys
+     * @param iterable<string> $keys
      */
-    public function __construct(Uuid $id, array $keys)
+    public function __construct(Uuid $id, iterable $keys)
     {
         $this->id = $id;
         $this->keys = $keys;

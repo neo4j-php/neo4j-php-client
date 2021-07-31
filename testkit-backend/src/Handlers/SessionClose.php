@@ -35,7 +35,7 @@ final class SessionClose implements ActionInterface
      */
     public function handle($request): SessionResponse
     {
-        $this->sessions->remove($request->getSessionId());
+        $this->sessions->remove($request->getSessionId()->toRfc4122());
 
         return new SessionResponse($request->getSessionId());
     }

@@ -34,7 +34,9 @@ return [
     },
 
     'GetFeatures' => static function () {
-        return new GetFeatures();
+        $featuresConfig = require __DIR__.'/features.php';
+
+        return new GetFeatures($featuresConfig);
     },
 
     'StartTest' => static function () {
