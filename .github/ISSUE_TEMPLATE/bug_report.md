@@ -24,9 +24,9 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
- - Library version: [e.g. 2.0.8]
- - Neo4j Version: [e.g. 4.2.1, aura]
- - PHP version: [e.g. 8.0.2]
+ - Library version: [e.g. 2.0.8, use `composer show -i laudis/neo4j-php-client` to find out]
+ - Neo4j Version: [e.g. 4.2.1, aura, use `neo4j version` to find out]
+ - PHP version: [e.g. 8.0.2, use `php -v` to find out]
  - OS: [e.g. Linux, 5.13.4-1-MANJARO, Windows 10]
 
 **Additional context**
