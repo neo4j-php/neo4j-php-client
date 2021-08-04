@@ -75,7 +75,7 @@ final class Backend
 
         while (true) {
             try {
-                $buffer = $this->socket->read(200000);
+                $buffer = $this->socket->read(20000000);
 
                 if (!str_starts_with($buffer, '#')) {
                     $message .= substr($buffer, 0, -1);

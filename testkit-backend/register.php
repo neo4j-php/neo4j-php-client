@@ -34,7 +34,7 @@ return [
     },
 
     StartTest::class => static function () {
-        $acceptedTests = require __DIR__.'/acceptedTests.php';
+        $acceptedTests = require __DIR__ . '/blacklist.php';
 
         return new StartTest($acceptedTests);
     },

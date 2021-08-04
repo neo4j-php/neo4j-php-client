@@ -39,16 +39,17 @@ final class StartTest implements RequestHandlerInterface
     {
         $section = $this->acceptedTests;
         foreach (explode('.', $request->getTestName()) as $key) {
-            if (!isset($section[$key])) {
-                return new SkipTestResponse('Test not registered in backend');
+            if (isset($section[$key])) {
+                if ($section[$key] === false) {
+                    return new SkipTestResponse('Test disabled in backend');
+                }
+                if (is_string($section[$key])) {
+                    return new SkipTestResponse($section[$key]);
+                }
+                $section = $section[$key];
+            } else {
+                break;
             }
-            if ($section[$key] === false) {
-                return new SkipTestResponse('Test disabled in backend');
-            }
-            if (is_string($section[$key])) {
-                return new SkipTestResponse($section[$key]);
-            }
-            $section = $section[$key];
         }
 
         return new RunTestResponse();
