@@ -48,17 +48,17 @@ final class NewDriverRequest
         return $this->authToken;
     }
 
-    public function getUserAgent(): string
+    public function getUserAgent(): ?string
     {
         return $this->userAgent;
     }
 
-    public function isResolverRegistered(): bool
+    public function isResolverRegistered(): ?bool
     {
         return $this->resolverRegistered;
     }
 
-    public function isDomainNameResolverRegistered(): bool
+    public function isDomainNameResolverRegistered(): ?bool
     {
         return $this->domainNameResolverRegistered;
     }

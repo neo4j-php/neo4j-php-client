@@ -21,6 +21,7 @@ return [
         'sessionrun' => [
             'TestSessionRun' => [
                 'test_updates_last_bookmark' => 'Bookmarks aren\'t implemented yet',
+                'test_autocommit_transactions_should_support_metadata' => 'Meta data isn\'t supported yet',
             ],
         ],
     ],

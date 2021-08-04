@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\DriverFactory;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -41,7 +42,15 @@ final class NewDriver implements RequestHandlerInterface
         $user = $request->getAuthToken()->getPrincipal();
         $pass = $request->getAuthToken()->getCredentials();
 
-        $driver = DriverFactory::create($request->getUri(), null, Authenticate::basic($user, $pass));
+        $ua = $request->getUserAgent();
+        $timeout = $request->getConnectionTimeoutMs();
+        $config = DriverConfiguration::default();
+
+        if ($ua) {
+            $config = $config->withUserAgent($ua);
+        }
+
+        $driver = DriverFactory::create($request->getUri(), $config, Authenticate::basic($user, $pass), $timeout);
         $id = Uuid::v4();
         $this->repository->addDriver($id, $driver);
 
