@@ -17,16 +17,17 @@ use DI\ContainerBuilder;
 use Exception;
 use function get_debug_type;
 use function json_decode;
+use function json_encode;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
 use const PHP_EOL;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use function substr;
+use Throwable;
 use UnexpectedValueException;
-use const PHP_INT_MAX;
 
 final class Backend
 {
@@ -83,7 +84,7 @@ final class Backend
                 if ($buffer === '#request end'.PHP_EOL) {
                     break;
                 }
-            } catch (RuntimeException $e) {
+            } catch (Throwable $e) {
                 if ($e->getMessage() === 'socket_read() failed: reason: Connection reset by peer') {
                     $this->logger->info('Connection reset by peer, resetting socket...');
                     $this->socket->reset();
@@ -103,7 +104,11 @@ final class Backend
         $handler = $this->loadRequestHandler($response['name']);
         $request = $this->factory->create($response['name'], $response['data']);
 
-        $message = json_encode($handler->handle($request), JSON_THROW_ON_ERROR);
+        try {
+            $message = json_encode($handler->handle($request), JSON_THROW_ON_ERROR);
+        } catch (Throwable $e) {
+            $message = json_encode(new BackendErrorResponse($e->getMessage()), JSON_THROW_ON_ERROR);
+        }
         $this->logger->debug('Sent: '.$message);
 
         $this->socket->write('#response begin'.PHP_EOL);

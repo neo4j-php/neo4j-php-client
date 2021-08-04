@@ -14,17 +14,19 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use ArrayIterator;
-use Bolt\error\MessageException;
 use Ds\Map;
 use Ds\Vector;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use function str_contains;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -48,7 +50,11 @@ final class SessionRun implements RequestHandlerInterface
         try {
             $params = $this->decodeToValue($request->getParams());
             $result = $session->run($request->getCypher(), $params);
-        } catch (MessageException $exception) {
+        } catch (Neo4jException $exception) {
+            if (str_contains($exception->getMessage(), 'ClientError')) {
+                return new FrontendErrorResponse($exception->getMessage());
+            }
+
             return new DriverErrorResponse(
                 $request->getSessionId(),
                 'todo',
