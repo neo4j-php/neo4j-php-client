@@ -165,7 +165,8 @@ final class Session implements SessionInterface
             if ($e instanceof Neo4jException) {
                 throw $e;
             }
-            throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
+            $code = TransactionHelper::extractCode($e) ?? '';
+            throw new Neo4jException(new Vector([new Neo4jError($code, $e->getMessage())]), $e);
         }
 
         return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $bolt);

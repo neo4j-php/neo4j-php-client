@@ -58,7 +58,7 @@ final class SessionRun implements RequestHandlerInterface
                     $request->getSessionId(),
                     'todo',
                     $exception->getMessage(),
-                    'todo'
+                    $exception->getNeo4jCode(),
                 )]));
             } else {
                 $this->repository->addRecords($id, new ArrayIterator([new FrontendErrorResponse(

@@ -64,6 +64,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
             $transaction->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
         } catch (Neo4jException $e) {
             $exception = true;
+            self::assertEquals('Neo.ClientError.Statement.SyntaxError', $e->getNeo4jCode());
         }
         self::assertTrue($exception);
     }
