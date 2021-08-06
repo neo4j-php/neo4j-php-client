@@ -42,4 +42,9 @@ final class Neo4jException extends RuntimeException
     {
         return $this->errors;
     }
+
+    public function getNeo4jCode(): string
+    {
+        return $this->errors->first()->getCode();
+    }
 }

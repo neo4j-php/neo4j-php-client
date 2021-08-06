@@ -17,6 +17,7 @@ use Bolt\Bolt;
 use Bolt\error\MessageException;
 use Ds\Vector;
 use Exception;
+use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
@@ -62,7 +63,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->bolt->commit();
             $this->finished = true;
         } catch (Exception $e) {
-            throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
+            $code = TransactionHelper::extractCode($e);
+            throw new Neo4jException(new Vector([new Neo4jError($code ?? '', $e->getMessage())]), $e);
         }
 
         return $tbr;
@@ -78,7 +80,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->bolt->rollback();
             $this->finished = true;
         } catch (Exception $e) {
-            throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
+            $code = TransactionHelper::extractCode($e) ?? '';
+            throw new Neo4jException(new Vector([new Neo4jError($code, $e->getMessage())]), $e);
         }
     }
 
@@ -115,7 +118,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $results = $this->bolt->pullAll();
             } catch (Throwable $e) {
                 if ($e instanceof MessageException) {
-                    throw new Neo4jException(new Vector([new Neo4jError('', $e->getMessage())]), $e);
+                    $code = TransactionHelper::extractCode($e) ?? '';
+                    throw new Neo4jException(new Vector([new Neo4jError($code, $e->getMessage())]), $e);
                 }
                 throw $e;
             }
