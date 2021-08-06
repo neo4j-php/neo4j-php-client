@@ -47,31 +47,33 @@ final class SessionRun implements RequestHandlerInterface
     public function handle($request): TestkitResponseInterface
     {
         $session = $this->repository->getSession($request->getSessionId());
+        $id = Uuid::v4();
+
         try {
             $params = $this->decodeToValue($request->getParams());
             $result = $session->run($request->getCypher(), $params);
         } catch (Neo4jException $exception) {
             if (str_contains($exception->getMessage(), 'ClientError')) {
-                return new FrontendErrorResponse($exception->getMessage());
+                $this->repository->addRecords($id, new ArrayIterator([new DriverErrorResponse(
+                    $request->getSessionId(),
+                    'todo',
+                    $exception->getMessage(),
+                    'todo'
+                )]));
+            } else {
+                $this->repository->addRecords($id, new ArrayIterator([new FrontendErrorResponse(
+                    $exception->getMessage()
+                )]));
             }
 
-            return new DriverErrorResponse(
-                $request->getSessionId(),
-                'todo',
-                $exception->getMessage(),
-                'todo'
-            );
+            return new ResultResponse($id, []);
         }
-        $id = Uuid::v4();
         $this->repository->addRecords($id, new ArrayIterator($result->toArray()));
 
         return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
     }
 
-    /**
-     * @param SessionRunRequest $request
-     */
-    private function decodeToValue(array $params): array
+    private function decodeToValue(iterable $params): array
     {
         $tbr = [];
         foreach ($params as $key => $param) {
