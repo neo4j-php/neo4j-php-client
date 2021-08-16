@@ -20,6 +20,7 @@ final class ResultSummary
 {
     private SummaryCounters $counters;
     private DatabaseInfo $databaseInfo;
+    /** @var CypherList<Notification> */
     private CypherList $notifications;
     private ?Plan $plan;
     private ?ProfiledPlan $profiledPlan;
@@ -29,6 +30,9 @@ final class ResultSummary
     private float $resultConsumedAfter;
     private ServerInfo $serverInfo;
 
+    /**
+     * @param CypherList<Notification> $notifications
+     */
     public function __construct(
         SummaryCounters $counters,
         DatabaseInfo $databaseInfo,

@@ -129,16 +129,16 @@ final class HttpOGMArrayTranslator
      */
     private function translateNode(array $nodes, int $id, CypherMap $tbr): Node
     {
-        /** @var list<string> $labels */
-        $labels = [];
+        /** @var Vector<string> */
+        $labels = new Vector();
         foreach ($nodes as $node) {
             if ((int) $node['id'] === $id) {
-                $labels = $node['labels'];
+                $labels = new Vector($node['labels']);
                 break;
             }
         }
 
-        return new Node($id, new CypherList(new Vector($labels)), $tbr);
+        return new Node($id, new CypherList($labels), $tbr);
     }
 
     /**

@@ -143,10 +143,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         return new CypherList($tbr);
     }
 
-    /**
-     * @return Bolt|mixed
-     */
-    private function getBolt()
+    private function getBolt(): Bolt
     {
         return $this->connection->getImplementation();
     }

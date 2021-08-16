@@ -18,10 +18,10 @@ use function in_array;
 use function is_int;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
-use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\ResultSummary;
 use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Enum\QueryTypeEnum;
 use Laudis\Neo4j\Types\CypherList;
@@ -51,7 +51,13 @@ final class SummarizedResultFormatter implements FormatterInterface
         $this->formatter = $formatter;
     }
 
-    public function formatHttpStats(array $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
+    /**
+     * @param CypherResponse $response
+     * @param T              $results
+     *
+     * @return SummarizedResult<T>
+     */
+    public function formatHttpStats(array $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, $results): SummarizedResult
     {
         if (!isset($response['stats'])) {
             throw new UnexpectedValueException('No stats found in the response set');
@@ -163,13 +169,15 @@ final class SummarizedResultFormatter implements FormatterInterface
 
     public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
-        /** @var Vector<SummarizedResult> $tbr */
+        /** @var Vector<SummarizedResult<T>> */
         $tbr = new Vector();
 
         $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);
-        foreach ($statements as $i => $statement) {
+        $i = 0;
+        foreach ($statements as $statement) {
             $result = $body['results'][$i];
             $tbr->push($this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i)));
+            ++$i;
         }
 
         return new CypherList($tbr);

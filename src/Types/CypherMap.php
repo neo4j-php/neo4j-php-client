@@ -157,6 +157,7 @@ final class CypherMap implements CypherContainerInterface
             $map = $map->map;
         }
 
+        /** @var Map<string, T> $map */
         return new CypherMap($this->map->intersect($map));
     }
 
@@ -171,6 +172,7 @@ final class CypherMap implements CypherContainerInterface
             $map = $map->map;
         }
 
+        /** @var Map<string, T> $map */
         return new CypherMap($this->map->diff($map));
     }
 
@@ -319,6 +321,7 @@ final class CypherMap implements CypherContainerInterface
             $map = $map->map;
         }
 
+        /** @var Map<string, T> $map */
         return new CypherMap($this->map->union($map));
     }
 
@@ -333,6 +336,7 @@ final class CypherMap implements CypherContainerInterface
             $map = $map->map;
         }
 
+        /** @var Map<string, T> $map */
         return new CypherMap($this->map->xor($map));
     }
 

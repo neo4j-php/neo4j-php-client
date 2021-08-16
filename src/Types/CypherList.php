@@ -29,9 +29,9 @@ final class CypherList implements CypherContainerInterface
     private Vector $vector;
 
     /**
-     * @param iterable<T> $vector
+     * @param Vector<T> $vector
      */
-    public function __construct(iterable $vector)
+    public function __construct(Vector $vector)
     {
         $this->vector = new Vector($vector);
     }
