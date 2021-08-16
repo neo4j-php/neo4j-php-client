@@ -18,8 +18,13 @@ use Bolt\connection\IConnection;
 use Bolt\structures\Node;
 use Bolt\structures\Path;
 use Bolt\structures\UnboundRelationship;
+use Laudis\Neo4j\Common\Connection;
+use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\UriInterface;
 use stdClass;
 use UnexpectedValueException;
 
@@ -48,7 +53,7 @@ final class BoltCypherFormatterTest extends TestCase
             [
             ],
         ];
-        $result = $this->formatter->formatBoltResult(['fields' => ['a']], $results, new Bolt($this->getMockBuilder(IConnection::class)->getMock()));
+        $result = $this->formatter->formatBoltResult(['fields' => ['a']], $results, $this->getConnection());
 
         self::assertEquals(1, $result->count());
         self::assertEquals(1, $result->first()->count());
@@ -65,7 +70,7 @@ final class BoltCypherFormatterTest extends TestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Cannot handle objects without a properties method. Class given: '.stdClass::class);
-        $this->formatter->formatBoltResult(['fields' => ['a']], [[new stdClass()], []], new Bolt($this->getMockBuilder(IConnection::class)->getMock()));
+        $this->formatter->formatBoltResult(['fields' => ['a']], [[new stdClass()], []], $this->getConnection());
     }
 
     public function testResource(): void
@@ -73,6 +78,23 @@ final class BoltCypherFormatterTest extends TestCase
         $resource = fopen('php://temp', 'b');
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Did not expect to receive value of type: resource');
-        $this->formatter->formatBoltResult(['fields' => ['a']], [[$resource], []], new Bolt($this->getMockBuilder(IConnection::class)->getMock()));
+        $this->formatter->formatBoltResult(['fields' => ['a']], [[$resource], []], $this->getConnection());
+    }
+
+    /**
+     * @return Connection
+     * @throws \Exception
+     */
+    private function getConnection(): Connection
+    {
+        return new Connection(
+            new Bolt($this->getMockBuilder(IConnection::class)->getMock()),
+            '',
+            $this->getMockBuilder(UriInterface::class)->getMock(),
+            '',
+            ConnectionProtocol::BOLT_V43(),
+            AccessMode::READ(),
+            new DatabaseInfo('')
+        );
     }
 }

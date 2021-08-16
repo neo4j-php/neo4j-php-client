@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Http;
 use JsonException;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -24,6 +25,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
+use function microtime;
 use function parse_url;
 use const PHP_URL_PATH;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -46,6 +48,7 @@ final class HttpSession implements SessionInterface
     private RequestFactory $requestFactory;
     private string $uri;
     private AuthenticateInterface $auth;
+    private string $userAgent;
 
     /**
      * @param FormatterInterface<T> $formatter
@@ -57,7 +60,8 @@ final class HttpSession implements SessionInterface
         FormatterInterface $formatter,
         RequestFactory $requestFactory,
         string $uri,
-        AuthenticateInterface $auth
+        AuthenticateInterface $auth,
+        string $userAgent
     ) {
         $this->streamFactory = $factory;
         $this->config = $config;
@@ -66,6 +70,7 @@ final class HttpSession implements SessionInterface
         $this->requestFactory = $requestFactory;
         $this->uri = $uri;
         $this->auth = $auth;
+        $this->userAgent = $userAgent;
     }
 
     /**
@@ -76,15 +81,17 @@ final class HttpSession implements SessionInterface
         $config ??= TransactionConfiguration::default();
 
         $request = $this->requestFactory->createRequest('POST', $this->uri);
-        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth, $config->getTimeout());
+        $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->userAgent, $this->config);
         $content = HttpHelper::statementsToString($this->formatter, $statements);
         $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->createStream($content));
 
-        $response = $client->sendRequest($request);
+        $start = microtime(true);
+        $response = $connection->getImplementation()->sendRequest($request);
+        $time = microtime(true) - $start;
 
         $data = HttpHelper::interpretResponse($response);
 
-        return $this->formatter->formatHttpResult($response, $data);
+        return $this->formatter->formatHttpResult($response, $data, $connection, $time, $time, $statements);
     }
 
     /**
@@ -143,8 +150,8 @@ final class HttpSession implements SessionInterface
 
         $request = $this->requestFactory->createRequest('POST', $this->uri);
         $request->getBody()->write(HttpHelper::statementsToString($this->formatter, $statements ?? []));
-        $client = $this->pool->acquire($request->getUri(), $this->config->getAccessMode(), $this->auth, $config->getTimeout());
-        $response = $client->sendRequest($request);
+        $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->userAgent, $this->config);
+        $response = $connection->getImplementation()->sendRequest($request);
 
         /** @var array{commit: string} $data */
         $data = HttpHelper::interpretResponse($response);
@@ -153,17 +160,19 @@ final class HttpSession implements SessionInterface
         $uri = $request->getUri()->withPath($path);
         $request = $request->withUri($uri);
 
-        return $this->makeTransaction($client, $request);
+        return $this->makeTransaction($connection, $request);
     }
 
     /**
+     * @param ConnectionInterface<ClientInterface> $connection
+     *
      * @return HttpUnmanagedTransaction<T>
      */
-    private function makeTransaction(ClientInterface $client, RequestInterface $request): HttpUnmanagedTransaction
+    private function makeTransaction(ConnectionInterface $connection, RequestInterface $request): HttpUnmanagedTransaction
     {
         return new HttpUnmanagedTransaction(
             $request,
-            $client,
+            $connection,
             $this->streamFactory,
             $this->formatter
         );

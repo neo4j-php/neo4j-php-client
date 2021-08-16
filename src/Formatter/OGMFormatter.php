@@ -13,13 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use Laudis\Neo4j\Databags\Statement;
 use function array_slice;
 use ArrayIterator;
-use Bolt\Bolt;
 use function count;
 use Ds\Map;
 use Ds\Vector;
 use Exception;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator;
@@ -75,7 +76,7 @@ final class OGMFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<OGMTypes>>
      */
-    public function formatBoltResult(array $meta, array $results, Bolt $bolt): CypherList
+    public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement): CypherList
     {
         /** @var list<list<mixed>> $results */
         $results = array_slice($results, 0, count($results) - 1);
@@ -93,7 +94,7 @@ final class OGMFormatter implements FormatterInterface
     /**
      * @throws Exception
      */
-    public function formatHttpResult(ResponseInterface $response, array $body): CypherList
+    public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
         /** @var Vector<CypherList<CypherMap<OGMTypes>>> $tbr */
         $tbr = new Vector();

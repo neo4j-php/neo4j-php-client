@@ -48,12 +48,6 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
         return OGMFormatter::create();
     }
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->client->run('MATCH (n) DETACH DELETE n');
-    }
-
     /**
      * @dataProvider connectionAliases
      */
@@ -389,7 +383,7 @@ CYPHER, [], $alias);
      */
     public function testRelationship(string $alias): void
     {
-        $this->client->run('MATCH (n) DETACH DELETE n');
+        $this->client->run('MATCH (n) DETACH DELETE n', [], $alias);
         $result = $this->client->run(<<<CYPHER
 MERGE (x:X {x: 1}) - [xy:XY {x: 1, y: 1}] -> (y:Y {y: 1})
 RETURN xy

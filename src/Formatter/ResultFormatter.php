@@ -13,12 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use Bolt\Bolt;
 use Ds\Vector;
 use function in_array;
 use function is_int;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
-use Laudis\Neo4j\Databags\StatementStatistics;
+use Laudis\Neo4j\Databags\ResultSummary;
+use Laudis\Neo4j\Databags\ServerInfo;
+use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummaryCounters;
+use Laudis\Neo4j\Enum\QueryTypeEnum;
+use Laudis\Neo4j\Result;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -29,20 +34,27 @@ use UnexpectedValueException;
  * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
  *
- * @implements FormatterInterface<StatementStatistics>
+ * @implements FormatterInterface<Result>
  */
-final class StatisticsFormatter implements FormatterInterface
+final class ResultFormatter implements FormatterInterface
 {
+    private FormatterInterface $formatter;
+
+    public function __construct(FormatterInterface $formatter)
+    {
+        $this->formatter = $formatter;
+    }
+
     /**
      * @param CypherResponse $response
      */
-    public function formatHttpStats(array $response): StatementStatistics
+    public function formatHttpStats(array $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): Result
     {
         if (!isset($response['stats'])) {
             throw new UnexpectedValueException('No stats found in the response set');
         }
 
-        return new StatementStatistics(
+        $counters = new SummaryCounters(
             $response['stats']['nodes_created'] ?? 0,
             $response['stats']['nodes_deleted'] ?? 0,
             $response['stats']['relationships_created'] ?? 0,
@@ -58,16 +70,39 @@ final class StatisticsFormatter implements FormatterInterface
             $response['stats']['contains_system_updates'] ?? false,
             $response['stats']['system_updates'] ?? 0,
         );
+
+        $summary = new ResultSummary(
+            $counters,
+            $connection->getDatabaseInfo(),
+            new CypherList(new Vector()),
+            null,
+            null,
+            $statement,
+            QueryTypeEnum::fromCounters($counters),
+            $resultAvailableAfter,
+            $resultConsumedAfter,
+            new ServerInfo(
+                $connection->getServerAddress(),
+                $connection->getProtocol(),
+                $connection->getServerAgent()
+            )
+        );
+
+        return new Result(
+            new CypherList(new Vector($response['columns'])),
+            $summary,
+            $results
+        );
     }
 
     /**
      * @param array{stats?: BoltCypherStats} $response
      */
-    public function formatBoltStats(array $response): StatementStatistics
+    public function formatBoltStats(array $response): SummaryCounters
     {
         $stats = $response['stats'] ?? false;
         if ($stats === false) {
-            return new StatementStatistics();
+            return new SummaryCounters();
         }
 
         $updateCount = 0;
@@ -77,7 +112,7 @@ final class StatisticsFormatter implements FormatterInterface
             }
         }
 
-        return new StatementStatistics(
+        return new SummaryCounters(
             $stats['nodes-created'] ?? 0,
             $stats['nodes-deleted'] ?? 0,
             $stats['relationships-created'] ?? 0,
@@ -95,7 +130,7 @@ final class StatisticsFormatter implements FormatterInterface
         );
     }
 
-    public function formatBoltResult(array $meta, array $results, Bolt $bolt): StatementStatistics
+    public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement): Result
     {
         $last = array_key_last($results);
         if (!isset($results[$last])) {
@@ -105,16 +140,40 @@ final class StatisticsFormatter implements FormatterInterface
         /** @var array{stats?: BoltCypherStats} */
         $response = $results[$last];
 
-        return $this->formatBoltStats($response);
+        $counters = $this->formatBoltStats($response);
+        $columns = $meta['fields'];
+
+        return new Result(
+            new CypherList(new Vector($columns)),
+            new ResultSummary(
+                $counters,
+                $connection->getDatabaseInfo(),
+                new CypherList(new Vector()),
+                null,
+                null,
+                $statement,
+                QueryTypeEnum::fromCounters($counters),
+                $resultAvailableAfter,
+                $resultConsumedAfter,
+                new ServerInfo(
+                    $connection->getServerAddress(),
+                    $connection->getProtocol(),
+                    $connection->getServerAgent()
+                )
+            ),
+            $this->formatter->formatBoltResult($meta, $results, $connection, $resultAvailableAfter, $resultConsumedAfter, $statement)
+        );
     }
 
-    public function formatHttpResult(ResponseInterface $response, array $body): CypherList
+    public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
-        /** @var Vector<StatementStatistics> $tbr */
+        /** @var Vector<Result> $tbr */
         $tbr = new Vector();
 
-        foreach ($body['results'] as $results) {
-            $tbr->push($this->formatHttpStats($results));
+        $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);
+        foreach ($statements as $i => $statement) {
+            $result = $body['results'][$i];
+            $tbr->push($this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i)));
         }
 
         return new CypherList($tbr);
@@ -122,13 +181,13 @@ final class StatisticsFormatter implements FormatterInterface
 
     public function decorateRequest(RequestInterface $request): RequestInterface
     {
-        return $request;
+        return $this->formatter->decorateRequest($request);
     }
 
     public function statementConfigOverride(): array
     {
-        return [
+        return array_merge($this->formatter->statementConfigOverride(), [
             'includeStats' => true,
-        ];
+        ]);
     }
 }

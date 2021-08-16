@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use JsonException;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
@@ -32,22 +33,24 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
 {
     private RequestInterface $request;
     private StreamFactoryInterface $factory;
-    private ClientInterface $client;
+    /** @var ConnectionInterface<ClientInterface> */
+    private ConnectionInterface $connection;
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
 
     /**
-     * @param FormatterInterface<T> $formatter
+     * @param FormatterInterface<T>                $formatter
+     * @param ConnectionInterface<ClientInterface> $connection
      */
     public function __construct(
         RequestInterface $request,
-        ClientInterface $client,
+        ConnectionInterface $connection,
         StreamFactoryInterface $factory,
         FormatterInterface $formatter
     ) {
         $this->request = $request;
         $this->factory = $factory;
-        $this->client = $client;
+        $this->connection = $connection;
         $this->formatter = $formatter;
     }
 
@@ -77,10 +80,10 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $body = HttpHelper::statementsToString($this->formatter, $statements);
 
         $request = $request->withBody($this->factory->createStream($body));
-        $response = $this->client->sendRequest($request);
+        $response = $this->connection->getImplementation()->sendRequest($request);
         $data = HttpHelper::interpretResponse($response);
 
-        return $this->formatter->formatHttpResult($response, $data);
+        return $this->formatter->formatHttpResult($response, $data, $this->connection);
     }
 
     /**
@@ -93,11 +96,11 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $content = HttpHelper::statementsToString($this->formatter, $statements);
         $request = $request->withBody($this->factory->createStream($content));
 
-        $response = $this->client->sendRequest($request);
+        $response = $this->connection->getImplementation()->sendRequest($request);
 
         $data = HttpHelper::interpretResponse($response);
 
-        return $this->formatter->formatHttpResult($response, $data);
+        return $this->formatter->formatHttpResult($response, $data, $this->connection);
     }
 
     /**
@@ -106,7 +109,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     public function rollback(): void
     {
         $request = $this->request->withMethod('DELETE');
-        $response = $this->client->sendRequest($request);
+        $response = $this->connection->getImplementation()->sendRequest($request);
 
         HttpHelper::interpretResponse($response);
     }
