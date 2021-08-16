@@ -82,7 +82,6 @@ final class BoltCypherFormatterTest extends TestCase
     }
 
     /**
-     * @return Connection
      * @throws \Exception
      */
     private function getConnection(): Connection

@@ -27,8 +27,6 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Laudis\Neo4j\Types\CypherList;
-use function microtime;
-use const PHP_EOL;
 use Psr\Http\Message\UriInterface;
 use function random_int;
 use function str_starts_with;

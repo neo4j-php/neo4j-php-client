@@ -30,8 +30,6 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
-use function microtime;
-use const PHP_EOL;
 use Psr\Http\Message\UriInterface;
 use function sprintf;
 
