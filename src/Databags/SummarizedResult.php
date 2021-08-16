@@ -18,7 +18,7 @@ use Laudis\Neo4j\Types\CypherList;
 /**
  * @template T
  */
-final class Result
+final class SummarizedResult
 {
     private ResultSummary $summary;
     /** @var T */

@@ -17,11 +17,11 @@ use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use Laudis\Neo4j\Formatter\ResultFormatter;
-use Laudis\Neo4j\Databags\Result;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Laudis\Neo4j\Databags\SummarizedResult;
 
 /**
- * @extends EnvironmentAwareIntegrationTest<Result<BasicResults>>
+ * @extends EnvironmentAwareIntegrationTest<SummarizedResult<BasicResults>>
  *
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
  */
@@ -29,7 +29,7 @@ final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrati
 {
     protected function formatter(): FormatterInterface
     {
-        return new ResultFormatter(new BasicFormatter());
+        return new SummarizedResultFormatter(new BasicFormatter());
     }
 
     /**
@@ -37,7 +37,7 @@ final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrati
      */
     public function testAcceptanceRead(string $alias): void
     {
-        self::assertInstanceOf(Result::class, $this->client->run('RETURN 1', [], $alias));
+        self::assertInstanceOf(SummarizedResult::class, $this->client->run('RETURN 1', [], $alias));
     }
 
     /**
