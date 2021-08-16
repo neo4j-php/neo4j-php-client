@@ -15,14 +15,16 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
-use Laudis\Neo4j\Databags\StatementStatistics;
-use Laudis\Neo4j\Formatter\StatisticsFormatter;
+use Laudis\Neo4j\Databags\SummaryCounters;
+use Laudis\Neo4j\Formatter\BasicFormatter;
+use Laudis\Neo4j\Formatter\ResultFormatter;
+use Laudis\Neo4j\Result;
 
 final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
 {
     protected function formatter(): FormatterInterface
     {
-        return new StatisticsFormatter();
+        return new ResultFormatter(new BasicFormatter());
     }
 
     /**
@@ -30,7 +32,7 @@ final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrati
      */
     public function testAcceptanceRead(string $alias): void
     {
-        self::assertEquals(new StatementStatistics(), $this->client->run('RETURN 1', [], $alias));
+        self::assertInstanceOf(Result::class, $this->client->run('RETURN 1', [], $alias));
     }
 
     /**
@@ -40,6 +42,6 @@ final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrati
      */
     public function testAcceptanceWrite(string $alias): void
     {
-        self::assertEquals(new StatementStatistics(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias));
+        self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias)->consume()->getCounters());
     }
 }

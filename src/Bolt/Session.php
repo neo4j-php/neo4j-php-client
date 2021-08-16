@@ -14,11 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
-use Bolt\connection\StreamSocket;
 use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
@@ -41,7 +41,7 @@ use Psr\Http\Message\UriInterface;
 final class Session implements SessionInterface
 {
     private SessionConfiguration $config;
-    /** @var ConnectionPoolInterface<StreamSocket> */
+    /** @var ConnectionPoolInterface<Bolt> */
     private ConnectionPoolInterface $pool;
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
@@ -51,8 +51,8 @@ final class Session implements SessionInterface
     private float $socketTimeout;
 
     /**
-     * @param FormatterInterface<T>                 $formatter
-     * @param ConnectionPoolInterface<StreamSocket> $pool
+     * @param FormatterInterface<T>         $formatter
+     * @param ConnectionPoolInterface<Bolt> $pool
      */
     public function __construct(
         SessionConfiguration $config,
@@ -137,26 +137,28 @@ final class Session implements SessionInterface
         return new BoltUnmanagedTransaction(
             $this->config->getDatabase(),
             $this->formatter,
-            $this->acquireBolt(TransactionConfiguration::default(), $config)
+            $this->acquireConnection(TransactionConfiguration::default(), $config)
         );
     }
 
-    private function acquireBolt(TransactionConfiguration $config, SessionConfiguration $sessionConfig): Bolt
+    /**
+     * @throws Exception
+     *
+     * @return ConnectionInterface<Bolt>
+     */
+    private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): ConnectionInterface
     {
         $timeout = max($this->socketTimeout, $config->getTimeout());
 
-        $bolt = new Bolt($this->pool->acquire($this->uri, $sessionConfig->getAccessMode(), $this->auth, $timeout));
-        $this->auth->authenticateBolt($bolt, $this->uri, $this->userAgent);
-
-        return $bolt;
+        return $this->pool->acquire($this->uri, $this->auth, $timeout, $this->userAgent, $sessionConfig);
     }
 
     private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig): UnmanagedTransactionInterface
     {
         try {
-            $bolt = $this->acquireBolt($config, $sessionConfig);
+            $bolt = $this->acquireConnection($config, $sessionConfig);
 
-            $begin = $bolt->begin(['db' => $this->config->getDatabase()]);
+            $begin = $bolt->getImplementation()->begin(['db' => $this->config->getDatabase()]);
 
             if (!$begin) {
                 throw new Neo4jException(new Vector([new Neo4jError('', 'Cannot open new transaction')]));

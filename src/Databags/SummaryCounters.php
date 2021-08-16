@@ -20,10 +20,8 @@ use IteratorAggregate;
  * @psalm-immutable
  *
  * @implements IteratorAggregate<string, int|bool>
- *
- * @codeCoverageIgnore
  */
-final class StatementStatistics implements IteratorAggregate
+final class SummaryCounters implements IteratorAggregate
 {
     private int $nodesCreated;
 
@@ -155,9 +153,9 @@ final class StatementStatistics implements IteratorAggregate
         return $this->systemUpdates;
     }
 
-    public function merge(StatementStatistics $resultStats): StatementStatistics
+    public function merge(SummaryCounters $resultStats): SummaryCounters
     {
-        return new StatementStatistics(
+        return new SummaryCounters(
             $this->nodesCreated + $resultStats->nodesCreated,
             $this->nodesDeleted + $resultStats->nodesDeleted,
             $this->relationshipsCreated + $resultStats->relationshipsCreated,
@@ -176,11 +174,11 @@ final class StatementStatistics implements IteratorAggregate
     }
 
     /**
-     * @param iterable<StatementStatistics> $stats
+     * @param iterable<SummaryCounters> $stats
      */
-    public static function aggregate(iterable $stats): StatementStatistics
+    public static function aggregate(iterable $stats): SummaryCounters
     {
-        $tbr = new StatementStatistics();
+        $tbr = new SummaryCounters();
         foreach ($stats as $stat) {
             $tbr = $tbr->merge($stat);
         }

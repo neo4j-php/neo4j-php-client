@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Contracts;
 
 use Bolt\Bolt;
 use JsonException;
+use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -64,12 +65,13 @@ use Psr\Http\Message\ResponseInterface;
 interface FormatterInterface
 {
     /**
-     * @param BoltMeta                $meta
-     * @param array<array-key, array> $results
+     * @param BoltMeta                  $meta
+     * @param array<array-key, array>   $results
+     * @param ConnectionInterface<Bolt> $connection
      *
      * @return T
      */
-    public function formatBoltResult(array $meta, array $results, Bolt $bolt);
+    public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement);
 
     /**
      * @param CypherResponseSet $body
@@ -78,7 +80,7 @@ interface FormatterInterface
      *
      * @return CypherList<T>
      */
-    public function formatHttpResult(ResponseInterface $response, array $body): CypherList;
+    public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
 
     public function decorateRequest(RequestInterface $request): RequestInterface;
 
