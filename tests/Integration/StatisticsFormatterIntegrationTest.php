@@ -15,10 +15,10 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use Laudis\Neo4j\Databags\SummarizedResult;
 
 /**
  * @extends EnvironmentAwareIntegrationTest<SummarizedResult<BasicResults>>
