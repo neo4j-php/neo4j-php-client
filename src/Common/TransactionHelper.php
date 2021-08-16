@@ -98,7 +98,7 @@ final class TransactionHelper
 
         /**
          * @var array{'name': 0, 'version': 1, 'edition': 2}
-         * @psalm-suppress PossiblyUndefinedStringArrayOffset
+         * @psalm-suppress all
          */
         $fields = array_flip($bolt->run(<<<'CYPHER'
 CALL dbms.components()
