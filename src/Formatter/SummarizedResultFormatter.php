@@ -18,7 +18,7 @@ use function in_array;
 use function is_int;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
-use Laudis\Neo4j\Databags\Result;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\ResultSummary;
 use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\Statement;
@@ -36,9 +36,9 @@ use UnexpectedValueException;
  * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
  *
- * @implements FormatterInterface<Result<T>>
+ * @implements FormatterInterface<SummarizedResult<T>>
  */
-final class ResultFormatter implements FormatterInterface
+final class SummarizedResultFormatter implements FormatterInterface
 {
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
@@ -51,7 +51,7 @@ final class ResultFormatter implements FormatterInterface
         $this->formatter = $formatter;
     }
 
-    public function formatHttpStats(array $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): Result
+    public function formatHttpStats(array $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
     {
         if (!isset($response['stats'])) {
             throw new UnexpectedValueException('No stats found in the response set');
@@ -91,7 +91,7 @@ final class ResultFormatter implements FormatterInterface
             )
         );
 
-        return new Result($results, $summary);
+        return new SummarizedResult($results, $summary);
     }
 
     /**
@@ -129,7 +129,7 @@ final class ResultFormatter implements FormatterInterface
         );
     }
 
-    public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement): Result
+    public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement): SummarizedResult
     {
         $last = array_key_last($results);
         if (!isset($results[$last])) {
@@ -158,12 +158,12 @@ final class ResultFormatter implements FormatterInterface
         );
         $formattedResult = $this->formatter->formatBoltResult($meta, $results, $connection, $resultAvailableAfter, $resultConsumedAfter, $statement);
 
-        return new Result($formattedResult, $summary);
+        return new SummarizedResult($formattedResult, $summary);
     }
 
     public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
-        /** @var Vector<Result> $tbr */
+        /** @var Vector<SummarizedResult> $tbr */
         $tbr = new Vector();
 
         $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);
