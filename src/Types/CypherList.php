@@ -29,11 +29,11 @@ final class CypherList implements CypherContainerInterface
     private Vector $vector;
 
     /**
-     * @param Vector<T> $vector
+     * @param iterable<T> $vector
      */
-    public function __construct(Vector $vector)
+    public function __construct(iterable $vector)
     {
-        $this->vector = $vector;
+        $this->vector = new Vector($vector);
     }
 
     public function count(): int

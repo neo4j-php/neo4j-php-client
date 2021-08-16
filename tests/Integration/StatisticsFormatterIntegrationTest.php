@@ -18,8 +18,13 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Formatter\ResultFormatter;
-use Laudis\Neo4j\Result;
+use Laudis\Neo4j\Databags\Result;
 
+/**
+ * @extends EnvironmentAwareIntegrationTest<Result<BasicResults>>
+ *
+ * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ */
 final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
 {
     protected function formatter(): FormatterInterface
@@ -42,6 +47,6 @@ final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrati
      */
     public function testAcceptanceWrite(string $alias): void
     {
-        self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias)->consume()->getCounters());
+        self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias)->getSummary()->getCounters());
     }
 }
