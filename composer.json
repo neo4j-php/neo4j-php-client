@@ -47,7 +47,7 @@
         "nyholm/psr7-server": "^1.0",
         "kriswallsmith/buzz": "^1.2",
         "vimeo/psalm": "^4.7",
-        "friendsofphp/php-cs-fixer": "^2.19",
+        "friendsofphp/php-cs-fixer": "^3.0",
         "psalm/plugin-phpunit": "^0.15.1",
         "vlucas/phpdotenv": "^5.0"
     },
