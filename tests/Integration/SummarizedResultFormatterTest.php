@@ -25,7 +25,7 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
  *
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
  */
-final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
+final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTest
 {
     protected function formatter(): FormatterInterface
     {
@@ -37,7 +37,9 @@ final class StatisticsFormatterIntegrationTest extends EnvironmentAwareIntegrati
      */
     public function testAcceptanceRead(string $alias): void
     {
-        self::assertInstanceOf(SummarizedResult::class, $this->client->run('RETURN 1', [], $alias));
+        $result = $this->client->run('RETURN 1 AS one', [], $alias);
+        self::assertInstanceOf(SummarizedResult::class, $result);
+        self::assertEquals(1, $result->getResult()->first()->get('one'));
     }
 
     /**
