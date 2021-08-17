@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use ArrayIterator;
 use Ds\Map;
 use Ds\Vector;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -54,21 +53,21 @@ final class SessionRun implements RequestHandlerInterface
             $result = $session->run($request->getCypher(), $params);
         } catch (Neo4jException $exception) {
             if (str_contains($exception->getMessage(), 'ClientError')) {
-                $this->repository->addRecords($id, new ArrayIterator([new DriverErrorResponse(
+                $this->repository->addRecords($id, new DriverErrorResponse(
                     $request->getSessionId(),
                     'todo',
                     $exception->getMessage(),
                     $exception->getNeo4jCode(),
-                )]));
+                ));
             } else {
-                $this->repository->addRecords($id, new ArrayIterator([new FrontendErrorResponse(
+                $this->repository->addRecords($id, new FrontendErrorResponse(
                     $exception->getMessage()
-                )]));
+                ));
             }
 
             return new ResultResponse($id, []);
         }
-        $this->repository->addRecords($id, new ArrayIterator($result->toArray()));
+        $this->repository->addRecords($id, $result);
 
         return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
     }

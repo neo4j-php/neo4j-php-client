@@ -14,10 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend;
 
 use Ds\Map;
-use Iterator;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Symfony\Component\Uid\Uuid;
 
 final class MainRepository
@@ -26,7 +27,7 @@ final class MainRepository
     private Map $drivers;
     /** @var Map<string, SessionInterface> */
     private Map $sessions;
-    /** @var Map<string, Iterator> */
+    /** @var Map<string, SummarizedResult|TestkitResponseInterface> */
     private Map $records;
     /** @var Map<string, UnmanagedTransactionInterface> */
     private Map $transactions;
@@ -69,9 +70,13 @@ final class MainRepository
         return $this->sessions->get($id->toRfc4122());
     }
 
-    public function addRecords(Uuid $id, Iterator $iterator): void
+    /**
+     * @param Uuid $id
+     * @param SummarizedResult|TestkitResponseInterface $result
+     */
+    public function addRecords(Uuid $id, $result): void
     {
-        $this->records->put($id->toRfc4122(), $iterator);
+        $this->records->put($id->toRfc4122(), $result);
     }
 
     public function removeRecords(Uuid $id): void
@@ -79,7 +84,10 @@ final class MainRepository
         $this->records->remove($id->toRfc4122());
     }
 
-    public function getRecords(Uuid $id): Iterator
+    /**
+     * @return SummarizedResult|TestkitResponseInterface
+     */
+    public function getRecords(Uuid $id)
     {
         return $this->records->get($id->toRfc4122());
     }

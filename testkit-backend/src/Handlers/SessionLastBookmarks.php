@@ -20,6 +20,6 @@ final class SessionLastBookmarks implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        return new BackendErrorResponse('Domain name resolution not implemented yet'); // TODO - Bookmarks
+        return new BackendErrorResponse('Bookmarks not implemented yet'); // TODO - Bookmarks
     }
 }

@@ -20,6 +20,6 @@ final class RetryableNegative implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        return new BackendErrorResponse('Retryable positive not implemented yet'); // TODO
+        return new BackendErrorResponse('Retryable negative not implemented yet'); // TODO
     }
 }

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
+use function array_key_exists;
 use Bolt\structures\Date as BoltDate;
 use Bolt\structures\DateTime as BoltDateTime;
 use Bolt\structures\Duration as BoltDuration;
@@ -24,7 +25,6 @@ use Bolt\structures\Point2D as BoltPoint2D;
 use Bolt\structures\Point3D as BoltPoint3D;
 use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
-use function array_key_exists;
 use function call_user_func;
 use Ds\Map;
 use Ds\Vector;

@@ -17,7 +17,6 @@ use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\ResultNextRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\NullRecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
@@ -39,16 +38,18 @@ final class ResultNext implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        $iterator = $this->repository->getRecords($request->getResultId());
+        $record = $this->repository->getRecords($request->getResultId());
+        if ($record instanceof TestkitResponseInterface) {
+            return $record;
+        }
+
+        $iterator = $record->getResult()->getIterator();
 
         if (!$iterator->valid()) {
             return new NullRecordResponse();
         }
 
         $current = $iterator->current();
-        if ($current instanceof TestkitResponseInterface) {
-            return $current;
-        }
 
         $iterator->next();
 

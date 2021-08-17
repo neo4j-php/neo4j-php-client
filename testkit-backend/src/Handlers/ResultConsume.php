@@ -1,15 +1,23 @@
 <?php
+
 declare(strict_types=1);
 
+/*
+ * This file is part of the Laudis Neo4j package.
+ *
+ * (c) Laudis technologies <http://laudis.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
-
 
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\ResultConsumeRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\SummaryResponse;
 
 /**
  * @implements RequestHandlerInterface<ResultConsumeRequest>
@@ -29,10 +37,7 @@ final class ResultConsume implements RequestHandlerInterface
     public function handle($request): TestkitResponseInterface
     {
         $result = $this->repository->getRecords($request->getResultId());
-        if ($result->current() instanceof TestkitResponseInterface) {
-            return $result->current();
-        }
 
-        return new BackendErrorResponse('Result consumption not implemented yet'); // TODO
+        return new SummaryResponse($result);
     }
 }

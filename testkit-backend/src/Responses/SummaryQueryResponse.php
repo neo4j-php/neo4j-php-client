@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Responses;
 
+use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 
 /**
@@ -20,13 +21,11 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
  */
 final class SummaryQueryResponse implements TestkitResponseInterface
 {
-    private string $text;
-    private array $parameters;
+    private Statement $statement;
 
-    public function __construct(string $text, array $parameters)
+    public function __construct(Statement $statement)
     {
-        $this->text = $text;
-        $this->parameters = $parameters;
+        $this->statement = $statement;
     }
 
     public function jsonSerialize(): array
@@ -34,8 +33,8 @@ final class SummaryQueryResponse implements TestkitResponseInterface
         return [
             'name' => 'SummaryQuery',
             'data' => [
-                'text' => $this->text,
-                'parameters' => $this->parameters,
+                'text' => $this->statement->getText(),
+                'parameters' => $this->statement->getParameters(),
             ],
         ];
     }

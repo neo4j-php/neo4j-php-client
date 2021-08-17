@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Responses;
 
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 
 /**
@@ -20,64 +21,30 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
  */
 final class SummaryResponse implements TestkitResponseInterface
 {
-    private SummaryCountersResponse $statistics;
-    private string $database;
-    /** @var mixed */
-    private $notifications;
-    private string $plan;
-    private string $profile;
-    private SummaryQueryResponse $summaryQuery;
-    private string $queryType;
-    private int $resultAvailableAfter;
-    private int $resultConsumedAfter;
-    private ServerInfoResponse $serverInfo;
+    private SummarizedResult $result;
 
-    /**
-     * SummaryResponse constructor.
-     *
-     * @param mixed $notifications
-     *
-     * TODO - Figure out type of notifications variable
-     */
-    public function __construct(
-        SummaryCountersResponse $statistics,
-        string $database,
-        $notifications,
-        string $plan,
-        string $profile,
-        SummaryQueryResponse $summaryQuery,
-        string $queryType,
-        int $resultAvailableAfter,
-        int $resultConsumedAfter,
-        ServerInfoResponse $serverInfo
-    ) {
-        $this->statistics = $statistics;
-        $this->database = $database;
-        $this->notifications = $notifications;
-        $this->plan = $plan;
-        $this->profile = $profile;
-        $this->summaryQuery = $summaryQuery;
-        $this->queryType = $queryType;
-        $this->resultAvailableAfter = $resultAvailableAfter;
-        $this->resultConsumedAfter = $resultConsumedAfter;
-        $this->serverInfo = $serverInfo;
+    public function __construct(SummarizedResult $result)
+    {
+        $this->result = $result;
     }
 
     public function jsonSerialize(): array
     {
+        $summary = $this->result->getSummary();
+
         return [
             'name' => 'Summary',
             'data' => [
-                'counters' => $this->statistics,
-                'database' => $this->database,
-                'notifications' => $this->notifications,
-                'plan' => $this->plan,
-                'profile' => $this->profile,
-                'query' => $this->summaryQuery,
-                'query_type' => $this->queryType,
-                'result_available_after' => $this->resultAvailableAfter,
-                'result_consumed_after' => $this->resultConsumedAfter,
-                'server_info' => $this->serverInfo,
+                'counters' => new SummaryCountersResponse($summary->getCounters()),
+                'database' => $summary->getDatabaseInfo()->getName(),
+                'notifications' => $summary->getNotifications(),
+                'plan' => $summary->getPlan(),
+                'profile' => $summary->getProfiledPlan(),
+                'query' => new SummaryQueryResponse($summary->getStatement()),
+                'query_type' => $summary->getQueryType(),
+                'result_available_after' => $summary->getResultAvailableAfter(),
+                'result_consumed_after' => $summary->getResultConsumedAfter(),
+                'server_info' => $summary->getServerInfo(),
             ],
         ];
     }

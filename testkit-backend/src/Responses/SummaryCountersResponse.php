@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Responses;
 
-use Laudis\Neo4j\Databags\StatementStatistics;
+use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 
 /**
@@ -21,9 +21,9 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
  */
 final class SummaryCountersResponse implements TestkitResponseInterface
 {
-    private StatementStatistics $statistics;
+    private SummaryCounters $statistics;
 
-    public function __construct(StatementStatistics $statistics)
+    public function __construct(SummaryCounters $statistics)
     {
         $this->statistics = $statistics;
     }

@@ -19,6 +19,7 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionBeginTransactionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\TransactionResponse;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -56,6 +57,6 @@ final class SessionBeginTransaction implements RequestHandlerInterface
 
         $this->repository->addTransaction($id, $transaction);
 
-        return new RetryableTryResponse($id);
+        return new TransactionResponse($id);
     }
 }
