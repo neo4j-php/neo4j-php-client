@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Psr\Http\Message\UriInterface;
 
@@ -22,7 +23,13 @@ use Psr\Http\Message\UriInterface;
 interface ConnectionPoolInterface
 {
     /**
-     * @return T
+     * @return ConnectionInterface<T>
      */
-    public function acquire(UriInterface $uri, AccessMode $mode, AuthenticateInterface $authenticate, float $socketTimeout);
+    public function acquire(
+        UriInterface $uri,
+        AuthenticateInterface $authenticate,
+        float $socketTimeout,
+        string $userAgent,
+        SessionConfiguration $config
+    ): ConnectionInterface;
 }

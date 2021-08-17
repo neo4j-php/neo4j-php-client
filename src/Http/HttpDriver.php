@@ -140,12 +140,13 @@ final class HttpDriver implements DriverInterface
 
         return new HttpSession(
             $bindings->getStreamFactory(),
-            new HttpConnectionPool($bindings->getClient()),
+            new HttpConnectionPool($bindings->getClient(), $factory, $bindings->getStreamFactory()),
             $config,
             $this->formatter,
             $factory,
             $this->transactionUrl,
-            $this->auth
+            $this->auth,
+            $this->config->getUserAgent()
         );
     }
 

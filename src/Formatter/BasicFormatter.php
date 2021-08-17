@@ -13,8 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use Laudis\Neo4j\Databags\Statement;
 use function array_slice;
-use Bolt\Bolt;
 use Bolt\structures\Path;
 use function count;
 use Ds\Map;
@@ -23,6 +23,7 @@ use function get_class;
 use function gettype;
 use function is_array;
 use function is_object;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -48,7 +49,7 @@ final class BasicFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<array|scalar|null>>
      */
-    public function formatBoltResult(array $meta, array $results, Bolt $bolt): CypherList
+    public function formatBoltResult(array $meta, array $results, ?ConnectionInterface $connection = null, ?float $resultAvailableAfter = null, ?float $resultConsumedAfter = null, ?Statement $statement = null): CypherList
     {
         $results = array_slice($results, 0, count($results) - 1);
 
@@ -61,7 +62,7 @@ final class BasicFormatter implements FormatterInterface
         return new CypherList($tbr);
     }
 
-    public function formatHttpResult(ResponseInterface $response, array $body): CypherList
+    public function formatHttpResult(ResponseInterface $response, array $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
     {
         /** @var Vector<CypherList<CypherMap<scalar|array|null>>> */
         $tbr = new Vector();

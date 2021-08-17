@@ -18,6 +18,7 @@ use Bolt\error\MessageException;
 use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
@@ -26,6 +27,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherList;
 use Throwable;
+use function microtime;
 
 /**
  * @template T
@@ -37,17 +39,19 @@ use Throwable;
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
     private FormatterInterface $formatter;
-    private Bolt $bolt;
+    /** @var ConnectionInterface<Bolt> */
+    private ConnectionInterface $connection;
     private string $database;
     private bool $finished = false;
 
     /**
-     * @param FormatterInterface<T> $formatter
+     * @param FormatterInterface<T>     $formatter
+     * @param ConnectionInterface<Bolt> $connection
      */
-    public function __construct(string $database, FormatterInterface $formatter, Bolt $bolt)
+    public function __construct(string $database, FormatterInterface $formatter, ConnectionInterface $connection)
     {
         $this->formatter = $formatter;
-        $this->bolt = $bolt;
+        $this->connection = $connection;
         $this->database = $database;
     }
 
@@ -60,7 +64,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         }
 
         try {
-            $this->bolt->commit();
+            $this->getBolt()->commit();
             $this->finished = true;
         } catch (Exception $e) {
             $code = TransactionHelper::extractCode($e);
@@ -77,7 +81,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         }
 
         try {
-            $this->bolt->rollback();
+            $this->connection->getImplementation()->rollback();
             $this->finished = true;
         } catch (Exception $e) {
             $code = TransactionHelper::extractCode($e) ?? '';
@@ -112,10 +116,13 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $extra = ['db' => $this->database];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             try {
+                $start = microtime(true);
                 /** @var BoltMeta $meta */
-                $meta = $this->bolt->run($statement->getText(), $parameters->toArray(), $extra);
+                $meta = $this->getBolt()->run($statement->getText(), $parameters->toArray(), $extra);
+                $run = microtime(true);
                 /** @var array<array> $results */
-                $results = $this->bolt->pullAll();
+                $results = $this->getBolt()->pullAll();
+                $end = microtime(true);
             } catch (Throwable $e) {
                 if ($e instanceof MessageException) {
                     $code = TransactionHelper::extractCode($e) ?? '';
@@ -123,9 +130,24 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 }
                 throw $e;
             }
-            $tbr->push($this->formatter->formatBoltResult($meta, $results, $this->bolt));
+            $tbr->push($this->formatter->formatBoltResult(
+                $meta,
+                $results,
+                $this->connection,
+                $run - $start,
+                $end - $start,
+                $statement
+            ));
         }
 
         return new CypherList($tbr);
+    }
+
+    /**
+     * @return Bolt|mixed
+     */
+    private function getBolt()
+    {
+        return $this->connection->getImplementation();
     }
 }
