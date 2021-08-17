@@ -107,6 +107,7 @@ final class Backend
         try {
             $message = json_encode($handler->handle($request), JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
+            $this->logger->error($e);
             $message = json_encode(new BackendErrorResponse($e->getMessage()), JSON_THROW_ON_ERROR);
         }
         $this->logger->debug('Sent: '.$message);

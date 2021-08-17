@@ -25,6 +25,7 @@ use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Psr\Log\LoggerInterface;
 use function str_contains;
 use Symfony\Component\Uid\Uuid;
 
@@ -34,10 +35,12 @@ use Symfony\Component\Uid\Uuid;
 final class SessionRun implements RequestHandlerInterface
 {
     private MainRepository $repository;
+    private LoggerInterface $logger;
 
-    public function __construct(MainRepository $repository)
+    public function __construct(MainRepository $repository, LoggerInterface $logger)
     {
         $this->repository = $repository;
+        $this->logger = $logger;
     }
 
     /**
@@ -52,6 +55,7 @@ final class SessionRun implements RequestHandlerInterface
             $params = $this->decodeToValue($request->getParams());
             $result = $session->run($request->getCypher(), $params);
         } catch (Neo4jException $exception) {
+            $this->logger->debug($exception);
             if (str_contains($exception->getMessage(), 'ClientError')) {
                 $this->repository->addRecords($id, new DriverErrorResponse(
                     $request->getSessionId(),
@@ -69,7 +73,7 @@ final class SessionRun implements RequestHandlerInterface
         }
         $this->repository->addRecords($id, $result);
 
-        return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
+        return new ResultResponse($id, $result->getResult()->isEmpty() ? [] : $result->getResult()->first()->keys());
     }
 
     private function decodeToValue(iterable $params): array
