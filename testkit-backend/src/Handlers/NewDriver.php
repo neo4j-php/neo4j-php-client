@@ -16,6 +16,8 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\DriverFactory;
+use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
@@ -50,7 +52,9 @@ final class NewDriver implements RequestHandlerInterface
             $config = $config->withUserAgent($ua);
         }
 
-        $driver = DriverFactory::create($request->getUri(), $config, Authenticate::basic($user, $pass), $timeout);
+        $formatter = new SummarizedResultFormatter(OGMFormatter::create());
+        $authenticate = Authenticate::basic($user, $pass);
+        $driver = DriverFactory::create($request->getUri(), $config, $authenticate, $timeout, $formatter);
         $id = Uuid::v4();
         $this->repository->addDriver($id, $driver);
 
