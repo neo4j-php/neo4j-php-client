@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use Laudis\Neo4j\Databags\Statement;
 use function array_slice;
 use ArrayIterator;
 use function count;
@@ -22,6 +21,7 @@ use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMStringTranslator;

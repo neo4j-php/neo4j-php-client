@@ -48,11 +48,6 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         return TransactionHelper::connectionFromSocket($socket, $uri, $userAgent, $authenticate, $config);
     }
 
-    /**
-     * @param UriInterface $uri
-     * @param string $host
-     * @param StreamSocket $socket
-     */
     private function configureSsl(UriInterface $uri, string $host, StreamSocket $socket): void
     {
         $scheme = $uri->getScheme();

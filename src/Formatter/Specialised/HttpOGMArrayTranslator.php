@@ -81,7 +81,7 @@ final class HttpOGMArrayTranslator
             // We need to use JOLT instead for finer control,
             // which will be a different translator.
             if (is_array($x)) {
-                /** @var array<array-key, array|null|scalar> $x */
+                /** @var array<array-key, array|scalar|null> $x */
                 $tbr->push($this->translateContainer($x));
             } else {
                 $tbr->push($x);
@@ -112,7 +112,7 @@ final class HttpOGMArrayTranslator
                 $tbr = $this->translatePoint($value);
                 break;
             default:
-                /** @var array<array-key, array|null|scalar> $value */
+                /** @var array<array-key, array|scalar|null> $value */
                 $tbr = $this->translateContainer($value);
                 if ($type === 'node' && $tbr instanceof CypherMap && isset($currentMeta['id'])) {
                     $tbr = $this->translateNode($nodes, $currentMeta['id'], $tbr);
@@ -129,16 +129,16 @@ final class HttpOGMArrayTranslator
      */
     private function translateNode(array $nodes, int $id, CypherMap $tbr): Node
     {
-        /** @var list<string> $labels */
-        $labels = [];
+        /** @var Vector<string> */
+        $labels = new Vector();
         foreach ($nodes as $node) {
             if ((int) $node['id'] === $id) {
-                $labels = $node['labels'];
+                $labels = new Vector($node['labels']);
                 break;
             }
         }
 
-        return new Node($id, new CypherList(new Vector($labels)), $tbr);
+        return new Node($id, new CypherList($labels), $tbr);
     }
 
     /**
@@ -203,7 +203,7 @@ final class HttpOGMArrayTranslator
             // We need to use JOLT instead for finer control,
             // which will be a different translator.
             if (is_array($x)) {
-                /** @var array<array-key, scalar|null|array> $x */
+                /** @var array<array-key, scalar|array|null> $x */
                 $tbr->put($key, $this->translateContainer($x));
             } else {
                 $tbr->put($key, $x);
@@ -214,7 +214,7 @@ final class HttpOGMArrayTranslator
     }
 
     /**
-     * @param array<array-key, scalar|null|array> $value
+     * @param array<array-key, scalar|array|null> $value
      *
      * @return CypherList<OGMTypes>|CypherMap<OGMTypes>
      */

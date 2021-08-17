@@ -33,7 +33,7 @@ final class CypherList implements CypherContainerInterface
      */
     public function __construct(Vector $vector)
     {
-        $this->vector = $vector;
+        $this->vector = new Vector($vector);
     }
 
     public function count(): int

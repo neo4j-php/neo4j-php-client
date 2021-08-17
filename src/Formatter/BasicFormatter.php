@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use Laudis\Neo4j\Databags\Statement;
 use function array_slice;
 use Bolt\structures\Path;
 use function count;
@@ -25,6 +24,7 @@ use function is_array;
 use function is_object;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;

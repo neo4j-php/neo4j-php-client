@@ -18,6 +18,9 @@ use RuntimeException;
 
 final class UnsupportedScheme extends RuntimeException
 {
+    /**
+     * @param list<string> $supportedSchemas
+     */
     public static function make(string $schema, array $supportedSchemas): self
     {
         return new self('Unsupported schema: '.$schema.', available schema\'s are: '.implode(',', $supportedSchemas));

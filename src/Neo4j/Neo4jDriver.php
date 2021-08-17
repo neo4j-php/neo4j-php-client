@@ -13,11 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Bolt\connection\StreamSocket;
+use Bolt\Bolt;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -42,15 +41,15 @@ final class Neo4jDriver implements DriverInterface
 {
     private UriInterface $parsedUrl;
     private AuthenticateInterface $auth;
-    /** @var ConnectionPoolInterface<StreamSocket> */
+    /** @var ConnectionPoolInterface<Bolt> */
     private ConnectionPoolInterface $pool;
     private DriverConfiguration $config;
     private FormatterInterface $formatter;
     private float $socketTimeout;
 
     /**
-     * @param FormatterInterface<T>                 $formatter
-     * @param ConnectionPoolInterface<StreamSocket> $pool
+     * @param FormatterInterface<T>         $formatter
+     * @param ConnectionPoolInterface<Bolt> $pool
      */
     public function __construct(
         UriInterface $parsedUrl,
@@ -93,7 +92,7 @@ final class Neo4jDriver implements DriverInterface
             return new self(
                 $uri,
                 $authenticate ?? Authenticate::fromUrl(),
-                new Neo4jConnectionPool(new BoltConnectionPool()),
+                new Neo4jConnectionPool(),
                 $configuration ?? DriverConfiguration::default(),
                 $formatter,
                 $socketTimeout
@@ -103,7 +102,7 @@ final class Neo4jDriver implements DriverInterface
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl(),
-            new Neo4jConnectionPool(new BoltConnectionPool()),
+            new Neo4jConnectionPool(),
             $configuration ?? DriverConfiguration::default(),
             OGMFormatter::create(),
             $socketTimeout

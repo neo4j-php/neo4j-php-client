@@ -52,7 +52,7 @@ final class DateTime extends AbstractCypherContainer
      */
     public function toDateTime(): DateTimeImmutable
     {
-        /** @psalm-suppress PossiblyFalseIterator */
+        /** @psalm-suppress all */
         foreach (DateTimeZone::listAbbreviations() as $tz) {
             /** @psalm-suppress all */
             if ($tz[0]['offset'] === $this->getTimeZoneOffsetSeconds()) {

@@ -19,6 +19,7 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
+use function microtime;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -80,10 +81,12 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $body = HttpHelper::statementsToString($this->formatter, $statements);
 
         $request = $request->withBody($this->factory->createStream($body));
+        $start = microtime(true);
         $response = $this->connection->getImplementation()->sendRequest($request);
+        $total = microtime(true) - $start;
         $data = HttpHelper::interpretResponse($response);
 
-        return $this->formatter->formatHttpResult($response, $data, $this->connection);
+        return $this->formatter->formatHttpResult($response, $data, $this->connection, $total, $total, $statements);
     }
 
     /**
@@ -96,11 +99,13 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $content = HttpHelper::statementsToString($this->formatter, $statements);
         $request = $request->withBody($this->factory->createStream($content));
 
+        $start = microtime(true);
         $response = $this->connection->getImplementation()->sendRequest($request);
+        $total = microtime(true) - $start;
 
         $data = HttpHelper::interpretResponse($response);
 
-        return $this->formatter->formatHttpResult($response, $data, $this->connection);
+        return $this->formatter->formatHttpResult($response, $data, $this->connection, $total, $total, $statements);
     }
 
     /**

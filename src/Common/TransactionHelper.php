@@ -96,7 +96,10 @@ final class TransactionHelper
         $bolt = new Bolt($socket);
         $authenticate->authenticateBolt($bolt, $uri, $userAgent);
 
-        /** @var array{'name': 0, 'version': 1, 'edition': 2} $fields */
+        /**
+         * @var array{'name': 0, 'version': 1, 'edition': 2}
+         * @psalm-suppress all
+         */
         $fields = array_flip($bolt->run(<<<'CYPHER'
 CALL dbms.components()
 YIELD name, versions, edition

@@ -26,8 +26,8 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherList;
-use Throwable;
 use function microtime;
+use Throwable;
 
 /**
  * @template T
@@ -143,10 +143,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         return new CypherList($tbr);
     }
 
-    /**
-     * @return Bolt|mixed
-     */
-    private function getBolt()
+    private function getBolt(): Bolt
     {
         return $this->connection->getImplementation();
     }

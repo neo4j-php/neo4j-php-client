@@ -74,7 +74,8 @@ interface FormatterInterface
     public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement);
 
     /**
-     * @param CypherResponseSet $body
+     * @param CypherResponseSet   $body
+     * @param iterable<Statement> $statements
      *
      * @throws JsonException
      *

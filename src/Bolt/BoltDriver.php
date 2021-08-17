@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\connection\StreamSocket;
+use Bolt\Bolt;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -40,15 +40,15 @@ final class BoltDriver implements DriverInterface
 {
     private UriInterface $parsedUrl;
     private AuthenticateInterface $auth;
-    /** @var ConnectionPoolInterface<StreamSocket> */
+    /** @var ConnectionPoolInterface<Bolt> */
     private ConnectionPoolInterface $pool;
     private DriverConfiguration $config;
     private FormatterInterface $formatter;
     private float $socketTimeout;
 
     /**
-     * @param FormatterInterface<T>                 $formatter
-     * @param ConnectionPoolInterface<StreamSocket> $pool
+     * @param FormatterInterface<T>         $formatter
+     * @param ConnectionPoolInterface<Bolt> $pool
      */
     public function __construct(
         UriInterface $parsedUrl,
