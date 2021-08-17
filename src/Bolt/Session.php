@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
+use Bolt\error\MessageException;
 use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;
@@ -32,6 +33,7 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
+use Throwable;
 
 /**
  * @template T
@@ -134,11 +136,19 @@ final class Session implements SessionInterface
      */
     private function beginInstantTransaction(SessionConfiguration $config): TransactionInterface
     {
-        return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
-            $this->formatter,
-            $this->acquireConnection(TransactionConfiguration::default(), $config)
-        );
+        try {
+            return new BoltUnmanagedTransaction(
+                $this->config->getDatabase(),
+                $this->formatter,
+                $this->acquireConnection(TransactionConfiguration::default(), $config)
+            );
+        } catch (Throwable $e) {
+            if ($e instanceof MessageException) {
+                $code = TransactionHelper::extractCode($e) ?? '';
+                throw new Neo4jException(new Vector([new Neo4jError($code, $e->getMessage())]), $e);
+            }
+            throw $e;
+        }
     }
 
     /**
