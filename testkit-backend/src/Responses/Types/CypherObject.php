@@ -22,6 +22,7 @@ use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
+use Laudis\Neo4j\Types\UnboundRelationship;
 use RuntimeException;
 
 final class CypherObject implements TestkitResponseInterface
@@ -90,16 +91,16 @@ final class CypherObject implements TestkitResponseInterface
                 break;
             case Node::class:
                 $labels = [];
-                foreach ($value->labels() as $label) {
+                foreach ($value->getLabels() as $label) {
                     $labels[] = self::autoDetect($label);
                 }
                 $props = [];
-                foreach ($value->properties() as $key => $property) {
+                foreach ($value->getProperties() as $key => $property) {
                     $props[$key] = self::autoDetect($property);
                 }
 
                 $tbr = new CypherNode(
-                    $value->id(),
+                    new CypherObject('CypherInt', $value->getId()),
                     new CypherObject('CypherList', new CypherList(new Vector($labels))),
                     new CypherObject('CypherMap', new CypherMap(new Map($props)))
                 );
@@ -111,17 +112,48 @@ final class CypherObject implements TestkitResponseInterface
                 }
 
                 $tbr = new CypherRelationship(
-                    $value->getId(),
-                    $value->getStartNodeId(),
-                    $value->getEndNodeId(),
-                    $value->getType(),
+                    new CypherObject('CypherInt', $value->getId()),
+                    new CypherObject('CypherInt', $value->getStartNodeId()),
+                    new CypherObject('CypherInt', $value->getEndNodeId()),
+                    new CypherObject('CypherString', $value->getType()),
                     new CypherObject('CypherMap', new CypherMap(new Map($props))),
                 );
                 break;
             case Path::class:
+                $nodes = new Vector();
+                foreach ($value->getNodes() as $node) {
+                    $nodes->push(self::autoDetect($node));
+                }
+                $rels = new Vector();
+                foreach ($value->getRelationships() as $i => $rel) {
+                    if ($rel instanceof UnboundRelationship) {
+                        $rel = new Relationship(
+                            $rel->getId(),
+                            $value->getNodes()->get($i)->getId(),
+                            $value->getNodes()->get($i + 1)->getId(),
+                            $rel->getType(),
+                            $rel->getProperties()
+                        );
+                        $rels->push(self::autoDetect($rel));
+                    }
+                }
                 $tbr = new CypherPath(
-                    new CypherObject('CypherList', $value->getNodes()),
-                    new CypherObject('CypherList', $value->getRelationships())
+                    new CypherObject('CypherList', new CypherList($nodes)),
+                    new CypherObject('CypherList', new CypherList($rels))
+                );
+                break;
+            case UnboundRelationship::class:
+                $props = [];
+                foreach ($value->getProperties() as $key => $property) {
+                    $props[$key] = self::autoDetect($property);
+                }
+
+                $tbr = new CypherRelationship(
+                    new CypherObject('CypherInt', $value->getId()),
+                    new CypherObject('CypherNull', null),
+                    new CypherObject('CypherNull', null),
+                    new CypherObject('CypherString', $value->getType()),
+                    new CypherObject('CypherMap', new CypherMap(new Map($props)))
                 );
                 break;
             default:

@@ -57,5 +57,5 @@ return [
 
     // Temporary driver feature that will be removed when all official driver
     // backends have implemented path and relationship types
-    'Temporary:CypherPathAndRelationship' => false,
+    'Temporary:CypherPathAndRelationship' => true,
 ];

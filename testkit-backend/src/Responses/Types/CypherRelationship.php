@@ -17,13 +17,13 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 
 final class CypherRelationship implements TestkitResponseInterface
 {
-    private int $id;
-    private int $startNodeId;
-    private int $endNodeId;
-    private string $type;
+    private CypherObject $id;
+    private CypherObject $startNodeId;
+    private CypherObject $endNodeId;
+    private CypherObject $type;
     private CypherObject $props;
 
-    public function __construct(int $id, int $startNodeId, int $endNodeId, string $type, CypherObject $props)
+    public function __construct(CypherObject $id, CypherObject $startNodeId, CypherObject $endNodeId, CypherObject $type, CypherObject $props)
     {
         $this->id = $id;
         $this->startNodeId = $startNodeId;

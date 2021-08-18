@@ -14,8 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend;
 
 use const AF_INET;
-use const E_ALL;
-use function error_reporting;
 use function getenv;
 use function is_numeric;
 use function is_string;
@@ -123,6 +121,10 @@ final class Socket
 
     public function write(string $message): void
     {
+        if ($this->socket === null) {
+            throw new RuntimeException('Trying to write to an uninitialised socket');
+        }
+
         $result = socket_write($this->socket, $message, mb_strlen($message));
         if ($result === false) {
             $error = socket_strerror(socket_last_error($this->socket));

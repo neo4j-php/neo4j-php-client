@@ -26,7 +26,7 @@ final class BookmarksResponse implements TestkitResponseInterface
     private iterable $bookmarks;
 
     /**
-     * @param list<string> $bookmarks
+     * @param iterable<string> $bookmarks
      */
     public function __construct(iterable $bookmarks)
     {
