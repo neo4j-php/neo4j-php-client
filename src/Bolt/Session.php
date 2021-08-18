@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\error\MessageException;
-use Ds\Set;
 use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;

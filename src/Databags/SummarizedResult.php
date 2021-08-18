@@ -13,10 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Exception;
 use Laudis\Neo4j\Types\AbstractCypherContainer;
 use Laudis\Neo4j\Types\CypherList;
-use Traversable;
 
 /**
  * @template T

@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use ArrayIterator;
 use IteratorAggregate;
 use Laudis\Neo4j\Types\AbstractCypherContainer;
 

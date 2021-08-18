@@ -13,9 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Exception;
 use Laudis\Neo4j\Types\AbstractCypherContainer;
-use Traversable;
 
 final class DatabaseInfo extends AbstractCypherContainer
 {
