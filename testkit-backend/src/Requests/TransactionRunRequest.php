@@ -13,11 +13,11 @@ final class TransactionRunRequest
     private string $cypher;
     private array $params;
 
-    public function __construct(Uuid $txId, string $cypher, array $params)
+    public function __construct(Uuid $txId, string $cypher, ?array $params = null)
     {
         $this->txId = $txId;
         $this->cypher = $cypher;
-        $this->params = $params;
+        $this->params = $params ?? [];
     }
 
     public function getTxId(): Uuid

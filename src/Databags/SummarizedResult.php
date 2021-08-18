@@ -13,12 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Exception;
+use Laudis\Neo4j\Types\AbstractCypherContainer;
 use Laudis\Neo4j\Types\CypherList;
+use Traversable;
 
 /**
  * @template T
  */
-final class SummarizedResult
+final class SummarizedResult extends AbstractCypherContainer
 {
     private ResultSummary $summary;
     /** @var T */
@@ -45,5 +48,11 @@ final class SummarizedResult
     public function getSummary(): ResultSummary
     {
         return $this->summary;
+    }
+
+    public function getIterator()
+    {
+        yield 'result' => $this->result;
+        yield 'summary' => $this->summary;
     }
 }

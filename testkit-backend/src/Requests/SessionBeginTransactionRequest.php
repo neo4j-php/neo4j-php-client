@@ -13,18 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Requests;
 
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Symfony\Component\Uid\Uuid;
 
 final class SessionBeginTransactionRequest
 {
     private Uuid $sessionId;
-    private array $txMeta;
-    private int $timeout;
+    private ?array $txMeta;
+    private ?int $timeout;
 
     public function __construct(
         Uuid $sessionId,
-        array $txMeta,
-        int $timeout
+        ?array $txMeta = null,
+        ?int $timeout = null
     ) {
         $this->sessionId = $sessionId;
         $this->txMeta = $txMeta;
@@ -38,11 +39,11 @@ final class SessionBeginTransactionRequest
 
     public function getTxMeta(): array
     {
-        return $this->txMeta;
+        return $this->txMeta ?? [];
     }
 
     public function getTimeout(): int
     {
-        return $this->timeout;
+        return (int) ($this->timeout ?? TransactionConfiguration::DEFAULT_TIMEOUT);
     }
 }

@@ -35,16 +35,16 @@ final class SummaryResponse implements TestkitResponseInterface
         return [
             'name' => 'Summary',
             'data' => [
-                'counters' => new SummaryCountersResponse($summary->getCounters()),
+                'counters' => $summary->getCounters(),
                 'database' => $summary->getDatabaseInfo()->getName(),
                 'notifications' => $summary->getNotifications(),
                 'plan' => $summary->getPlan(),
                 'profile' => $summary->getProfiledPlan(),
-                'query' => new SummaryQueryResponse($summary->getStatement()),
-                'query_type' => $summary->getQueryType(),
-                'result_available_after' => $summary->getResultAvailableAfter(),
-                'result_consumed_after' => $summary->getResultConsumedAfter(),
-                'server_info' => $summary->getServerInfo(),
+                'query' => $summary->getStatement(),
+                'queryType' => $summary->getQueryType(),
+                'resultAvailableAfter' => $summary->getResultAvailableAfter(),
+                'resultConsumedAfter' => $summary->getResultConsumedAfter(),
+                'serverInfo' => $summary->getServerInfo(),
             ],
         ];
     }
