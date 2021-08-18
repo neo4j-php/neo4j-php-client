@@ -43,4 +43,10 @@ final class QueryTypeEnum extends TypedEnum
 
         return self::READ_ONLY();
     }
+
+    public function __toString()
+    {
+        /** @noinspection MagicMethodsValidityInspection */
+        return $this->getValue();
+    }
 }

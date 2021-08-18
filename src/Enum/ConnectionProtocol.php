@@ -58,4 +58,10 @@ final class ConnectionProtocol extends TypedEnum
 
         return $tbr;
     }
+
+    public function __toString()
+    {
+        /** @noinspection MagicMethodsValidityInspection */
+        return $this->getValue();
+    }
 }

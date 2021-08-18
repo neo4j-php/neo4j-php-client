@@ -15,13 +15,14 @@ namespace Laudis\Neo4j\Databags;
 
 use ArrayIterator;
 use IteratorAggregate;
+use Laudis\Neo4j\Types\AbstractCypherContainer;
 
 /**
  * @psalm-immutable
  *
  * @implements IteratorAggregate<string, int|bool>
  */
-final class SummaryCounters implements IteratorAggregate
+final class SummaryCounters extends AbstractCypherContainer
 {
     private int $nodesCreated;
 
@@ -186,23 +187,21 @@ final class SummaryCounters implements IteratorAggregate
         return $tbr;
     }
 
-    public function getIterator(): ArrayIterator
+    public function getIterator()
     {
-        return new ArrayIterator([
-            'nodesCreated' => $this->nodesCreated,
-            'nodesDeleted' => $this->nodesDeleted,
-            'relationshipsCreated' => $this->relationshipsCreated,
-            'relationshipsDeleted' => $this->relationshipsDeleted,
-            'propertiesSet' => $this->propertiesSet,
-            'labelsAdded' => $this->labelsAdded,
-            'labelsRemoved' => $this->labelsRemoved,
-            'indexesAdded' => $this->indexesAdded,
-            'indexesRemoved' => $this->indexesRemoved,
-            'constraintsAdded' => $this->constraintsAdded,
-            'constraintsRemoved' => $this->constraintsRemoved,
-            'containsUpdates' => $this->containsUpdates,
-            'containsSystemUpdates' => $this->containsSystemUpdates,
-            'systemUpdates' => $this->systemUpdates,
-        ]);
+        yield 'nodesCreated' => $this->nodesCreated;
+        yield 'nodesDeleted' => $this->nodesDeleted;
+        yield 'relationshipsCreated' => $this->relationshipsCreated;
+        yield 'relationshipsDeleted' => $this->relationshipsDeleted;
+        yield 'propertiesSet' => $this->propertiesSet;
+        yield 'labelsAdded' => $this->labelsAdded;
+        yield 'labelsRemoved' => $this->labelsRemoved;
+        yield 'indexesAdded' => $this->indexesAdded;
+        yield 'indexesRemoved' => $this->indexesRemoved;
+        yield 'constraintsAdded' => $this->constraintsAdded;
+        yield 'constraintsRemoved' => $this->constraintsRemoved;
+        yield 'containsUpdates' => $this->containsUpdates;
+        yield 'containsSystemUpdates' => $this->containsSystemUpdates;
+        yield 'systemUpdates' => $this->systemUpdates;
     }
 }
