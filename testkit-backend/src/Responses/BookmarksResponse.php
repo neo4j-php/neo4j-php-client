@@ -21,14 +21,14 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 final class BookmarksResponse implements TestkitResponseInterface
 {
     /**
-     * @var list<string>
+     * @var iterable<string>
      */
-    private array $bookmarks;
+    private iterable $bookmarks;
 
     /**
      * @param list<string> $bookmarks
      */
-    public function __construct(array $bookmarks)
+    public function __construct(iterable $bookmarks)
     {
         $this->bookmarks = $bookmarks;
     }

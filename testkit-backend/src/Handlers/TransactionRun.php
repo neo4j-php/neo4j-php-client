@@ -42,8 +42,8 @@ final class TransactionRun implements RequestHandlerInterface
         $results = $tsx->run($request->getCypher(), $request->getParams());
 
         $id = Uuid::v4();
-        $this->repository->addRecords($id, $results->getIterator());
+        $this->repository->addRecords($id, $results);
 
-        return new ResultResponse($id, $results->isEmpty() ? [] : $results->first()->keys());
+        return new ResultResponse($id, $results->getResult()->isEmpty() ? [] : $results->getResult()->first()->keys());
     }
 }

@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\TestkitBackend;
 
 use Ds\Map;
 use Iterator;
+use IteratorAggregate;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -86,7 +87,9 @@ final class MainRepository
     public function addRecords(Uuid $id, $result): void
     {
         $this->records->put($id->toRfc4122(), $result);
-        $this->recordIterators->put($id->toRfc4122(), $result->getResult()->getIterator());
+        if ($result instanceof IteratorAggregate) {
+            $this->recordIterators->put($id->toRfc4122(), $result->getResult()->getIterator());
+        }
     }
 
     public function removeRecords(Uuid $id): void
