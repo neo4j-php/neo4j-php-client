@@ -37,7 +37,7 @@ final class ServerInfo extends AbstractCypherContainer
         return $this->address;
     }
 
-    public function getProtocol(): ConnectionProtocol
+    public function getProtocolVersion(): ConnectionProtocol
     {
         return $this->protocol;
     }
@@ -50,7 +50,7 @@ final class ServerInfo extends AbstractCypherContainer
     public function getIterator()
     {
         yield 'address' => $this->address;
-        yield 'protocol' => $this->protocol;
+        yield 'protocolVersion' => $this->protocol;
         yield 'agent' => $this->agent;
     }
 }
