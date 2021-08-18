@@ -59,7 +59,7 @@ final class Node extends AbstractCypherContainer
     /**
      * @return CypherList<string>
      */
-    public function labels(): CypherList
+    public function getLabels(): CypherList
     {
         return $this->labels;
     }
@@ -67,12 +67,12 @@ final class Node extends AbstractCypherContainer
     /**
      * @return CypherMap<OGMTypes>
      */
-    public function properties(): CypherMap
+    public function getProperties(): CypherMap
     {
         return $this->properties;
     }
 
-    public function id(): int
+    public function getId(): int
     {
         return $this->id;
     }
