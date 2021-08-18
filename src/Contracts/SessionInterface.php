@@ -93,5 +93,5 @@ interface SessionInterface
      */
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
 
-    public function lastBookmark(): Bookmark;
+    public function getLastBookmark(): Bookmark;
 }

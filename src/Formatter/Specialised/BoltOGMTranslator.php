@@ -25,6 +25,7 @@ use Bolt\structures\Point2D as BoltPoint2D;
 use Bolt\structures\Point3D as BoltPoint3D;
 use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
+use Bolt\structures\UnboundRelationship as BoltUnboundRelationship;
 use function call_user_func;
 use Ds\Map;
 use Ds\Vector;
@@ -41,6 +42,7 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\UnboundRelationship;
 use UnexpectedValueException;
 
 /**
@@ -64,6 +66,7 @@ final class BoltOGMTranslator
             BoltLocalDateTime::class => [$this, 'makeFromBoltLocalDateTime'],
             BoltLocalTime::class => [$this, 'makeFromBoltLocalTime'],
             BoltRelationship::class => [$this, 'makeFromBoltRelationship'],
+            BoltUnboundRelationship::class => [$this, 'makeFromBoltUnboundRelationship'],
             BoltPath::class => [$this, 'makeFromBoltPath'],
             BoltPoint2D::class => [$this, 'makeFromBoltPoint2D'],
             BoltPoint3D::class => [$this, 'makeFromBoltPoint3D'],
@@ -154,6 +157,25 @@ final class BoltOGMTranslator
         );
     }
 
+    private function makeFromBoltUnboundRelationship(BoltUnboundRelationship $rel): UnboundRelationship
+    {
+        /** @var Map<string, OGMTypes> $map */
+        $map = new Map();
+        /**
+         * @var string $key
+         * @var mixed  $property
+         */
+        foreach ($rel->properties() as $key => $property) {
+            $map->put($key, $this->mapValueToType($property));
+        }
+
+        return new UnboundRelationship(
+            $rel->id(),
+            $rel->type(),
+            new CypherMap($map)
+        );
+    }
+
     private function makeFromBoltPoint2D(BoltPoint2d $x): CartesianPoint
     {
         return new CartesianPoint($x->x(), $x->y(), 'cartesian', $x->srid());
@@ -166,10 +188,18 @@ final class BoltOGMTranslator
 
     private function makeFromBoltPath(BoltPath $path): Path
     {
+        $rels = new Vector();
+        foreach ($path->rels() as $rel) {
+            $rels->push($this->mapValueToType($rel));
+        }
+        $nodes = new Vector();
+        foreach ($path->nodes() as $node) {
+            $nodes->push($this->mapValueToType($node));
+        }
         return new Path(
-            new CypherList(new Vector($path->ids())),
-            new CypherList(new Vector($path->rels())),
-            new CypherList(new Vector($path->nodes()))
+            new CypherList($nodes),
+            new CypherList($rels),
+            new CypherList(new Vector($path->ids()))
         );
     }
 

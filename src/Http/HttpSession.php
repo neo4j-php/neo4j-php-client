@@ -193,7 +193,7 @@ final class HttpSession implements SessionInterface
         return $request->withUri($uri);
     }
 
-    public function lastBookmark(): Bookmark
+    public function getLastBookmark(): Bookmark
     {
         return $this->bookmarkHolder->getBookmark();
     }

@@ -190,7 +190,7 @@ final class Session implements SessionInterface
         return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $bolt, $this->bookmarkHolder, false);
     }
 
-    public function lastBookmark(): Bookmark
+    public function getLastBookmark(): Bookmark
     {
         return $this->bookmarkHolder->getBookmark();
     }
