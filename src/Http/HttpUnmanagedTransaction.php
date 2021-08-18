@@ -14,9 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use JsonException;
+use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
 use function microtime;
@@ -38,6 +40,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     private ConnectionInterface $connection;
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
+    private BookmarkHolder $bookmarkHolder;
 
     /**
      * @param FormatterInterface<T>                $formatter
@@ -47,12 +50,14 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         RequestInterface $request,
         ConnectionInterface $connection,
         StreamFactoryInterface $factory,
-        FormatterInterface $formatter
+        FormatterInterface $formatter,
+        BookmarkHolder $bookmarkHolder
     ) {
         $this->request = $request;
         $this->factory = $factory;
         $this->connection = $connection;
         $this->formatter = $formatter;
+        $this->bookmarkHolder = $bookmarkHolder;
     }
 
     /**
@@ -104,6 +109,8 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $total = microtime(true) - $start;
 
         $data = HttpHelper::interpretResponse($response);
+
+        TransactionHelper::incrementBookmark($this->bookmarkHolder);
 
         return $this->formatter->formatHttpResult($response, $data, $this->connection, $total, $total, $statements);
     }

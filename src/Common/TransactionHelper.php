@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Common;
 
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use const FILTER_VALIDATE_IP;
 use function filter_var;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -134,5 +135,10 @@ CYPHER)['fields']);
         }
 
         return null;
+    }
+
+    public static function incrementBookmark(BookmarkHolder $holder): void
+    {
+        $holder->setBookmark($holder->getBookmark()->withIncrement());
     }
 }

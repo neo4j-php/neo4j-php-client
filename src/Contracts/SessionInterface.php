@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -91,4 +92,6 @@ interface SessionInterface
      * @return U
      */
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
+
+    public function lastBookmark(): Bookmark;
 }

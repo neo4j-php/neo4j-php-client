@@ -20,6 +20,8 @@ use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -49,6 +51,7 @@ final class HttpSession implements SessionInterface
     private string $uri;
     private AuthenticateInterface $auth;
     private string $userAgent;
+    private BookmarkHolder $bookmarkHolder;
 
     /**
      * @param FormatterInterface<T> $formatter
@@ -71,6 +74,7 @@ final class HttpSession implements SessionInterface
         $this->uri = $uri;
         $this->auth = $auth;
         $this->userAgent = $userAgent;
+        $this->bookmarkHolder = new BookmarkHolder();
     }
 
     /**
@@ -90,6 +94,8 @@ final class HttpSession implements SessionInterface
         $time = microtime(true) - $start;
 
         $data = HttpHelper::interpretResponse($response);
+
+        TransactionHelper::incrementBookmark($this->bookmarkHolder);
 
         return $this->formatter->formatHttpResult($response, $data, $connection, $time, $time, $statements);
     }
@@ -174,7 +180,8 @@ final class HttpSession implements SessionInterface
             $request,
             $connection,
             $this->streamFactory,
-            $this->formatter
+            $this->formatter,
+            $this->bookmarkHolder
         );
     }
 
@@ -184,5 +191,10 @@ final class HttpSession implements SessionInterface
         $uri = $request->getUri()->withPath($path);
 
         return $request->withUri($uri);
+    }
+
+    public function lastBookmark(): Bookmark
+    {
+        return $this->bookmarkHolder->getBookmark();
     }
 }

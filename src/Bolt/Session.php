@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\error\MessageException;
+use Ds\Set;
 use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;
@@ -25,6 +26,8 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
@@ -51,6 +54,7 @@ final class Session implements SessionInterface
     private UriInterface $uri;
     private AuthenticateInterface $auth;
     private float $socketTimeout;
+    private BookmarkHolder $bookmarkHolder;
 
     /**
      * @param FormatterInterface<T>         $formatter
@@ -72,6 +76,7 @@ final class Session implements SessionInterface
         $this->uri = $uri;
         $this->auth = $auth;
         $this->socketTimeout = $socketTimeout;
+        $this->bookmarkHolder = new BookmarkHolder();
     }
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
@@ -140,7 +145,9 @@ final class Session implements SessionInterface
             return new BoltUnmanagedTransaction(
                 $this->config->getDatabase(),
                 $this->formatter,
-                $this->acquireConnection(TransactionConfiguration::default(), $config)
+                $this->acquireConnection(TransactionConfiguration::default(), $config),
+                $this->bookmarkHolder,
+                true
             );
         } catch (Throwable $e) {
             if ($e instanceof MessageException) {
@@ -181,6 +188,11 @@ final class Session implements SessionInterface
             throw new Neo4jException(new Vector([new Neo4jError($code, $e->getMessage())]), $e);
         }
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $bolt);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $bolt, $this->bookmarkHolder, false);
+    }
+
+    public function lastBookmark(): Bookmark
+    {
+        return $this->bookmarkHolder->getBookmark();
     }
 }
