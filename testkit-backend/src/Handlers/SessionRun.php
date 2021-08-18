@@ -13,82 +13,18 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Ds\Map;
-use Ds\Vector;
-use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
-use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
-use Laudis\Neo4j\TestkitBackend\MainRepository;
-use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
-use Laudis\Neo4j\Types\CypherList;
-use Laudis\Neo4j\Types\CypherMap;
-use Psr\Log\LoggerInterface;
-use function str_contains;
+use Laudis\Neo4j\Contracts\SessionInterface;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * @implements RequestHandlerInterface<SessionRunRequest>
- */
-final class SessionRun implements RequestHandlerInterface
+final class SessionRun extends AbstractRunner
 {
-    private MainRepository $repository;
-    private LoggerInterface $logger;
-
-    public function __construct(MainRepository $repository, LoggerInterface $logger)
+    protected function getRunner($request): SessionInterface
     {
-        $this->repository = $repository;
-        $this->logger = $logger;
+        return $this->repository->getSession($request->getSessionId());
     }
 
-    /**
-     * @param SessionRunRequest $request
-     */
-    public function handle($request): TestkitResponseInterface
+    protected function getId($request): Uuid
     {
-        $session = $this->repository->getSession($request->getSessionId());
-        $id = Uuid::v4();
-
-        try {
-            $params = $this->decodeToValue($request->getParams());
-            $result = $session->run($request->getCypher(), $params);
-        } catch (Neo4jException $exception) {
-            $this->logger->debug($exception);
-            if (str_contains($exception->getMessage(), 'ClientError')) {
-                $this->repository->addRecords($id, new DriverErrorResponse(
-                    $request->getSessionId(),
-                    'todo',
-                    $exception->getMessage(),
-                    $exception->getNeo4jCode(),
-                ));
-            } else {
-                $this->repository->addRecords($id, new FrontendErrorResponse(
-                    $exception->getMessage()
-                ));
-            }
-
-            return new ResultResponse($id, []);
-        }
-        $this->repository->addRecords($id, $result);
-
-        return new ResultResponse($id, $result->getResult()->isEmpty() ? [] : $result->getResult()->first()->keys());
-    }
-
-    private function decodeToValue(iterable $params): array
-    {
-        $tbr = [];
-        foreach ($params as $key => $param) {
-            if ($param['name'] === 'CypherMap') {
-                $tbr[$key] = new CypherMap(new Map($this->decodeToValue($param['data']['value'])));
-            } elseif ($param['name'] === 'CypherList') {
-                $tbr[$key] = new CypherList(new Vector($this->decodeToValue($param['data']['value'])));
-            } else {
-                $tbr[$key] = $param['data']['value'];
-            }
-        }
-
-        return $tbr;
+        return $request->getSessionId();
     }
 }

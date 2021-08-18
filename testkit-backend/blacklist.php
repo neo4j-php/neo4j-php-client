@@ -21,6 +21,29 @@ return [
         'sessionrun' => [
             'TestSessionRun' => [
                 'test_autocommit_transactions_should_support_metadata' => 'Meta data isn\'t supported yet',
+                'test_autocommit_transactions_should_support_timeout' => 'Waiting on bookmarks isn\'t supported yet',
+            ],
+        ],
+        'test_direct_driver' => [
+            'TestDirectDriver' => [
+                'test_custom_resolver' => 'No custom resolver implemented',
+                'test_fail_nicely_when_using_http_port' => 'Not implemented yet',
+            ],
+        ],
+        'test_summary' => [
+            'TestDirectDriver' => [
+                'test_agent_string' => 'This is not an official driver yet',
+            ],
+        ],
+        'txrun' => [
+            'TestTxRun' => [
+                'test_should_fail_to_run_query_for_invalid_bookmark' => 'Waiting on bookmarks isn\'t supported yet',
+            ],
+        ],
+        'txfuncrun' => [
+            'TestTxFuncRun' => [
+                'test_iteration_nested' => 'Buffers not supported yet',
+                'test_updates_last_bookmark_on_commit' => 'Waiting on bookmarks isn\'t supported yet',
             ],
         ],
     ],

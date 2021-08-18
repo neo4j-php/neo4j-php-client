@@ -19,15 +19,15 @@ final class SessionWriteTransactionRequest
 {
     private Uuid $sessionId;
     private array $txMeta;
-    private int $timeout;
+    private ?int $timeout;
 
     public function __construct(
         Uuid $sessionId,
-        array $txMeta,
-        int $timeout
+        ?array $txMeta = null,
+        ?int $timeout = null
     ) {
         $this->sessionId = $sessionId;
-        $this->txMeta = $txMeta;
+        $this->txMeta = $txMeta ?? [];
         $this->timeout = $timeout;
     }
 
@@ -41,7 +41,7 @@ final class SessionWriteTransactionRequest
         return $this->txMeta;
     }
 
-    public function getTimeout(): int
+    public function getTimeout(): ?int
     {
         return $this->timeout;
     }

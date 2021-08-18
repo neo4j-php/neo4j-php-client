@@ -13,37 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
-use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
-use Laudis\Neo4j\TestkitBackend\MainRepository;
-use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * @implements RequestHandlerInterface<TransactionRunRequest>
- */
-final class TransactionRun implements RequestHandlerInterface
-{
-    private MainRepository $repository;
 
-    public function __construct(MainRepository $repository)
+final class TransactionRun extends AbstractRunner
+{
+    protected function getRunner($request): TransactionInterface
     {
-        $this->repository = $repository;
+        return $this->repository->getTransaction($request->getTxId());
     }
 
-    /**
-     * @param TransactionRunRequest $request
-     */
-    public function handle($request): TestkitResponseInterface
+    protected function getId($request): Uuid
     {
-        $tsx = $this->repository->getTransaction($request->getTxId());
-
-        $results = $tsx->run($request->getCypher(), $request->getParams());
-
-        $id = Uuid::v4();
-        $this->repository->addRecords($id, $results);
-
-        return new ResultResponse($id, $results->getResult()->isEmpty() ? [] : $results->getResult()->first()->keys());
+        return $request->getTxId();
     }
 }

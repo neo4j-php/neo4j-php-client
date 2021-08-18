@@ -14,11 +14,14 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use ArrayIterator;
+use Laudis\Neo4j\Exception\InvalidTransactionStateException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\TransactionRollbackRequest;
+use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\TransactionResponse;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -40,11 +43,12 @@ final class TransactionRollback implements RequestHandlerInterface
     {
         $tsx = $this->repository->getTransaction($request->getTxId());
 
-        $tsx->rollback();
+        try {
+            $tsx->rollback();
+        } catch (InvalidTransactionStateException $e) {
+            return new DriverErrorResponse($request->getTxId(), '', $e->getMessage(), 'n/a');
+        }
 
-        $id = Uuid::v4();
-        $this->repository->addRecords($id, new ArrayIterator([]));
-
-        return new ResultResponse($id, []);
+        return new TransactionResponse($request->getTxId());
     }
 }

@@ -13,11 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\ResultConsumeRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\SummaryResponse;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * @implements RequestHandlerInterface<ResultConsumeRequest>
@@ -37,6 +39,10 @@ final class ResultConsume implements RequestHandlerInterface
     public function handle($request): TestkitResponseInterface
     {
         $result = $this->repository->getRecords($request->getResultId());
+
+        if ($result instanceof TestkitResponseInterface) {
+            return $result;
+        }
 
         return new SummaryResponse($result);
     }
