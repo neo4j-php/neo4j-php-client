@@ -13,35 +13,33 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend;
 
-use const AF_INET;
+use function error_get_last;
 use function getenv;
 use function is_numeric;
 use function is_string;
+use function json_encode;
+use const PHP_EOL;
 use RuntimeException;
-use const SOCK_STREAM;
-use function socket_accept;
-use function socket_bind;
-use function socket_close;
-use function socket_create;
-use function socket_last_error;
-use function socket_listen;
-use function socket_strerror;
-use const SOL_TCP;
+use function stream_get_line;
+use function stream_set_blocking;
+use const STREAM_SHUT_RDWR;
+use function stream_socket_accept;
+use function stream_socket_server;
+use function stream_socket_shutdown;
 
 final class Socket
 {
     /** @var resource */
-    private $baseSocket;
+    private $streamSocketServer;
     /** @var resource|null */
     private $socket;
 
     /**
-     * @param resource $baseSocket
-     * @param resource $socket
+     * @param resource $streamSocketServer
      */
-    public function __construct($baseSocket)
+    public function __construct($streamSocketServer)
     {
-        $this->baseSocket = $baseSocket;
+        $this->streamSocketServer = $streamSocketServer;
     }
 
     public static function fromEnvironment(): self
@@ -56,7 +54,7 @@ final class Socket
     {
         $address = getenv('TESTKIT_BACKEND_ADDRESS');
         if (!is_string($address)) {
-            $address = '127.0.0.1';
+            $address = '0.0.0.0';
         }
 
         return $address;
@@ -74,49 +72,43 @@ final class Socket
 
     public static function fromAddressAndPort(string $address, int $port): self
     {
-        $baseSocket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if ($baseSocket === false) {
-            throw new RuntimeException('socket_create() failed: reason: '.socket_strerror(socket_last_error()));
+        $bind = 'tcp://'.$address.':'.$port;
+        $streamSocketServer = stream_socket_server($bind, $errorNumber, $errorString);
+        if ($streamSocketServer === false) {
+            throw new RuntimeException('stream_socket_server() failed: reason: '.$errorNumber.':'.$errorString);
         }
 
-        if (!socket_bind($baseSocket, $address, $port)) {
-            throw new RuntimeException('socket_bind() failed: reason: '.socket_strerror(socket_last_error($baseSocket)));
-        }
+//        stream_set_blocking($streamSocketServer, false);
 
-        if (!socket_listen($baseSocket, 5)) {
-            throw new RuntimeException('socket_listen() failed: reason: '.socket_strerror(socket_last_error($baseSocket)));
-        }
-
-        return new self($baseSocket);
+        return new self($streamSocketServer);
     }
 
     public function reset(): void
     {
-        if ($this->socket !== null) {
-            socket_close($this->socket);
+        if ($this->socket !== null && !stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR)) {
+            throw new RuntimeException(json_encode(error_get_last(), JSON_THROW_ON_ERROR));
         }
 
         $this->socket = null;
     }
 
-    public function read(int $length = 2048): string
+    public function readMessage(): ?string
     {
         if ($this->socket === null) {
-            $socket = socket_accept($this->baseSocket);
+            $socket = stream_socket_accept($this->streamSocketServer, 2 ** 20);
             if ($socket === false) {
-                throw new RuntimeException('socket_accept() failed: reason: '.socket_strerror(socket_last_error($this->baseSocket)));
+                throw new RuntimeException(json_encode(error_get_last(), JSON_THROW_ON_ERROR));
             }
 
             $this->socket = $socket;
         }
 
-        $buffer = socket_read($this->socket, $length, PHP_NORMAL_READ);
-        if ($buffer === false) {
-            $error = socket_strerror(socket_last_error($this->socket));
-            throw new RuntimeException('socket_read() failed: reason: '.$error);
-        }
+        $length = 2**30;
+        $this->getLine($length);
+        $message = $this->getLine($length);
+        $this->getLine($length);
 
-        return $buffer;
+        return $message;
     }
 
     public function write(string $message): void
@@ -125,25 +117,34 @@ final class Socket
             throw new RuntimeException('Trying to write to an uninitialised socket');
         }
 
-        $result = socket_write($this->socket, $message, mb_strlen($message));
-        if ($result === false) {
-            $error = socket_strerror(socket_last_error($this->socket));
-            throw new RuntimeException('socket_write() failed: reason: '.$error);
+        $result = stream_socket_sendto($this->socket, $message);
+        if ($result === -1) {
+            throw new RuntimeException(json_encode(error_get_last() ?? 'Unknown error', JSON_THROW_ON_ERROR));
         }
     }
 
     public static function setupEnvironment(): void
     {
-//        error_reporting(E_ALL);
+        error_reporting(E_ALL);
         // Allow the script to hang around waiting for connections.
         set_time_limit(0);
-        // Turn on implicit output flushing so we see what we're getting as it comes in.
-        ob_implicit_flush();
     }
 
     public function __destruct()
     {
         $this->reset();
-        socket_close($this->baseSocket);
+        if (!stream_socket_shutdown($this->streamSocketServer, STREAM_SHUT_RDWR)) {
+            throw new RuntimeException(json_encode(error_get_last(), JSON_THROW_ON_ERROR));
+        }
+    }
+
+    private function getLine(int $length): ?string
+    {
+        $line = stream_get_line($this->socket, $length, PHP_EOL);
+        if ($line === false) {
+            return null;
+        }
+
+        return $line;
     }
 }

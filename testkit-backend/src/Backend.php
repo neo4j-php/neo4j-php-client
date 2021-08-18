@@ -21,11 +21,11 @@ use function json_encode;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
 use const PHP_EOL;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use function substr;
 use Throwable;
 use UnexpectedValueException;
 
@@ -72,49 +72,22 @@ final class Backend
      */
     public function handle(): void
     {
-        $message = '';
-
         while (true) {
+            $message = $this->socket->readMessage();
+            if ($message === null) {
+                $this->socket->reset();
+                continue;
+            }
+
+            [$handler, $request] = $this->extractRequest($message);
+
             try {
-                $buffer = $this->socket->read(20000000);
-
-                if (!str_starts_with($buffer, '#')) {
-                    $message .= substr($buffer, 0, -1);
-                }
-                if ($buffer === '#request end'.PHP_EOL) {
-                    break;
-                }
+                $this->properSendoff($handler->handle($request));
             } catch (Throwable $e) {
-                if ($e->getMessage() === 'socket_read() failed: reason: Connection reset by peer') {
-                    $this->logger->info('Connection reset by peer, resetting socket...');
-                    $this->socket->reset();
-                    $this->logger->info('Socket reset successfully');
-
-                    continue;
-                }
-
-                throw $e;
+                $this->logger->error($e->__toString());
+                $this->properSendoff(new BackendErrorResponse($e->getMessage()));
             }
         }
-
-        $this->logger->debug('Received: '.$message);
-        /** @var array{name: string, data: array} $response */
-        $response = json_decode($message, true, 512, JSON_THROW_ON_ERROR);
-
-        $handler = $this->loadRequestHandler($response['name']);
-        $request = $this->factory->create($response['name'], $response['data']);
-
-        try {
-            $message = json_encode($handler->handle($request), JSON_THROW_ON_ERROR);
-        } catch (Throwable $e) {
-            $this->logger->error($e);
-            $message = json_encode(new BackendErrorResponse($e->getMessage()), JSON_THROW_ON_ERROR);
-        }
-        $this->logger->debug('Sent: '.$message);
-
-        $this->socket->write('#response begin'.PHP_EOL);
-        $this->socket->write($message.PHP_EOL);
-        $this->socket->write('#response end'.PHP_EOL);
     }
 
     private function loadRequestHandler(string $name): RequestHandlerInterface
@@ -130,5 +103,33 @@ final class Backend
         }
 
         return $action;
+    }
+
+    /**
+     * @param string $message
+     */
+    private function properSendoff(TestkitResponseInterface $response): void
+    {
+        $message = json_encode($response, JSON_THROW_ON_ERROR);
+
+        $this->logger->debug('Sending: '.$message);
+        $this->socket->write('#response begin'.PHP_EOL);
+        $this->socket->write($message.PHP_EOL);
+        $this->socket->write('#response end'.PHP_EOL);
+    }
+
+    /**
+     * @return array{0: RequestHandlerInterface, 1: object}
+     */
+    private function extractRequest(string $message): array
+    {
+        $this->logger->debug('Received: '.$message);
+        /** @var array{name: string, data: array} $response */
+        $response = json_decode($message, true, 512, JSON_THROW_ON_ERROR);
+
+        $handler = $this->loadRequestHandler($response['name']);
+        $request = $this->factory->create($response['name'], $response['data']);
+
+        return [$handler, $request];
     }
 }
