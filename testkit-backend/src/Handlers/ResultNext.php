@@ -43,7 +43,7 @@ final class ResultNext implements RequestHandlerInterface
             return $record;
         }
 
-        $iterator = $record->getResult()->getIterator();
+        $iterator = $this->repository->getIterator($request->getResultId());
 
         if (!$iterator->valid()) {
             return new NullRecordResponse();

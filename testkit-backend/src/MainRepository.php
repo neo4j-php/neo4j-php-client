@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend;
 
 use Ds\Map;
+use Iterator;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -29,6 +30,8 @@ final class MainRepository
     private Map $sessions;
     /** @var Map<string, SummarizedResult|TestkitResponseInterface> */
     private Map $records;
+    /** @var Map<string, Iterator> */
+    private Map $recordIterators;
     /** @var Map<string, UnmanagedTransactionInterface> */
     private Map $transactions;
 
@@ -38,6 +41,7 @@ final class MainRepository
         $this->sessions = $sessions;
         $this->records = $records;
         $this->transactions = $transactions;
+        $this->recordIterators = new Map();
     }
 
     public function addDriver(Uuid $id, DriverInterface $driver): void
@@ -48,6 +52,11 @@ final class MainRepository
     public function removeDriver(Uuid $id): void
     {
         $this->drivers->remove($id->toRfc4122());
+    }
+
+    public function getIterator(Uuid $id): Iterator
+    {
+        return $this->recordIterators->get($id->toRfc4122());
     }
 
     public function getDriver(Uuid $id): DriverInterface
@@ -77,6 +86,7 @@ final class MainRepository
     public function addRecords(Uuid $id, $result): void
     {
         $this->records->put($id->toRfc4122(), $result);
+        $this->recordIterators->put($id->toRfc4122(), $result->getResult()->getIterator());
     }
 
     public function removeRecords(Uuid $id): void
