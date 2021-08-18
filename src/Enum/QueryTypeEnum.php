@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
+use JsonSerializable;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\TypedEnum\TypedEnum;
 
@@ -24,7 +25,7 @@ use Laudis\TypedEnum\TypedEnum;
  * @method static self SCHEMA_WRITE()
  * @method static self WRITE_ONLY()
  */
-final class QueryTypeEnum extends TypedEnum
+final class QueryTypeEnum extends TypedEnum implements JsonSerializable
 {
     private const READ_ONLY = 'read_only';
     private const READ_WRITE = 'read_write';
@@ -47,6 +48,11 @@ final class QueryTypeEnum extends TypedEnum
     public function __toString()
     {
         /** @noinspection MagicMethodsValidityInspection */
+        return $this->getValue();
+    }
+
+    public function jsonSerialize()
+    {
         return $this->getValue();
     }
 }
