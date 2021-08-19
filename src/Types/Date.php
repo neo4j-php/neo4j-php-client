@@ -16,6 +16,9 @@ namespace Laudis\Neo4j\Types;
 use DateTimeImmutable;
 use Exception;
 
+/**
+ * @psalm-immutable
+ */
 final class Date extends AbstractCypherContainer
 {
     private int $days;

@@ -189,17 +189,23 @@ final class BoltOGMTranslator
     private function makeFromBoltPath(BoltPath $path): Path
     {
         $rels = new Vector();
+        /** @var UnboundRelationship $rel */
         foreach ($path->rels() as $rel) {
             $rels->push($this->mapValueToType($rel));
         }
         $nodes = new Vector();
+        /** @var BoltNode $node */
         foreach ($path->nodes() as $node) {
             $nodes->push($this->mapValueToType($node));
         }
+
+        /** @var list<int> $ids */
+        $ids = $path->ids();
+
         return new Path(
             new CypherList($nodes),
             new CypherList($rels),
-            new CypherList(new Vector($path->ids()))
+            new CypherList(new Vector($ids))
         );
     }
 

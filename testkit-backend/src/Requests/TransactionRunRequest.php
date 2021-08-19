@@ -11,9 +11,15 @@ final class TransactionRunRequest
 {
     private Uuid $txId;
     private string $cypher;
-    private array $params;
+    /** @var iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> */
+    private iterable $params;
 
-    public function __construct(Uuid $txId, string $cypher, ?array $params = null)
+    /**
+     * @param Uuid $txId
+     * @param string $cypher
+     * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>|null $params
+     */
+    public function __construct(Uuid $txId, string $cypher, ?iterable $params = null)
     {
         $this->txId = $txId;
         $this->cypher = $cypher;
@@ -30,7 +36,10 @@ final class TransactionRunRequest
         return $this->cypher;
     }
 
-    public function getParams(): array
+    /**
+     * @return iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>
+     */
+    public function getParams(): iterable
     {
         return $this->params;
     }

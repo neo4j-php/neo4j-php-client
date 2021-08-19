@@ -19,10 +19,14 @@ final class NewSessionRequest
 {
     private Uuid $driverId;
     private string $accessMode;
+    /** @var iterable<string>|null  */
     private ?iterable $bookmarks;
     private ?string $database;
     private ?int $fetchSize;
 
+    /**
+     * @param iterable<string>|null $bookmarks
+     */
     public function __construct(
         Uuid $driverId,
         string $accessMode,
@@ -47,6 +51,9 @@ final class NewSessionRequest
         return $this->accessMode;
     }
 
+    /**
+     * @return iterable<string>|null
+     */
     public function getBookmarks(): ?iterable
     {
         return $this->bookmarks;

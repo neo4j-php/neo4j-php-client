@@ -18,6 +18,8 @@ use Laudis\Neo4j\Types\CypherList;
 
 /**
  * @template T
+ *
+ * @psalm-immutable
  */
 final class SummarizedResult extends AbstractCypherContainer
 {

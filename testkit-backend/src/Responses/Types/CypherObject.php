@@ -25,6 +25,9 @@ use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use RuntimeException;
 
+/**
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ */
 final class CypherObject implements TestkitResponseInterface
 {
     /** @var CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null */
@@ -49,7 +52,7 @@ final class CypherObject implements TestkitResponseInterface
     }
 
     /**
-     * @param CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null $value
+     * @param OGMTypes $value
      */
     public static function autoDetect($value): TestkitResponseInterface
     {
@@ -58,6 +61,7 @@ final class CypherObject implements TestkitResponseInterface
                 $tbr = new CypherObject('CypherNull', $value);
                 break;
             case CypherList::class:
+                /** @var CypherList<OGMTypes> $value */
                 $list = [];
                 foreach ($value as $item) {
                     $list[] = self::autoDetect($item);
@@ -66,6 +70,7 @@ final class CypherObject implements TestkitResponseInterface
                 $tbr = new CypherObject('CypherList', new CypherList(new Vector($list)));
                 break;
             case CypherMap::class:
+                /** @var CypherMap<OGMTypes> $value */
                 if ($value->count() === 2 && $value->hasKey('name') && $value->hasKey('data')) {
                     $tbr = new CypherObject('CypherMap', $value);
                 } else {
@@ -126,16 +131,13 @@ final class CypherObject implements TestkitResponseInterface
                 }
                 $rels = new Vector();
                 foreach ($value->getRelationships() as $i => $rel) {
-                    if ($rel instanceof UnboundRelationship) {
-                        $rel = new Relationship(
-                            $rel->getId(),
-                            $value->getNodes()->get($i)->getId(),
-                            $value->getNodes()->get($i + 1)->getId(),
-                            $rel->getType(),
-                            $rel->getProperties()
-                        );
-                        $rels->push(self::autoDetect($rel));
-                    }
+                    $rels->push(self::autoDetect(new Relationship(
+                        $rel->getId(),
+                        $value->getNodes()->get($i)->getId(),
+                        $value->getNodes()->get($i + 1)->getId(),
+                        $rel->getType(),
+                        $rel->getProperties()
+                    )));
                 }
                 $tbr = new CypherPath(
                     new CypherObject('CypherList', new CypherList($nodes)),

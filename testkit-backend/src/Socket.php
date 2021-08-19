@@ -21,7 +21,6 @@ use function json_encode;
 use const PHP_EOL;
 use RuntimeException;
 use function stream_get_line;
-use function stream_set_blocking;
 use const STREAM_SHUT_RDWR;
 use function stream_socket_accept;
 use function stream_socket_server;
@@ -103,10 +102,10 @@ final class Socket
             $this->socket = $socket;
         }
 
-        $length = 2**30;
-        $this->getLine($length);
-        $message = $this->getLine($length);
-        $this->getLine($length);
+        $length = 2 ** 30;
+        $this->getLine($this->socket, $length);
+        $message = $this->getLine($this->socket, $length);
+        $this->getLine($this->socket, $length);
 
         return $message;
     }
@@ -138,9 +137,12 @@ final class Socket
         }
     }
 
-    private function getLine(int $length): ?string
+    /**
+     * @param resource $socket
+     */
+    private function getLine($socket, int $length): ?string
     {
-        $line = stream_get_line($this->socket, $length, PHP_EOL);
+        $line = stream_get_line($socket, $length, PHP_EOL);
         if ($line === false) {
             return null;
         }

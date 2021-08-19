@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend;
 
-use function is_array;
 use function is_string;
 use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\CheckMultiDBSupportRequest;
@@ -41,8 +40,6 @@ use Laudis\Neo4j\TestkitBackend\Requests\TransactionRollbackRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\VerifyConnectivityRequest;
 use Symfony\Component\Uid\Uuid;
-use function print_r;
-use function var_export;
 
 final class RequestFactory
 {
@@ -74,15 +71,16 @@ final class RequestFactory
         'GetRoutingTable' => GetRoutingTableRequest::class,
     ];
 
-    public function create(string $name, array $data): object
+    /**
+     * @param iterable<array|scalar|null> $data
+     */
+    public function create(string $name, iterable $data): object
     {
         $class = self::MAPPINGS[$name];
 
         $params = [];
         foreach ($data as $value) {
-            if (is_array($value) && isset($value['name'])) {
-                $params[] = $this->create($value['name'], $value['data'] ?? []);
-            } elseif (is_string($value) && Uuid::isValid($value)) {
+            if (is_string($value) && Uuid::isValid($value)) {
                 $params[] = Uuid::fromString($value);
             } else {
                 $params[] = $value;

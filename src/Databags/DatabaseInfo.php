@@ -15,6 +15,9 @@ namespace Laudis\Neo4j\Databags;
 
 use Laudis\Neo4j\Types\AbstractCypherContainer;
 
+/**
+ * @psalm-immutable
+ */
 final class DatabaseInfo extends AbstractCypherContainer
 {
     private string $name;

@@ -19,6 +19,9 @@ use Exception;
 use Laudis\Neo4j\Exception\TimezoneOffsetException;
 use function sprintf;
 
+/**
+ * @psalm-immutable
+ */
 final class DateTime extends AbstractCypherContainer
 {
     private int $seconds;

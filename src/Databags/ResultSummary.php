@@ -13,10 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Generator;
 use Laudis\Neo4j\Enum\QueryTypeEnum;
 use Laudis\Neo4j\Types\AbstractCypherContainer;
 use Laudis\Neo4j\Types\CypherList;
 
+/**
+ * @psalm-immutable
+ */
 final class ResultSummary extends AbstractCypherContainer
 {
     private SummaryCounters $counters;
@@ -111,7 +115,7 @@ final class ResultSummary extends AbstractCypherContainer
         return $this->serverInfo;
     }
 
-    public function getIterator()
+    public function getIterator(): Generator
     {
         yield 'counters' => $this->counters;
         yield 'databaseInfo' => $this->databaseInfo;

@@ -18,6 +18,7 @@ use Symfony\Component\Uid\Uuid;
 
 final class Bookmark
 {
+    /** @var Set<string> */
     private Set $bookmarks;
 
     /**

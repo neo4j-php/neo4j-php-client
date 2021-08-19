@@ -13,12 +13,23 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+/**
+ * @psalm-immutable
+ */
 final class Path extends AbstractCypherContainer
 {
+    /** @var CypherList<Node> */
     private CypherList $nodes;
+    /** @var CypherList<UnboundRelationship> */
     private CypherList $relationships;
+    /** @var CypherList<int> */
     private CypherList $ids;
 
+    /**
+     * @param CypherList<Node>                $nodes
+     * @param CypherList<UnboundRelationship> $relationships
+     * @param CypherList<int>                 $ids
+     */
     public function __construct(CypherList $nodes, CypherList $relationships, CypherList $ids)
     {
         $this->nodes = $nodes;
@@ -26,16 +37,25 @@ final class Path extends AbstractCypherContainer
         $this->ids = $ids;
     }
 
+    /**
+     * @return CypherList<Node>
+     */
     public function getNodes(): CypherList
     {
         return $this->nodes;
     }
 
+    /**
+     * @return CypherList<UnboundRelationship>
+     */
     public function getRelationships(): CypherList
     {
         return $this->relationships;
     }
 
+    /**
+     * @return CypherList<int>
+     */
     public function getIds(): CypherList
     {
         return $this->ids;

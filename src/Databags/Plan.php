@@ -17,6 +17,9 @@ use Laudis\Neo4j\Types\AbstractCypherContainer;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 
+/**
+ * @psalm-immutable
+ */
 final class Plan extends AbstractCypherContainer
 {
     /** @var CypherMap<mixed> */

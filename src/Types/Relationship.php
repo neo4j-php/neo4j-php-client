@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 /**
+ * @psalm-immutable
+ *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
 final class Relationship extends AbstractCypherContainer

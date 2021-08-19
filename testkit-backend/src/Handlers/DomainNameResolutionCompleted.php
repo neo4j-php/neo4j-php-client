@@ -15,15 +15,16 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\Requests\DomainNameResolutionCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
 
 /**
- * @implements RequestHandlerInterface<DomainNameResolutionRequired>
+ * @implements RequestHandlerInterface<DomainNameResolutionCompletedRequest>
  */
 final class DomainNameResolutionCompleted implements RequestHandlerInterface
 {
     /**
-     * @param DomainNameResolutionCompleted $request
+     * @param DomainNameResolutionCompletedRequest $request
      */
     public function handle($request): TestkitResponseInterface
     {

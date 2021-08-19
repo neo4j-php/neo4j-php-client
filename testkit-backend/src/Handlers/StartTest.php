@@ -25,8 +25,12 @@ use function is_string;
  */
 final class StartTest implements RequestHandlerInterface
 {
+    /** @var array<string, array|string|bool> */
     private array $acceptedTests;
 
+    /**
+     * @param array<string, array|string|bool> $acceptedTests
+     */
     public function __construct(array $acceptedTests)
     {
         $this->acceptedTests = $acceptedTests;
@@ -46,6 +50,7 @@ final class StartTest implements RequestHandlerInterface
                 if (is_string($section[$key])) {
                     return new SkipTestResponse($section[$key]);
                 }
+                /** @var array<string, array|string|bool> $section */
                 $section = $section[$key];
             } else {
                 break;

@@ -21,14 +21,14 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 final class RecordResponse implements TestkitResponseInterface
 {
     /**
-     * @var list<TestkitResponseInterface>
+     * @var iterable<TestkitResponseInterface>
      */
-    private array $values;
+    private iterable $values;
 
     /**
-     * @param array<TestkitResponseInterface> $values
+     * @param iterable<TestkitResponseInterface> $values
      */
-    public function __construct(array $values)
+    public function __construct(iterable $values)
     {
         $this->values = $values;
     }

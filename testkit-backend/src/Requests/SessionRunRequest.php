@@ -19,16 +19,21 @@ final class SessionRunRequest
 {
     private Uuid $sessionId;
     private string $cypher;
-    private ?iterable $params;
-    /** @var mixed */
-    private $txMeta;
+    /** @var iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> */
+    private iterable $params;
+    /** @var iterable<string, scalar|iterable|null>|null */
+    private ?iterable $txMeta;
     private ?int $timeout;
 
-    public function __construct(Uuid $sessionId, string $cypher, ?iterable $params, ?array $txMeta, ?int $timeout)
+    /**
+     * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>|null $params
+     * @param iterable<string, scalar|iterable|null>|null                                  $txMeta
+     */
+    public function __construct(Uuid $sessionId, string $cypher, ?iterable $params, ?iterable $txMeta, ?int $timeout)
     {
         $this->sessionId = $sessionId;
         $this->cypher = $cypher;
-        $this->params = $params;
+        $this->params = $params ?? [];
         $this->txMeta = $txMeta;
         $this->timeout = $timeout;
     }
@@ -43,12 +48,18 @@ final class SessionRunRequest
         return $this->cypher;
     }
 
+    /**
+     * @return iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>
+     */
     public function getParams(): iterable
     {
-        return $this->params ?? [];
+        return $this->params;
     }
 
-    public function getTxMeta(): array
+    /**
+     * @return iterable<string, scalar|iterable|null>|null
+     */
+    public function getTxMeta(): ?iterable
     {
         return $this->txMeta;
     }

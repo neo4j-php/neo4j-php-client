@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Exception\InvalidTransactionStateException;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 
@@ -218,7 +219,7 @@ CYPHER
         $exception = false;
         try {
             $transaction->commit();
-        } catch (Neo4jException $e) {
+        } catch (InvalidTransactionStateException|Neo4jException $e) {
             $exception = true;
         }
         self::assertTrue($exception);
@@ -244,7 +245,7 @@ CYPHER
         $exception = false;
         try {
             $transaction->rollback();
-        } catch (Neo4jException $e) {
+        } catch (InvalidTransactionStateException|Neo4jException $e) {
             $exception = true;
         }
         self::assertTrue($exception);

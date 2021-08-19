@@ -17,6 +17,8 @@ use Laudis\Neo4j\Types\AbstractCypherContainer;
 
 /**
  * @todo deprecate and create Query Object
+ *
+ * @psalm-immutable
  */
 final class Statement extends AbstractCypherContainer
 {

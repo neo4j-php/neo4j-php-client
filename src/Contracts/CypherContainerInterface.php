@@ -23,7 +23,13 @@ use JsonSerializable;
  *
  * @template-extends ArrayAccess<TKey, TValue>
  * @template-extends IteratorAggregate<TKey, TValue>
+ *
+ * @psalm-immutable
  */
 interface CypherContainerInterface extends JsonSerializable, ArrayAccess, IteratorAggregate
 {
+    /**
+     * @psalm-pure
+     */
+    public function getIterator();
 }

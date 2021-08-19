@@ -14,8 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @extends AbstractRunner<SessionRunRequest>
+ */
 final class SessionRun extends AbstractRunner
 {
     protected function getRunner($request): SessionInterface

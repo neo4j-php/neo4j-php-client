@@ -17,6 +17,9 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Types\AbstractCypherContainer;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * @psalm-immutable
+ */
 final class ServerInfo extends AbstractCypherContainer
 {
     private UriInterface $address;

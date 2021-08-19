@@ -18,7 +18,7 @@ use BadMethodCallException;
 use InvalidArgumentException;
 use function json_encode;
 use JsonException;
-use Laudis\Neo4j\Types\AbstractCypherContainer;
+use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use PHPUnit\Framework\TestCase;
 
 final class CypherTypeTest extends TestCase
@@ -30,12 +30,8 @@ final class CypherTypeTest extends TestCase
      */
     public function testEmpty(): void
     {
-        $empty = new class() extends AbstractCypherContainer {
-            public function getIterator()
-            {
-                return new ArrayIterator([]);
-            }
-        };
+        $empty = $this->createMock(CypherContainerInterface::class);
+        $empty->method('getIterator')->willReturn(new ArrayIterator([]));
 
         self::assertEquals('[]', json_encode($empty, JSON_THROW_ON_ERROR));
         self::assertFalse(isset($empty[0]));
@@ -73,13 +69,11 @@ final class CypherTypeTest extends TestCase
      */
     public function testFilled(): void
     {
-        $filled = new class() extends AbstractCypherContainer {
-            public function getIterator()
-            {
-                yield 'a' => 'b';
-                yield 'c' => 'd';
-            }
-        };
+        $empty = $this->createMock(CypherContainerInterface::class);
+        $empty->method('getIterator')->willReturn(static function () {
+            yield 'a' => 'b';
+            yield 'c' => 'd';
+        });
 
         self::assertEquals('{"a":"b","c":"d"}', json_encode($filled, JSON_THROW_ON_ERROR));
 

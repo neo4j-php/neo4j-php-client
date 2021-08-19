@@ -21,6 +21,8 @@ use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
 
 /**
+ * @psalm-immutable
+ *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
 final class Node extends AbstractCypherContainer

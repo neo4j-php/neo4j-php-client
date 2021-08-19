@@ -13,13 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use IteratorAggregate;
 use Laudis\Neo4j\Types\AbstractCypherContainer;
 
 /**
  * @psalm-immutable
- *
- * @implements IteratorAggregate<string, int|bool>
  */
 final class SummaryCounters extends AbstractCypherContainer
 {

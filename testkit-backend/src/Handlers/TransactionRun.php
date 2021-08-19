@@ -14,9 +14,13 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
 use Symfony\Component\Uid\Uuid;
 
 
+/**
+ * @extends AbstractRunner<TransactionRunRequest>
+ */
 final class TransactionRun extends AbstractRunner
 {
     protected function getRunner($request): TransactionInterface

@@ -15,14 +15,14 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Ds\Map;
 use Ds\Vector;
+use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Exception\InvalidTransactionStateException;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
-use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
-use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
@@ -32,7 +32,11 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @implements RequestHandlerInterface<SessionRunRequest|TransactionRunRequest>
+ * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @template T of \Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest|\Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest
+ *
+ * @implements RequestHandlerInterface<T>
  */
 abstract class AbstractRunner implements RequestHandlerInterface
 {
@@ -45,9 +49,6 @@ abstract class AbstractRunner implements RequestHandlerInterface
         $this->logger = $logger;
     }
 
-    /**
-     * @param SessionRunRequest|TransactionRunRequest $request
-     */
     public function handle($request): ResultResponse
     {
         $session = $this->getRunner($request);
@@ -78,31 +79,43 @@ abstract class AbstractRunner implements RequestHandlerInterface
         return new ResultResponse($id, $result->getResult()->isEmpty() ? [] : $result->getResult()->first()->keys());
     }
 
+    /**
+     * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> $params
+     *
+     * @return array<string, scalar|CypherContainerInterface|iterable|null>
+     */
     private function decodeToValue(iterable $params): array
     {
         $tbr = [];
         foreach ($params as $key => $param) {
-            if ($param['name'] === 'CypherMap') {
-                $tbr[$key] = new CypherMap(new Map($this->decodeToValue($param['data']['value'])));
-            } elseif ($param['name'] === 'CypherList') {
-                $tbr[$key] = new CypherList(new Vector($this->decodeToValue($param['data']['value'])));
-            } else {
-                $tbr[$key] = $param['data']['value'];
+            if (is_iterable($param['data']['value'])) {
+                if ($param['name'] === 'CypherMap') {
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
+                    $tbr[$key] = new CypherMap(new Map($this->decodeToValue($param['data']['value'])));
+                    continue;
+                }
+
+                if ($param['name'] === 'CypherList') {
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
+                    $tbr[$key] = new CypherList(new Vector($this->decodeToValue($param['data']['value'])));
+                    continue;
+                }
             }
+            $tbr[$key] = $param['data']['value'];
         }
 
         return $tbr;
     }
 
     /**
-     * @param SessionRunRequest|TransactionRunRequest $request
+     * @param T $request
      *
-     * @return SessionInterface|TransactionInterface
+     * @return SessionInterface<SummarizedResult<OGMResults>>|TransactionInterface<SummarizedResult<OGMResults>>
      */
     abstract protected function getRunner($request);
 
     /**
-     * @param SessionRunRequest|TransactionRunRequest $request
+     * @param T $request
      */
     abstract protected function getId($request): Uuid;
 }

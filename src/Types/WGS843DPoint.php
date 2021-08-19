@@ -15,6 +15,9 @@ namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Contracts\PointInterface;
 
+/**
+ * @psalm-immutable
+ */
 final class WGS843DPoint extends AbstractCypherContainer implements PointInterface
 {
     private float $latitude;

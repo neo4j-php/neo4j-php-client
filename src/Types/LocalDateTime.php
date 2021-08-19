@@ -17,6 +17,9 @@ use DateTimeImmutable;
 use Exception;
 use function sprintf;
 
+/**
+ * @psalm-immutable
+ */
 final class LocalDateTime extends AbstractCypherContainer
 {
     private int $seconds;

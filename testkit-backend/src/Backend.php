@@ -124,7 +124,7 @@ final class Backend
     private function extractRequest(string $message): array
     {
         $this->logger->debug('Received: '.$message);
-        /** @var array{name: string, data: array} $response */
+        /** @var array{name: string, data: iterable<array|scalar|null>} $response */
         $response = json_decode($message, true, 512, JSON_THROW_ON_ERROR);
 
         $handler = $this->loadRequestHandler($response['name']);
