@@ -93,7 +93,7 @@ final class ParameterHelper
     private static function filterInvalidType($value)
     {
         if ($value !== null && !is_scalar($value)) {
-            throw new InvalidArgumentException('Requests must be iterable, scalar, null or stringable');
+            throw new InvalidArgumentException('Requests must be iterable, scalar, null or string able');
         }
 
         return $value;

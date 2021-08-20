@@ -17,6 +17,7 @@ use function call_user_func;
 use function is_callable;
 use Laudis\Neo4j\Client;
 use Laudis\Neo4j\Contracts\ConfigInterface;
+use function is_string;
 
 /**
  * @psalm-type SSLContextOptions = null|array{

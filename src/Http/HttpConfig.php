@@ -21,6 +21,7 @@ use Laudis\Neo4j\Contracts\ConfigInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use function is_string;
 
 /**
  * @deprecated
