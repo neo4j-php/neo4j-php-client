@@ -17,11 +17,11 @@ use function call_user_func;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
 use function is_callable;
+use function is_string;
 use Laudis\Neo4j\Contracts\ConfigInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
-use function is_string;
 
 /**
  * @deprecated
