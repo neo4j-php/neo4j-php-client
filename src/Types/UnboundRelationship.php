@@ -13,12 +13,21 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+/**
+ * @psalm-immutable
+ *
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ */
 final class UnboundRelationship extends AbstractCypherContainer
 {
     private int $id;
     private string $type;
+    /** @var CypherMap<OGMTypes> */
     private CypherMap $properties;
 
+    /**
+     * @param CypherMap<OGMTypes> $properties
+     */
     public function __construct(int $id, string $type, CypherMap $properties)
     {
         $this->id = $id;
@@ -36,6 +45,9 @@ final class UnboundRelationship extends AbstractCypherContainer
         return $this->type;
     }
 
+    /**
+     * @return CypherMap<OGMTypes>
+     */
     public function getProperties(): CypherMap
     {
         return $this->properties;

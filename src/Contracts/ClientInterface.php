@@ -35,7 +35,7 @@ interface ClientInterface
     public function run(string $query, iterable $parameters = [], ?string $alias = null);
 
     /**
-     * Runs a one off transaction with the provided statement over the connection with the provided alias or the master alias othwerise.
+     * Runs a one off transaction with the provided statement over the connection with the provided alias or the master alias otherwise.
      *
      * @throws Neo4jException
      *
@@ -44,7 +44,7 @@ interface ClientInterface
     public function runStatement(Statement $statement, ?string $alias = null);
 
     /**
-     * Runs a one off transaction with the provided statements over the connection with the provided alias or the master alias othwerise.
+     * Runs a one off transaction with the provided statements over the connection with the provided alias or the master alias otherwise.
      *
      * @param iterable<Statement> $statements
      *

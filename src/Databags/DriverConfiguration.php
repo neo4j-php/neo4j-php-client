@@ -14,11 +14,21 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use function call_user_func;
+use Composer\InstalledVersions;
 use function is_callable;
 
 final class DriverConfiguration
 {
-    public const DEFAULT_USER_AGENT = 'neo4j-php-client/2.0.7';
+    /**
+     * @psalm-mutation-free
+     */
+    public static function DEFAULT_USER_AGENT(): string
+    {
+        /** @psalm-suppress ImpureMethodCall */
+        $version = InstalledVersions::getVersion('laudis/neo4j-php-client') ?? '2';
+
+        return 'neo4j-php-client/'.$version;
+    }
 
     /** @var callable():(string|null)|string|null */
     private $userAgent;
@@ -50,7 +60,7 @@ final class DriverConfiguration
     public static function default(): self
     {
         return new self(
-            self::DEFAULT_USER_AGENT,
+            self::DEFAULT_USER_AGENT(),
             HttpPsrBindings::default()
         );
     }
@@ -59,7 +69,7 @@ final class DriverConfiguration
     {
         $userAgent = (is_callable($this->userAgent)) ? call_user_func($this->userAgent) : $this->userAgent;
 
-        return $userAgent ?? self::DEFAULT_USER_AGENT;
+        return $userAgent ?? self::DEFAULT_USER_AGENT();
     }
 
     /**

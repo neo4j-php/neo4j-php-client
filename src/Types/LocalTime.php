@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+/**
+ * @psalm-immutable
+ */
 final class LocalTime extends AbstractCypherContainer
 {
     private int $nanoseconds;

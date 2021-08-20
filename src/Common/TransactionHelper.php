@@ -21,6 +21,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -134,5 +135,10 @@ CYPHER)['fields']);
         }
 
         return null;
+    }
+
+    public static function incrementBookmark(BookmarkHolder $holder): void
+    {
+        $holder->setBookmark($holder->getBookmark()->withIncrement());
     }
 }

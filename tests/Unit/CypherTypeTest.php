@@ -30,7 +30,7 @@ final class CypherTypeTest extends TestCase
      */
     public function testEmpty(): void
     {
-        $empty = new class() extends AbstractCypherContainer {
+        $empty = new /** @psalm-immutable */ class() extends AbstractCypherContainer {
             public function getIterator()
             {
                 return new ArrayIterator([]);
@@ -73,7 +73,7 @@ final class CypherTypeTest extends TestCase
      */
     public function testFilled(): void
     {
-        $filled = new class() extends AbstractCypherContainer {
+        $filled = new /** @psalm-immutable */ class() extends AbstractCypherContainer {
             public function getIterator()
             {
                 yield 'a' => 'b';

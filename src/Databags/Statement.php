@@ -13,10 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Laudis\Neo4j\Types\AbstractCypherContainer;
+
 /**
  * @todo deprecate and create Query Object
+ *
+ * @psalm-immutable
  */
-final class Statement
+final class Statement extends AbstractCypherContainer
 {
     private string $text;
     /** @var iterable<string, scalar|iterable|null> */
@@ -50,5 +54,11 @@ final class Statement
     public function getParameters(): iterable
     {
         return $this->parameters;
+    }
+
+    public function getIterator()
+    {
+        yield 'text' => $this->text;
+        yield 'parameters' => $this->parameters;
     }
 }

@@ -16,6 +16,9 @@ namespace Laudis\Neo4j\Types;
 use DateInterval;
 use Exception;
 
+/**
+ * @psalm-immutable
+ */
 final class Duration extends AbstractCypherContainer
 {
     private int $months;

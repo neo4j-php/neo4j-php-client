@@ -15,13 +15,15 @@ namespace Laudis\Neo4j\Types;
 
 use BadMethodCallException;
 use Ds\Vector;
+use Generator;
 use Laudis\Neo4j\Contracts\CypherContainerInterface;
-use Traversable;
 
 /**
  * @template T
  *
  * @implements CypherContainerInterface<int, T>
+ *
+ * @psalm-immutable
  */
 final class CypherList implements CypherContainerInterface
 {
@@ -33,7 +35,7 @@ final class CypherList implements CypherContainerInterface
      */
     public function __construct(Vector $vector)
     {
-        $this->vector = new Vector($vector);
+        $this->vector = $vector;
     }
 
     public function count(): int
@@ -62,28 +64,27 @@ final class CypherList implements CypherContainerInterface
         return $this->vector->toArray();
     }
 
-    public function getIterator()
+    /**
+     * @return Generator<int, T>
+     */
+    public function getIterator(): Generator
     {
-        /** @var Traversable<int, T> */
-        return $this->vector->getIterator();
+        yield from $this->vector;
     }
 
     public function offsetExists($offset): bool
     {
-        return $this->vector->offsetExists($offset);
+        return $offset < $this->vector->count();
     }
 
     /**
-     * @psalm-suppress InvalidReturnType
-     *
      * @param int $offset
      *
      * @return T
      */
     public function offsetGet($offset)
     {
-        /** @psalm-suppress InvalidReturnStatement */
-        return $this->vector->offsetGet($offset);
+        return $this->vector->get($offset);
     }
 
     /**
@@ -230,7 +231,7 @@ final class CypherList implements CypherContainerInterface
 
     public function jsonSerialize()
     {
-        return $this->vector->jsonSerialize();
+        return $this->vector->toArray();
     }
 
     /**

@@ -349,27 +349,27 @@ CYPHER, [], $alias);
         /** @var Node $u */
         $u = $results[0]['u'];
         self::assertInstanceOf(Node::class, $u);
-        self::assertEquals(['User'], $u->labels()->toArray());
-        self::assertEquals($email, $u->properties()['email']);
-        self::assertEquals($uuid, $u->properties()['uuid']);
+        self::assertEquals(['User'], $u->getLabels()->toArray());
+        self::assertEquals($email, $u->getProperties()['email']);
+        self::assertEquals($uuid, $u->getProperties()['uuid']);
         self::assertEquals(
             json_encode([
-                'id' => $u->id(),
-                'labels' => $u->labels()->jsonSerialize(),
-                'properties' => $u->properties()->jsonSerialize(),
+                'id' => $u->getId(),
+                'labels' => $u->getLabels()->jsonSerialize(),
+                'properties' => $u->getProperties()->jsonSerialize(),
             ], JSON_THROW_ON_ERROR),
             json_encode($u, JSON_THROW_ON_ERROR));
 
         /** @var Node $p */
         $p = $results[0]['p'];
         self::assertInstanceOf(Node::class, $p);
-        self::assertEquals(['Food', 'Pizza'], $p->labels()->toArray());
-        self::assertEquals($type, $p->properties()['type']);
+        self::assertEquals(['Food', 'Pizza'], $p->getLabels()->toArray());
+        self::assertEquals($type, $p->getProperties()['type']);
         self::assertEquals(
             json_encode([
-                'id' => $p->id(),
-                'labels' => $p->labels()->jsonSerialize(),
-                'properties' => $p->properties()->jsonSerialize(),
+                'id' => $p->getId(),
+                'labels' => $p->getLabels()->jsonSerialize(),
+                'properties' => $p->getProperties()->jsonSerialize(),
             ], JSON_THROW_ON_ERROR),
             json_encode($p, JSON_THROW_ON_ERROR)
         );

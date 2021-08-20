@@ -18,14 +18,16 @@ use Ds\Map;
 use Ds\Pair;
 use Ds\Sequence;
 use Ds\Set;
+use Generator;
 use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use OutOfBoundsException;
-use Traversable;
 
 /**
  * @template T
  *
  * @implements CypherContainerInterface<string, T>
+ *
+ * @psalm-immutable
  */
 final class CypherMap implements CypherContainerInterface
 {
@@ -66,10 +68,12 @@ final class CypherMap implements CypherContainerInterface
         return $this->map->toArray();
     }
 
-    public function getIterator()
+    /**
+     * @return Generator<string, T>
+     */
+    public function getIterator(): Generator
     {
-        /** @var Traversable<string, T> */
-        return $this->map->getIterator();
+        yield from $this->map;
     }
 
     /**
@@ -77,7 +81,7 @@ final class CypherMap implements CypherContainerInterface
      */
     public function offsetExists($offset): bool
     {
-        return $this->map->offsetExists($offset);
+        return $this->map->hasKey($offset);
     }
 
     /**
@@ -87,7 +91,7 @@ final class CypherMap implements CypherContainerInterface
      */
     public function offsetGet($offset)
     {
-        return $this->map->offsetGet($offset);
+        return $this->map->get($offset);
     }
 
     /**
@@ -109,7 +113,7 @@ final class CypherMap implements CypherContainerInterface
 
     public function jsonSerialize()
     {
-        return $this->map->jsonSerialize();
+        return $this->map->toArray();
     }
 
     /**
@@ -292,14 +296,6 @@ final class CypherMap implements CypherContainerInterface
     public function ksorted(callable $comparator = null): CypherMap
     {
         return new CypherMap($this->map->ksorted($comparator));
-    }
-
-    /**
-     * @return float|int
-     */
-    public function sum()
-    {
-        return $this->map->sum();
     }
 
     /**

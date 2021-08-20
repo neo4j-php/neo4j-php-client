@@ -21,6 +21,8 @@ use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
 
 /**
+ * @psalm-immutable
+ *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
 final class Node extends AbstractCypherContainer
@@ -59,7 +61,7 @@ final class Node extends AbstractCypherContainer
     /**
      * @return CypherList<string>
      */
-    public function labels(): CypherList
+    public function getLabels(): CypherList
     {
         return $this->labels;
     }
@@ -67,12 +69,12 @@ final class Node extends AbstractCypherContainer
     /**
      * @return CypherMap<OGMTypes>
      */
-    public function properties(): CypherMap
+    public function getProperties(): CypherMap
     {
         return $this->properties;
     }
 
-    public function id(): int
+    public function getId(): int
     {
         return $this->id;
     }

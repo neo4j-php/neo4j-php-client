@@ -21,12 +21,15 @@ use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Exception\InvalidTransactionStateException;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherList;
 use function microtime;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -43,49 +46,66 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private ConnectionInterface $connection;
     private string $database;
     private bool $finished = false;
+    private BookmarkHolder $bookmarkHolder;
+    private bool $isInstant;
+    private bool $errorOccurred = false;
 
     /**
      * @param FormatterInterface<T>     $formatter
      * @param ConnectionInterface<Bolt> $connection
      */
-    public function __construct(string $database, FormatterInterface $formatter, ConnectionInterface $connection)
+    public function __construct(string $database, FormatterInterface $formatter, ConnectionInterface $connection, BookmarkHolder $bookmark, bool $isInstant)
     {
         $this->formatter = $formatter;
         $this->connection = $connection;
         $this->database = $database;
+        $this->bookmarkHolder = $bookmark;
+        $this->isInstant = $isInstant;
     }
 
     public function commit(iterable $statements = []): CypherList
     {
+        if ($this->isInstant) {
+            throw new RuntimeException('Cannot commit an instant transaction');
+        }
+
         $tbr = $this->runStatements($statements);
 
         if ($this->finished) {
-            throw new Neo4jException(new Vector([new Neo4jError('0', 'Transaction already finished')]));
+            throw new InvalidTransactionStateException('Transaction already finished');
         }
 
         try {
             $this->getBolt()->commit();
-            $this->finished = true;
         } catch (Exception $e) {
             $code = TransactionHelper::extractCode($e);
             throw new Neo4jException(new Vector([new Neo4jError($code ?? '', $e->getMessage())]), $e);
+        } finally {
+            $this->finished = true;
         }
+
+        TransactionHelper::incrementBookmark($this->bookmarkHolder);
 
         return $tbr;
     }
 
     public function rollback(): void
     {
+        if ($this->isInstant) {
+            throw new RuntimeException('Cannot rollback an instant transaction');
+        }
+
         if ($this->finished) {
-            throw new Neo4jException(new Vector([new Neo4jError('0', 'Transaction already finished')]));
+            throw new InvalidTransactionStateException('Transaction already finished');
         }
 
         try {
             $this->connection->getImplementation()->rollback();
-            $this->finished = true;
         } catch (Exception $e) {
             $code = TransactionHelper::extractCode($e) ?? '';
             throw new Neo4jException(new Vector([new Neo4jError($code, $e->getMessage())]), $e);
+        } finally {
+            $this->finished = true;
         }
     }
 
@@ -110,9 +130,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function runStatements(iterable $statements): CypherList
     {
+        if ($this->finished) {
+            throw new InvalidTransactionStateException('Transaction already finished');
+        }
         /** @var Vector<T> $tbr */
         $tbr = new Vector();
         foreach ($statements as $statement) {
+            if ($this->errorOccurred) {
+                throw new InvalidTransactionStateException('Cannot run queries on a transaction where an error has already happened');
+            }
             $extra = ['db' => $this->database];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             try {
@@ -124,6 +150,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $results = $this->getBolt()->pullAll();
                 $end = microtime(true);
             } catch (Throwable $e) {
+                $this->errorOccurred = true;
                 if ($e instanceof MessageException) {
                     $code = TransactionHelper::extractCode($e) ?? '';
                     throw new Neo4jException(new Vector([new Neo4jError($code, $e->getMessage())]), $e);
@@ -138,6 +165,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $end - $start,
                 $statement
             ));
+
+            $this->incrementBookmarkIfNeeded();
         }
 
         return new CypherList($tbr);
@@ -146,5 +175,12 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private function getBolt(): Bolt
     {
         return $this->connection->getImplementation();
+    }
+
+    private function incrementBookmarkIfNeeded(): void
+    {
+        if ($this->isInstant) {
+            TransactionHelper::incrementBookmark($this->bookmarkHolder);
+        }
     }
 }

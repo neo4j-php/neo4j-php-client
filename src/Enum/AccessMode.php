@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
+use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 
 /**
@@ -21,8 +22,13 @@ use Laudis\TypedEnum\TypedEnum;
  *
  * @extends TypedEnum<string>
  */
-final class AccessMode extends TypedEnum
+final class AccessMode extends TypedEnum implements JsonSerializable
 {
     private const READ = 'read';
     private const WRITE = 'write';
+
+    public function jsonSerialize()
+    {
+        return $this->getValue();
+    }
 }

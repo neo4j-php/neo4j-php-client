@@ -20,7 +20,9 @@ use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use function sprintf;
 
 /**
- * @implements CypherContainerInterface<string, CypherContainerInterface|scalar|null>
+ * @implements CypherContainerInterface<string, CypherContainerInterface|scalar|iterable|null>
+ *
+ * @psalm-immutable
  */
 abstract class AbstractCypherContainer implements CypherContainerInterface
 {

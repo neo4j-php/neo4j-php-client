@@ -144,7 +144,7 @@ final class SessionConfiguration
     public static function fromUri(UriInterface $uri): self
     {
         parse_str($uri->getQuery(), $query);
-        $tbr = SessionConfiguration::default();
+        $tbr = self::default();
         if (isset($query['database'])) {
             $database = (string) $query['database'];
             $tbr = $tbr->withDatabase($database);

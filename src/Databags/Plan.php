@@ -13,10 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Laudis\Neo4j\Types\AbstractCypherContainer;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 
-final class Plan
+/**
+ * @psalm-immutable
+ */
+final class Plan extends AbstractCypherContainer
 {
     /** @var CypherMap<mixed> */
     private CypherMap $arguments;
@@ -70,5 +74,13 @@ final class Plan
     public function getOperator(): string
     {
         return $this->operator;
+    }
+
+    public function getIterator()
+    {
+        yield 'arguments' => $this->arguments;
+        yield 'list' => $this->list;
+        yield 'identifiers' => $this->identifiers;
+        yield 'operator' => $this->operator;
     }
 }
