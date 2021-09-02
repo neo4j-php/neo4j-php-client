@@ -24,23 +24,22 @@ use function sprintf;
  */
 abstract class AbstractCypherContainer implements CypherContainerInterface
 {
+    /** @var array<string, CypherContainerInterface|scalar|null>|null */
     private ?array $cachedSerialized = null;
 
     public function jsonSerialize(): array
     {
-        if ($this->cachedSerialized) {
-            return $this->cachedSerialized;
+        if ($this->cachedSerialized === null) {
+            $tbr = [];
+
+            foreach ($this as $key => $value) {
+                $tbr[$key] = $value;
+            }
+
+            $this->cachedSerialized = $tbr;
         }
 
-        $tbr = [];
-
-        foreach ($this as $key => $value) {
-            $tbr[$key] = $value;
-        }
-
-        $this->cachedSerialized = $tbr;
-
-        return $tbr;
+        return $this->cachedSerialized;
     }
 
     public function offsetExists($offset): bool

@@ -18,9 +18,16 @@ use Laudis\Neo4j\Contracts\HasPropertiesInterface;
 
 abstract class AbstractPropertyContainer extends AbstractCypherContainer implements HasPropertiesInterface
 {
+    /** @var CypherMap<mixed>|null */
+    protected ?CypherMap $cachedProperties = null;
+
     public function getProperties(): CypherMap
     {
-        return new CypherMap($this);
+        if ($this->cachedProperties === null) {
+            $this->cachedProperties = new CypherMap($this);
+        }
+
+        return $this->cachedProperties;
     }
 
     public function __get($name)
