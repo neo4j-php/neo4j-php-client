@@ -40,20 +40,6 @@ final class Node extends AbstractPropertyContainer
         $this->properties = $properties;
     }
 
-    public static function makeFromHttpNode(array $node): self
-    {
-        /**
-         * @psalm-suppress PossiblyUndefinedStringArrayOffset
-         * @psalm-suppress MixedArgumentTypeCoercion
-         * @psalm-suppress MixedArgument
-         */
-        return new self(
-            $node['id'],
-            new CypherList(new Vector($node['labels'])),
-            new CypherMap(new Map($node['properties']))
-        );
-    }
-
     /**
      * @return CypherList<string>
      */
