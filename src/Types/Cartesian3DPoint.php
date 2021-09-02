@@ -13,9 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use BadMethodCallException;
 use Laudis\Neo4j\Contracts\PointInterface;
 
-final class Cartesian3DPoint extends AbstractCypherContainer implements PointInterface
+final class Cartesian3DPoint extends AbstractPropertyContainer implements PointInterface
 {
     private float $z;
     private float $x;
@@ -68,5 +69,25 @@ final class Cartesian3DPoint extends AbstractCypherContainer implements PointInt
         yield 'z' => $this->getZ();
         yield 'crs' => $this->getCrs();
         yield 'srid' => $this->getSrid();
+    }
+
+    public function getProperties(): CypherMap
+    {
+        return new CypherMap($this);
+    }
+
+    public function __get($name)
+    {
+        return $this->getProperties()->get($name);
+    }
+
+    public function __set($name, $value): void
+    {
+        throw new BadMethodCallException(__CLASS__.' is immutable');
+    }
+
+    public function __isset($name): bool
+    {
+        return $this->getProperties()->hasKey($name);
     }
 }
