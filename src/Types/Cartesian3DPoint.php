@@ -70,24 +70,4 @@ final class Cartesian3DPoint extends AbstractPropertyContainer implements PointI
         yield 'crs' => $this->getCrs();
         yield 'srid' => $this->getSrid();
     }
-
-    public function getProperties(): CypherMap
-    {
-        return new CypherMap($this);
-    }
-
-    public function __get($name)
-    {
-        return $this->getProperties()->get($name);
-    }
-
-    public function __set($name, $value): void
-    {
-        throw new BadMethodCallException(__CLASS__.' is immutable');
-    }
-
-    public function __isset($name): bool
-    {
-        return $this->getProperties()->hasKey($name);
-    }
 }
