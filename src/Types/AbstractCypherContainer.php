@@ -24,40 +24,38 @@ use function sprintf;
  */
 abstract class AbstractCypherContainer implements CypherContainerInterface
 {
-    public function jsonSerialize()
+    private ?array $cachedSerialized = null;
+
+    public function jsonSerialize(): array
     {
+        if ($this->cachedSerialized) {
+            return $this->cachedSerialized;
+        }
+
         $tbr = [];
 
         foreach ($this as $key => $value) {
             $tbr[$key] = $value;
         }
 
+        $this->cachedSerialized = $tbr;
+
         return $tbr;
     }
 
-    /**
-     * @psalm-suppress UnusedVariable
-     */
     public function offsetExists($offset): bool
     {
-        foreach ($this as $key => $value) {
-            if ($key === $offset) {
-                return true;
-            }
-        }
-
-        return false;
+        return isset($this->jsonSerialize()[$offset]);
     }
 
     public function offsetGet($offset)
     {
-        foreach ($this as $key => $value) {
-            if ($key === $offset) {
-                return $value;
-            }
+        $serialized = $this->jsonSerialize();
+        if (!isset($serialized[$offset])) {
+            throw new InvalidArgumentException("Offset: $offset does not exists for class: ".static::class);
         }
 
-        throw new InvalidArgumentException("Offset: $offset does not exists for class: ".static::class);
+        return $serialized[$offset];
     }
 
     public function offsetSet($offset, $value): void
