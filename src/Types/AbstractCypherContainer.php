@@ -27,6 +27,9 @@ abstract class AbstractCypherContainer implements CypherContainerInterface
     /** @var array<string, CypherContainerInterface|scalar|null>|null */
     private ?array $cachedSerialized = null;
 
+    /**
+     * @return array<string, CypherContainerInterface|scalar|null>
+     */
     public function jsonSerialize(): array
     {
         if ($this->cachedSerialized === null) {

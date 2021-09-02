@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Ds\Map;
-use Ds\Vector;
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
 

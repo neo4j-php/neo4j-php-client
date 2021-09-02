@@ -107,8 +107,9 @@ final class CypherMap implements CypherContainerInterface
         throw new BadMethodCallException('A cypher map is immutable');
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
+        /** @var array<string, T> */
         return $this->map->jsonSerialize();
     }
 

@@ -26,4 +26,8 @@ use JsonSerializable;
  */
 interface CypherContainerInterface extends JsonSerializable, ArrayAccess, IteratorAggregate
 {
+    /**
+     * @return array<TKey, TValue>
+     */
+    public function jsonSerialize(): array;
 }

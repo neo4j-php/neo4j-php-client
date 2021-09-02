@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use BadMethodCallException;
 use Laudis\Neo4j\Contracts\PointInterface;
 
 final class Cartesian3DPoint extends AbstractPropertyContainer implements PointInterface
