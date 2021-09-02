@@ -17,7 +17,7 @@ use DateTimeImmutable;
 use Exception;
 use function sprintf;
 
-final class LocalDateTime extends AbstractCypherContainer
+final class LocalDateTime extends AbstractPropertyContainer
 {
     private int $seconds;
     private int $nanoseconds;

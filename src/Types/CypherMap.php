@@ -33,11 +33,11 @@ final class CypherMap implements CypherContainerInterface
     private Map $map;
 
     /**
-     * @param Map<string, T> $map
+     * @param iterable<string, T> $map
      */
-    public function __construct(Map $map)
+    public function __construct(iterable $map = [])
     {
-        $this->map = $map;
+        $this->map = new Map($map);
     }
 
     public function count(): int

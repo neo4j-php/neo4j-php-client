@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-final class Path extends AbstractCypherContainer
+final class Path extends AbstractPropertyContainer
 {
     private CypherList $nodes;
     private CypherList $relationships;

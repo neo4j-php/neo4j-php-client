@@ -19,7 +19,7 @@ use Exception;
 use Laudis\Neo4j\Exception\TimezoneOffsetException;
 use function sprintf;
 
-final class DateTime extends AbstractCypherContainer
+final class DateTime extends AbstractPropertyContainer
 {
     private int $seconds;
     private int $nanoseconds;

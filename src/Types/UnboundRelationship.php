@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-final class UnboundRelationship extends AbstractCypherContainer
+final class UnboundRelationship extends AbstractPropertyContainer
 {
     private int $id;
     private string $type;
