@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: "PHP-CS-Fixer"
-        uses: docker://oskarstark/php-cs-fixer-ga:2.19.0
+        uses: docker://oskarstark/php-cs-fixer-ga:3.0.2
         with:
           args: --dry-run
       - name: "PSalm"
