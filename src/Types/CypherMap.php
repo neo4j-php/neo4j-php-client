@@ -21,6 +21,7 @@ use Ds\Set;
 use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use OutOfBoundsException;
 use Traversable;
+use function json_encode;
 
 /**
  * @template T
@@ -109,8 +110,7 @@ final class CypherMap implements CypherContainerInterface
 
     public function jsonSerialize(): array
     {
-        /** @var array<string, T> */
-        return $this->map->jsonSerialize();
+        return $this->map->toArray();
     }
 
     /**
