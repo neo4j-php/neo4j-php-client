@@ -38,7 +38,7 @@ final class TransactionHelper
      * @template U
      * @template T
      *
-     * @param callable(TransactionInterface<T>):U         $tsxHandler
+     * @param callable(TransactionInterface<T>):U $tsxHandler
      * @param callable():UnmanagedTransactionInterface<T> $tsxFactory
      *
      * @return U
