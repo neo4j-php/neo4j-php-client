@@ -21,7 +21,6 @@ use Ds\Set;
 use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use OutOfBoundsException;
 use Traversable;
-use function json_encode;
 
 /**
  * @template T
