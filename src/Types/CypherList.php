@@ -228,8 +228,12 @@ final class CypherList implements CypherContainerInterface
         return $this->vector->sum();
     }
 
-    public function jsonSerialize()
+    /**
+     * @return array<int, T>
+     */
+    public function jsonSerialize(): array
     {
+        /** @var array<int, T> */
         return $this->vector->jsonSerialize();
     }
 
