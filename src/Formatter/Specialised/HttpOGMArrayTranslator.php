@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter\Specialised;
 
 use Ds\Map;
-use Ds\Vector;
 use function is_array;
 use Iterator;
 use Laudis\Neo4j\Contracts\PointInterface;
