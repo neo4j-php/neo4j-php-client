@@ -19,12 +19,14 @@ use function array_map;
 use function array_reduce;
 use function array_search;
 use function array_slice;
+use function array_sum;
 use ArrayIterator;
 use BadMethodCallException;
-use function array_sum;
 use function count;
 use function in_array;
+use function is_int;
 use Laudis\Neo4j\Contracts\CypherContainerInterface;
+use OutOfBoundsException;
 use function sort;
 use function usort;
 
@@ -165,11 +167,15 @@ final class CypherList implements CypherContainerInterface
     }
 
     /**
-     * @return T|null
+     * @return T
      */
     public function first()
     {
-        return $this->array[0] ?? null;
+        if (!isset($this->array[0])) {
+            throw new OutOfBoundsException('Cannot grab first element of an empty list');
+        }
+
+        return $this->array[0];
     }
 
     /**
@@ -192,8 +198,8 @@ final class CypherList implements CypherContainerInterface
     public function last()
     {
         $key = array_key_last($this->array);
-        if ($key === null) {
-            return null;
+        if (!is_int($key)) {
+            throw new BadMethodCallException('Cannot grab last element from an empty list');
         }
 
         return $this->array[$key];
