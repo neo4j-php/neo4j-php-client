@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use function array_filter;
+use function array_key_exists;
 use function array_key_last;
 use function array_map;
 use function array_reduce;
@@ -90,7 +91,7 @@ final class CypherList implements CypherContainerInterface
 
     public function offsetExists($offset): bool
     {
-        return isset($this->array[$offset]);
+        return array_key_exists($offset, $this->array);
     }
 
     /**
@@ -171,7 +172,7 @@ final class CypherList implements CypherContainerInterface
      */
     public function first()
     {
-        if (!isset($this->array[0])) {
+        if (!array_key_exists(0, $this->array)) {
             throw new OutOfBoundsException('Cannot grab first element of an empty list');
         }
 

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use function array_key_exists;
 use function array_key_first;
 use function array_key_last;
 use function array_keys;
@@ -106,7 +107,7 @@ final class CypherMap implements CypherContainerInterface
      */
     public function offsetExists($offset): bool
     {
-        return isset($this->map[$offset]);
+        return array_key_exists($offset, $this->map);
     }
 
     /**
@@ -174,7 +175,7 @@ final class CypherMap implements CypherContainerInterface
     {
         $keys = $this->keys();
 
-        if (isset($keys[$position])) {
+        if (array_key_exists($position, $keys)) {
             $key = $keys[$position];
 
             return new Pair($key, $this->map[$key]);
@@ -208,7 +209,7 @@ final class CypherMap implements CypherContainerInterface
     {
         $tbr = [];
         foreach ($map as $key => $value) {
-            if (isset($this->map[$key])) {
+            if (array_key_exists($key, $this->map)) {
                 $tbr[$key] = $this->map[$key];
             }
         }
@@ -226,7 +227,7 @@ final class CypherMap implements CypherContainerInterface
         $tbr = $this->map;
         /** @psalm-suppress UnusedForeachValue */
         foreach ($map as $key => $value) {
-            if (isset($tbr[$key])) {
+            if (array_key_exists($key, $tbr)) {
                 unset($tbr[$key]);
             }
         }
@@ -236,7 +237,7 @@ final class CypherMap implements CypherContainerInterface
 
     public function hasKey(string $key): bool
     {
-        return isset($this->map[$key]);
+        return array_key_exists($key, $this->map);
     }
 
     /**
@@ -285,7 +286,7 @@ final class CypherMap implements CypherContainerInterface
             return $this->map[$key] ?? $default;
         }
 
-        if (!isset($this->map[$key])) {
+        if (!array_key_exists($key, $this->map)) {
             throw new OutOfBoundsException();
         }
 
@@ -446,14 +447,14 @@ final class CypherMap implements CypherContainerInterface
     {
         $tbr = [];
         foreach ($map as $key => $value) {
-            if (!isset($this->map[$key])) {
+            if (!array_key_exists($key, $this->map)) {
                 $tbr[$key] = $value;
             }
         }
 
         $cypherMap = new self($map);
         foreach ($this->map as $key => $value) {
-            if (!isset($cypherMap->map[$key])) {
+            if (!array_key_exists($key, $cypherMap->map)) {
                 $tbr[$key] = $value;
             }
         }
