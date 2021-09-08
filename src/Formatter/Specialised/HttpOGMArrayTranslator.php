@@ -43,17 +43,17 @@ final class HttpOGMArrayTranslator
     {
         $rel = $relationship->current();
         $relationship->next();
-        /** @var Map<string, OGMTypes> $map */
-        $map = new Map();
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
         foreach ($rel['properties'] ?? [] as $key => $x) {
             // We only need to recurse over array types.
             // Nested types gets erased in the legacy http api.
             // We need to use JOLT instead for finer control,
             // which will be a different translator.
             if (is_array($x)) {
-                $map->put($key, $this->translateContainer($x));
+                $map[$key] = $this->translateContainer($x);
             } else {
-                $map->put($key, $x);
+                $map[$key] = $x;
             }
         }
 
@@ -73,8 +73,8 @@ final class HttpOGMArrayTranslator
      */
     private function translateCypherList(array $value): CypherList
     {
-        /** @var Vector<OGMTypes> $tbr */
-        $tbr = new Vector();
+        /** @var array<OGMTypes> $tbr */
+        $tbr = [];
         foreach ($value as $x) {
             // We only need to recurse over array types.
             // Nested types gets erased in the legacy http api.
@@ -82,9 +82,9 @@ final class HttpOGMArrayTranslator
             // which will be a different translator.
             if (is_array($x)) {
                 /** @var array<array-key, array|scalar|null> $x */
-                $tbr->push($this->translateContainer($x));
+                $tbr[] = $this->translateContainer($x);
             } else {
-                $tbr->push($x);
+                $tbr[] = $x;
             }
         }
 
@@ -129,11 +129,11 @@ final class HttpOGMArrayTranslator
      */
     private function translateNode(array $nodes, int $id, CypherMap $tbr): Node
     {
-        /** @var Vector<string> */
-        $labels = new Vector();
+        /** @var list<string> */
+        $labels = [];
         foreach ($nodes as $node) {
             if ((int) $node['id'] === $id) {
-                $labels = new Vector($node['labels']);
+                $labels = $node['labels'];
                 break;
             }
         }
