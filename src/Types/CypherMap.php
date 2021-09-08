@@ -144,11 +144,11 @@ final class CypherMap implements CypherContainerInterface
     /**
      * @return Pair<string, T>
      */
-    public function first(): ?Pair
+    public function first(): Pair
     {
         $key = array_key_first($this->map);
         if (!is_string($key)) {
-            return null;
+            throw new BadMethodCallException('Cannot grab first element from an empty map');
         }
 
         return new Pair($key, $this->map[$key]);
@@ -157,11 +157,11 @@ final class CypherMap implements CypherContainerInterface
     /**
      * @return Pair<string, T>
      */
-    public function last(): ?Pair
+    public function last(): Pair
     {
         $key = array_key_last($this->map);
         if (!is_string($key)) {
-            return null;
+            throw new BadMethodCallException('Cannot grab last element from an empty map');
         }
 
         return new Pair($key, $this->map[$key]);
