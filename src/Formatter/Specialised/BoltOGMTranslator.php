@@ -25,8 +25,6 @@ use Bolt\structures\Point3D as BoltPoint3D;
 use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
 use function call_user_func;
-use Ds\Map;
-use Ds\Vector;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
@@ -77,14 +75,14 @@ final class BoltOGMTranslator
 
     private function makeFromBoltNode(BoltNode $node): Node
     {
-        /** @var Map<string, OGMTypes> $properties */
-        $properties = new Map();
+        /** @var array<string, OGMTypes> $properties */
+        $properties = [];
         /**
          * @var string $name
          * @var mixed  $property
          */
         foreach ($node->properties() as $name => $property) {
-            $properties->put($name, $this->mapValueToType($property));
+            $properties[$name] = $this->mapValueToType($property);
         }
 
         /**
@@ -92,7 +90,7 @@ final class BoltOGMTranslator
          */
         return new Node(
             $node->id(),
-            new CypherList(new Vector($node->labels())),
+            new CypherList($node->labels()),
             new CypherMap($properties)
         );
     }
@@ -134,14 +132,14 @@ final class BoltOGMTranslator
 
     private function makeFromBoltRelationship(BoltRelationship $rel): Relationship
     {
-        /** @var Map<string, OGMTypes> $map */
-        $map = new Map();
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
         /**
          * @var string $key
          * @var mixed  $property
          */
         foreach ($rel->properties() as $key => $property) {
-            $map->put($key, $this->mapValueToType($property));
+            $map[$key] = $this->mapValueToType($property);
         }
 
         return new Relationship(
@@ -166,9 +164,9 @@ final class BoltOGMTranslator
     private function makeFromBoltPath(BoltPath $path): Path
     {
         return new Path(
-            new CypherList(new Vector($path->ids())),
-            new CypherList(new Vector($path->rels())),
-            new CypherList(new Vector($path->nodes()))
+            new CypherList($path->ids()),
+            new CypherList($path->rels()),
+            new CypherList($path->nodes())
         );
     }
 
@@ -178,24 +176,24 @@ final class BoltOGMTranslator
     private function mapArray(array $value)
     {
         if (isset($value[0])) {
-            /** @var Vector<OGMTypes> $vector */
-            $vector = new Vector();
+            /** @var array<OGMTypes> $vector */
+            $vector = [];
             /** @var mixed $x */
             foreach ($value as $x) {
-                $vector->push($this->mapValueToType($x));
+                $vector[] = $this->mapValueToType($x);
             }
 
             return new CypherList($vector);
         }
 
-        /** @var Map<string, OGMTypes> */
-        $map = new Map();
+        /** @var array<string, OGMTypes> */
+        $map = [];
         /**
          * @var string $key
          * @var mixed  $x
          */
         foreach ($value as $key => $x) {
-            $map->put($key, $this->mapValueToType($x));
+            $map[$key] = $this->mapValueToType($x);
         }
 
         return new CypherMap($map);

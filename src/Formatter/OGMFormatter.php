@@ -16,8 +16,6 @@ namespace Laudis\Neo4j\Formatter;
 use function array_slice;
 use ArrayIterator;
 use function count;
-use Ds\Map;
-use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -81,11 +79,11 @@ final class OGMFormatter implements FormatterInterface
         /** @var list<list<mixed>> $results */
         $results = array_slice($results, 0, count($results) - 1);
 
-        /** @var Vector<CypherMap<OGMTypes>> $tbr */
-        $tbr = new Vector();
+        /** @var list<CypherMap<OGMTypes>> $tbr */
+        $tbr = [];
 
         foreach ($results as $result) {
-            $tbr->push($this->formatRow($meta, $result));
+            $tbr[] = $this->formatRow($meta, $result);
         }
 
         return new CypherList($tbr);
@@ -96,12 +94,12 @@ final class OGMFormatter implements FormatterInterface
      */
     public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
-        /** @var Vector<CypherList<CypherMap<OGMTypes>>> $tbr */
-        $tbr = new Vector();
+        /** @var list<CypherList<CypherMap<OGMTypes>>> $tbr */
+        $tbr = [];
 
         foreach ($body['results'] as $results) {
             /** @var CypherResult $results */
-            $tbr->push($this->buildResult($results));
+            $tbr[] = $this->buildResult($results);
         }
 
         return new CypherList($tbr);
@@ -116,8 +114,8 @@ final class OGMFormatter implements FormatterInterface
      */
     private function buildResult(array $result): CypherList
     {
-        /** @var Vector<CypherMap<OGMTypes>> $tbr */
-        $tbr = new Vector();
+        /** @var list<CypherMap<OGMTypes>> $tbr */
+        $tbr = [];
 
         $columns = $result['columns'];
         foreach ($result['data'] as $data) {
@@ -125,13 +123,13 @@ final class OGMFormatter implements FormatterInterface
             $nodes = $data['graph']['nodes'];
             $relationship = new ArrayIterator($data['graph']['relationships']);
 
-            /** @var Map<string, OGMTypes> $record */
-            $record = new Map();
+            /** @var array<string, OGMTypes> $record */
+            $record = [];
             foreach ($data['row'] as $i => $value) {
-                $record->put($columns[$i], $this->httpTranslator->translate($meta, $relationship, $nodes, $value));
+                $record[$columns[$i]] = $this->httpTranslator->translate($meta, $relationship, $nodes, $value);
             }
 
-            $tbr->push(new CypherMap($record));
+            $tbr[] = new CypherMap($record);
         }
 
         return new CypherList($tbr);
@@ -145,10 +143,10 @@ final class OGMFormatter implements FormatterInterface
      */
     private function formatRow(array $meta, array $result): CypherMap
     {
-        /** @var Map<string, OGMTypes> $map */
-        $map = new Map();
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
         foreach ($meta['fields'] as $i => $column) {
-            $map->put($column, $this->boltTranslator->mapValueToType($result[$i]));
+            $map[$column] = $this->boltTranslator->mapValueToType($result[$i]);
         }
 
         return new CypherMap($map);

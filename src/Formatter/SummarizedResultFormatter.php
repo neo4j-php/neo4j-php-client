@@ -83,7 +83,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         $summary = new ResultSummary(
             $counters,
             $connection->getDatabaseInfo(),
-            new CypherList(new Vector()),
+            new CypherList(),
             null,
             null,
             $statement,
@@ -149,7 +149,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         $summary = new ResultSummary(
             $counters,
             $connection->getDatabaseInfo(),
-            new CypherList(new Vector()),
+            new CypherList(),
             null,
             null,
             $statement,
@@ -169,14 +169,14 @@ final class SummarizedResultFormatter implements FormatterInterface
 
     public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
-        /** @var Vector<SummarizedResult<T>> */
-        $tbr = new Vector();
+        /** @var list<SummarizedResult<T>> */
+        $tbr = [];
 
         $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);
         $i = 0;
         foreach ($statements as $statement) {
             $result = $body['results'][$i];
-            $tbr->push($this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i)));
+            $tbr[] = $this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i));
             ++$i;
         }
 
