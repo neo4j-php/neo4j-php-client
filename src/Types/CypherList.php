@@ -24,6 +24,7 @@ use function array_sum;
 use ArrayIterator;
 use BadMethodCallException;
 use function count;
+use Countable;
 use function in_array;
 use function is_int;
 use Laudis\Neo4j\Contracts\CypherContainerInterface;
@@ -36,7 +37,7 @@ use function usort;
  *
  * @implements CypherContainerInterface<int, T>
  */
-final class CypherList implements CypherContainerInterface
+final class CypherList implements CypherContainerInterface, Countable
 {
     /** @var list<T> */
     private array $array;

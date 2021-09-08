@@ -24,6 +24,7 @@ use function array_values;
 use ArrayIterator;
 use BadMethodCallException;
 use function count;
+use Countable;
 use function func_num_args;
 use function in_array;
 use function is_array;
@@ -46,7 +47,7 @@ use function usort;
  *
  * @psalm-immutable
  */
-final class CypherMap implements CypherContainerInterface
+final class CypherMap implements CypherContainerInterface, Countable
 {
     /** @var array<string, T> */
     private array $map;
