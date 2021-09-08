@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use Ds\Vector;
 use function in_array;
 use function is_int;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
