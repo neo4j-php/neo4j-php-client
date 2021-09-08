@@ -43,7 +43,7 @@ final class CypherList implements CypherContainerInterface
     /**
      * @param iterable<T> $array
      */
-    public function __construct(iterable $array)
+    public function __construct(iterable $array = [])
     {
         if ($array instanceof self) {
             $this->array = $array->array;
