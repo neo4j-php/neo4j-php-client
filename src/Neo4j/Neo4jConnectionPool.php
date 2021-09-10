@@ -24,7 +24,6 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Enum\RoutingRoles;
-use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 use function random_int;
 use function str_starts_with;
@@ -86,33 +85,40 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     private function routingTable(ConnectionInterface $connection): RoutingTable
     {
         if ($this->table === null || $this->table->getTtl() < time()) {
+            /** @var Bolt */
             $bolt = $connection->getImplementation();
             $protocol = $connection->getProtocol();
             if ($protocol->compare(ConnectionProtocol::BOLT_V43()) >= 0) {
-                $route = $bolt->route()['rt'];
-                ['servers' => $servers, 'ttl' => $ttl ] = $route;
+                /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
+                $route = $bolt->route();
+                ['servers' => $servers, 'ttl' => $ttl ] = $route['rt'];
             } elseif ($protocol->compare(ConnectionProtocol::BOLT_V40()) >= 0) {
                 $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
+                /**
+                 * @var iterable<array{addresses: list<string>, role:string}> $servers
+                 * @var int                       $ttl
+                 */
                 ['servers' => $servers, 'ttl' => $ttl] = $bolt->pullAll();
             } else {
                 $bolt->run('CALL dbms.cluster.overview()');
+                /** @var list<array{addresses: list<string>, role: string}> */
                 $response = $bolt->pullAll();
 
                 /** @var iterable<array{addresses: list<string>, role:string}> $servers */
                 $servers = [];
                 $ttl = time() + 3600;
                 foreach ($response as $server) {
-                    /** @var CypherList<string> $addresses */
-                    $addresses = $server->get('addresses');
-                    $addresses = $addresses->filter(static fn (string $x) => str_starts_with($x, 'bolt://'));
+                    $addresses = $server['addresses'];
+                    $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
                     /**
                      * @psalm-suppress InvalidArrayAssignment
                      *
                      * @var array{addresses: list<string>, role:string}
                      */
-                    $servers[] = ['addresses' => $addresses->toArray(), 'role' => $server->get('role')];
+                    $servers[] = ['addresses' => $addresses, 'role' => $server['role']];
                 }
             }
+
             $this->table = new RoutingTable($servers, $ttl);
         }
 

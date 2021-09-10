@@ -20,6 +20,9 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * @implements ConnectionInterface<ClientInterface>
+ */
 final class HttpConnection implements ConnectionInterface
 {
     private string $serverAgent;

@@ -51,7 +51,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         ?UriInterface $server = null
     ): ConnectionInterface {
         $connectingTo = $server ?? $uri;
-        $key = $connectingTo->getHost().':'.$connectingTo->getPort();
+        $key = $connectingTo->getHost().':'.($connectingTo->getPort() ?? '7687');
         if (!isset($this->connectionCache[$key])) {
             self::$connectionCache[$key] = [];
         }

@@ -47,7 +47,11 @@ final class ParameterHelper
      */
     public static function asMap(iterable $iterable): CypherMap
     {
-        return new CypherMap($iterable);
+        $tbr = [];
+        foreach ($iterable as $key => $value) {
+            $tbr[(string) $key] = $value;
+        }
+        return new CypherMap($tbr);
     }
 
     /**

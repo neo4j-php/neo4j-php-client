@@ -37,6 +37,7 @@ use Throwable;
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
+    /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
     /** @var ConnectionInterface<Bolt> */
     private ConnectionInterface $connection;

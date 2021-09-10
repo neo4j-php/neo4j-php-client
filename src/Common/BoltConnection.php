@@ -57,7 +57,7 @@ final class BoltConnection implements ConnectionInterface
         $this->socket = $socket;
     }
 
-    public function getImplementation()
+    public function getImplementation(): Bolt
     {
         return $this->bolt;
     }
