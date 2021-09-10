@@ -43,6 +43,7 @@ final class UrlAuth implements AuthenticateInterface
     {
         if (substr_count($uri->getUserInfo(), ':') === 1) {
             [$user, $pass] = explode(':', $uri->getUserInfo());
+
             return Authenticate::basic($user, $pass);
         }
 

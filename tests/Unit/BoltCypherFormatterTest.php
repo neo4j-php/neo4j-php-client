@@ -87,6 +87,7 @@ final class BoltCypherFormatterTest extends TestCase
     private function getConnection(): BoltConnection
     {
         $connection = $this->getMockBuilder(IConnection::class)->getMock();
+
         return new BoltConnection(
             new Bolt($connection),
             $connection,

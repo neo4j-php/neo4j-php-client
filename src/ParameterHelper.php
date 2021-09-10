@@ -51,6 +51,7 @@ final class ParameterHelper
         foreach ($iterable as $key => $value) {
             $tbr[(string) $key] = $value;
         }
+
         return new CypherMap($tbr);
     }
 
