@@ -296,7 +296,7 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 * ext-bcmath *
 * ext-sockets *
 * ext-json **
-* ext-ds ***
+* ext-ds (minimum version 1.3.0) ***
 
 (*) Needed to implement the bolt protocol
 
