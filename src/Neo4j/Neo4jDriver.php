@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\Bolt;
 use Exception;
+use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\Session;
@@ -92,7 +93,7 @@ final class Neo4jDriver implements DriverInterface
             return new self(
                 $uri,
                 $authenticate ?? Authenticate::fromUrl(),
-                new Neo4jConnectionPool(),
+                new Neo4jConnectionPool(new BoltConnectionPool()),
                 $configuration ?? DriverConfiguration::default(),
                 $formatter,
                 $socketTimeout
@@ -102,7 +103,7 @@ final class Neo4jDriver implements DriverInterface
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl(),
-            new Neo4jConnectionPool(),
+            new Neo4jConnectionPool(new BoltConnectionPool()),
             $configuration ?? DriverConfiguration::default(),
             OGMFormatter::create(),
             $socketTimeout
