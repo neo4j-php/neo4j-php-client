@@ -39,9 +39,20 @@ final class Node extends AbstractPropertyContainer
     }
 
     /**
+     * @deprecated
+     * @see self::getLabels
+     *
      * @return CypherList<string>
      */
     public function labels(): CypherList
+    {
+        return $this->labels;
+    }
+
+    /**
+     * @return CypherList<string>
+     */
+    public function getLabels(): CypherList
     {
         return $this->labels;
     }
@@ -57,7 +68,16 @@ final class Node extends AbstractPropertyContainer
         return $this->properties;
     }
 
+    /**
+     * @deprecated
+     * @see self::getId
+     */
     public function id(): int
+    {
+        return $this->id;
+    }
+
+    public function getId(): int
     {
         return $this->id;
     }
