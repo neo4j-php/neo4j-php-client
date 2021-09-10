@@ -133,11 +133,10 @@ final class Session implements SessionInterface
      */
     private function beginInstantTransaction(SessionConfiguration $config): TransactionInterface
     {
-        return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
-            $this->formatter,
-            $this->acquireConnection(TransactionConfiguration::default(), $config)
-        );
+        $connection = $this->acquireConnection(TransactionConfiguration::default(), $config);
+        $connection->open();
+
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection);
     }
 
     /**

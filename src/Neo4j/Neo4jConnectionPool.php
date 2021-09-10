@@ -14,19 +14,15 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\Bolt;
-use Bolt\connection\StreamSocket;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
-use Laudis\Neo4j\Enum\ConnectionProtocol;
-use function explode;
-use Laudis\Neo4j\Bolt\BoltDriver;
-use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
@@ -63,11 +59,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $table = $this->routingTable($connection);
         $server = $this->getNextServer($table, $config->getAccessMode());
 
-        $socket = new StreamSocket($server->getHost(), $server->getPort() ?? 7687, $socketTimeout);
+        $authenticate = $authenticate->extractFromUri($uri);
 
-        $this->configureSsl($uri, $table, $server, $socket);
-
-        return TransactionHelper::connectionFromSocket($socket, $uri, $userAgent, $authenticate, $config);
+        return $this->pool->acquire($uri, $authenticate, $socketTimeout, $userAgent, $config, $table, $server);
     }
 
     /**
@@ -123,24 +117,5 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
 
         return $this->table;
-    }
-
-    private function configureSsl(UriInterface $uri, RoutingTable $table, Uri $server, StreamSocket $socket): void
-    {
-        $scheme = $uri->getScheme();
-        $explosion = explode('+', $scheme, 2);
-        $sslConfig = $explosion[1] ?? '';
-
-        if (str_starts_with('s', $sslConfig)) {
-            // We have to pass a different host when working with ssl on aura.
-            // There is a strange behaviour where if we pass the uri host on a single
-            // instance aura deployment, we need to pass the original uri for the
-            // ssl configuration to be valid.
-            if ($table->getWithRole()->count() > 1) {
-                TransactionHelper::enableSsl($server->getHost(), $sslConfig, $socket);
-            } else {
-                TransactionHelper::enableSsl($uri->getHost(), $sslConfig, $socket);
-            }
-        }
     }
 }

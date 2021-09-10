@@ -39,4 +39,10 @@ interface ConnectionInterface
     public function getAccessMode(): AccessMode;
 
     public function getDatabaseInfo(): DatabaseInfo;
+
+    public function open(): void;
+
+    public function close(): void;
+
+    public function isOpen(): bool;
 }

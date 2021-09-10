@@ -31,4 +31,9 @@ interface AuthenticateInterface
      * @throws Exception
      */
     public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void;
+
+    /**
+     * Extracts the Uri login information and returns an authentication strategy not requiring the url anymore.
+     */
+    public function extractFromUri(UriInterface $uri): self;
 }

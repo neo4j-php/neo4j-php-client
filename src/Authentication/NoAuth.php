@@ -30,4 +30,9 @@ final class NoAuth implements AuthenticateInterface
         $bolt->setScheme('none');
         $bolt->init($userAgent, '', '');
     }
+
+    public function extractFromUri(UriInterface $uri): AuthenticateInterface
+    {
+        return $this;
+    }
 }

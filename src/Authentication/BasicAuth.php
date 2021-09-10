@@ -46,4 +46,9 @@ final class BasicAuth implements AuthenticateInterface
     {
         $bolt->init($userAgent, $this->username, $this->password);
     }
+
+    public function extractFromUri(UriInterface $uri): AuthenticateInterface
+    {
+        return $this;
+    }
 }
