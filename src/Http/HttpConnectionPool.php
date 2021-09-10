@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use function json_encode;
-use Laudis\Neo4j\Common\Connection;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -77,7 +76,7 @@ CYPHER
         /** @var array{0: array{name: string, version: string, edition: string}} $results */
         $results = (new BasicFormatter())->formatHttpResult($response, $data, null)->first();
 
-        return new Connection(
+        return new HttpConnection(
             $this->client,
             $results[0]['name'].'-'.$results[0]['edition'].'/'.$results[0]['version'],
             $uri,

@@ -32,13 +32,13 @@ final class ConnectionProtocol extends TypedEnum
     private const BOLT_V40 = 'bolt-v40';
     private const BOLT_V41 = 'bolt-v41';
     private const BOLT_V42 = 'bolt-v42';
-    private const BOLT_V43 = 'bolt-43';
+    private const BOLT_V43 = 'bolt-v43';
     private const HTTP = 'http';
 
     public static function determineBoltVersion(Bolt $bolt): self
     {
         switch ($bolt->getProtocolVersion()) {
-            case 3.0:
+            case 3:
                 $tbr = self::BOLT_V3();
                 break;
             case 4.0:
@@ -57,5 +57,22 @@ final class ConnectionProtocol extends TypedEnum
         }
 
         return $tbr;
+    }
+
+    public function compare(ConnectionProtocol $protocol): int
+    {
+        $x = 0;
+        $y = 0;
+        foreach (array_values(self::getAllInstances()) as $index => $instance) {
+            if ($instance === $this) {
+                $x = $index;
+            }
+
+            if ($instance === $protocol) {
+                $y = $index;
+            }
+        }
+
+        return $x - $y;
     }
 }

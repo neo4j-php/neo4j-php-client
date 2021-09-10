@@ -36,11 +36,17 @@ final class UrlAuth implements AuthenticateInterface
 
     public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
     {
+        $this->extractFromUri($uri)->authenticateBolt($bolt, $uri, $userAgent);
+    }
+
+    public function extractFromUri(UriInterface $uri): AuthenticateInterface
+    {
         if (substr_count($uri->getUserInfo(), ':') === 1) {
             [$user, $pass] = explode(':', $uri->getUserInfo());
-            Authenticate::basic($user, $pass)->authenticateBolt($bolt, $uri, $userAgent);
-        } else {
-            Authenticate::disabled()->authenticateBolt($bolt, $uri, $userAgent);
+
+            return Authenticate::basic($user, $pass);
         }
+
+        return Authenticate::disabled();
     }
 }
