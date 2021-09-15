@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
-use Ds\Map;
 use function is_array;
 use Iterator;
 use Laudis\Neo4j\Contracts\PointInterface;
@@ -194,8 +193,8 @@ final class HttpOGMArrayTranslator
      */
     private function translateCypherMap(array $value): CypherMap
     {
-        /** @var Map<string, OGMTypes> $tbr */
-        $tbr = new Map();
+        /** @var array<string, OGMTypes> $tbr */
+        $tbr = [];
         foreach ($value as $key => $x) {
             // We only need to recurse over array types.
             // Nested types gets erased in the legacy http api.
@@ -203,9 +202,9 @@ final class HttpOGMArrayTranslator
             // which will be a different translator.
             if (is_array($x)) {
                 /** @var array<array-key, scalar|array|null> $x */
-                $tbr->put($key, $this->translateContainer($x));
+                $tbr[$key] = $this->translateContainer($x);
             } else {
-                $tbr->put($key, $x);
+                $tbr[$key] = $x;
             }
         }
 
