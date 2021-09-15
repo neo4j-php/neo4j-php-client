@@ -19,251 +19,90 @@ use function array_key_last;
 use function array_keys;
 use function array_reverse;
 use function array_slice;
-use function array_sum;
 use function array_values;
-use ArrayIterator;
 use BadMethodCallException;
-use function count;
-use Countable;
 use function func_num_args;
-use function in_array;
 use function is_array;
-use function is_float;
-use function is_int;
 use function is_string;
 use function ksort;
-use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use Laudis\Neo4j\Databags\Pair;
 use OutOfBoundsException;
 use function sort;
-use Traversable;
 use function uksort;
 use function usort;
 
 /**
- * @template T
+ * @template TValue
  *
- * @implements CypherContainerInterface<string, T>
+ * @extends AbstractCypherSequence<string, TValue>
  *
  * @psalm-immutable
  */
-final class CypherMap implements CypherContainerInterface, Countable
+final class CypherMap extends AbstractCypherSequence
 {
-    /** @var array<string, T> */
-    private array $map;
+    /**
+     * @pure
+     */
+    public static function fromIterable(iterable $iterable): AbstractCypherSequence
+    {
+        return new self($iterable);
+    }
 
     /**
-     * @param iterable<string, T> $map
+     * @param iterable<array-key, TValue> $iterable
      */
-    public function __construct(iterable $map = [])
+    public function __construct(iterable $iterable = [])
     {
-        if ($map instanceof self) {
-            $this->map = $map->map;
-        } elseif (is_array($map)) {
-            $this->map = $map;
+        if (is_array($iterable)) {
+            $this->sequence = $iterable;
         } else {
-            $this->map = [];
-            foreach ($map as $key => $value) {
-                $this->map[$key] = $value;
+            $this->sequence = [];
+            foreach ($iterable as $key => $value) {
+                $this->sequence[(string) $key] = $value;
             }
         }
     }
 
-    public function count(): int
-    {
-        return count($this->map);
-    }
-
     /**
-     * @return CypherMap<T>
-     */
-    public function copy(): CypherMap
-    {
-        $map = $this->map;
-
-        return new CypherMap($map);
-    }
-
-    public function isEmpty(): bool
-    {
-        return count($this->map) === 0;
-    }
-
-    /**
-     * @return array<string, T>
-     */
-    public function toArray(): array
-    {
-        return $this->map;
-    }
-
-    public function getIterator()
-    {
-        /** @var Traversable<string, T> */
-        return new ArrayIterator($this->map);
-    }
-
-    /**
-     * @param string $offset
-     */
-    public function offsetExists($offset): bool
-    {
-        return array_key_exists($offset, $this->map);
-    }
-
-    /**
-     * @param string $offset
-     *
-     * @return T
-     */
-    public function offsetGet($offset)
-    {
-        return $this->map[$offset];
-    }
-
-    /**
-     * @param string $offset
-     * @param T      $value
-     */
-    public function offsetSet($offset, $value)
-    {
-        throw new BadMethodCallException('A cypher map is immutable');
-    }
-
-    /**
-     * @param string $offset
-     */
-    public function offsetUnset($offset)
-    {
-        throw new BadMethodCallException('A cypher map is immutable');
-    }
-
-    public function jsonSerialize(): array
-    {
-        return $this->map;
-    }
-
-    /**
-     * @return Pair<string, T>
+     * @return Pair<string, TValue>
      */
     public function first(): Pair
     {
-        $key = array_key_first($this->map);
+        $key = array_key_first($this->sequence);
         if (!is_string($key)) {
             throw new BadMethodCallException('Cannot grab first element from an empty map');
         }
 
-        return new Pair($key, $this->map[$key]);
+        return new Pair($key, $this->sequence[$key]);
     }
 
     /**
-     * @return Pair<string, T>
+     * @return Pair<string, TValue>
      */
     public function last(): Pair
     {
-        $key = array_key_last($this->map);
+        $key = array_key_last($this->sequence);
         if (!is_string($key)) {
             throw new BadMethodCallException('Cannot grab last element from an empty map');
         }
 
-        return new Pair($key, $this->map[$key]);
+        return new Pair($key, $this->sequence[$key]);
     }
 
     /**
-     * @return Pair<string, T>
+     * @return Pair<string, TValue>
      */
-    public function skip(int $position): ?Pair
+    public function skip(int $position): Pair
     {
         $keys = $this->keys();
 
         if (array_key_exists($position, $keys)) {
             $key = $keys[$position];
 
-            return new Pair($key, $this->map[$key]);
+            return new Pair($key, $this->sequence[$key]);
         }
 
-        return null;
-    }
-
-    /**
-     * @param iterable<string, T> $values
-     *
-     * @return CypherMap<T>
-     */
-    public function merge(iterable $values): CypherMap
-    {
-        $tbr = $this->map;
-
-        foreach ($values as $key => $value) {
-            $tbr[$key] = $value;
-        }
-
-        return new self($tbr);
-    }
-
-    /**
-     * @param iterable<string, T> $map
-     *
-     * @return CypherMap<T>
-     */
-    public function intersect(iterable $map): CypherMap
-    {
-        $tbr = [];
-        foreach ($map as $key => $value) {
-            if (array_key_exists($key, $this->map)) {
-                $tbr[$key] = $this->map[$key];
-            }
-        }
-
-        return new self($tbr);
-    }
-
-    /**
-     * @param iterable<string, T> $map
-     *
-     * @return CypherMap<T>
-     */
-    public function diff($map): CypherMap
-    {
-        $tbr = $this->map;
-        /** @psalm-suppress UnusedForeachValue */
-        foreach ($map as $key => $value) {
-            if (array_key_exists($key, $tbr)) {
-                unset($tbr[$key]);
-            }
-        }
-
-        return new self($tbr);
-    }
-
-    public function hasKey(string $key): bool
-    {
-        return array_key_exists($key, $this->map);
-    }
-
-    /**
-     * @param T $value
-     */
-    public function hasValue($value): bool
-    {
-        return in_array($value, $this->map, true);
-    }
-
-    /**
-     * @param callable(string, T):bool $callback
-     *
-     * @return CypherMap<T>
-     */
-    public function filter(callable $callback): CypherMap
-    {
-        $tbr = [];
-        foreach ($this->map as $key => $value) {
-            if ($callback($key, $value)) {
-                $tbr[$key] = $value;
-            }
-        }
-
-        return new self($tbr);
+        throw new OutOfBoundsException();
     }
 
     /**
@@ -275,8 +114,8 @@ final class CypherMap implements CypherContainerInterface, Countable
      *
      * @return (
      *           func_num_args() is 1
-     *           ? T
-     *           : T|TDefault
+     *           ? TValue
+     *           : TValue|TDefault
      *           )
      *
      * @psalm-mutation-free
@@ -284,14 +123,14 @@ final class CypherMap implements CypherContainerInterface, Countable
     public function get(string $key, $default = null)
     {
         if (func_num_args() === 2) {
-            return $this->map[$key] ?? $default;
+            return $this->sequence[$key] ?? $default;
         }
 
-        if (!array_key_exists($key, $this->map)) {
+        if (!array_key_exists($key, $this->sequence)) {
             throw new OutOfBoundsException();
         }
 
-        return $this->map[$key];
+        return $this->sequence[$key];
     }
 
     /**
@@ -299,33 +138,16 @@ final class CypherMap implements CypherContainerInterface, Countable
      */
     public function keys(): array
     {
-        return array_keys($this->map);
+        return array_keys($this->sequence);
     }
 
     /**
-     * @template U
-     *
-     * @param callable(string, T):U $callback
-     *
-     * @return CypherMap<U>
-     */
-    public function map(callable $callback): CypherMap
-    {
-        $tbr = [];
-        foreach ($this->map as $key => $value) {
-            $tbr[$key] = $callback($key, $value);
-        }
-
-        return new self($tbr);
-    }
-
-    /**
-     * @return array<Pair<string, T>>
+     * @return array<Pair<string, TValue>>
      */
     public function pairs(): array
     {
         $tbr = [];
-        foreach ($this->map as $key => $value) {
+        foreach ($this->sequence as $key => $value) {
             $tbr[] = new Pair($key, $value);
         }
 
@@ -333,65 +155,13 @@ final class CypherMap implements CypherContainerInterface, Countable
     }
 
     /**
-     * @template TInitial
-     *
-     * @param callable(TInitial|null, string, T):TInitial $callback
-     * @param TInitial|null                               $initial
-     *
-     * @return TInitial
-     */
-    public function reduce(callable $callback, $initial = null)
-    {
-        foreach ($this->map as $key => $value) {
-            $initial = $callback($initial, $key, $value);
-        }
-
-        return $initial;
-    }
-
-    /**
-     * @return CypherMap<T>
-     */
-    public function reversed(): CypherMap
-    {
-        return new self(array_reverse($this->map, true));
-    }
-
-    /**
-     * @return CypherMap<T>
-     */
-    public function slice(int $offset, int $length = null): CypherMap
-    {
-        return new self(array_slice($this->map, $offset, $length, true));
-    }
-
-    /**
-     * @param (callable(T, T):int)|null $comparator
-     *
-     * @return CypherMap<T>
-     */
-    public function sorted(?callable $comparator = null): CypherMap
-    {
-        $tbr = $this->map;
-        if ($comparator === null) {
-            sort($tbr);
-        } else {
-            /** @psalm-suppress ImpureFunctionCall */
-            usort($tbr, $comparator);
-        }
-
-        /** @var array<string, T> $tbr */
-        return new self($tbr);
-    }
-
-    /**
      * @param (callable(string, string):int)|null $comparator
      *
-     * @return CypherMap<T>
+     * @return CypherMap<TValue>
      */
     public function ksorted(callable $comparator = null): CypherMap
     {
-        $tbr = $this->map;
+        $tbr = $this->sequence;
         if ($comparator === null) {
             ksort($tbr);
         } else {
@@ -399,40 +169,52 @@ final class CypherMap implements CypherContainerInterface, Countable
             uksort($tbr, $comparator);
         }
 
-        /** @var array<string, T> $tbr */
         return new self($tbr);
     }
 
     /**
-     * @return float|int
-     */
-    public function sum()
-    {
-        $first = $this->map[array_key_first($this->map) ?? ''] ?? null;
-        if (!is_int($first) && !is_float($first)) {
-            return 0;
-        }
-
-        return array_sum($this->map);
-    }
-
-    /**
-     * @return list<T>
+     * @return list<TValue>
      */
     public function values(): array
     {
-        return array_values($this->map);
+        return array_values($this->sequence);
     }
 
     /**
-     * @param iterable<string, T> $map
+     * @param iterable<TValue> $map
      *
-     * @return CypherMap<T>
+     * @return CypherMap<TValue>
      */
-    public function union(iterable $map): CypherMap
+    public function xor(iterable $map): CypherMap
     {
-        $tbr = $this->map;
+        $tbr = [];
         foreach ($map as $key => $value) {
+            if (!array_key_exists($key, $this->sequence)) {
+                $tbr[$key] = $value;
+            }
+        }
+
+        $cypherMap = new self($map);
+        foreach ($this->sequence as $key => $value) {
+            if (!array_key_exists($key, $cypherMap->sequence)) {
+                $tbr[$key] = $value;
+            }
+        }
+
+        return new self($tbr);
+    }
+
+    /**
+     * @param iterable<array-key, TValue> $values
+     *
+     * @return static
+     */
+    public function merge(iterable $values): self
+    {
+        $other = new self($values);
+        $tbr = $this->sequence;
+
+        foreach ($other as $key => $value) {
             $tbr[$key] = $value;
         }
 
@@ -440,31 +222,88 @@ final class CypherMap implements CypherContainerInterface, Countable
     }
 
     /**
-     * @param iterable<string, T> $map
+     * @param iterable<array-key, TValue> $map
      *
-     * @return CypherMap<T>
+     * @return CypherMap<TValue>
      */
-    public function xor(iterable $map): CypherMap
+    public function union(iterable $map): CypherMap
+    {
+        $tbr = $this->sequence;
+        foreach ($map as $key => $value) {
+            $tbr[(string) $key] = $value;
+        }
+
+        return new self($tbr);
+    }
+
+    /**
+     * @param iterable<array-key, TValue> $map
+     *
+     * @return static
+     */
+    public function intersect(iterable $map): self
     {
         $tbr = [];
+        // @psalm-suppress UnusedForeachValue
         foreach ($map as $key => $value) {
-            if (!array_key_exists($key, $this->map)) {
-                $tbr[$key] = $value;
+            if (array_key_exists($key, $this->sequence)) {
+                $tbr[$key] = $this->sequence[$key];
             }
         }
 
-        $cypherMap = new self($map);
-        foreach ($this->map as $key => $value) {
-            if (!array_key_exists($key, $cypherMap->map)) {
-                $tbr[$key] = $value;
+        return $this::fromIterable($tbr);
+    }
+
+    /**
+     * @param iterable<array-key, TValue> $map
+     *
+     * @return CypherMap<TValue>
+     */
+    public function diff($map): CypherMap
+    {
+        $tbr = $this->sequence;
+
+        /** @psalm-suppress UnusedForeachValue */
+        foreach ($map as $key => $value) {
+            if (array_key_exists($key, $tbr)) {
+                unset($tbr[$key]);
             }
         }
 
         return new self($tbr);
     }
 
-    public function __debugInfo()
+    /**
+     * @return static
+     */
+    public function reversed(): self
     {
-        return $this->map;
+        return $this::fromIterable(array_reverse($this->sequence, true));
+    }
+
+    /**
+     * @return CypherMap<TValue>
+     */
+    public function slice(int $offset, int $length = null): self
+    {
+        return new self(array_slice($this->sequence, $offset, $length, true));
+    }
+
+    /**
+     * @param (callable(TValue, TValue):int)|null $comparator
+     *
+     * @return static
+     */
+    public function sorted(?callable $comparator = null): self
+    {
+        $tbr = $this->sequence;
+        if ($comparator === null) {
+            sort($tbr);
+        } else {
+            /** @psalm-suppress ImpureFunctionCall */
+            usort($tbr, $comparator);
+        }
+
+        return new self($tbr);
     }
 }
