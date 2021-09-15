@@ -16,8 +16,6 @@ namespace Laudis\Neo4j\Formatter;
 use function array_slice;
 use Bolt\structures\Path;
 use function count;
-use Ds\Map;
-use Ds\Vector;
 use function get_class;
 use function gettype;
 use function is_array;
@@ -53,10 +51,10 @@ final class BasicFormatter implements FormatterInterface
     {
         $results = array_slice($results, 0, count($results) - 1);
 
-        /** @var Vector<CypherMap<scalar|array|null>> */
-        $tbr = new Vector();
+        /** @var list<CypherMap<scalar|array|null>> */
+        $tbr = [];
         foreach ($results as $result) {
-            $tbr->push($this->formatRow($meta, $result));
+            $tbr[] = $this->formatRow($meta, $result);
         }
 
         return new CypherList($tbr);
@@ -64,11 +62,11 @@ final class BasicFormatter implements FormatterInterface
 
     public function formatHttpResult(ResponseInterface $response, array $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
     {
-        /** @var Vector<CypherList<CypherMap<scalar|array|null>>> */
-        $tbr = new Vector();
+        /** @var list<CypherList<CypherMap<scalar|array|null>>> */
+        $tbr = [];
 
         foreach ($body['results'] as $results) {
-            $tbr->push($this->buildResult($results));
+            $tbr[] = $this->buildResult($results);
         }
 
         return new CypherList($tbr);
@@ -81,19 +79,19 @@ final class BasicFormatter implements FormatterInterface
      */
     private function buildResult(array $result): CypherList
     {
-        /** @psalm-var Vector<CypherMap<null|scalar|array>> */
-        $tbr = new Vector();
+        /** @var list<CypherMap<scalar|array|null>> */
+        $tbr = [];
 
         $columns = $result['columns'];
         foreach ($result['data'] as $dataRow) {
             $row = $dataRow['row'];
-            /** @psalm-var Map<string,null|scalar|array> $map */
-            $map = new Map();
-            $vector = new Vector($row);
+            /** @var array<string, scalar|array|null> $map */
+            $map = [];
+            $vector = $row;
             foreach ($columns as $index => $key) {
-                $map->put($key, $vector->get($index));
+                $map[$key] = $vector[$index];
             }
-            $tbr->push(new CypherMap($map));
+            $tbr[] = new CypherMap($map);
         }
 
         return new CypherList($tbr);
@@ -106,10 +104,10 @@ final class BasicFormatter implements FormatterInterface
      */
     private function formatRow(array $meta, array $result): CypherMap
     {
-        /** @var Map<string, scalar|array|null> $map */
-        $map = new Map();
+        /** @var array<string, scalar|array|null> $map */
+        $map = [];
         foreach ($meta['fields'] as $i => $column) {
-            $map->put($column, $this->mapValue($result[$i]));
+            $map[$column] = $this->mapValue($result[$i]);
         }
 
         return new CypherMap($map);

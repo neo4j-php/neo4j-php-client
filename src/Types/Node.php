@@ -13,17 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use BadMethodCallException;
-use Ds\Map;
-use Ds\Vector;
-use function get_class;
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
-final class Node extends AbstractCypherContainer
+final class Node extends AbstractPropertyContainer
 {
     private int $id;
     /** @var CypherList<string> */
@@ -42,21 +38,10 @@ final class Node extends AbstractCypherContainer
         $this->properties = $properties;
     }
 
-    public static function makeFromHttpNode(array $node): self
-    {
-        /**
-         * @psalm-suppress PossiblyUndefinedStringArrayOffset
-         * @psalm-suppress MixedArgumentTypeCoercion
-         * @psalm-suppress MixedArgument
-         */
-        return new self(
-            $node['id'],
-            new CypherList(new Vector($node['labels'])),
-            new CypherMap(new Map($node['properties']))
-        );
-    }
-
     /**
+     * @deprecated
+     * @see self::getLabels
+     *
      * @return CypherList<string>
      */
     public function labels(): CypherList
@@ -65,14 +50,34 @@ final class Node extends AbstractCypherContainer
     }
 
     /**
+     * @return CypherList<string>
+     */
+    public function getLabels(): CypherList
+    {
+        return $this->labels;
+    }
+
+    /**
      * @return CypherMap<OGMTypes>
+     *
+     * @deprecated
+     * @see self::getProperties
      */
     public function properties(): CypherMap
     {
         return $this->properties;
     }
 
+    /**
+     * @deprecated
+     * @see self::getId
+     */
     public function id(): int
+    {
+        return $this->id;
+    }
+
+    public function getId(): int
     {
         return $this->id;
     }
@@ -96,24 +101,8 @@ final class Node extends AbstractCypherContainer
         yield 'properties' => $this->properties;
     }
 
-    /**
-     * @return OGMTypes
-     */
-    public function __get(string $key)
+    public function getProperties(): CypherMap
     {
-        return $this->getProperty($key);
-    }
-
-    /**
-     * @param OGMTypes $value
-     */
-    public function __set(string $key, $value)
-    {
-        throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
-    }
-
-    public function __isset(string $key)
-    {
-        return $this->properties->offsetExists($key);
+        return $this->properties;
     }
 }

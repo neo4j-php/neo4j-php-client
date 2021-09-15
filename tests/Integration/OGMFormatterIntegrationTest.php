@@ -147,11 +147,6 @@ CYPHER, [], $alias);
      * @dataProvider connectionAliases
      *
      * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
      */
     public function testDate(string $alias): void
     {
@@ -162,11 +157,13 @@ CYPHER, [], $alias);
 
         self::assertEquals(3, $results->count());
 
-        self::assertInstanceOf(Date::class, $results[0]['published_at']);
-        self::assertEquals(18048, $results[0]['published_at']->getDays());
+        $publishedAt = $results[0]['published_at'];
+        self::assertInstanceOf(Date::class, $publishedAt);
+        self::assertEquals(18048, $publishedAt->getDays());
         self::assertEquals(
             json_encode(['days' => 18048], JSON_THROW_ON_ERROR),
-            json_encode($results[0]['published_at'], JSON_THROW_ON_ERROR));
+            json_encode($publishedAt, JSON_THROW_ON_ERROR));
+        self::assertEquals(18048, $publishedAt->days);
 
         self::assertInstanceOf(Date::class, $results[1]['published_at']);
         self::assertEquals(18049, $results[1]['published_at']->getDays());
@@ -191,6 +188,7 @@ CYPHER, [], $alias);
         $time = $results->first()->get('time');
         self::assertInstanceOf(Time::class, $time);
         self::assertEquals((float) 12 * 60 * 60, $time->getSeconds());
+        self::assertEquals((float) 12 * 60 * 60, $time->seconds);
     }
 
     /**
@@ -211,6 +209,7 @@ CYPHER, [], $alias);
         $time = $results->first()->get('time');
         self::assertInstanceOf(LocalTime::class, $time);
         self::assertEquals(33822000000000, $time->getNanoseconds());
+        self::assertEquals(33822000000000, $time->nanoseconds);
     }
 
     /**
@@ -228,11 +227,15 @@ CYPHER, [], $alias);
 
         self::assertEquals(3, $results->count());
 
-        self::assertInstanceOf(DateTime::class, $results[0]['created_at']);
-        self::assertEquals(1559414432, $results[0]['created_at']->getSeconds());
-        self::assertEquals(142000000, $results[0]['created_at']->getNanoseconds());
-        self::assertEquals(3600, $results[0]['created_at']->getTimeZoneOffsetSeconds());
-        self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($results[0]['created_at'], JSON_THROW_ON_ERROR));
+        $createdAt = $results[0]['created_at'];
+        self::assertInstanceOf(DateTime::class, $createdAt);
+        self::assertEquals(1559414432, $createdAt->getSeconds());
+        self::assertEquals(142000000, $createdAt->getNanoseconds());
+        self::assertEquals(3600, $createdAt->getTimeZoneOffsetSeconds());
+        self::assertEquals(1559414432, $createdAt->seconds);
+        self::assertEquals(142000000, $createdAt->nanoseconds);
+        self::assertEquals(3600, $createdAt->tzOffsetSeconds);
+        self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
 
         self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
         self::assertEquals(1559471012, $results[1]['created_at']->getSeconds());
@@ -252,6 +255,8 @@ CYPHER, [], $alias);
         $result = $this->client->run('RETURN localdatetime() as local', [], $alias)->first()->get('local');
 
         self::assertInstanceOf(LocalDateTime::class, $result);
+        self::assertIsInt($result->seconds);
+        self::assertIsInt($result->nanoseconds);
         $date = $result->toDateTime();
         self::assertEquals($result->getSeconds(), $date->getTimestamp());
     }
@@ -281,6 +286,10 @@ CYPHER, [], $alias);
         $duration = $results[1]['aDuration'];
         self::assertInstanceOf(Duration::class, $duration);
         self::assertEquals(new Duration(5, 1, 43200, 0), $duration);
+        self::assertEquals(5, $duration->months);
+        self::assertEquals(1, $duration->days);
+        self::assertEquals(43200, $duration->seconds);
+        self::assertEquals(0, $duration->nanoseconds);
         self::assertEquals(new Duration(0, 22, 71509, 500000000), $results[2]['aDuration']);
         self::assertEquals(new Duration(0, 17, 43200, 0), $results[3]['aDuration']);
         self::assertEquals(new Duration(0, 0, 91, 123456789), $results[4]['aDuration']);
@@ -299,7 +308,6 @@ CYPHER, [], $alias);
      * @dataProvider connectionAliases
      *
      * @throws JsonException
-     * @throws JsonException
      */
     public function testPoint(string $alias): void
     {
@@ -314,6 +322,10 @@ CYPHER, [], $alias);
         self::assertEquals(4.0, $point->getY());
         self::assertEquals('cartesian', $point->getCrs());
         self::assertGreaterThan(0, $point->getSrid());
+        self::assertEquals(3.0, $point->x);
+        self::assertEquals(4.0, $point->y);
+        self::assertEquals('cartesian', $point->crs);
+        self::assertGreaterThan(0, $point->srid);
         self::assertEquals(
             json_encode([
                 'x' => 3,
@@ -352,6 +364,8 @@ CYPHER, [], $alias);
         self::assertEquals(['User'], $u->labels()->toArray());
         self::assertEquals($email, $u->properties()['email']);
         self::assertEquals($uuid, $u->properties()['uuid']);
+        self::assertEquals($email, $u->email);
+        self::assertEquals($uuid, $u->uuid);
         self::assertEquals(
             json_encode([
                 'id' => $u->id(),
@@ -392,6 +406,8 @@ CYPHER, [], $alias)->first()->get('xy');
         self::assertInstanceOf(Relationship::class, $result);
         self::assertEquals('XY', $result->getType());
         self::assertEquals(['x' => 1, 'y' => 1], $result->getProperties()->toArray());
+        self::assertEquals(1, $result->x);
+        self::assertEquals(1, $result->y);
         self::assertEquals(
             json_encode([
                 'id' => $result->getId(),

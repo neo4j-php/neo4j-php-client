@@ -16,7 +16,7 @@ namespace Laudis\Neo4j\Types;
 use DateInterval;
 use Exception;
 
-final class Duration extends AbstractCypherContainer
+final class Duration extends AbstractPropertyContainer
 {
     private int $months;
     private int $days;

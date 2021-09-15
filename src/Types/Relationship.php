@@ -16,7 +16,7 @@ namespace Laudis\Neo4j\Types;
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
-final class Relationship extends AbstractCypherContainer
+final class Relationship extends AbstractPropertyContainer
 {
     private int $id;
 

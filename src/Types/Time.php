@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-final class Time extends AbstractCypherContainer
+final class Time extends AbstractPropertyContainer
 {
     private float $seconds;
 

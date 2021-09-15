@@ -13,23 +13,31 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use function array_flip;
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
 use Exception;
 use function explode;
-use Laudis\Neo4j\Common\TransactionHelper;
+use const FILTER_VALIDATE_IP;
+use function filter_var;
+use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
+use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
-use function str_starts_with;
 
 /**
  * @implements ConnectionPoolInterface<Bolt>
  */
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
+    /** @var array<string, list<ConnectionInterface<Bolt>>> */
+    private static array $connectionCache = [];
+
     /**
      * @throws Exception
      */
@@ -38,24 +46,92 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         AuthenticateInterface $authenticate,
         float $socketTimeout,
         string $userAgent,
-        SessionConfiguration $config
+        SessionConfiguration $config,
+        ?RoutingTable $table = null,
+        ?UriInterface $server = null
     ): ConnectionInterface {
-        $host = $uri->getHost();
-        $socket = new StreamSocket($host, $uri->getPort() ?? 7687, $socketTimeout);
+        $connectingTo = $server ?? $uri;
+        $key = $connectingTo->getHost().':'.($connectingTo->getPort() ?? '7687');
+        if (!isset($this->connectionCache[$key])) {
+            self::$connectionCache[$key] = [];
+        }
 
-        $this->configureSsl($uri, $host, $socket);
+        foreach (self::$connectionCache[$key] as $connection) {
+            if ($connection->isOpen()) {
+                return $connection;
+            }
+        }
 
-        return TransactionHelper::connectionFromSocket($socket, $uri, $userAgent, $authenticate, $config);
+        $socket = new StreamSocket($connectingTo->getHost(), $connectingTo->getPort() ?? 7687, $socketTimeout);
+
+        $this->configureSsl($uri, $connectingTo, $socket, $table);
+
+        $bolt = new Bolt($socket);
+        $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
+
+        /**
+         * @var array{'name': 0, 'version': 1, 'edition': 2}
+         * @psalm-suppress all
+         */
+        $fields = array_flip($bolt->run(<<<'CYPHER'
+CALL dbms.components()
+YIELD name, versions, edition
+UNWIND versions AS version
+RETURN name, version, edition
+CYPHER)['fields']);
+
+        /** @var array{0: array{0: string, 1: string, 2: string}} $results */
+        $results = $bolt->pullAll();
+
+        $connection = new BoltConnection(
+            $bolt,
+            $socket,
+            $results[0][$fields['name']].'-'.$results[0][$fields['edition']].'/'.$results[0][$fields['version']],
+            $connectingTo,
+            $results[0][$fields['version']],
+            ConnectionProtocol::determineBoltVersion($bolt),
+            $config->getAccessMode(),
+            new DatabaseInfo($config->getDatabase())
+        );
+
+        self::$connectionCache[$key][] = $connection;
+
+        return $connection;
     }
 
-    private function configureSsl(UriInterface $uri, string $host, StreamSocket $socket): void
+    private function configureSsl(UriInterface $uri, UriInterface $server, StreamSocket $socket, ?RoutingTable $table): void
     {
         $scheme = $uri->getScheme();
         $explosion = explode('+', $scheme, 2);
         $sslConfig = $explosion[1] ?? '';
 
         if (str_starts_with('s', $sslConfig)) {
-            TransactionHelper::enableSsl($host, $sslConfig, $socket);
+            // We have to pass a different host when working with ssl on aura.
+            // There is a strange behaviour where if we pass the uri host on a single
+            // instance aura deployment, we need to pass the original uri for the
+            // ssl configuration to be valid.
+            if ($table && $table->getWithRole()->count() > 1) {
+                $this->enableSsl($server->getHost(), $sslConfig, $socket);
+            } else {
+                $this->enableSsl($uri->getHost(), $sslConfig, $socket);
+            }
+        }
+    }
+
+    private function enableSsl(string $host, string $sslConfig, StreamSocket $sock): void
+    {
+        $options = [
+            'verify_peer' => true,
+            'peer_name' => $host,
+        ];
+        if (!filter_var($host, FILTER_VALIDATE_IP)) {
+            $options['SNI_enabled'] = true;
+        }
+        if ($sslConfig === 's') {
+            $sock->setSslContextOptions($options);
+        } elseif ($sslConfig === 'ssc') {
+            $options['allow_self_signed'] = true;
+            $sock->setSslContextOptions($options);
         }
     }
 }

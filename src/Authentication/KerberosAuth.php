@@ -38,4 +38,9 @@ final class KerberosAuth implements AuthenticateInterface
         $bolt->setScheme('kerberos');
         $bolt->init($userAgent, $this->token, $this->token);
     }
+
+    public function extractFromUri(UriInterface $uri): AuthenticateInterface
+    {
+        return $this;
+    }
 }

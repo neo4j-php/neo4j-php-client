@@ -41,6 +41,12 @@
                 <directory name="src"/>
             </errorLevel>
         </DeprecatedInterface>
+        <UnusedForeachValue>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+                <directory name="src"/>
+            </errorLevel>
+        </UnusedForeachValue>
     </issueHandlers>
     <stubs>
         <file name="./vendor/vimeo/psalm/stubs/ext-ds.phpstub"/>

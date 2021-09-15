@@ -24,40 +24,40 @@ use function sprintf;
  */
 abstract class AbstractCypherContainer implements CypherContainerInterface
 {
-    public function jsonSerialize()
-    {
-        $tbr = [];
-
-        foreach ($this as $key => $value) {
-            $tbr[$key] = $value;
-        }
-
-        return $tbr;
-    }
+    /** @var array<string, CypherContainerInterface|scalar|null>|null */
+    private ?array $cachedSerialized = null;
 
     /**
-     * @psalm-suppress UnusedVariable
+     * @return array<string, CypherContainerInterface|scalar|null>
      */
-    public function offsetExists($offset): bool
+    public function jsonSerialize(): array
     {
-        foreach ($this as $key => $value) {
-            if ($key === $offset) {
-                return true;
+        if ($this->cachedSerialized === null) {
+            $tbr = [];
+
+            foreach ($this as $key => $value) {
+                $tbr[$key] = $value;
             }
+
+            $this->cachedSerialized = $tbr;
         }
 
-        return false;
+        return $this->cachedSerialized;
+    }
+
+    public function offsetExists($offset): bool
+    {
+        return isset($this->jsonSerialize()[$offset]);
     }
 
     public function offsetGet($offset)
     {
-        foreach ($this as $key => $value) {
-            if ($key === $offset) {
-                return $value;
-            }
+        $serialized = $this->jsonSerialize();
+        if (!isset($serialized[$offset])) {
+            throw new InvalidArgumentException("Offset: $offset does not exists for class: ".static::class);
         }
 
-        throw new InvalidArgumentException("Offset: $offset does not exists for class: ".static::class);
+        return $serialized[$offset];
     }
 
     public function offsetSet($offset, $value): void

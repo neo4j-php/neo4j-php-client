@@ -14,19 +14,16 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\Bolt;
-use Bolt\connection\StreamSocket;
 use Exception;
-use function explode;
-use Laudis\Neo4j\Bolt\BoltDriver;
-use Laudis\Neo4j\Common\TransactionHelper;
+use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Enum\RoutingRoles;
-use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 use function random_int;
 use function str_starts_with;
@@ -40,6 +37,12 @@ use function time;
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
     private ?RoutingTable $table = null;
+    private BoltConnectionPool $pool;
+
+    public function __construct(BoltConnectionPool $pool)
+    {
+        $this->pool = $pool;
+    }
 
     /**
      * @throws Exception
@@ -51,14 +54,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         string $userAgent,
         SessionConfiguration $config
     ): ConnectionInterface {
-        $table = $this->routingTable($uri, $authenticate);
+        $connection = $this->pool->acquire($uri, $authenticate, $socketTimeout, $userAgent, $config);
+        $table = $this->routingTable($connection);
         $server = $this->getNextServer($table, $config->getAccessMode());
 
-        $socket = new StreamSocket($server->getHost(), $server->getPort() ?? 7687, $socketTimeout);
+        $authenticate = $authenticate->extractFromUri($uri);
 
-        $this->configureSsl($uri, $table, $server, $socket);
-
-        return TransactionHelper::connectionFromSocket($socket, $uri, $userAgent, $authenticate, $config);
+        return $this->pool->acquire($uri, $authenticate, $socketTimeout, $userAgent, $config, $table, $server);
     }
 
     /**
@@ -76,69 +78,50 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @param BasicDriver $driver
+     * @param ConnectionInterface<Bolt> $driver
      *
      * @throws Exception
      */
-    private function routingTable(UriInterface $uri, AuthenticateInterface $authenticate): RoutingTable
+    private function routingTable(ConnectionInterface $connection): RoutingTable
     {
         if ($this->table === null || $this->table->getTtl() < time()) {
-            $session = BoltDriver::create($uri, null, $authenticate)->createSession();
-            $row = $session->run(<<<'CYPHER'
-CALL dbms.components() YIELD versions UNWIND versions AS version RETURN version
-CYPHER
-            )->first();
-            /** @var string */
-            $version = $row->get('version');
+            /** @var Bolt */
+            $bolt = $connection->getImplementation();
+            $protocol = $connection->getProtocol();
+            if ($protocol->compare(ConnectionProtocol::BOLT_V43()) >= 0) {
+                /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
+                $route = $bolt->route();
+                ['servers' => $servers, 'ttl' => $ttl ] = $route['rt'];
+            } elseif ($protocol->compare(ConnectionProtocol::BOLT_V40()) >= 0) {
+                $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
+                /**
+                 * @var iterable<array{addresses: list<string>, role:string}> $servers
+                 * @var int                       $ttl
+                 */
+                ['servers' => $servers, 'ttl' => $ttl] = $bolt->pullAll();
+            } else {
+                $bolt->run('CALL dbms.cluster.overview()');
+                /** @var list<array{addresses: list<string>, role: string}> */
+                $response = $bolt->pullAll();
 
-            if (str_starts_with($version, '3')) {
-                $response = $session->run('CALL dbms.cluster.overview()');
-
-                /** @var iterable<array{addresses: list<string>, role:string}> $values */
-                $values = [];
+                /** @var iterable<array{addresses: list<string>, role:string}> $servers */
+                $servers = [];
+                $ttl = time() + 3600;
                 foreach ($response as $server) {
-                    /** @var CypherList<string> $addresses */
-                    $addresses = $server->get('addresses');
-                    $addresses = $addresses->filter(static fn (string $x) => str_starts_with($x, 'bolt://'));
+                    $addresses = $server['addresses'];
+                    $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
                     /**
                      * @psalm-suppress InvalidArrayAssignment
                      *
                      * @var array{addresses: list<string>, role:string}
                      */
-                    $values[] = ['addresses' => $addresses->toArray(), 'role' => $server->get('role')];
+                    $servers[] = ['addresses' => $addresses, 'role' => $server['role']];
                 }
-
-                $this->table = new RoutingTable($values, time() + 3600);
-            } else {
-                $response = $session->run('CALL dbms.routing.getRoutingTable({context: []})')->first();
-                /** @var iterable<array{addresses: list<string>, role:string}> $values */
-                $values = $response->get('servers');
-                /** @var int $ttl */
-                $ttl = $response->get('ttl');
-
-                $this->table = new RoutingTable($values, time() + $ttl);
             }
+
+            $this->table = new RoutingTable($servers, $ttl);
         }
 
         return $this->table;
-    }
-
-    private function configureSsl(UriInterface $uri, RoutingTable $table, Uri $server, StreamSocket $socket): void
-    {
-        $scheme = $uri->getScheme();
-        $explosion = explode('+', $scheme, 2);
-        $sslConfig = $explosion[1] ?? '';
-
-        if (str_starts_with('s', $sslConfig)) {
-            // We have to pass a different host when working with ssl on aura.
-            // There is a strange behaviour where if we pass the uri host on a single
-            // instance aura deployment, we need to pass the original uri for the
-            // ssl configuration to be valid.
-            if ($table->getWithRole()->count() > 1) {
-                TransactionHelper::enableSsl($server->getHost(), $sslConfig, $socket);
-            } else {
-                TransactionHelper::enableSsl($uri->getHost(), $sslConfig, $socket);
-            }
-        }
     }
 }

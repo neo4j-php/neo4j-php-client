@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use Bolt\Bolt;
+use Bolt\connection\IConnection;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
@@ -20,25 +22,24 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Psr\Http\Message\UriInterface;
 
 /**
- * @template T
- * @implements ConnectionInterface<T>
+ * @implements ConnectionInterface<Bolt>
  */
-final class Connection implements ConnectionInterface
+final class BoltConnection implements ConnectionInterface
 {
-    /** @var T */
-    private $socket;
+    private Bolt $bolt;
     private string $serverAgent;
     private UriInterface $serverAddress;
     private string $serverVersion;
     private ConnectionProtocol $protocol;
     private AccessMode $accessMode;
     private DatabaseInfo $databaseInfo;
+    private IConnection $socket;
 
-    /**
-     * @param T $socket
-     */
+    private bool $isOpen = true;
+
     public function __construct(
-        $socket,
+        Bolt $bolt,
+        IConnection $socket,
         string $serverAgent,
         UriInterface $serverAddress,
         string $serverVersion,
@@ -46,18 +47,19 @@ final class Connection implements ConnectionInterface
         AccessMode $accessMode,
         DatabaseInfo $databaseInfo
     ) {
-        $this->socket = $socket;
+        $this->bolt = $bolt;
         $this->serverAgent = $serverAgent;
         $this->serverAddress = $serverAddress;
         $this->serverVersion = $serverVersion;
         $this->protocol = $protocol;
         $this->accessMode = $accessMode;
         $this->databaseInfo = $databaseInfo;
+        $this->socket = $socket;
     }
 
-    public function getImplementation()
+    public function getImplementation(): Bolt
     {
-        return $this->socket;
+        return $this->bolt;
     }
 
     public function getServerAgent(): string
@@ -88,5 +90,24 @@ final class Connection implements ConnectionInterface
     public function getDatabaseInfo(): DatabaseInfo
     {
         return $this->databaseInfo;
+    }
+
+    public function isOpen(): bool
+    {
+        return $this->isOpen;
+    }
+
+    public function open(): void
+    {
+        if (!$this->isOpen) {
+            $this->isOpen = true;
+        }
+    }
+
+    public function close(): void
+    {
+        if ($this->isOpen) {
+            $this->isOpen = false;
+        }
     }
 }

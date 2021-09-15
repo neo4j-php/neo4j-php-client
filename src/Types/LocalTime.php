@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-final class LocalTime extends AbstractCypherContainer
+final class LocalTime extends AbstractPropertyContainer
 {
     private int $nanoseconds;
 

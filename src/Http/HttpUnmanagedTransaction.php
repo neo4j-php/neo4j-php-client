@@ -118,4 +118,9 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
 
         HttpHelper::interpretResponse($response);
     }
+
+    public function __destruct()
+    {
+        $this->connection->close();
+    }
 }

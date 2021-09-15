@@ -13,32 +13,53 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use function array_filter;
+use function array_key_exists;
+use function array_key_last;
+use function array_map;
+use function array_reduce;
+use function array_search;
+use function array_slice;
+use function array_sum;
+use ArrayIterator;
 use BadMethodCallException;
-use Ds\Vector;
+use function count;
+use Countable;
+use function in_array;
+use function is_int;
 use Laudis\Neo4j\Contracts\CypherContainerInterface;
-use Traversable;
+use OutOfBoundsException;
+use function sort;
+use function usort;
 
 /**
  * @template T
  *
  * @implements CypherContainerInterface<int, T>
  */
-final class CypherList implements CypherContainerInterface
+final class CypherList implements CypherContainerInterface, Countable
 {
-    /** @var Vector<T> */
-    private Vector $vector;
+    /** @var list<T> */
+    private array $array;
 
     /**
-     * @param Vector<T> $vector
+     * @param iterable<T> $array
      */
-    public function __construct(Vector $vector)
+    public function __construct(iterable $array = [])
     {
-        $this->vector = new Vector($vector);
+        if ($array instanceof self) {
+            $this->array = $array->array;
+        } else {
+            $this->array = [];
+            foreach ($array as $value) {
+                $this->array[] = $value;
+            }
+        }
     }
 
     public function count(): int
     {
-        return $this->vector->count();
+        return count($this->array);
     }
 
     /**
@@ -46,12 +67,14 @@ final class CypherList implements CypherContainerInterface
      */
     public function copy(): CypherList
     {
-        return new CypherList($this->vector->copy());
+        $tbr = $this->array;
+
+        return new CypherList($tbr);
     }
 
     public function isEmpty(): bool
     {
-        return $this->vector->isEmpty();
+        return count($this->array) === 0;
     }
 
     /**
@@ -59,18 +82,17 @@ final class CypherList implements CypherContainerInterface
      */
     public function toArray(): array
     {
-        return $this->vector->toArray();
+        return $this->array;
     }
 
     public function getIterator()
     {
-        /** @var Traversable<int, T> */
-        return $this->vector->getIterator();
+        return new ArrayIterator($this->array);
     }
 
     public function offsetExists($offset): bool
     {
-        return $this->vector->offsetExists($offset);
+        return array_key_exists($offset, $this->array);
     }
 
     /**
@@ -82,8 +104,7 @@ final class CypherList implements CypherContainerInterface
      */
     public function offsetGet($offset)
     {
-        /** @psalm-suppress InvalidReturnStatement */
-        return $this->vector->offsetGet($offset);
+        return $this->array[$offset];
     }
 
     /**
@@ -105,20 +126,36 @@ final class CypherList implements CypherContainerInterface
 
     /**
      * @param T ...$values
+     *
+     * @deprecated Use hasValue instead
      */
     public function contains(...$values): bool
     {
-        return $this->vector->contains(...$values);
+        foreach ($values as $value) {
+            if (!in_array($value, $this->array, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
-     * @param (callable(T):bool)|null $callback
+     * @param T $value
+     */
+    public function hasValue($value): bool
+    {
+        return in_array($value, $this->array, true);
+    }
+
+    /**
+     * @param (callable(T):bool) $callback
      *
      * @return CypherList<T>
      */
-    public function filter(callable $callback = null): CypherList
+    public function filter(callable $callback): CypherList
     {
-        return new CypherList($this->vector->filter($callback));
+        return new CypherList(array_filter($this->array, $callback));
     }
 
     /**
@@ -128,7 +165,7 @@ final class CypherList implements CypherContainerInterface
      */
     public function find($value)
     {
-        return $this->vector->find($value);
+        return array_search($value, $this->array, true);
     }
 
     /**
@@ -136,7 +173,11 @@ final class CypherList implements CypherContainerInterface
      */
     public function first()
     {
-        return $this->vector->first();
+        if (!array_key_exists(0, $this->array)) {
+            throw new OutOfBoundsException('Cannot grab first element of an empty list');
+        }
+
+        return $this->array[0];
     }
 
     /**
@@ -144,16 +185,13 @@ final class CypherList implements CypherContainerInterface
      */
     public function get(int $index)
     {
-        return $this->vector->get($index);
+        return $this->array[$index];
     }
 
     public function join(?string $glue = null): string
     {
-        if ($glue === null) {
-            return $this->vector->join();
-        }
-
-        return $this->vector->join($glue);
+        /** @psalm-suppress MixedArgumentTypeCoercion */
+        return implode($glue ?? '', $this->array);
     }
 
     /**
@@ -161,7 +199,12 @@ final class CypherList implements CypherContainerInterface
      */
     public function last()
     {
-        return $this->vector->last();
+        $key = array_key_last($this->array);
+        if (!is_int($key)) {
+            throw new BadMethodCallException('Cannot grab last element from an empty list');
+        }
+
+        return $this->array[$key];
     }
 
     /**
@@ -173,7 +216,7 @@ final class CypherList implements CypherContainerInterface
      */
     public function map(callable $callback): CypherList
     {
-        return new CypherList($this->vector->map($callback));
+        return new CypherList(array_map($callback, $this->array));
     }
 
     /**
@@ -183,18 +226,26 @@ final class CypherList implements CypherContainerInterface
      */
     public function merge($values): CypherList
     {
-        return new CypherList($this->vector->merge($values));
+        $tbr = $this->array;
+        foreach ($values as $value) {
+            $tbr[] = $value;
+        }
+
+        return new CypherList($tbr);
     }
 
     /**
-     * @param callable(T, T|null):T $callback
-     * @param T|null                $initial
+     * @template U
      *
-     * @return T|null
+     * @param callable(U|null, T):U $callback
+     * @param U|null                $initial
+     *
+     * @return U|null
      */
     public function reduce(callable $callback, $initial = null)
     {
-        return $this->vector->reduce($callback, $initial);
+        /** @var U|null */
+        return array_reduce($this->array, $callback, $initial);
     }
 
     /**
@@ -202,12 +253,12 @@ final class CypherList implements CypherContainerInterface
      */
     public function reversed(): CypherList
     {
-        return new CypherList($this->vector->reversed());
+        return new CypherList(array_reverse($this->array));
     }
 
     public function slice(int $index, int $length = null): CypherList
     {
-        return new CypherList($this->vector->slice($index, $length));
+        return new CypherList(array_slice($this->array, $index, $length));
     }
 
     /**
@@ -217,7 +268,14 @@ final class CypherList implements CypherContainerInterface
      */
     public function sorted(callable $comparator = null): CypherList
     {
-        return new CypherList($this->vector->sorted($comparator));
+        $tbr = $this->array;
+        if ($comparator === null) {
+            sort($tbr);
+        } else {
+            usort($tbr, $comparator);
+        }
+
+        return new CypherList($tbr);
     }
 
     /**
@@ -225,12 +283,16 @@ final class CypherList implements CypherContainerInterface
      */
     public function sum()
     {
-        return $this->vector->sum();
+        return array_sum($this->array);
     }
 
-    public function jsonSerialize()
+    /**
+     * @return array<int, T>
+     */
+    public function jsonSerialize(): array
     {
-        return $this->vector->jsonSerialize();
+        /** @var array<int, T> */
+        return $this->array;
     }
 
     /**
@@ -238,6 +300,6 @@ final class CypherList implements CypherContainerInterface
      */
     public function __debugInfo()
     {
-        return $this->vector->toArray();
+        return $this->array;
     }
 }

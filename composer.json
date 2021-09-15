@@ -30,7 +30,6 @@
         "psr/http-factory": "^1.0",
         "psr/http-client": "^1.0",
         "php-http/message": "^1.0",
-        "php-ds/php-ds": "1.*",
         "php-http/message-factory": "^1.0",
         "stefanak-michal/bolt": "^2.5.1",
         "symfony/polyfill-php80": "^1.2"
@@ -47,7 +46,7 @@
         "nyholm/psr7-server": "^1.0",
         "kriswallsmith/buzz": "^1.2",
         "vimeo/psalm": "^4.7",
-        "friendsofphp/php-cs-fixer": "^3.0",
+        "friendsofphp/php-cs-fixer": "3.0.2",
         "psalm/plugin-phpunit": "^0.15.1",
         "vlucas/phpdotenv": "^5.0"
     },

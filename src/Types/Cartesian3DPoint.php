@@ -15,7 +15,7 @@ namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Contracts\PointInterface;
 
-final class Cartesian3DPoint extends AbstractCypherContainer implements PointInterface
+final class Cartesian3DPoint extends AbstractPropertyContainer implements PointInterface
 {
     private float $z;
     private float $x;

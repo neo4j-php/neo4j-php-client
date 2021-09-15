@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\error\MessageException;
-use Ds\Vector;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -38,6 +37,7 @@ use Throwable;
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
+    /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
     /** @var ConnectionInterface<Bolt> */
     private ConnectionInterface $connection;
@@ -60,7 +60,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $tbr = $this->runStatements($statements);
 
         if ($this->finished) {
-            throw new Neo4jException(new Vector([new Neo4jError('0', 'Transaction already finished')]));
+            throw new Neo4jException([new Neo4jError('0', 'Transaction already finished')]);
         }
 
         try {
@@ -68,7 +68,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->finished = true;
         } catch (Exception $e) {
             $code = TransactionHelper::extractCode($e);
-            throw new Neo4jException(new Vector([new Neo4jError($code ?? '', $e->getMessage())]), $e);
+            throw new Neo4jException([new Neo4jError($code ?? '', $e->getMessage())], $e);
         }
 
         return $tbr;
@@ -77,7 +77,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function rollback(): void
     {
         if ($this->finished) {
-            throw new Neo4jException(new Vector([new Neo4jError('0', 'Transaction already finished')]));
+            throw new Neo4jException([new Neo4jError('0', 'Transaction already finished')]);
         }
 
         try {
@@ -85,7 +85,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->finished = true;
         } catch (Exception $e) {
             $code = TransactionHelper::extractCode($e) ?? '';
-            throw new Neo4jException(new Vector([new Neo4jError($code, $e->getMessage())]), $e);
+            throw new Neo4jException([new Neo4jError($code, $e->getMessage())], $e);
         }
     }
 
@@ -110,8 +110,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function runStatements(iterable $statements): CypherList
     {
-        /** @var Vector<T> $tbr */
-        $tbr = new Vector();
+        /** @var list<T> $tbr */
+        $tbr = [];
         foreach ($statements as $statement) {
             $extra = ['db' => $this->database];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
@@ -126,18 +126,18 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             } catch (Throwable $e) {
                 if ($e instanceof MessageException) {
                     $code = TransactionHelper::extractCode($e) ?? '';
-                    throw new Neo4jException(new Vector([new Neo4jError($code, $e->getMessage())]), $e);
+                    throw new Neo4jException([new Neo4jError($code, $e->getMessage())], $e);
                 }
                 throw $e;
             }
-            $tbr->push($this->formatter->formatBoltResult(
+            $tbr[] = $this->formatter->formatBoltResult(
                 $meta,
                 $results,
                 $this->connection,
                 $run - $start,
                 $end - $start,
                 $statement
-            ));
+            );
         }
 
         return new CypherList($tbr);
@@ -146,5 +146,10 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private function getBolt(): Bolt
     {
         return $this->connection->getImplementation();
+    }
+
+    public function __destruct()
+    {
+        $this->connection->close();
     }
 }
