@@ -296,13 +296,10 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 * ext-bcmath *
 * ext-sockets *
 * ext-json **
-* ext-ds (minimum version 1.3.0) ***
 
 (*) Needed to implement the bolt protocol
 
 (**) Needed to implement the http protocol
-
-(***) Needed for optimal performance
 
 
 If you plan on using the HTTP drivers, make sure you have [psr-7](https://www.php-fig.org/psr/psr-7/), [psr-17](https://www.php-fig.org/psr/psr-17/) and [psr-18](https://www.php-fig.org/psr/psr-18/) implementations included into the project. If you don't have any, you can install them via composer:
