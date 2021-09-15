@@ -110,7 +110,7 @@ CYPHER)['fields']);
             // There is a strange behaviour where if we pass the uri host on a single
             // instance aura deployment, we need to pass the original uri for the
             // ssl configuration to be valid.
-            if ($table && $table->getWithRole()->count() > 1) {
+            if ($table && count($table->getWithRole()) > 1) {
                 $this->enableSsl($server->getHost(), $sslConfig, $socket);
             } else {
                 $this->enableSsl($uri->getHost(), $sslConfig, $socket);

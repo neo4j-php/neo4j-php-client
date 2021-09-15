@@ -74,7 +74,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $servers = $table->getWithRole(RoutingRoles::FOLLOWER());
         }
 
-        return Uri::create($servers->get(random_int(0, $servers->count() - 1)));
+        return Uri::create($servers[random_int(0, count($servers) - 1)]);
     }
 
     /**
