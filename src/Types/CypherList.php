@@ -62,20 +62,6 @@ final class CypherList extends AbstractCypherSequence
     /**
      * @return TValue
      */
-    public function get(int $index)
-    {
-        return $this->sequence[$index];
-    }
-
-    public function join(?string $glue = null): string
-    {
-        /** @psalm-suppress MixedArgumentTypeCoercion */
-        return implode($glue ?? '', $this->sequence);
-    }
-
-    /**
-     * @return TValue
-     */
     public function last()
     {
         $key = array_key_last($this->sequence);

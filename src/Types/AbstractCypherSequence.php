@@ -20,9 +20,12 @@ use ArrayIterator;
 use BadMethodCallException;
 use function count;
 use Countable;
+use function func_num_args;
+use function implode;
 use function in_array;
 use IteratorAggregate;
 use JsonSerializable;
+use OutOfBoundsException;
 
 /**
  * @template TKey of array-key
@@ -229,5 +232,39 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     final public function __debugInfo()
     {
         return $this->sequence;
+    }
+
+    /**
+     * @template TDefault
+     *
+     * @param TDefault $default
+     *
+     * @throws OutOfBoundsException
+     *
+     * @return (
+     *           func_num_args() is 1
+     *           ? TValue
+     *           : TValue|TDefault
+     *           )
+     *
+     * @psalm-mutation-free
+     */
+    public function get(string $key, $default = null)
+    {
+        if (func_num_args() === 2) {
+            return $this->sequence[$key] ?? $default;
+        }
+
+        if (!array_key_exists($key, $this->sequence)) {
+            throw new OutOfBoundsException();
+        }
+
+        return $this->sequence[$key];
+    }
+
+    public function join(?string $glue = null): string
+    {
+        /** @psalm-suppress MixedArgumentTypeCoercion */
+        return implode($glue ?? '', $this->sequence);
     }
 }

@@ -117,34 +117,6 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
-     * @template TDefault
-     *
-     * @param TDefault $default
-     *
-     * @throws OutOfBoundsException
-     *
-     * @return (
-     *           func_num_args() is 1
-     *           ? TValue
-     *           : TValue|TDefault
-     *           )
-     *
-     * @psalm-mutation-free
-     */
-    public function get(string $key, $default = null)
-    {
-        if (func_num_args() === 2) {
-            return $this->sequence[$key] ?? $default;
-        }
-
-        if (!array_key_exists($key, $this->sequence)) {
-            throw new OutOfBoundsException();
-        }
-
-        return $this->sequence[$key];
-    }
-
-    /**
      * @return list<string>
      */
     public function keys(): array
