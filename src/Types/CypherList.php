@@ -13,18 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use function array_filter;
 use function array_key_exists;
 use function array_key_last;
-use function array_map;
-use function array_reduce;
-use function array_search;
 use function array_slice;
-use function array_sum;
-use ArrayIterator;
 use BadMethodCallException;
-use function count;
-use function in_array;
 use function is_int;
 use OutOfBoundsException;
 use function sort;
@@ -40,13 +32,18 @@ use function usort;
 final class CypherList extends AbstractCypherSequence
 {
     /**
-     * @param iterable<TValue> $array
+     * @param iterable<TValue> $iterable
      */
-    public function __construct(iterable $array = [])
+    public function __construct(iterable $iterable = [])
     {
-        $this->sequence = [];
-        foreach ($array as $value) {
-            $this->sequence[] = $value;
+        if ($iterable instanceof self) {
+            /** @psalm-suppress InvalidPropertyAssignmentValue */
+            $this->sequence = $iterable->sequence;
+        } else {
+            $this->sequence = [];
+            foreach ($iterable as $value) {
+                $this->sequence[] = $value;
+            }
         }
     }
 
@@ -77,7 +74,7 @@ final class CypherList extends AbstractCypherSequence
     }
 
     /**
-     * @return T
+     * @return TValue
      */
     public function last()
     {
@@ -90,9 +87,9 @@ final class CypherList extends AbstractCypherSequence
     }
 
     /**
-     * @param iterable<T> $values
+     * @param iterable<TValue> $values
      *
-     * @return CypherList<T>
+     * @return CypherList<TValue>
      */
     public function merge($values): CypherList
     {
@@ -121,7 +118,7 @@ final class CypherList extends AbstractCypherSequence
     }
 
     /**
-     * @param (callable(TValue,TValue):int)|null $comparator
+     * @param (pure-callable(TValue, TValue):int)|null $comparator
      *
      * @return CypherList<TValue>
      */
@@ -136,7 +133,6 @@ final class CypherList extends AbstractCypherSequence
 
         return new CypherList($tbr);
     }
-
 
     /**
      * @pure

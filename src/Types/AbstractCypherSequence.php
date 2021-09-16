@@ -149,7 +149,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
-     * @param callable(TKey, TValue):bool $callback
+     * @param pure-callable(TKey, TValue):bool $callback
      *
      * @return static
      */
@@ -168,9 +168,9 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     /**
      * @template U
      *
-     * @param callable(TKey, TValue):U $callback
+     * @param pure-callable(TKey, TValue):U $callback
      *
-     * @return self<TKey, TValue>&static
+     * @return static
      */
     final public function map(callable $callback): self
     {
@@ -185,8 +185,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     /**
      * @template TInitial
      *
-     * @param callable(TInitial|null, TKey, TValue):TInitial $callback
-     * @param TInitial|null                                  $initial
+     * @param pure-callable(TInitial|null, TKey, TValue):TInitial $callback
+     * @param TInitial|null                                       $initial
      *
      * @return TInitial
      */
@@ -220,7 +220,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     abstract public function slice(int $offset, int $length = null): self;
 
     /**
-     * @param (callable(TValue, TValue):int)|null $comparator
+     * @param (pure-callable(TValue, TValue):int)|null $comparator
      *
      * @return static
      */

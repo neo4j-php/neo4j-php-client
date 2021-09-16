@@ -22,10 +22,13 @@ use function array_slice;
 use function array_values;
 use BadMethodCallException;
 use function func_num_args;
-use function is_array;
+use InvalidArgumentException;
+use function is_int;
+use function is_object;
 use function is_string;
 use function ksort;
 use Laudis\Neo4j\Databags\Pair;
+use function method_exists;
 use OutOfBoundsException;
 use function sort;
 use function uksort;
@@ -49,16 +52,24 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
-     * @param iterable<array-key, TValue> $iterable
+     * @param iterable<TValue> $iterable
      */
     public function __construct(iterable $iterable = [])
     {
-        if (is_array($iterable)) {
-            $this->sequence = $iterable;
+        if ($iterable instanceof self) {
+            /** @psalm-suppress InvalidPropertyAssignmentValue */
+            $this->sequence = $iterable->sequence;
         } else {
             $this->sequence = [];
+            /** @var mixed $key */
             foreach ($iterable as $key => $value) {
-                $this->sequence[(string) $key] = $value;
+                if ($key === null || is_int($key) || (is_object($key) && method_exists($key, '__toString'))) {
+                    $this->sequence[(string)$key] = $value;
+                } elseif (is_string($key)) {
+                    $this->sequence[$key] = $value;
+                } else {
+                    throw new InvalidArgumentException('Iterable must have a stringable keys');
+                }
             }
         }
     }
@@ -187,17 +198,14 @@ final class CypherMap extends AbstractCypherSequence
      */
     public function xor(iterable $map): CypherMap
     {
-        $tbr = [];
-        foreach ($map as $key => $value) {
-            if (!array_key_exists($key, $this->sequence)) {
-                $tbr[$key] = $value;
-            }
-        }
+        $tbr = $this->sequence;
 
-        $cypherMap = new self($map);
-        foreach ($this->sequence as $key => $value) {
-            if (!array_key_exists($key, $cypherMap->sequence)) {
-                $tbr[$key] = $value;
+        /**
+         * @var mixed $key
+         */
+        foreach ($map as $key => $value) {
+            if ((is_int($key) || is_string($key)) && array_key_exists($key, $this->sequence)) {
+                unset($tbr[$key]);
             }
         }
 
@@ -290,7 +298,7 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
-     * @param (callable(TValue, TValue):int)|null $comparator
+     * @param (pure-callable(TValue, TValue):int)|null $comparator
      *
      * @return static
      */
@@ -300,7 +308,6 @@ final class CypherMap extends AbstractCypherSequence
         if ($comparator === null) {
             sort($tbr);
         } else {
-            /** @psalm-suppress ImpureFunctionCall */
             usort($tbr, $comparator);
         }
 
