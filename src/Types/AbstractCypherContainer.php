@@ -13,13 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use function array_key_exists;
 use ArrayAccess;
 use BadMethodCallException;
-use IteratorAggregate;
-use JsonSerializable;
-use function array_key_exists;
 use function get_class;
 use InvalidArgumentException;
+use IteratorAggregate;
+use JsonSerializable;
 use function sprintf;
 
 /**

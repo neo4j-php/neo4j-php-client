@@ -64,7 +64,7 @@ final class CypherMap extends AbstractCypherSequence
             /** @var mixed $key */
             foreach ($iterable as $key => $value) {
                 if ($key === null || is_int($key) || (is_object($key) && method_exists($key, '__toString'))) {
-                    $this->sequence[(string)$key] = $value;
+                    $this->sequence[(string) $key] = $value;
                 } elseif (is_string($key)) {
                     $this->sequence[$key] = $value;
                 } else {
