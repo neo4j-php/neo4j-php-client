@@ -13,24 +13,28 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use function array_key_exists;
+use ArrayAccess;
 use BadMethodCallException;
 use function get_class;
 use InvalidArgumentException;
-use Laudis\Neo4j\Contracts\CypherContainerInterface;
+use IteratorAggregate;
+use JsonSerializable;
 use function sprintf;
 
 /**
- * @implements CypherContainerInterface<string, CypherContainerInterface|scalar|null>
+ * @implements ArrayAccess<string, static|scalar|null>
+ * @implements IteratorAggregate<string, static|scalar|null>
  */
-abstract class AbstractCypherContainer implements CypherContainerInterface
+abstract class AbstractCypherContainer implements JsonSerializable, ArrayAccess, IteratorAggregate
 {
-    /** @var array<string, CypherContainerInterface|scalar|null>|null */
+    /** @var array<string, self|scalar|null>|null */
     private ?array $cachedSerialized = null;
 
     /**
-     * @return array<string, CypherContainerInterface|scalar|null>
+     * @return array<string, static|scalar|null>
      */
-    public function jsonSerialize(): array
+    final public function jsonSerialize(): array
     {
         if ($this->cachedSerialized === null) {
             $tbr = [];
@@ -45,27 +49,28 @@ abstract class AbstractCypherContainer implements CypherContainerInterface
         return $this->cachedSerialized;
     }
 
-    public function offsetExists($offset): bool
+    final public function offsetExists($offset): bool
     {
-        return isset($this->jsonSerialize()[$offset]);
+        return array_key_exists($offset, $this->jsonSerialize());
     }
 
-    public function offsetGet($offset)
+    final public function offsetGet($offset)
     {
         $serialized = $this->jsonSerialize();
-        if (!isset($serialized[$offset])) {
+        if (!array_key_exists($offset, $serialized)) {
             throw new InvalidArgumentException("Offset: $offset does not exists for class: ".static::class);
         }
 
+        /** @psalm-suppress InvalidReturnStatement */
         return $serialized[$offset];
     }
 
-    public function offsetSet($offset, $value): void
+    final public function offsetSet($offset, $value): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
     }
 
-    public function offsetUnset($offset): void
+    final public function offsetUnset($offset): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
     }
