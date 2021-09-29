@@ -13,11 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use Ds\Map;
 use InvalidArgumentException;
-use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -30,7 +26,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
-use Psr\Http\Message\UriInterface;
+use Laudis\Neo4j\Types\CypherMap;
 use function sprintf;
 
 /**
@@ -42,26 +38,23 @@ final class Client implements ClientInterface
 {
     private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
 
-    /** @var Map<string, DriverSetup|DriverInterface<T>> */
-    private Map $driverConfigurations;
-    /** @var Map<string, DriverInterface> */
-    private Map $drivers;
+    /** @var CypherMap<DriverSetup> */
+    private CypherMap $driverSetups;
+    /** @var array<string, DriverInterface<T>> */
+    private array $drivers;
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
     private DriverConfiguration $configuration;
     private ?string $default;
 
     /**
-     * @param Map<string, DriverSetup> $driverConfigurations
-     * @param FormatterInterface<T>    $formatter
+     * @param CypherMap<DriverSetup> $driverConfigurations
+     * @param FormatterInterface<T>  $formatter
      */
-    public function __construct(Map $driverConfigurations, DriverConfiguration $configuration, FormatterInterface $formatter, ?string $default)
+    public function __construct(CypherMap $driverConfigurations, DriverConfiguration $configuration, FormatterInterface $formatter, ?string $default)
     {
-        $this->driverConfigurations = new Map();
-        foreach ($driverConfigurations as $key => $value) {
-            $this->driverConfigurations->put($key, $value);
-        }
-        $this->drivers = new Map();
+        $this->driverSetups = $driverConfigurations;
+        $this->drivers = [];
         $this->formatter = $formatter;
         $this->configuration = $configuration;
         $this->default = $default;
@@ -89,24 +82,25 @@ final class Client implements ClientInterface
 
     public function getDriver(?string $alias): DriverInterface
     {
-        if ($this->driverConfigurations->count() === 0) {
-            $driver = $this->makeDriver(Uri::create('bolt://localhost:7687'), 'default', Authenticate::disabled(), TransactionConfiguration::DEFAULT_TIMEOUT);
-            $this->driverConfigurations->put('default', $driver);
+        $this->createDefaultDriverIfNeeded();
+
+        $alias = $this->decideAlias($alias);
+
+        if (!isset($this->drivers[$alias])) {
+            if (!$this->driverSetups->hasKey($alias)) {
+                $key = sprintf('The provided alias: "%s" was not found in the connection pool', $alias);
+                throw new InvalidArgumentException($key);
+            }
+
+            $setup = $this->driverSetups->get($alias);
+            $uri = $setup->getUri();
+            $timeout = $setup->getSocketTimeout();
+            $driver = DriverFactory::create($uri, $this->configuration, $setup->getAuth(), $timeout, $this->formatter);
+
+            $this->drivers[$alias] = $driver;
         }
 
-        $alias ??= $this->default ?? $this->driverConfigurations->first()->key;
-        if (!$this->driverConfigurations->hasKey($alias)) {
-            $key = sprintf('The provided alias: "%s" was not found in the connection pool', $alias);
-            throw new InvalidArgumentException($key);
-        }
-
-        $driverOrSetup = $this->driverConfigurations->get($alias);
-        if ($driverOrSetup instanceof DriverSetup) {
-            $driverOrSetup = $this->makeDriver($driverOrSetup->getUri(), $alias, $driverOrSetup->getAuth(), $driverOrSetup->getSocketTimeout());
-            $this->driverConfigurations->put($alias, $driverOrSetup);
-        }
-
-        return $driverOrSetup;
+        return $this->drivers[$alias];
     }
 
     /**
@@ -132,33 +126,28 @@ final class Client implements ClientInterface
         return $this->writeTransaction($tsxHandler, $alias, $config);
     }
 
-    /**
-     * @template U as DriverInterface
-     *
-     * @param callable():U $factory
-     *
-     * @return U
-     */
-    private function cacheDriver(string $alias, callable $factory): DriverInterface
+    private function createDefaultDriverIfNeeded(): void
     {
-        /** @var U|null */
-        $tbr = $this->drivers->get($alias, null);
-        $tbr ??= $factory();
-
-        $this->drivers->put($alias, $tbr);
-
-        return $tbr;
+        if ($this->driverSetups->isEmpty() && count($this->drivers) === 0) {
+            $driver = DriverFactory::create(self::DEFAULT_DRIVER_CONFIG, null, null, null, $this->formatter);
+            $this->drivers['default'] = $driver;
+        }
     }
 
-    /**
-     * @param ParsedUrl $parsedUrl
-     *
-     * @return DriverInterface<T>
-     */
-    private function makeDriver(UriInterface $uri, string $alias, AuthenticateInterface $authentication, float $socketTimeout): DriverInterface
+    private function decideAlias(?string $alias): string
     {
-        return $this->cacheDriver($alias, function () use ($uri, $authentication, $socketTimeout) {
-            return DriverFactory::create($uri, $this->configuration, $authentication, $socketTimeout, $this->formatter);
-        });
+        if ($alias !== null) {
+            return $alias;
+        }
+
+        if ($this->default !== null) {
+            return $this->default;
+        }
+
+        if ($this->driverSetups->count() > 0) {
+            return $this->driverSetups->first()->getKey();
+        }
+
+        return 'default';
     }
 }

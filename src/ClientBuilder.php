@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use Ds\Map;
 use function http_build_query;
 use function in_array;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -41,17 +40,17 @@ final class ClientBuilder
 {
     public const SUPPORTED_SCHEMES = ['', 'bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https'];
 
-    /** @var Map<string, DriverSetup> */
-    private Map $driverConfigurations;
+    /** @var CypherMap<DriverSetup> */
+    private CypherMap $driverConfigurations;
     private DriverConfiguration $configuration;
     private ?string $defaultDriver;
     private FormatterInterface $formatter;
 
     /**
-     * @param Map<string, DriverSetup> $driverConfigurations
-     * @param FormatterInterface<T>    $formatter
+     * @param CypherMap<DriverSetup> $driverConfigurations
+     * @param FormatterInterface<T>  $formatter
      */
-    public function __construct(DriverConfiguration $configuration, FormatterInterface $formatter, Map $driverConfigurations, ?string $defaultDriver)
+    public function __construct(DriverConfiguration $configuration, FormatterInterface $formatter, CypherMap $driverConfigurations, ?string $defaultDriver)
     {
         $this->driverConfigurations = $driverConfigurations;
         $this->configuration = $configuration;
@@ -64,7 +63,7 @@ final class ClientBuilder
      */
     public static function create(): ClientBuilder
     {
-        return new self(DriverConfiguration::default(), OGMFormatter::create(), new Map(), null);
+        return new self(DriverConfiguration::default(), OGMFormatter::create(), new CypherMap(), null);
     }
 
     /**
@@ -89,8 +88,8 @@ final class ClientBuilder
             throw UnsupportedScheme::make($scheme, self::SUPPORTED_SCHEMES);
         }
 
-        $configs = $this->driverConfigurations->copy();
-        $configs->put($alias, new DriverSetup($uri, $authentication, $socketTimeout));
+        $setup = new DriverSetup($uri, $authentication, $socketTimeout);
+        $configs = new CypherMap(array_merge($this->driverConfigurations->toArray(), [$alias => $setup]));
 
         return new self($this->configuration, $this->formatter, $configs, $this->defaultDriver);
     }

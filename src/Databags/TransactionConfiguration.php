@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Ds\Map;
 use function is_callable;
 
 final class TransactionConfiguration
@@ -63,7 +62,7 @@ final class TransactionConfiguration
             $tbr = $tbr();
         }
 
-        return $tbr ?? new Map();
+        return $tbr ?? [];
     }
 
     /**
