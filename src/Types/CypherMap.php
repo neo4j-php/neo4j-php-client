@@ -19,7 +19,6 @@ use function array_key_last;
 use function array_keys;
 use function array_reverse;
 use function array_slice;
-use function array_values;
 use BadMethodCallException;
 use function func_num_args;
 use InvalidArgumentException;
@@ -107,7 +106,7 @@ final class CypherMap extends AbstractCypherSequence
     {
         $keys = $this->keys();
 
-        if (array_key_exists($position, $keys)) {
+        if ($keys->count() > $position) {
             $key = $keys[$position];
 
             return new Pair($key, $this->sequence[$key]);
@@ -117,24 +116,24 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
-     * @return list<string>
+     * @return CypherList<string>
      */
-    public function keys(): array
+    public function keys(): CypherList
     {
-        return array_keys($this->sequence);
+        return new CypherList(array_keys($this->sequence));
     }
 
     /**
-     * @return array<Pair<string, TValue>>
+     * @return CypherList<Pair<string, TValue>>
      */
-    public function pairs(): array
+    public function pairs(): CypherList
     {
         $tbr = [];
         foreach ($this->sequence as $key => $value) {
             $tbr[] = new Pair($key, $value);
         }
 
-        return $tbr;
+        return new CypherList($tbr);
     }
 
     /**
@@ -156,11 +155,11 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
-     * @return list<TValue>
+     * @return CypherList<TValue>
      */
-    public function values(): array
+    public function values(): CypherList
     {
-        return array_values($this->sequence);
+        return new CypherList($this->sequence);
     }
 
     /**
@@ -284,5 +283,27 @@ final class CypherMap extends AbstractCypherSequence
         }
 
         return new self($tbr);
+    }
+
+    /**
+     * @template TDefault
+     *
+     * @param TDefault $default
+     *
+     * @throws OutOfBoundsException
+     *
+     * @return (func_num_args() is 1 ? TValue : TValue|TDefault)
+     */
+    public function get(string $key, $default = null)
+    {
+        if (func_num_args() === 1) {
+            if (!array_key_exists($key, $this->sequence)) {
+                throw new OutOfBoundsException();
+            }
+
+            return $this->sequence[$key];
+        }
+
+        return $this->sequence[$key] ?? $default;
     }
 }

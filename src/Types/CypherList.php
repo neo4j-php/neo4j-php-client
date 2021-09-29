@@ -127,4 +127,18 @@ final class CypherList extends AbstractCypherSequence
     {
         return new self($iterable);
     }
+
+    /**
+     * @throws OutOfBoundsException
+     *
+     * @return TValue
+     */
+    public function get(int $key)
+    {
+        if (!array_key_exists($key, $this->sequence)) {
+            throw new OutOfBoundsException();
+        }
+
+        return $this->sequence[$key];
+    }
 }
