@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\Bolt;
+use function count;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Common\Uri;
@@ -36,7 +37,8 @@ use function time;
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
-    private ?RoutingTable $table = null;
+    /** @var array<string, RoutingTable> */
+    private static array $routingCache = [];
     private BoltConnectionPool $pool;
 
     public function __construct(BoltConnectionPool $pool)
@@ -54,8 +56,16 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         string $userAgent,
         SessionConfiguration $config
     ): ConnectionInterface {
-        $connection = $this->pool->acquire($uri, $authenticate, $socketTimeout, $userAgent, $config);
-        $table = $this->routingTable($connection);
+        $key = $uri->getHost().':'.($uri->getPort() ?? '7687');
+
+        $table = self::$routingCache[$key] ?? null;
+        if ($table === null || $table->getTtl() < time()) {
+            $connection = $this->pool->acquire($uri, $authenticate, $socketTimeout, $userAgent, $config);
+            $table = $this->routingTable($connection);
+            self::$routingCache[$key] = $table;
+            $connection->close();
+        }
+
         $server = $this->getNextServer($table, $config->getAccessMode());
 
         $authenticate = $authenticate->extractFromUri($uri);
@@ -84,44 +94,42 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     private function routingTable(ConnectionInterface $connection): RoutingTable
     {
-        if ($this->table === null || $this->table->getTtl() < time()) {
-            /** @var Bolt */
-            $bolt = $connection->getImplementation();
-            $protocol = $connection->getProtocol();
-            if ($protocol->compare(ConnectionProtocol::BOLT_V43()) >= 0) {
-                /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
-                $route = $bolt->route();
-                ['servers' => $servers, 'ttl' => $ttl ] = $route['rt'];
-            } elseif ($protocol->compare(ConnectionProtocol::BOLT_V40()) >= 0) {
-                $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
+        /** @var Bolt */
+        $bolt = $connection->getImplementation();
+        $protocol = $connection->getProtocol();
+        if ($protocol->compare(ConnectionProtocol::BOLT_V43()) >= 0) {
+            /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
+            $route = $bolt->route();
+            ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
+            $ttl += time();
+        } elseif ($protocol->compare(ConnectionProtocol::BOLT_V40()) >= 0) {
+            $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
+            /**
+             * @var iterable<array{addresses: list<string>, role:string}> $servers
+             * @var int                       $ttl
+             */
+            ['servers' => $servers, 'ttl' => $ttl] = $bolt->pullAll();
+            $ttl += time();
+        } else {
+            $bolt->run('CALL dbms.cluster.overview()');
+            /** @var list<array{addresses: list<string>, role: string}> */
+            $response = $bolt->pullAll();
+
+            /** @var iterable<array{addresses: list<string>, role:string}> $servers */
+            $servers = [];
+            $ttl = time() + 3600;
+            foreach ($response as $server) {
+                $addresses = $server['addresses'];
+                $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
                 /**
-                 * @var iterable<array{addresses: list<string>, role:string}> $servers
-                 * @var int                       $ttl
+                 * @psalm-suppress InvalidArrayAssignment
+                 *
+                 * @var array{addresses: list<string>, role:string}
                  */
-                ['servers' => $servers, 'ttl' => $ttl] = $bolt->pullAll();
-            } else {
-                $bolt->run('CALL dbms.cluster.overview()');
-                /** @var list<array{addresses: list<string>, role: string}> */
-                $response = $bolt->pullAll();
-
-                /** @var iterable<array{addresses: list<string>, role:string}> $servers */
-                $servers = [];
-                $ttl = time() + 3600;
-                foreach ($response as $server) {
-                    $addresses = $server['addresses'];
-                    $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
-                    /**
-                     * @psalm-suppress InvalidArrayAssignment
-                     *
-                     * @var array{addresses: list<string>, role:string}
-                     */
-                    $servers[] = ['addresses' => $addresses, 'role' => $server['role']];
-                }
+                $servers[] = ['addresses' => $addresses, 'role' => $server['role']];
             }
-
-            $this->table = new RoutingTable($servers, $ttl);
         }
 
-        return $this->table;
+        return new RoutingTable($servers, $ttl);
     }
 }

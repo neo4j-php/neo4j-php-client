@@ -29,6 +29,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
+use WeakReference;
 
 /**
  * @implements ConnectionPoolInterface<Bolt>
@@ -52,12 +53,14 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     ): ConnectionInterface {
         $connectingTo = $server ?? $uri;
         $key = $connectingTo->getHost().':'.($connectingTo->getPort() ?? '7687');
-        if (!isset($this->connectionCache[$key])) {
+        if (!isset(self::$connectionCache[$key])) {
             self::$connectionCache[$key] = [];
         }
 
         foreach (self::$connectionCache[$key] as $connection) {
-            if ($connection->isOpen()) {
+            if (!$connection->isOpen()) {
+                $connection->open();
+
                 return $connection;
             }
         }
@@ -69,6 +72,13 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         $bolt = new Bolt($socket);
         $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
 
+        // We create a weak reference to optimise the socket usage.
+        // This way the connection can reuse the bolt variable the first time it tries to connect
+        // Only when this function is finished and the returned connection is closed
+        // will the reference return null, prompting the need to reopen and recreate the bolt object
+        // over the same socket.
+        $originalBolt = WeakReference::create($bolt);
+
         /**
          * @var array{'name': 0, 'version': 1, 'edition': 2}
          * @psalm-suppress all
@@ -78,21 +88,32 @@ CALL dbms.components()
 YIELD name, versions, edition
 UNWIND versions AS version
 RETURN name, version, edition
-CYPHER)['fields']);
+CYPHER
+        )['fields']);
 
         /** @var array{0: array{0: string, 1: string, 2: string}} $results */
         $results = $bolt->pullAll();
 
         $connection = new BoltConnection(
-            $bolt,
-            $socket,
             $results[0][$fields['name']].'-'.$results[0][$fields['edition']].'/'.$results[0][$fields['version']],
             $connectingTo,
             $results[0][$fields['version']],
             ConnectionProtocol::determineBoltVersion($bolt),
             $config->getAccessMode(),
-            new DatabaseInfo($config->getDatabase())
+            new DatabaseInfo($config->getDatabase()),
+            static function () use ($socket, $authenticate, $connectingTo, $userAgent, $originalBolt) {
+                $bolt = $originalBolt->get();
+                if ($bolt === null) {
+                    $socket->connect();
+                    $bolt = new Bolt($socket);
+                    $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
+                }
+
+                return $bolt;
+            }
         );
+
+        $connection->open();
 
         self::$connectionCache[$key][] = $connection;
 
