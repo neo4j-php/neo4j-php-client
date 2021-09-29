@@ -89,14 +89,13 @@ final class BoltCypherFormatterTest extends TestCase
         $connection = $this->getMockBuilder(IConnection::class)->getMock();
 
         return new BoltConnection(
-            new Bolt($connection),
-            $connection,
             '',
             $this->getMockBuilder(UriInterface::class)->getMock(),
             '',
             ConnectionProtocol::BOLT_V43(),
             AccessMode::READ(),
-            new DatabaseInfo('')
+            new DatabaseInfo(''),
+            static fn () => new Bolt($connection),
         );
     }
 }
