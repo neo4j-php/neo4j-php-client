@@ -16,10 +16,16 @@ namespace Laudis\Neo4j\Enum;
 use Laudis\TypedEnum\TypedEnum;
 
 /**
+ * Defines the access mode of a connection.
+ *
  * @method static self READ()
  * @method static self WRITE()
  *
  * @extends TypedEnum<string>
+ *
+ * @psalm-immutable
+ *
+ * @psalm-suppress MutableDependency
  */
 final class AccessMode extends TypedEnum
 {

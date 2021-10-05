@@ -16,11 +16,17 @@ namespace Laudis\Neo4j\Enum;
 use Laudis\TypedEnum\TypedEnum;
 
 /**
+ * The possible routing roles.
+ *
  * @method static RoutingRoles LEADER()
  * @method static RoutingRoles FOLLOWER()
  * @method static RoutingRoles ROUTE()
  *
  * @extends TypedEnum<list<string>>
+ *
+ * @psalm-immutable
+ *
+ * @psalm-suppress MutableDependency
  */
 final class RoutingRoles extends TypedEnum
 {
