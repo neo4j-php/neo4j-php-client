@@ -17,6 +17,8 @@ use Bolt\Bolt;
 use Laudis\TypedEnum\TypedEnum;
 
 /**
+ * Defines the protocol used in a connection.
+ *
  * @method static ConnectionProtocol BOLT_V3()
  * @method static ConnectionProtocol BOLT_V40()
  * @method static ConnectionProtocol BOLT_V41()
@@ -25,6 +27,10 @@ use Laudis\TypedEnum\TypedEnum;
  * @method static ConnectionProtocol HTTP()
  *
  * @extends TypedEnum<string>
+ *
+ * @psalm-immutable
+ *
+ * @psalm-suppress MutableDependency
  */
 final class ConnectionProtocol extends TypedEnum
 {
@@ -35,6 +41,9 @@ final class ConnectionProtocol extends TypedEnum
     private const BOLT_V43 = 'bolt-v43';
     private const HTTP = 'http';
 
+    /**
+     * @pure
+     */
     public static function determineBoltVersion(Bolt $bolt): self
     {
         switch ($bolt->getProtocolVersion()) {
@@ -63,6 +72,8 @@ final class ConnectionProtocol extends TypedEnum
     {
         $x = 0;
         $y = 0;
+
+        /** @psalm-suppress ImpureMethodCall */
         foreach (array_values(self::getAllInstances()) as $index => $instance) {
             if ($instance === $this) {
                 $x = $index;

@@ -17,12 +17,16 @@ use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\TypedEnum\TypedEnum;
 
 /**
- * Class QueryTypeEnum.
+ * The actual type of query after is has been run.
  *
  * @method static self READ_ONLY()
  * @method static self READ_WRITE()
  * @method static self SCHEMA_WRITE()
  * @method static self WRITE_ONLY()
+ *
+ * @psalm-immutable
+ *
+ * @psalm-suppress MutableDependency
  */
 final class QueryTypeEnum extends TypedEnum
 {
@@ -31,6 +35,11 @@ final class QueryTypeEnum extends TypedEnum
     private const SCHEMA_WRITE = 'schema_write';
     private const WRITE_ONLY = 'write_only';
 
+    /**
+     * Decide the type of the query from the provided counters.
+     *
+     * @pure
+     */
     public static function fromCounters(SummaryCounters $counters): self
     {
         if ($counters->containsUpdates() || $counters->containsSystemUpdates()) {
