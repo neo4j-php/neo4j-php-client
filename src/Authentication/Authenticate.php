@@ -13,10 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
+/**
+ * Factory responsible for creating authentication logic.
+ *
+ * @psalm-immutable
+ */
 final class Authenticate
 {
     /**
-     * @psalm-mutation-free
+     * Authenticate using a provided username and password.
+     *
+     * @pure
      */
     public static function basic(string $username, string $password): BasicAuth
     {
@@ -24,7 +31,9 @@ final class Authenticate
     }
 
     /**
-     * @psalm-mutation-free
+     * Authenticate using a kerberos token.
+     *
+     * @pure
      */
     public static function kerberos(string $token): KerberosAuth
     {
@@ -32,7 +41,9 @@ final class Authenticate
     }
 
     /**
-     * @psalm-mutation-free
+     * Don't authenticate at all.
+     *
+     * @pure
      */
     public static function disabled(): NoAuth
     {
@@ -40,7 +51,9 @@ final class Authenticate
     }
 
     /**
-     * @psalm-mutation-free
+     * Authenticate using the information found in the url.
+     *
+     * @pure
      */
     public static function fromUrl(): UrlAuth
     {

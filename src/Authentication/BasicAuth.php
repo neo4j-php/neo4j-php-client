@@ -20,11 +20,17 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Authenticates connections using a basic username and password.
+ */
 final class BasicAuth implements AuthenticateInterface
 {
     private string $username;
     private string $password;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function __construct(string $username, string $password)
     {
         $this->username = $username;

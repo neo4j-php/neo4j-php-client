@@ -18,10 +18,16 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Authenticates connections using a kerberos token.
+ */
 final class KerberosAuth implements AuthenticateInterface
 {
     private string $token;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function __construct(string $token)
     {
         $this->token = $token;
