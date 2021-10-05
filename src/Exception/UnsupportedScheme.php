@@ -16,6 +16,13 @@ namespace Laudis\Neo4j\Exception;
 use function implode;
 use RuntimeException;
 
+/**
+ * Exception when a requested scheme cannot be handled by the drivers available in the client.
+ *
+ * @psalm-immutable
+ *
+ * @psalm-suppress MutableDependency
+ */
 final class UnsupportedScheme extends RuntimeException
 {
     /**

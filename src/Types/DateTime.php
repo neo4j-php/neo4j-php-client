@@ -16,7 +16,7 @@ namespace Laudis\Neo4j\Types;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
-use Laudis\Neo4j\Exception\TimezoneOffsetException;
+use RuntimeException;
 use function sprintf;
 
 final class DateTime extends AbstractPropertyContainer
@@ -63,7 +63,7 @@ final class DateTime extends AbstractPropertyContainer
         }
 
         $message = sprintf('Cannot find an timezone with %s seconds as offset.', $this->tzOffsetSeconds);
-        throw new TimezoneOffsetException($message);
+        throw new RuntimeException($message);
     }
 
     public function getIterator()

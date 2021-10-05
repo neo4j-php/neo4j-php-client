@@ -17,6 +17,13 @@ use Laudis\Neo4j\Databags\Neo4jError;
 use RuntimeException;
 use Throwable;
 
+/**
+ * Exception when a Neo4j Error occurs.
+ *
+ * @psalm-immutable
+ *
+ * @psalm-suppress MutableDependency
+ */
 final class Neo4jException extends RuntimeException
 {
     private const MESSAGE_TEMPLATE = 'Neo4j errors detected. First one with code "%s" and message "%s"';
