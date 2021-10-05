@@ -36,8 +36,6 @@ final class ServerInfo
 
     /**
      * Returns the uri of the server the query was executed.
-     *
-     * @return UriInterface
      */
     public function getAddress(): UriInterface
     {
