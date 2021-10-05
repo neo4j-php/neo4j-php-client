@@ -35,6 +35,8 @@ use Psr\Http\Message\UriInterface;
  * @implements DriverInterface<T>
  *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class BoltDriver implements DriverInterface
 {

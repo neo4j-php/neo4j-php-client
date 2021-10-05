@@ -18,19 +18,23 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
- * @template T
+ * Transactions are atomic units of work that may contain one or more query.
+ *
+ * @template ResultFormat
+ *
+ * @see https://neo4j.com/docs/cypher-manual/current/introduction/transactions/
  */
 interface TransactionInterface
 {
     /**
      * @param iterable<string, scalar|iterable|null> $parameters
      *
-     * @return T
+     * @return ResultFormat
      */
     public function run(string $statement, iterable $parameters = []);
 
     /**
-     * @return T
+     * @return ResultFormat
      */
     public function runStatement(Statement $statement);
 
@@ -39,7 +43,7 @@ interface TransactionInterface
      *
      * @throws Neo4jException
      *
-     * @return CypherList<T>
+     * @return CypherList<ResultFormat>
      */
     public function runStatements(iterable $statements): CypherList;
 }

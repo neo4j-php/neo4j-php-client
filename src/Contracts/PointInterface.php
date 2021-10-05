@@ -13,16 +13,36 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+/**
+ * Defines a basic Point type in neo4j.
+ *
+ * @psalm-immutable
+ */
 interface PointInterface
 {
+    /**
+     * Returns the x coordinate.
+     */
     public function getX(): float;
 
+    /**
+     * Returns the y coordinate.
+     */
     public function getY(): float;
 
     /**
+     * Returns the Coordinates Reference System.
+     *
+     * @see https://en.wikipedia.org/wiki/Spatial_reference_system
+     *
      * @return 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d'
      */
     public function getCrs(): string;
 
+    /**
+     * Returns the spacial reference identifier.
+     *
+     * @see https://en.wikipedia.org/wiki/Spatial_reference_system
+     */
     public function getSrid(): int;
 }
