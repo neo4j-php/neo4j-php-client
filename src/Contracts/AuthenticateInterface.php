@@ -21,6 +21,8 @@ use Psr\Http\Message\UriInterface;
 interface AuthenticateInterface
 {
     /**
+     * @psalm-mutation-free
+     *
      * Authenticates a RequestInterface with the provided configuration Uri and userAgent.
      */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface;
@@ -33,6 +35,8 @@ interface AuthenticateInterface
     public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void;
 
     /**
+     * @psalm-mutation-free
+     *
      * Extracts the Uri login information and returns an authentication strategy not requiring the url anymore.
      */
     public function extractFromUri(UriInterface $uri): self;

@@ -25,10 +25,19 @@ use function substr_count;
  */
 final class UrlAuth implements AuthenticateInterface
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
-        if (substr_count($uri->getUserInfo(), ':') === 1) {
-            [$user, $pass] = explode(':', $uri->getUserInfo());
+        /**
+         * @psalm-suppress ImpureMethodCall Uri is a pure object:
+         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
+         */
+        $userInfo = $uri->getUserInfo();
+
+        if (substr_count($userInfo, ':') === 1) {
+            [$user, $pass] = explode(':', $userInfo);
 
             return Authenticate::basic($user, $pass)
                 ->authenticateHttp($request, $uri, $userAgent);
@@ -42,10 +51,19 @@ final class UrlAuth implements AuthenticateInterface
         $this->extractFromUri($uri)->authenticateBolt($bolt, $uri, $userAgent);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function extractFromUri(UriInterface $uri): AuthenticateInterface
     {
-        if (substr_count($uri->getUserInfo(), ':') === 1) {
-            [$user, $pass] = explode(':', $uri->getUserInfo());
+        /**
+         * @psalm-suppress ImpureMethodCall Uri is a pure object:
+         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
+         */
+        $userInfo = $uri->getUserInfo();
+
+        if (substr_count($userInfo, ':') === 1) {
+            [$user, $pass] = explode(':', $userInfo);
 
             return Authenticate::basic($user, $pass);
         }
