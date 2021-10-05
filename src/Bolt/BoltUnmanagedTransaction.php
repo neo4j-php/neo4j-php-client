@@ -29,6 +29,8 @@ use function microtime;
 use Throwable;
 
 /**
+ * Manages a transaction over the bolt protocol.
+ *
  * @template T
  *
  * @implements UnmanagedTransactionInterface<T>
@@ -37,16 +39,27 @@ use Throwable;
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
-    /** @var FormatterInterface<T> */
+    /**
+     * @psalm-readonly
+     *
+     * @var FormatterInterface<T>
+     */
     private FormatterInterface $formatter;
-    /** @var ConnectionInterface<Bolt> */
+    /**
+     * @psalm-readonly
+     *
+     * @var ConnectionInterface<Bolt>
+     */
     private ConnectionInterface $connection;
+    /** @psalm-readonly */
     private string $database;
     private bool $finished = false;
 
     /**
      * @param FormatterInterface<T>     $formatter
      * @param ConnectionInterface<Bolt> $connection
+     *
+     * @psalm-mutation-free
      */
     public function __construct(string $database, FormatterInterface $formatter, ConnectionInterface $connection)
     {
@@ -143,6 +156,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         return new CypherList($tbr);
     }
 
+    /**
+     * @psalm-immutable
+     */
     private function getBolt(): Bolt
     {
         return $this->connection->getImplementation();

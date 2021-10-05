@@ -30,6 +30,8 @@ use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
 
 /**
+ * Drives a singular bolt connections.
+ *
  * @template T
  *
  * @implements DriverInterface<T>
@@ -79,6 +81,7 @@ final class BoltDriver implements DriverInterface
      *           ? self<U>
      *           : self<OGMResults>
      *           )
+     *
      * @psalm-mutation-free
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): self
