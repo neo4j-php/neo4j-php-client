@@ -16,7 +16,11 @@ namespace Laudis\Neo4j\Databags;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
+ * A result containing the values and the summary.
+ *
  * @template T
+ *
+ * @psalm-immutable
  */
 final class SummarizedResult
 {
@@ -35,6 +39,8 @@ final class SummarizedResult
     }
 
     /**
+     * Returns the actual result.
+     *
      * @return T
      */
     public function getResult()
@@ -42,6 +48,9 @@ final class SummarizedResult
         return $this->result;
     }
 
+    /**
+     * Returns the result summary.
+     */
     public function getSummary(): ResultSummary
     {
         return $this->summary;

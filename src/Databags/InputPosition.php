@@ -13,6 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+/**
+ * An input position refers to a specific character in a query.
+ *
+ * @psalm-immutable
+ */
 final class InputPosition
 {
     private int $column;
@@ -29,16 +34,25 @@ final class InputPosition
         $this->offset = $offset;
     }
 
+    /**
+     * The column number referred to by the position; column numbers start at 1.
+     */
     public function getColumn(): int
     {
         return $this->column;
     }
 
+    /**
+     * The line number referred to by the position; line numbers start at 1.
+     */
     public function getLine(): int
     {
         return $this->line;
     }
 
+    /**
+     * The character offset referred to by this position; offset numbers start at 0.
+     */
     public function getOffset(): int
     {
         return $this->offset;

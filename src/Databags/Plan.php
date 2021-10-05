@@ -16,6 +16,13 @@ namespace Laudis\Neo4j\Databags;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 
+/**
+ * This describes the plan that the database planner produced and used (or will use) to execute your query.
+ *
+ * @see https://neo4j.com/docs/cypher-manual/current/execution-plans/
+ *
+ * @psalm-immutable
+ */
 final class Plan
 {
     /** @var CypherMap<mixed> */
@@ -44,6 +51,8 @@ final class Plan
     }
 
     /**
+     * Returns the arguments for the operator.
+     *
      * @return CypherMap<mixed>
      */
     public function getArguments(): CypherMap
@@ -52,6 +61,8 @@ final class Plan
     }
 
     /**
+     * Returns the sub-plans.
+     *
      * @return CypherList<Plan>
      */
     public function getList(): CypherList
@@ -60,6 +71,8 @@ final class Plan
     }
 
     /**
+     * Identifiers used by this part of the plan.
+     *
      * @return CypherList<String>
      */
     public function getIdentifiers(): CypherList
@@ -67,6 +80,9 @@ final class Plan
         return $this->identifiers;
     }
 
+    /**
+     * The operation this plan is performing.
+     */
     public function getOperator(): string
     {
         return $this->operator;

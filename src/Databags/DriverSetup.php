@@ -16,6 +16,11 @@ namespace Laudis\Neo4j\Databags;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Basic object containing all the information needed to setup a driver.
+ *
+ * @psalm-immutable
+ */
 final class DriverSetup
 {
     private UriInterface $uri;
