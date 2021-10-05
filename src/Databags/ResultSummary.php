@@ -79,8 +79,6 @@ final class ResultSummary
 
     /**
      * The basic information of the database where the result is obtained from.
-     *
-     * @return DatabaseInfo
      */
     public function getDatabaseInfo(): DatabaseInfo
     {

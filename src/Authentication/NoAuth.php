@@ -30,6 +30,7 @@ final class NoAuth implements AuthenticateInterface
     {
         /**
          * @psalm-suppress ImpureMethodCall Request is a pure object:
+         *
          * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
          */
         return $request->withHeader('User-Agent', $userAgent);
