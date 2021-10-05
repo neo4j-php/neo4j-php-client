@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 /**
+ * A basic Key value Pair.
+ *
  * @template TKey
  * @template TValue
  *

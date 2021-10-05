@@ -16,18 +16,23 @@ namespace Laudis\Neo4j\Databags;
 use function call_user_func;
 use function is_callable;
 
+/**
+ * Configuration object for the driver.
+ *
+ * @psalm-immutable
+ */
 final class DriverConfiguration
 {
-    public const DEFAULT_USER_AGENT = 'neo4j-php-client/2.0.7';
+    public const DEFAULT_USER_AGENT = 'neo4j-php-client/2.1.2';
 
-    /** @var callable():(string|null)|string|null */
+    /** @var pure-callable():(string|null)|string|null */
     private $userAgent;
-    /** @var callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
+    /** @var pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
     private $httpPsrBindings;
 
     /**
-     * @param callable():(string|null)|string|null                   $userAgent
-     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
+     * @param pure-callable():(string|null)|string|null                   $userAgent
+     * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      */
     public function __construct($userAgent, $httpPsrBindings)
     {
@@ -36,8 +41,10 @@ final class DriverConfiguration
     }
 
     /**
-     * @param callable():(string|null)|string|null                   $userAgent
-     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
+     * @pure
+     *
+     * @param pure-callable():(string|null)|string|null                   $userAgent
+     * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      */
     public static function create($userAgent, $httpPsrBindings): self
     {
@@ -45,7 +52,10 @@ final class DriverConfiguration
     }
 
     /**
-     * @psalm-mutation-free
+     * Creates a default configuration with a user agent based on the driver version
+     * and HTTP PSR implementation auto detected from the environment.
+     *
+     * @pure
      */
     public static function default(): self
     {
@@ -63,7 +73,9 @@ final class DriverConfiguration
     }
 
     /**
-     * @param callable():(string|null)|string|null $userAgent
+     * Creates a new configuration with the provided user agent.
+     *
+     * @param pure-callable():(string|null)|string|null $userAgent
      */
     public function withUserAgent($userAgent): self
     {
@@ -71,7 +83,9 @@ final class DriverConfiguration
     }
 
     /**
-     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $bindings
+     * Creates a new configuration with the provided bindings.
+     *
+     * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $bindings
      */
     public function withHttpPsrBindings($bindings): self
     {

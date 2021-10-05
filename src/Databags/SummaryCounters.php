@@ -17,6 +17,8 @@ use ArrayIterator;
 use IteratorAggregate;
 
 /**
+ * Contains counters for various operations that a query triggered.
+ *
  * @psalm-immutable
  *
  * @implements IteratorAggregate<string, int|bool>
@@ -83,76 +85,122 @@ final class SummaryCounters implements IteratorAggregate
         $this->systemUpdates = $systemUpdates;
     }
 
+    /**
+     * Whether or not the query contained any updates.
+     */
     public function containsUpdates(): bool
     {
         return $this->containsUpdates;
     }
 
+    /**
+     * The number of nodes created.
+     */
     public function nodesCreated(): int
     {
         return $this->nodesCreated;
     }
 
+    /**
+     * The number of nodes deleted.
+     */
     public function nodesDeleted(): int
     {
         return $this->nodesDeleted;
     }
 
+    /**
+     * The number of relationships created.
+     */
     public function relationshipsCreated(): int
     {
         return $this->relationshipsCreated;
     }
 
+    /**
+     * The number of relationships deleted.
+     */
     public function relationshipsDeleted(): int
     {
         return $this->relationshipsDeleted;
     }
 
+    /**
+     * The number of properties (on both nodes and relationships) set.
+     */
     public function propertiesSet(): int
     {
         return $this->propertiesSet;
     }
 
+    /**
+     * The number of labels added to nodes.
+     */
     public function labelsAdded(): int
     {
         return $this->labelsAdded;
     }
 
+    /**
+     * The number of labels removed from nodes.
+     */
     public function labelsRemoved(): int
     {
         return $this->labelsRemoved;
     }
 
+    /**
+     * The number of indexes added to the schema.
+     */
     public function indexesAdded(): int
     {
         return $this->indexesAdded;
     }
 
+    /**
+     * The number of indexed removed from the schema.
+     */
     public function indexesRemoved(): int
     {
         return $this->labelsRemoved;
     }
 
+    /**
+     * The number of constraints added to the schema.
+     */
     public function constraintsAdded(): int
     {
         return $this->constraintsAdded;
     }
 
+    /**
+     * The number of constraints removed from the schema.
+     */
     public function constraintsRemoved(): int
     {
         return $this->constraintsRemoved;
     }
 
+    /**
+     * Returns whether the query updated the system graph in any way.
+     */
     public function containsSystemUpdates(): bool
     {
         return $this->containsSystemUpdates;
     }
 
+    /**
+     * The number of system updates performed by this query.
+     */
     public function systemUpdates(): int
     {
         return $this->systemUpdates;
     }
 
+    /**
+     * Creates a new SummaryCounter by merging this one with the provided result stats.
+     * The integer results will be added together and the boolean results will be merged using OR.
+     */
     public function merge(SummaryCounters $resultStats): SummaryCounters
     {
         return new SummaryCounters(
@@ -174,6 +222,8 @@ final class SummaryCounters implements IteratorAggregate
     }
 
     /**
+     * Aggregates all the provided counters.
+     *
      * @param iterable<SummaryCounters> $stats
      */
     public static function aggregate(iterable $stats): SummaryCounters

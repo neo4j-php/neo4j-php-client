@@ -15,6 +15,13 @@ namespace Laudis\Neo4j\Databags;
 
 use Laudis\Neo4j\Types\CypherList;
 
+/**
+ * A plan that has been executed. This means a lot more information is available.
+ *
+ * @see \Laudis\Neo4j\Databags\Plan
+ *
+ * @psalm-immutable
+ */
 final class ProfiledPlan
 {
     /** @var CypherList<ProfiledPlan> */
@@ -58,36 +65,57 @@ final class ProfiledPlan
         return $this->children;
     }
 
+    /**
+     * The number of times this part of the plan touched the underlying data stores.
+     */
     public function getDbHits(): int
     {
         return $this->dbHits;
     }
 
-    public function isHasPageCacheStats(): bool
+    /**
+     * If the number page cache hits and misses and the ratio was recorded.
+     */
+    public function hasPageCacheStats(): bool
     {
         return $this->hasPageCacheStats;
     }
 
+    /**
+     * The ratio of page cache hits to total number of lookups or 0 if no data is available.
+     */
     public function getPageCacheHitRatio(): float
     {
         return $this->pageCacheHitRatio;
     }
 
+    /**
+     * Number of page cache hits caused by executing the associated execution step.
+     */
     public function getPageCacheHits(): int
     {
         return $this->pageCacheHits;
     }
 
+    /**
+     * Number of page cache misses caused by executing the associated execution step.
+     */
     public function getPageCacheMisses(): int
     {
         return $this->pageCacheMisses;
     }
 
+    /**
+     * The number of records this part of the plan produced.
+     */
     public function getRecords(): int
     {
         return $this->records;
     }
 
+    /**
+     * Amount of time spent in the associated execution step.
+     */
     public function getTime(): int
     {
         return $this->time;

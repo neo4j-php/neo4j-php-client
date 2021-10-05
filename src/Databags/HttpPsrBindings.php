@@ -22,6 +22,13 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
 
+/**
+ * Class containing all relevant implementation of the PSR-18 and PSR-17.
+ *
+ * @see https://www.php-fig.org/psr/psr-18/
+ * @see https://www.php-fig.org/psr/psr-17/
+ * @see https://www.php-fig.org/psr/psr-7/
+ */
 final class HttpPsrBindings
 {
     /** @var ClientInterface|callable():ClientInterface */
@@ -32,6 +39,8 @@ final class HttpPsrBindings
     private $requestFactory;
 
     /**
+     * @psalm-mutation-free
+     *
      * @param ClientInterface|callable():ClientInterface|null                 $client
      * @param StreamFactoryInterface|callable():StreamFactoryInterface|null   $streamFactory
      * @param RequestFactoryInterface|callable():RequestFactoryInterface|null $requestFactory
@@ -50,6 +59,8 @@ final class HttpPsrBindings
     }
 
     /**
+     * @pure
+     *
      * @param ClientInterface|callable():ClientInterface|null                 $client
      * @param StreamFactoryInterface|callable():StreamFactoryInterface|null   $streamFactory
      * @param RequestFactoryInterface|callable():RequestFactoryInterface|null $requestFactory
@@ -61,7 +72,7 @@ final class HttpPsrBindings
     }
 
     /**
-     * @psalm-mutation-free
+     * @pure
      */
     public static function default(): self
     {
@@ -78,6 +89,8 @@ final class HttpPsrBindings
     }
 
     /**
+     * Creates new bindings with the provided client.
+     *
      * @param ClientInterface|callable():ClientInterface $client
      */
     public function withClient($client): self
@@ -86,6 +99,8 @@ final class HttpPsrBindings
     }
 
     /**
+     * Creates new bindings with the provided stream factory.
+     *
      * @param StreamFactoryInterface|callable():StreamFactoryInterface $factory
      */
     public function withStreamFactory($factory): self
@@ -94,6 +109,8 @@ final class HttpPsrBindings
     }
 
     /**
+     * Creates new bindings with the request factory.
+     *
      * @param RequestFactoryInterface|callable():RequestFactoryInterface $factory
      */
     public function withRequestFactory($factory): self

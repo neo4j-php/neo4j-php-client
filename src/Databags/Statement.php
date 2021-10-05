@@ -14,7 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 /**
+ * The components of a Cypher query, containing the query text and parameter mapping.
+ *
  * @todo deprecate and create Query Object
+ *
+ * @psalm-immutable
  */
 final class Statement
 {
@@ -32,6 +36,8 @@ final class Statement
     }
 
     /**
+     * @pure
+     *
      * @param iterable<string, scalar|iterable|null>|null $parameters
      */
     public static function create(string $text, ?iterable $parameters = null): Statement
@@ -39,12 +45,17 @@ final class Statement
         return new self($text, $parameters ?? []);
     }
 
+    /**
+     * The query text.
+     */
     public function getText(): string
     {
         return $this->text;
     }
 
     /**
+     * The parameter mapping.
+     *
      * @return iterable<string, scalar|iterable|null>
      */
     public function getParameters(): iterable
