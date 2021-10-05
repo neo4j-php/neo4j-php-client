@@ -61,6 +61,8 @@ use function str_replace;
  * }
  *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class HttpDriver implements DriverInterface
 {

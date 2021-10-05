@@ -16,9 +16,16 @@ namespace Laudis\Neo4j\Contracts;
 use BadMethodCallException;
 use Laudis\Neo4j\Types\CypherMap;
 
+/**
+ * Defines how an object with properties should behave.
+ *
+ * @psalm-immutable
+ */
 interface HasPropertiesInterface
 {
     /**
+     * Returns the properties a map.
+     *
      * @return CypherMap<mixed>
      */
     public function getProperties(): CypherMap;
@@ -41,6 +48,8 @@ interface HasPropertiesInterface
     public function __set($name, $value): void;
 
     /**
+     * Checks to see if the property exists and is set.
+     *
      * @param string $name
      */
     public function __isset($name): bool;

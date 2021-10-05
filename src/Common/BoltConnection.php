@@ -28,16 +28,27 @@ use RuntimeException;
 final class BoltConnection implements ConnectionInterface
 {
     private ?Bolt $bolt = null;
+    /** @psalm-readonly */
     private string $serverAgent;
+    /** @psalm-readonly */
     private UriInterface $serverAddress;
+    /** @psalm-readonly */
     private string $serverVersion;
+    /** @psalm-readonly */
     private ConnectionProtocol $protocol;
+    /** @psalm-readonly */
     private AccessMode $accessMode;
+    /** @psalm-readonly */
     private DatabaseInfo $databaseInfo;
-    /** @var callable(): Bolt */
+    /**
+     * @var callable(): Bolt
+     * @psalm-readonly
+     */
     private $connector;
 
     /**
+     * @psalm-mutation-free
+     *
      * @param callable(): Bolt $connector
      */
     public function __construct(
@@ -58,6 +69,9 @@ final class BoltConnection implements ConnectionInterface
         $this->connector = $connector;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getImplementation(): Bolt
     {
         if ($this->bolt === null) {
@@ -67,36 +81,57 @@ final class BoltConnection implements ConnectionInterface
         return $this->bolt;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getServerAgent(): string
     {
         return $this->serverAgent;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getServerAddress(): UriInterface
     {
         return $this->serverAddress;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getServerVersion(): string
     {
         return $this->serverVersion;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getProtocol(): ConnectionProtocol
     {
         return $this->protocol;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getAccessMode(): AccessMode
     {
         return $this->accessMode;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getDatabaseInfo(): DatabaseInfo
     {
         return $this->databaseInfo;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isOpen(): bool
     {
         return $this->bolt !== null;
