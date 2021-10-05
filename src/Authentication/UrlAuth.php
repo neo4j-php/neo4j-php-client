@@ -20,6 +20,9 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use function substr_count;
 
+/**
+ * Authenticates connections based on the information found in the Uri.
+ */
 final class UrlAuth implements AuthenticateInterface
 {
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface

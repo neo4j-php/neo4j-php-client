@@ -18,6 +18,9 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Doesn't authenticate connections.
+ */
 final class NoAuth implements AuthenticateInterface
 {
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
