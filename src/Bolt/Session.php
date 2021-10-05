@@ -33,25 +33,41 @@ use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 
 /**
- * @template T
+ * A session using bolt connections.
  *
- * @implements SessionInterface<T>
+ * @template ResultFormat
+ *
+ * @implements SessionInterface<ResultFormat>
  */
 final class Session implements SessionInterface
 {
+    /** @psalm-readonly  */
     private SessionConfiguration $config;
-    /** @var ConnectionPoolInterface<Bolt> */
+    /**
+     * @psalm-readonly
+     *
+     * @var ConnectionPoolInterface<Bolt>
+     */
     private ConnectionPoolInterface $pool;
-    /** @var FormatterInterface<T> */
+    /**
+     * @psalm-readonly
+     *
+     * @var FormatterInterface<ResultFormat>
+     */
     private FormatterInterface $formatter;
+    /** @psalm-readonly  */
     private string $userAgent;
     private UriInterface $uri;
+    /** @psalm-readonly  */
     private AuthenticateInterface $auth;
+    /** @psalm-readonly  */
     private float $socketTimeout;
 
     /**
-     * @param FormatterInterface<T>         $formatter
-     * @param ConnectionPoolInterface<Bolt> $pool
+     * @param FormatterInterface<ResultFormat> $formatter
+     * @param ConnectionPoolInterface<Bolt>    $pool
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         SessionConfiguration $config,
@@ -129,7 +145,7 @@ final class Session implements SessionInterface
     }
 
     /**
-     * @return UnmanagedTransactionInterface<T>
+     * @return UnmanagedTransactionInterface<ResultFormat>
      */
     private function beginInstantTransaction(SessionConfiguration $config): TransactionInterface
     {

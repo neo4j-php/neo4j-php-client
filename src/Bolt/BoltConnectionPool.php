@@ -32,6 +32,8 @@ use Psr\Http\Message\UriInterface;
 use WeakReference;
 
 /**
+ * Manages singular Bolt connections.
+ *
  * @implements ConnectionPoolInterface<Bolt>
  */
 final class BoltConnectionPool implements ConnectionPoolInterface
@@ -72,11 +74,9 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         $bolt = new Bolt($socket);
         $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
 
-        // We create a weak reference to optimise the socket usage.
-        // This way the connection can reuse the bolt variable the first time it tries to connect
-        // Only when this function is finished and the returned connection is closed
-        // will the reference return null, prompting the need to reopen and recreate the bolt object
-        // over the same socket.
+        // We create a weak reference to optimise the socket usage. This way the connection can reuse the bolt variable
+        // the first time it tries to connect. Only when this function is finished and the returned connection is closed
+        // will the reference return null, prompting the need to reopen and recreate the bolt object on the same socket.
         $originalBolt = WeakReference::create($bolt);
 
         /**
