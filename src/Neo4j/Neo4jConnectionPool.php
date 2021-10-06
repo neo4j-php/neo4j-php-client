@@ -97,6 +97,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         /** @var Bolt */
         $bolt = $connection->getImplementation();
         $protocol = $connection->getProtocol();
+        $servers = [];
+        $ttl = time() + 3600;
         if ($protocol->compare(ConnectionProtocol::BOLT_V43()) >= 0) {
             /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
             $route = $bolt->route();
@@ -108,16 +110,19 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
              * @var iterable<array{addresses: list<string>, role:string}> $servers
              * @var int                       $ttl
              */
-            ['servers' => $servers, 'ttl' => $ttl] = $bolt->pullAll();
-            $ttl += time();
+
+            $response = $bolt->pullAll();
+
+            $ttl = time()+$response[0][0];
+            foreach ($response[0][1] as $server) {
+                $servers[] = ['addresses' => $server['addresses'], 'role' => $server['role']];
+            }
         } else {
             $bolt->run('CALL dbms.cluster.overview()');
             /** @var list<array{addresses: list<string>, role: string}> */
             $response = $bolt->pullAll();
 
             /** @var iterable<array{addresses: list<string>, role:string}> $servers */
-            $servers = [];
-            $ttl = time() + 3600;
             foreach ($response as $server) {
                 $addresses = $server['addresses'];
                 $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
