@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
-use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
@@ -24,9 +24,9 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
-use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\UriInterface;
 use function str_replace;
+use function uniqid;
 
 /**
  * @template T
@@ -71,9 +71,11 @@ final class HttpDriver implements DriverInterface
     private DriverConfiguration $config;
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
-    private ?string $transactionUrl = null;
+    private string $key;
 
     /**
+     * @psalm-mutation-free
+     *
      * @param FormatterInterface<T> $formatter
      */
     public function __construct(
@@ -86,6 +88,8 @@ final class HttpDriver implements DriverInterface
         $this->config = $config;
         $this->formatter = $formatter;
         $this->auth = $auth;
+        /** @psalm-suppress ImpureFunctionCall */
+        $this->key = uniqid();
     }
 
     /**
@@ -99,7 +103,8 @@ final class HttpDriver implements DriverInterface
      *           ? self<U>
      *           : self<OGMResults>
      *           )
-     * @psalm-mutation-free
+     *
+     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
     {
@@ -124,60 +129,47 @@ final class HttpDriver implements DriverInterface
         );
     }
 
-    /**
-     * @throws Exception|ClientExceptionInterface
-     */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
         $bindings = $this->config->getHttpPsrBindings();
-        $psrFactory = $bindings->getRequestFactory();
-        $factory = new RequestFactory($psrFactory, $this->auth, $this->uri, $this->config->getUserAgent());
+        $factory = Resolvable::once($this->key, static function () use ($bindings) {
+            return new RequestFactory($bindings->getRequestFactory(), $this->auth, $this->uri, $this->config->getUserAgent());
+        });
         $config ??= SessionConfiguration::default();
-
-        if ($this->transactionUrl === null) {
-            $this->transactionUrl = $this->transactionUrl($factory, $config);
-        }
-
         $config = $config->merge(SessionConfiguration::fromUri($this->uri));
+        $streamFactoryResolve = Resolvable::once($this->key, static fn () => $bindings->getStreamFactory());
+        $clientResolve = Resolvable::once($this->key, static fn () => $bindings->getClient());
 
         return new HttpSession(
-            $bindings->getStreamFactory(),
-            new HttpConnectionPool($bindings->getClient(), $factory, $bindings->getStreamFactory()),
+            $streamFactoryResolve,
+            new HttpConnectionPool($clientResolve, $factory, $streamFactoryResolve),
             $config,
             $this->formatter,
             $factory,
-            $this->transactionUrl,
+            Resolvable::once($this->key, function () use ($config) {
+                $database = $config->getDatabase();
+                $request = $this->config->getHttpPsrBindings()->getRequestFactory()->createRequest('GET', $this->uri);
+                $client = $this->config->getHttpPsrBindings()->getClient();
+
+                $response = $client->sendRequest($request);
+
+                /** @var DiscoveryResultLegacy|DiscoveryResult */
+                $discovery = HttpHelper::interpretResponse($response);
+                $version = $discovery['neo4j_version'] ?? null;
+
+                if ($version === null) {
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
+                    $request = $request->withUri(Uri::create($discovery['data']));
+                    /** @var DiscoveryResultLegacy|DiscoveryResult */
+                    $discovery = HttpHelper::interpretResponse($client->sendRequest($request));
+                }
+
+                $tsx = $discovery['transaction'];
+
+                return str_replace('{databaseName}', $database, $tsx);
+            }),
             $this->auth,
             $this->config->getUserAgent()
         );
-    }
-
-    /**
-     * @param ParsedUrl $parsedUrl
-     *
-     * @throws ClientExceptionInterface|Exception
-     */
-    private function transactionUrl(RequestFactory $factory, SessionConfiguration $configuration): string
-    {
-        $database = $configuration->getDatabase();
-        $request = $factory->createRequest('GET', $this->uri);
-        $client = $this->config->getHttpPsrBindings()->getClient();
-
-        $response = $client->sendRequest($request);
-
-        /** @var DiscoveryResultLegacy|DiscoveryResult */
-        $discovery = HttpHelper::interpretResponse($response);
-        $version = $discovery['neo4j_version'] ?? null;
-
-        if ($version === null) {
-            /** @psalm-suppress PossiblyUndefinedArrayOffset */
-            $request = $request->withUri(Uri::create($discovery['data']));
-            /** @var DiscoveryResultLegacy|DiscoveryResult */
-            $discovery = HttpHelper::interpretResponse($client->sendRequest($request));
-        }
-
-        $tsx = $discovery['transaction'];
-
-        return str_replace('{databaseName}', $database, $tsx);
     }
 }

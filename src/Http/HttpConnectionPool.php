@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use function json_encode;
+use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -30,11 +31,29 @@ use Psr\Http\Message\UriInterface;
  */
 final class HttpConnectionPool implements ConnectionPoolInterface
 {
-    private ClientInterface $client;
-    private RequestFactory $requestFactory;
-    private StreamFactoryInterface $streamFactory;
+    /**
+     * @var Resolvable<ClientInterface>
+     * @psalm-readonly
+     */
+    private Resolvable $client;
+    /**
+     * @var Resolvable<RequestFactory>
+     * @psalm-readonly
+     */
+    private Resolvable $requestFactory;
+    /**
+     * @var Resolvable<StreamFactoryInterface>
+     * @psalm-readonly
+     */
+    private Resolvable $streamFactory;
 
-    public function __construct(ClientInterface $client, RequestFactory $requestFactory, StreamFactoryInterface $streamFactory)
+    /**
+     * @param Resolvable<StreamFactoryInterface> $streamFactory
+     * @param Resolvable<RequestFactory>         $requestFactory
+     * @param Resolvable<ClientInterface>        $client
+     * @psalm-mutation-free
+     */
+    public function __construct(Resolvable $client, Resolvable $requestFactory, Resolvable $streamFactory)
     {
         $this->client = $client;
         $this->requestFactory = $requestFactory;
@@ -48,7 +67,7 @@ final class HttpConnectionPool implements ConnectionPoolInterface
         string $userAgent,
         SessionConfiguration $config
     ): ConnectionInterface {
-        $request = $this->requestFactory->createRequest('POST', $uri);
+        $request = $this->requestFactory->resolve()->createRequest('POST', $uri);
 
         $path = $request->getUri()->getPath().'/commit';
         $uri = $request->getUri()->withPath($path);
@@ -69,15 +88,15 @@ CYPHER
             'includeStats' => false,
         ], JSON_THROW_ON_ERROR);
 
-        $request = $request->withBody($this->streamFactory->createStream($body));
+        $request = $request->withBody($this->streamFactory->resolve()->createStream($body));
 
-        $response = $this->client->sendRequest($request);
+        $response = $this->client->resolve()->sendRequest($request);
         $data = HttpHelper::interpretResponse($response);
         /** @var array{0: array{name: string, version: string, edition: string}} $results */
         $results = (new BasicFormatter())->formatHttpResult($response, $data, null)->first();
 
         return new HttpConnection(
-            $this->client,
+            $this->client->resolve(),
             $results[0]['name'].'-'.$results[0]['edition'].'/'.$results[0]['version'],
             $uri,
             $results[0]['version'],
