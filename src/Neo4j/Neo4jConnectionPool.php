@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use function array_slice;
 use Bolt\Bolt;
 use function count;
 use Exception;
@@ -94,11 +95,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     private function routingTable(ConnectionInterface $connection): RoutingTable
     {
-        /** @var Bolt */
+        /** @var Bolt $bolt */
         $bolt = $connection->getImplementation();
         $protocol = $connection->getProtocol();
         $servers = [];
-        $ttl = time() + 3600;
         if ($protocol->compare(ConnectionProtocol::BOLT_V43()) >= 0) {
             /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
             $route = $bolt->route();
@@ -106,21 +106,20 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $ttl += time();
         } elseif ($protocol->compare(ConnectionProtocol::BOLT_V40()) >= 0) {
             $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
-            /**
-             * @var iterable<array{addresses: list<string>, role:string}> $servers
-             * @var int                       $ttl
-             */
+            /** @var array{0: array{0: int, 1: list<array{addresses: list<string>, role:string}>}} */
+            $response = $bolt->pullAll(1);
+            $response = $response[0];
 
-            $response = $bolt->pullAll();
-
-            $ttl = time()+$response[0][0];
-            foreach ($response[0][1] as $server) {
+            $ttl = time() + $response[0];
+            foreach ($response[1] as $server) {
                 $servers[] = ['addresses' => $server['addresses'], 'role' => $server['role']];
             }
         } else {
             $bolt->run('CALL dbms.cluster.overview()');
             /** @var list<array{addresses: list<string>, role: string}> */
             $response = $bolt->pullAll();
+            $response = array_slice($response, 0, count($response) - 1);
+            $ttl = time() + 3600;
 
             /** @var iterable<array{addresses: list<string>, role:string}> $servers */
             foreach ($response as $server) {
