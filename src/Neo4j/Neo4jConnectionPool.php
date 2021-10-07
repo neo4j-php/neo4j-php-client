@@ -116,21 +116,20 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             }
         } else {
             $bolt->run('CALL dbms.cluster.overview()');
-            /** @var list<array{addresses: list<string>, role: string}> */
+            /** @var list<array{0: string, 1: list<string>, 2: string, 4: list, 4:string}> */
             $response = $bolt->pullAll();
             $response = array_slice($response, 0, count($response) - 1);
             $ttl = time() + 3600;
 
-            /** @var iterable<array{addresses: list<string>, role:string}> $servers */
             foreach ($response as $server) {
-                $addresses = $server['addresses'];
+                $addresses = $server[1];
                 $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
                 /**
                  * @psalm-suppress InvalidArrayAssignment
                  *
                  * @var array{addresses: list<string>, role:string}
                  */
-                $servers[] = ['addresses' => $addresses, 'role' => $server['role']];
+                $servers[] = ['addresses' => $addresses, 'role' => $server[2]];
             }
         }
 
