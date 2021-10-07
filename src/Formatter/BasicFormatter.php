@@ -30,6 +30,8 @@ use Psr\Http\Message\ResponseInterface;
 use UnexpectedValueException;
 
 /**
+ * Formats the result in basic CypherLists, CypherMaps and arrays by erasing all other types.
+ *
  * @psalm-import-type CypherError from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type CypherRowResponse from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
@@ -38,6 +40,8 @@ use UnexpectedValueException;
  * @psalm-type BasicResults = CypherList<CypherMap<scalar|array|null>>
  *
  * @implements FormatterInterface<BasicResults>
+ *
+ * @psalm-immutable
  */
 final class BasicFormatter implements FormatterInterface
 {
