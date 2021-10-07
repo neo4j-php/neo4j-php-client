@@ -14,15 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter\Specialised;
 
 use function count;
-use function date_get_last_errors;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
 use function explode;
-use Iterator;
-use function json_encode;
-use const JSON_THROW_ON_ERROR;
-use JsonException;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
 use Laudis\Neo4j\Types\Duration;
@@ -30,52 +25,53 @@ use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Time;
 use RuntimeException;
+use function sprintf;
 use function str_pad;
 use function substr;
 
 /**
  * @psalm-import-type MetaArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
+ *
+ * @psalm-immutable
  */
 final class HttpOGMStringTranslator
 {
     /**
-     * @param Iterator<MetaArray> $meta
+     * @param MetaArray $meta
      *
      * @throws Exception
      *
-     * @return string|Date|DateTime|Duration|LocalDateTime|LocalTime|Time
+     * @return array{0: int, 1: string|Date|DateTime|Duration|LocalDateTime|LocalTime|Time}
      */
-    public function translate(Iterator $meta, string $value)
+    public function translate(int $metaIndex, ?array $meta, string $value)
     {
-        $type = $meta->current()['type'] ?? null;
+        if ($meta === null) {
+            $type = null;
+        } else {
+            $type = $meta[$metaIndex]['type'] ?? null;
+        }
 
         switch ($type) {
             case 'duration':
-                $meta->next();
-                $tbr = $this->translateDuration($value);
+                $tbr = [1, $this->translateDuration($value)];
                 break;
             case 'datetime':
-                $meta->next();
-                $tbr = $this->translateDateTime($value);
+                $tbr = [1, $this->translateDateTime($value)];
                 break;
             case 'date':
-                $meta->next();
-                $tbr = $this->translateDate($value);
+                $tbr = [1, $this->translateDate($value)];
                 break;
             case 'time':
-                $meta->next();
-                $tbr = $this->translateTime($value);
+                $tbr = [1, $this->translateTime($value)];
                 break;
             case 'localdatetime':
-                $meta->next();
-                $tbr = $this->translateLocalDateTime($value);
+                $tbr = [1, $this->translateLocalDateTime($value)];
                 break;
             case 'localtime':
-                $meta->next();
-                $tbr = $this->translateLocalTime($value);
+                $tbr = [1, $this->translateLocalTime($value)];
                 break;
             default:
-                $tbr = $value;
+                $tbr = [0, $value];
                 break;
         }
 
@@ -107,18 +103,17 @@ final class HttpOGMStringTranslator
         return new Duration($months, $days, $seconds, $nanoseconds);
     }
 
-    /**
-     * @throws JsonException
-     */
     private function translateDate(string $value): Date
     {
         $epoch = new DateTimeImmutable('@0');
-        $date = DateTimeImmutable::createFromFormat('Y-m-d', $value);
-        if ($date === false) {
-            throw new RuntimeException(json_encode(date_get_last_errors(), JSON_THROW_ON_ERROR));
+        $dateTime = DateTimeImmutable::createFromFormat('Y-m-d', $value);
+        if ($dateTime === false) {
+            throw new RuntimeException(sprintf('Could not create date from format "Y-m-d" and %s', $value));
         }
-        $diff = $date->diff($epoch);
 
+        $diff = $dateTime->diff($epoch);
+
+        /** @psalm-suppress ImpureMethodCall */
         return new Date((int) $diff->format('%a'));
     }
 
@@ -145,32 +140,29 @@ final class HttpOGMStringTranslator
         }
         [$time, $milliseconds] = explode('.', $time);
 
-        $date = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
-        if ($date === false) {
-            throw new RuntimeException(json_encode(date_get_last_errors(), JSON_THROW_ON_ERROR));
+        $dateTime = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
+        if ($dateTime === false) {
+            throw new RuntimeException(sprintf('Could not create date from format "Y-m-d H:i:s" and %s', $date.' '.$time));
         }
 
         if ($tz !== null) {
-            return new DateTime($date->getTimestamp(), (int) $milliseconds * 1000000, $tz);
+            return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1000000, $tz);
         }
 
-        return new DateTime($date->getTimestamp(), (int) $milliseconds * 1000000, 0);
+        return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1000000, 0);
     }
 
-    /**
-     * @throws JsonException
-     */
     private function translateLocalDateTime(string $value): LocalDateTime
     {
         [$date, $time] = explode('T', $value);
         [$time, $milliseconds] = explode('.', $time);
 
-        $date = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
-        if ($date === false) {
-            throw new RuntimeException(json_encode(date_get_last_errors(), JSON_THROW_ON_ERROR));
+        $dateTime = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
+        if ($dateTime === false) {
+            throw new RuntimeException(sprintf('Could not create date from format "Y-m-d H:i:s" and %s', $date.' '.$time));
         }
 
-        return new LocalDateTime($date->getTimestamp(), (int) $milliseconds * 1000000);
+        return new LocalDateTime($dateTime->getTimestamp(), (int) $milliseconds * 1000000);
     }
 
     /**

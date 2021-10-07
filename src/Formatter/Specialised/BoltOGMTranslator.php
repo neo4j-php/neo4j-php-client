@@ -41,7 +41,11 @@ use Laudis\Neo4j\Types\Time;
 use UnexpectedValueException;
 
 /**
+ * Translates Bolt objects to Driver Types.
+ *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class BoltOGMTranslator
 {
