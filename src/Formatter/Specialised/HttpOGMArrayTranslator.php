@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter\Specialised;
 
 use function is_array;
-use Iterator;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
@@ -31,19 +30,19 @@ use Laudis\Neo4j\Types\WGS84Point;
  * @psalm-type MetaArray = null|array{id?: int, type: string, deleted?: bool}
  *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class HttpOGMArrayTranslator
 {
     /**
-     * @param Iterator<RelationshipArray> $relationship
+     * @param RelationshipArray $relationship
      */
-    private function relationship(Iterator $relationship): Relationship
+    private function relationship(array $relationship): Relationship
     {
-        $rel = $relationship->current();
-        $relationship->next();
         /** @var array<string, OGMTypes> $map */
         $map = [];
-        foreach ($rel['properties'] ?? [] as $key => $x) {
+        foreach ($relationship['properties'] ?? [] as $key => $x) {
             // We only need to recurse over array types.
             // Nested types gets erased in the legacy http api.
             // We need to use JOLT instead for finer control,
@@ -56,10 +55,10 @@ final class HttpOGMArrayTranslator
         }
 
         return new Relationship(
-            (int) $rel['id'],
-            (int) $rel['startNode'],
-            (int) $rel['endNode'],
-            $rel['type'],
+            (int) $relationship['id'],
+            (int) $relationship['startNode'],
+            (int) $relationship['endNode'],
+            $relationship['type'],
             new CypherMap($map)
         );
     }
@@ -90,21 +89,23 @@ final class HttpOGMArrayTranslator
     }
 
     /**
-     * @param Iterator<RelationshipArray> $relationship
-     * @param Iterator<MetaArray>         $meta
-     * @param list<NodeArray>             $nodes
+     * @param list<RelationshipArray> $relationship
+     * @param list<MetaArray|null>    $meta
+     * @param list<NodeArray>         $nodes
      *
-     * @return Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point
+     * @return array{0: int, 1: int, 2:Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point}
      */
-    public function translate(Iterator $meta, Iterator $relationship, array $nodes, array $value): object
+    public function translate(array $meta, array $relationships, int $metaIndex, int $relationshipIndex, array $nodes, array $value): array
     {
-        $currentMeta = $meta->current();
-        $meta->next();
-        $type = $currentMeta['type'] ?? null;
+        $currentMeta = $meta[$metaIndex];
+        $metaIncrease = 1;
+        $relationshipIncrease = 0;
+        $type = $currentMeta === null ? null : ($currentMeta['type'] ?? null);
 
         switch ($type) {
             case 'relationship':
-                $tbr = $this->relationship($relationship);
+                $tbr = $this->relationship($relationships[$relationshipIndex]);
+                ++$relationshipIncrease;
                 break;
             case 'point':
                 $tbr = $this->translatePoint($value);
@@ -118,7 +119,7 @@ final class HttpOGMArrayTranslator
                 break;
         }
 
-        return $tbr;
+        return [$metaIncrease, $relationshipIncrease, $tbr];
     }
 
     /**

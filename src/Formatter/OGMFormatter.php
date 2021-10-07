@@ -14,16 +14,16 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter;
 
 use function array_slice;
-use ArrayIterator;
 use function count;
 use Exception;
+use function is_array;
+use function is_string;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMStringTranslator;
-use Laudis\Neo4j\Formatter\Specialised\HttpOGMTranslator;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
@@ -40,32 +40,35 @@ use Psr\Http\Message\ResponseInterface;
  * @psalm-import-type NodeArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  * @psalm-import-type RelationshipArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  *
- * @psalm-type CypherResult = array{columns: list<string>, data: list<array{row: list<scalar|array|null>, meta: array, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}>}
+ * @psalm-type CypherResultDataRow = list<array{row: list<scalar|array|null>, meta: array, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}>
+ * @psalm-type CypherResult = array{columns: list<string>, data: CypherResultDataRow}
  *
  * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
+ *
+ * @psalm-immutable
  */
 final class OGMFormatter implements FormatterInterface
 {
     private BoltOGMTranslator $boltTranslator;
-    private HttpOGMTranslator $httpTranslator;
+    private HttpOGMArrayTranslator $arrayTranslator;
+    private HttpOGMStringTranslator $stringTranslator;
 
-    public function __construct(BoltOGMTranslator $boltTranslator, HttpOGMTranslator $httpTranslator)
+    public function __construct(BoltOGMTranslator $boltTranslator, HttpOGMArrayTranslator $arrayTranslator, HttpOGMStringTranslator $stringTranslator)
     {
         $this->boltTranslator = $boltTranslator;
-        $this->httpTranslator = $httpTranslator;
+        $this->arrayTranslator = $arrayTranslator;
+        $this->stringTranslator = $stringTranslator;
     }
 
     /**
-     * @psalm-mutation-free
+     * @pure
      */
     public static function create(): OGMFormatter
     {
         return new self(
             new BoltOGMTranslator(),
-            new HttpOGMTranslator(
-                new HttpOGMArrayTranslator(),
-                new HttpOGMStringTranslator()
-            )
+            new HttpOGMArrayTranslator(),
+            new HttpOGMStringTranslator()
         );
     }
 
@@ -119,14 +122,29 @@ final class OGMFormatter implements FormatterInterface
 
         $columns = $result['columns'];
         foreach ($result['data'] as $data) {
-            $meta = new ArrayIterator($data['meta']);
+            $meta = $data['meta'];
             $nodes = $data['graph']['nodes'];
-            $relationship = new ArrayIterator($data['graph']['relationships']);
+            $relationship = $data['graph']['relationships'];
+            $metaIndex = 0;
+            $relationshipIndex = 0;
 
             /** @var array<string, OGMTypes> $record */
             $record = [];
             foreach ($data['row'] as $i => $value) {
-                $record[$columns[$i]] = $this->httpTranslator->translate($meta, $relationship, $nodes, $value);
+                if (is_array($value)) {
+                    $translation = $this->arrayTranslator->translate($meta, $relationship, $metaIndex, $relationshipIndex, $nodes, $value);
+
+                    $relationshipIndex += $translation[1];
+                    $metaIndex += $translation[0];
+                    $record[$columns[$i]] = $translation[2];
+                } elseif (is_string($value)) {
+                    [$metaIncrement, $translation] = $this->stringTranslator->translate($metaIndex, $meta, $value);
+                    $metaIndex += $metaIncrement;
+                    $record[$columns[$i]] = $translation;
+                } else {
+                    $record[$columns[$i]] = $value;
+                    ++$metaIndex;
+                }
             }
 
             $tbr[] = new CypherMap($record);
