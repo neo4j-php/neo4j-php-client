@@ -52,7 +52,7 @@ final class Uri implements UriInterface
     }
 
     /**
-     * @psalm-mutation-free
+     * @pure
      */
     public static function create(string $uri = ''): self
     {
@@ -268,7 +268,7 @@ final class Uri implements UriInterface
     }
 
     /**
-     * @psalm-mutation-free
+     * @pure
      */
     private static function filterPort(?int $port): ?int
     {

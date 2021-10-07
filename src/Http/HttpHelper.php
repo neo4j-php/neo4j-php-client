@@ -28,11 +28,15 @@ use Psr\Http\Message\ResponseInterface;
 use stdClass;
 
 /**
+ * Helper functions for the http protocol.
+ *
  * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
  */
 final class HttpHelper
 {
     /**
+     * Checks the response and interprets it. Throws if an error is detected.
+     *
      * @throws JsonException
      *
      * @return CypherResponseSet
@@ -60,11 +64,13 @@ final class HttpHelper
     }
 
     /**
+     * Prepares the statements to json.
+     *
      * @param iterable<Statement> $statements
      *
      * @throws JsonException
      */
-    public static function statementsToString(FormatterInterface $formatter, iterable $statements): string
+    public static function statementsToJson(FormatterInterface $formatter, iterable $statements): string
     {
         $tbr = [];
         foreach ($statements as $statement) {

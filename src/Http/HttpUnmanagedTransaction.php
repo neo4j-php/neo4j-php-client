@@ -32,14 +32,26 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
 {
+    /** @psalm-readonly */
     private RequestInterface $request;
+    /** @psalm-readonly */
     private StreamFactoryInterface $factory;
-    /** @var ConnectionInterface<ClientInterface> */
+    /**
+     * @psalm-readonly
+     *
+     * @var ConnectionInterface<ClientInterface>
+     */
     private ConnectionInterface $connection;
-    /** @var FormatterInterface<T> */
+    /**
+     * @psalm-readonly
+     *
+     * @var FormatterInterface<T>
+     */
     private FormatterInterface $formatter;
 
     /**
+     * @psalm-mutation-free
+     *
      * @param FormatterInterface<T>                $formatter
      * @param ConnectionInterface<ClientInterface> $connection
      */
@@ -72,13 +84,13 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @throws JsonException|ClientExceptionInterface
+     * @throws JsonException
      */
     public function runStatements(iterable $statements): CypherList
     {
         $request = $this->request->withMethod('POST');
 
-        $body = HttpHelper::statementsToString($this->formatter, $statements);
+        $body = HttpHelper::statementsToJson($this->formatter, $statements);
 
         $request = $request->withBody($this->factory->createStream($body));
         $start = microtime(true);
@@ -90,13 +102,13 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @throws JsonException|ClientExceptionInterface
+     * @throws JsonException
      */
     public function commit(iterable $statements = []): CypherList
     {
         $uri = $this->request->getUri();
         $request = $this->request->withUri($uri->withPath($uri->getPath().'/commit'))->withMethod('POST');
-        $content = HttpHelper::statementsToString($this->formatter, $statements);
+        $content = HttpHelper::statementsToJson($this->formatter, $statements);
         $request = $request->withBody($this->factory->createStream($content));
 
         $start = microtime(true);
@@ -109,7 +121,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @throws JsonException|ClientExceptionInterface
+     * @throws JsonException
      */
     public function rollback(): void
     {
