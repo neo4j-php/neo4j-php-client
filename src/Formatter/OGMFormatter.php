@@ -30,6 +30,8 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
+ * Formats the result in a basic OGM (Object Graph Mapping) format by mapping al cypher types to types found in the \Laudis\Neo4j\Types namespace.
+ *
  * @see https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-type-mapping
  *
  * @psalm-type OGMTypes = string|\Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime|\Laudis\Neo4j\Types\Time|int|float|bool|null|\Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap|\Laudis\Neo4j\Types\Node|\Laudis\Neo4j\Types\Relationship|\Laudis\Neo4j\Types\Path|\Laudis\Neo4j\Types\Cartesian3DPoint|\Laudis\Neo4j\Types\CartesianPoint|\Laudis\Neo4j\Types\WGS84Point|\Laudis\Neo4j\Types\WGS843DPoint
@@ -38,9 +40,10 @@ use Psr\Http\Message\ResponseInterface;
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  *
  * @psalm-import-type NodeArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
+ * @psalm-import-type MetaArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  * @psalm-import-type RelationshipArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  *
- * @psalm-type CypherResultDataRow = list<array{row: list<scalar|array|null>, meta: array, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}>
+ * @psalm-type CypherResultDataRow = list<array{row: list<scalar|array|null>, meta: list<MetaArray>, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}>
  * @psalm-type CypherResult = array{columns: list<string>, data: CypherResultDataRow}
  *
  * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface

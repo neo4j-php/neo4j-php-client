@@ -25,6 +25,8 @@ use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 
 /**
+ * Maps the arrays to their respective values.
+ *
  * @psalm-type RelationshipArray = array{id: string, type: string, startNode: string, endNode: string, properties?: array<string, scalar|null|array<array-key, scalar|null|array>>}
  * @psalm-type NodeArray = array{id: string, labels: list<string>, properties: array<string, scalar|null|array}
  * @psalm-type MetaArray = null|array{id?: int, type: string, deleted?: bool}
@@ -89,7 +91,7 @@ final class HttpOGMArrayTranslator
     }
 
     /**
-     * @param list<RelationshipArray> $relationship
+     * @param list<RelationshipArray> $relationships
      * @param list<MetaArray|null>    $meta
      * @param list<NodeArray>         $nodes
      *

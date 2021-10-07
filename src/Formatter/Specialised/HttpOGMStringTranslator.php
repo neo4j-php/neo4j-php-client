@@ -30,6 +30,8 @@ use function str_pad;
 use function substr;
 
 /**
+ * Maps the strings to their respective values.
+ *
  * @psalm-import-type MetaArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  *
  * @psalm-immutable
@@ -37,19 +39,15 @@ use function substr;
 final class HttpOGMStringTranslator
 {
     /**
-     * @param MetaArray $meta
+     * @param list<MetaArray> $meta
      *
      * @throws Exception
      *
      * @return array{0: int, 1: string|Date|DateTime|Duration|LocalDateTime|LocalTime|Time}
      */
-    public function translate(int $metaIndex, ?array $meta, string $value)
+    public function translate(int $metaIndex, array $meta, string $value)
     {
-        if ($meta === null) {
-            $type = null;
-        } else {
-            $type = $meta[$metaIndex]['type'] ?? null;
-        }
+        $type = $meta[$metaIndex]['type'] ?? null;
 
         switch ($type) {
             case 'duration':

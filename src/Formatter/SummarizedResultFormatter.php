@@ -29,6 +29,8 @@ use Psr\Http\Message\ResponseInterface;
 use UnexpectedValueException;
 
 /**
+ * Decorates the result of the provided format with an extensive summary.
+ *
  * @template T
  *
  * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
@@ -36,6 +38,8 @@ use UnexpectedValueException;
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
  *
  * @implements FormatterInterface<SummarizedResult<T>>
+ *
+ * @psalm-immutable
  */
 final class SummarizedResultFormatter implements FormatterInterface
 {
