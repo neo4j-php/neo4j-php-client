@@ -23,7 +23,6 @@ use function sprintf;
  *
  * @psalm-immutable
  *
- *
  * @psalm-immutable
  *
  * @extends AbstractPropertyObject<OGMTypes, int|string|CypherMap<OGMTypes>>
