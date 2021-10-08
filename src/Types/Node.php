@@ -128,6 +128,6 @@ final class Node extends AbstractPropertyObject
     public function getProperties(): CypherMap
     {
         /** @psalm-suppress InvalidReturnStatement false positive with type alias. */
-        return new CypherMap($this);
+        return $this->properties;
     }
 }

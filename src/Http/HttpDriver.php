@@ -132,13 +132,13 @@ final class HttpDriver implements DriverInterface
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
         $bindings = $this->config->getHttpPsrBindings();
-        $factory = Resolvable::once($this->key, static function () use ($bindings) {
+        $factory = Resolvable::once($this->key.':requestFactory', function () use ($bindings) {
             return new RequestFactory($bindings->getRequestFactory(), $this->auth, $this->uri, $this->config->getUserAgent());
         });
         $config ??= SessionConfiguration::default();
         $config = $config->merge(SessionConfiguration::fromUri($this->uri));
-        $streamFactoryResolve = Resolvable::once($this->key, static fn () => $bindings->getStreamFactory());
-        $clientResolve = Resolvable::once($this->key, static fn () => $bindings->getClient());
+        $streamFactoryResolve = Resolvable::once($this->key.':streamFactory', static fn () => $bindings->getStreamFactory());
+        $clientResolve = Resolvable::once($this->key.':client', static fn () => $bindings->getClient());
 
         return new HttpSession(
             $streamFactoryResolve,
@@ -146,9 +146,9 @@ final class HttpDriver implements DriverInterface
             $config,
             $this->formatter,
             $factory,
-            Resolvable::once($this->key, function () use ($config) {
+            Resolvable::once($this->key.':tsxUrl', function () use ($config, $factory) {
                 $database = $config->getDatabase();
-                $request = $this->config->getHttpPsrBindings()->getRequestFactory()->createRequest('GET', $this->uri);
+                $request = $factory->resolve()->createRequest('GET', $this->uri);
                 $client = $this->config->getHttpPsrBindings()->getClient();
 
                 $response = $client->sendRequest($request);
