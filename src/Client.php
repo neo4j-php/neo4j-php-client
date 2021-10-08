@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -26,6 +27,7 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use function array_key_exists;
 
 /**
  * A collection of drivers with methods to run queries though them.
@@ -80,6 +82,10 @@ final class Client implements ClientInterface
     public function getDriver(?string $alias): DriverInterface
     {
         $alias = $this->decideAlias($alias);
+
+        if (!array_key_exists($alias, $this->drivers)) {
+            throw new InvalidArgumentException(sprintf('The provided alias: "%s" was not found in the client', $alias));
+        }
 
         return $this->drivers[$alias];
     }
