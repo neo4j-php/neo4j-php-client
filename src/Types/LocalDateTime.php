@@ -17,7 +17,14 @@ use DateTimeImmutable;
 use Exception;
 use function sprintf;
 
-final class LocalDateTime extends AbstractPropertyContainer
+/**
+ * A date time represented in seconds and nanoseconds since the unix epoch.
+ *
+ * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<int, int>
+ */
+final class LocalDateTime extends AbstractPropertyObject
 {
     private int $seconds;
     private int $nanoseconds;
@@ -28,11 +35,17 @@ final class LocalDateTime extends AbstractPropertyContainer
         $this->nanoseconds = $nanoseconds;
     }
 
+    /**
+     * The amount of seconds since the unix epoch.
+     */
     public function getSeconds(): int
     {
         return $this->seconds;
     }
 
+    /**
+     * The amount of nanoseconds after the seconds have passed.
+     */
     public function getNanoseconds(): int
     {
         return $this->nanoseconds;
@@ -47,9 +60,19 @@ final class LocalDateTime extends AbstractPropertyContainer
                     ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
     }
 
-    public function getIterator()
+    /**
+     * @return array{seconds: int, nanoseconds: int}
+     */
+    public function toArray(): array
     {
-        yield 'seconds' => $this->seconds;
-        yield 'nanoseconds' => $this->nanoseconds;
+        return [
+            'seconds' => $this->seconds,
+            'nanoseconds' => $this->nanoseconds,
+        ];
+    }
+
+    public function getProperties(): CypherMap
+    {
+        return new CypherMap($this);
     }
 }

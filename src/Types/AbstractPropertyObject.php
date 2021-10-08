@@ -14,22 +14,24 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use BadMethodCallException;
+use function get_class;
+use JsonSerializable;
 use Laudis\Neo4j\Contracts\HasPropertiesInterface;
+use function sprintf;
 
-abstract class AbstractPropertyContainer extends AbstractCypherContainer implements HasPropertiesInterface
+/**
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @template PropertyTypes
+ * @template ObjectTypes
+ *
+ * @extends AbstractCypherObject<string, ObjectTypes>
+ * @implements HasPropertiesInterface<PropertyTypes>
+ *
+ * @psalm-immutable
+ */
+abstract class AbstractPropertyObject extends AbstractCypherObject implements HasPropertiesInterface
 {
-    /** @var CypherMap<mixed>|null */
-    protected ?CypherMap $cachedProperties = null;
-
-    public function getProperties(): CypherMap
-    {
-        if ($this->cachedProperties === null) {
-            $this->cachedProperties = new CypherMap($this);
-        }
-
-        return $this->cachedProperties;
-    }
-
     public function __get($name)
     {
         return $this->getProperties()->get($name);
@@ -37,7 +39,7 @@ abstract class AbstractPropertyContainer extends AbstractCypherContainer impleme
 
     public function __set($name, $value): void
     {
-        throw new BadMethodCallException(static::class.' is immutable');
+        throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
     }
 
     public function __isset($name): bool

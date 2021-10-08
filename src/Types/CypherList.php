@@ -23,6 +23,8 @@ use function sort;
 use function usort;
 
 /**
+ * An immutable ordered sequence of items.
+ *
  * @template TValue
  *
  * @extends AbstractCypherSequence<int, TValue>
@@ -48,6 +50,8 @@ final class CypherList extends AbstractCypherSequence
     }
 
     /**
+     * Returns the first element in the sequence.
+     *
      * @return TValue
      */
     public function first()
@@ -60,6 +64,8 @@ final class CypherList extends AbstractCypherSequence
     }
 
     /**
+     * Returns the last element in the sequence.
+     *
      * @return TValue
      */
     public function last()
@@ -129,6 +135,8 @@ final class CypherList extends AbstractCypherSequence
     }
 
     /**
+     * Gets the nth element in the list.
+     *
      * @throws OutOfBoundsException
      *
      * @return TValue

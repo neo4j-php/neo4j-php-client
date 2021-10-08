@@ -17,9 +17,19 @@ use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
 
 /**
+ * A Node class representing a Node in cypher.
+ *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
+ *
+ *
+ * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<OGMTypes, int|string|CypherMap<OGMTypes>>
+ * @extends AbstractPropertyObject<OGMTypes, int|CypherList<string>|CypherMap<OGMTypes>>
  */
-final class Node extends AbstractPropertyContainer
+final class Node extends AbstractPropertyObject
 {
     private int $id;
     /** @var CypherList<string> */
@@ -50,6 +60,8 @@ final class Node extends AbstractPropertyContainer
     }
 
     /**
+     * The labels on the node.
+     *
      * @return CypherList<string>
      */
     public function getLabels(): CypherList
@@ -77,12 +89,17 @@ final class Node extends AbstractPropertyContainer
         return $this->id;
     }
 
+    /**
+     * The id of the node.
+     */
     public function getId(): int
     {
         return $this->id;
     }
 
     /**
+     * Gets the property of the node by key.
+     *
      * @return OGMTypes
      */
     public function getProperty(string $key)
@@ -94,15 +111,23 @@ final class Node extends AbstractPropertyContainer
         return $this->properties->get($key);
     }
 
-    public function getIterator()
+    /**
+     * @psalm-suppress ImplementedReturnTypeMismatch False positive.
+     *
+     * @return array{id: int, labels: CypherList<string>, properties: CypherMap<OGMTypes>}
+     */
+    public function toArray(): array
     {
-        yield 'id' => $this->id;
-        yield 'labels' => $this->labels;
-        yield 'properties' => $this->properties;
+        return [
+            'id' => $this->id,
+            'labels' => $this->labels,
+            'properties' => $this->properties,
+        ];
     }
 
     public function getProperties(): CypherMap
     {
-        return $this->properties;
+        /** @psalm-suppress InvalidReturnStatement false positive with type alias. */
+        return new CypherMap($this);
     }
 }

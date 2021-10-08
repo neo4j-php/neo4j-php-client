@@ -19,7 +19,14 @@ use Exception;
 use RuntimeException;
 use function sprintf;
 
-final class DateTime extends AbstractPropertyContainer
+/**
+ * A date represented by seconds and nanoseconds since unix epoch, enriched with a timezone offset in seconds.
+ *
+ * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<int, int>
+ */
+final class DateTime extends AbstractPropertyObject
 {
     private int $seconds;
     private int $nanoseconds;
@@ -32,22 +39,33 @@ final class DateTime extends AbstractPropertyContainer
         $this->tzOffsetSeconds = $tzOffsetSeconds;
     }
 
+    /**
+     * Returns the amount of seconds since unix epoch.
+     */
     public function getSeconds(): int
     {
         return $this->seconds;
     }
 
+    /**
+     * Returns the amount of nanoseconds after the seconds have passed.
+     */
     public function getNanoseconds(): int
     {
         return $this->nanoseconds;
     }
 
+    /**
+     * Returns the timezone offset in seconds.
+     */
     public function getTimeZoneOffsetSeconds(): int
     {
         return $this->tzOffsetSeconds;
     }
 
     /**
+     * Casts to an immutable date time.
+     *
      * @throws Exception
      */
     public function toDateTime(): DateTimeImmutable
@@ -66,10 +84,20 @@ final class DateTime extends AbstractPropertyContainer
         throw new RuntimeException($message);
     }
 
-    public function getIterator()
+    /**
+     * @return array{seconds: int, nanoseconds: int, tzOffsetSeconds: int}
+     */
+    public function toArray(): array
     {
-        yield 'seconds' => $this->seconds;
-        yield 'nanoseconds' => $this->nanoseconds;
-        yield 'tzOffsetSeconds' => $this->tzOffsetSeconds;
+        return [
+            'seconds' => $this->seconds,
+            'nanoseconds' => $this->nanoseconds,
+            'tzOffsetSeconds' => $this->tzOffsetSeconds,
+        ];
+    }
+
+    public function getProperties(): CypherMap
+    {
+        return new CypherMap($this);
     }
 }

@@ -18,7 +18,7 @@ use BadMethodCallException;
 use InvalidArgumentException;
 use function json_encode;
 use JsonException;
-use Laudis\Neo4j\Types\AbstractCypherContainer;
+use Laudis\Neo4j\Types\AbstractCypherObject;
 use PHPUnit\Framework\TestCase;
 
 final class CypherTypeTest extends TestCase
@@ -30,7 +30,7 @@ final class CypherTypeTest extends TestCase
      */
     public function testEmpty(): void
     {
-        $empty = new class() extends AbstractCypherContainer {
+        $empty = new class() extends AbstractCypherObject {
             public function getIterator()
             {
                 return new ArrayIterator([]);
@@ -73,7 +73,7 @@ final class CypherTypeTest extends TestCase
      */
     public function testFilled(): void
     {
-        $filled = new class() extends AbstractCypherContainer {
+        $filled = new class() extends AbstractCypherObject {
             public function getIterator()
             {
                 yield 'a' => 'b';

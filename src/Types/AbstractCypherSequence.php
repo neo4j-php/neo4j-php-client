@@ -16,30 +16,29 @@ namespace Laudis\Neo4j\Types;
 use function array_key_exists;
 use function array_search;
 use ArrayAccess;
-use ArrayIterator;
-use BadMethodCallException;
 use function count;
 use Countable;
 use function implode;
 use function in_array;
-use IteratorAggregate;
-use JsonSerializable;
 
 /**
+ * Abstract immutable sequence with basic functional methods.
+ *
  * @template TKey of array-key
  * @template TValue
  *
- * @implements ArrayAccess<TKey, TValue>
- * @implements ArrayAccess<TKey, TValue>
+ * @extends AbstractCypherObject<TKey, TValue>
  *
  * @psalm-immutable
  */
-abstract class AbstractCypherSequence implements Countable, JsonSerializable, ArrayAccess, IteratorAggregate
+abstract class AbstractCypherSequence extends AbstractCypherObject implements Countable
 {
     /** @var array<TKey, TValue> */
     protected array $sequence;
 
     /**
+     * Creates a new instance from the given iterable.
+     *
      * @template Value
      *
      * @param iterable<Value> $iterable
@@ -56,21 +55,29 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
+     * Copies the sequence.
+     *
      * @return static
      */
     final public function copy(): self
     {
+        // Make sure the sequence is actually copied by reassigning it.
         $map = $this->sequence;
 
         return $this::fromIterable($map);
     }
 
+    /**
+     * Returns whether or not the sequence is empty.
+     */
     final public function isEmpty(): bool
     {
         return count($this->sequence) === 0;
     }
 
     /**
+     * Returns the sequence as an array.
+     *
      * @return array<TKey, TValue>
      */
     final public function toArray(): array
@@ -79,54 +86,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
-     * @return ArrayIterator<TKey, TValue>
-     */
-    final public function getIterator(): ArrayIterator
-    {
-        return new ArrayIterator($this->sequence);
-    }
-
-    /**
-     * @param TKey $offset
-     */
-    final public function offsetExists($offset): bool
-    {
-        return array_key_exists($offset, $this->sequence);
-    }
-
-    /**
-     * @param TKey $offset
+     * Creates a new sequence by merging this one with the provided iterable. The provided values will override the existing items in case of a key collision.
      *
-     * @return TValue
-     */
-    final public function offsetGet($offset)
-    {
-        return $this->sequence[$offset];
-    }
-
-    /**
-     * @param TKey   $offset
-     * @param TValue $value
-     */
-    final public function offsetSet($offset, $value)
-    {
-        throw new BadMethodCallException(static::class.' is immutable');
-    }
-
-    /**
-     * @param string $offset
-     */
-    final public function offsetUnset($offset)
-    {
-        throw new BadMethodCallException(static::class.' is immutable');
-    }
-
-    final public function jsonSerialize(): array
-    {
-        return $this->sequence;
-    }
-
-    /**
      * @param iterable<array-key, TValue> $values
      *
      * @return static
@@ -134,6 +95,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     abstract public function merge(iterable $values): self;
 
     /**
+     * Checks if the sequence contains the given key.
+     *
      * @param TKey $key
      */
     final public function hasKey($key): bool
@@ -142,6 +105,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
+     * Checks if the sequence contains the given value. The equality check is strict.
+     *
      * @param TValue $value
      */
     final public function hasValue($value): bool
@@ -150,6 +115,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
+     * Creates a filtered the sequence with the provided callback.
+     *
      * @param pure-callable(TKey, TValue):bool $callback
      *
      * @return static
@@ -167,6 +134,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
+     * Maps the values of this sequence to a new one with the provided callback.
+     *
      * @template U
      *
      * @param pure-callable(TKey, TValue):U $callback
@@ -184,6 +153,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
+     * Reduces this sequence with the given callback.
+     *
      * @template TInitial
      *
      * @param pure-callable(TInitial|null, TKey, TValue):TInitial $callback
@@ -201,9 +172,11 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
+     * Finds the position of the value within the sequence.
+     *
      * @param TValue $value
      *
-     * @return false|TKey
+     * @return false|TKey returns the key of the value if it is found, false otherwise
      */
     final public function find($value)
     {
@@ -211,27 +184,35 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
+     * Creates a reversed sequence.
+     *
      * @return static
      */
     abstract public function reversed(): self;
 
     /**
+     * Slices a new sequence starting from the given offset with a certain length.
+     * If the length is null it will slice the entire remainder starting from the offset.
+     *
      * @return static
      */
     abstract public function slice(int $offset, int $length = null): self;
 
     /**
+     * Creates a sorted sequence. If the compoarator is null it will use natural ordering.
+     *
      * @param (pure-callable(TValue, TValue):int)|null $comparator
      *
      * @return static
      */
     abstract public function sorted(?callable $comparator = null): self;
 
-    final public function __debugInfo()
-    {
-        return $this->sequence;
-    }
-
+    /**
+     * Joins the values within the sequence together with the provided glue. If the glue is null, it will be an empty string.
+     *
+     * @param string|null $glue
+     * @return string
+     */
     public function join(?string $glue = null): string
     {
         /** @psalm-suppress MixedArgumentTypeCoercion */
