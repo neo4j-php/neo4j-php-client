@@ -83,7 +83,7 @@ final class Neo4jDriver implements DriverInterface
      *           ? self<U>
      *           : self<OGMResults>
      *           )
-     * @psalm-mutation-free
+     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): self
     {

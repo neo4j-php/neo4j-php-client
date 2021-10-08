@@ -26,7 +26,11 @@ use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Psr\Http\Message\UriInterface;
 
 /**
+ * Factory for creating drivers directly.
+ *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class DriverFactory
 {
@@ -41,12 +45,15 @@ final class DriverFactory
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
+     *
+     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): DriverInterface
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
         }
+        /** @psalm-suppress ImpureMethodCall Uri is immutable */
         $scheme = $uri->getScheme();
         $scheme = $scheme === '' ? 'bolt' : $scheme;
 
@@ -72,7 +79,7 @@ final class DriverFactory
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
-     * @psalm-mutation-free
+     * @pure
      */
     private static function createBoltDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?float $socketTimeout, FormatterInterface $formatter = null): DriverInterface
     {
@@ -95,6 +102,8 @@ final class DriverFactory
      *           : DriverInterface<OGMResults>
      *           )
      * @psalm-mutation-free
+     *
+     * @pure
      */
     private static function createNeo4jDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?float $socketTimeout = null, FormatterInterface $formatter = null): DriverInterface
     {
@@ -116,7 +125,7 @@ final class DriverFactory
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
-     * @psalm-mutation-free
+     * @pure
      */
     private static function createHttpDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
     {

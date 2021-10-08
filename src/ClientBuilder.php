@@ -32,6 +32,8 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 
 /**
+ * Immutable factory for creating a client.
+ *
  * @template T
  *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -40,13 +42,22 @@ final class ClientBuilder
 {
     public const SUPPORTED_SCHEMES = ['', 'bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https'];
 
-    /** @var CypherMap<DriverSetup> */
+    /**
+     * @psalm-readonly
+     *
+     * @var CypherMap<DriverSetup>
+     */
     private CypherMap $driverConfigurations;
+    /** @psalm-readonly */
     private DriverConfiguration $configuration;
+    /** @psalm-readonly */
     private ?string $defaultDriver;
+    /** @psalm-readonly */
     private FormatterInterface $formatter;
 
     /**
+     * @psalm-mutation-free
+     *
      * @param CypherMap<DriverSetup> $driverConfigurations
      * @param FormatterInterface<T>  $formatter
      */
@@ -59,6 +70,8 @@ final class ClientBuilder
     }
 
     /**
+     * @pure
+     *
      * @return ClientBuilder<CypherList<CypherMap<OGMTypes>>>
      */
     public static function create(): ClientBuilder
@@ -67,6 +80,8 @@ final class ClientBuilder
     }
 
     /**
+     * @psalm-mutation-free
+     *
      * @return self<T>
      */
     public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?float $socketTimeout = null): self
@@ -78,6 +93,8 @@ final class ClientBuilder
     }
 
     /**
+     * @psalm-mutation-free
+     *
      * @return self<T>
      */
     private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication, float $socketTimeout): self
@@ -108,6 +125,7 @@ final class ClientBuilder
     {
         $config ??= BoltConfiguration::create();
         $parsedUrl = Uri::create($url);
+        /** @psalm-suppress ImpureMethodCall */
         $options = $config->getSslContextOptions();
         $postScheme = '';
         if ($options && $options !== []) {
@@ -118,7 +136,6 @@ final class ClientBuilder
             }
         }
 
-        $query = [];
         parse_str($parsedUrl->getQuery(), $query);
         /** @var array<string, string> */
         $query['database'] ??= $config->getDatabase();
@@ -172,6 +189,7 @@ final class ClientBuilder
      *
      * @deprecated
      * @see ClientBuilder::withDefaultDriver()
+     * @psalm-mutation-free
      */
     public function setDefaultConnection(string $alias): self
     {
@@ -182,6 +200,7 @@ final class ClientBuilder
      * Sets the default connection to the given alias.
      *
      * @return self<T>
+     * @psalm-mutation-free
      */
     public function withDefaultDriver(string $alias): self
     {
@@ -194,6 +213,7 @@ final class ClientBuilder
      * @param FormatterInterface<U> $formatter
      *
      * @return self<U>
+     * @psalm-mutation-free
      */
     public function withFormatter(FormatterInterface $formatter): self
     {
@@ -202,12 +222,17 @@ final class ClientBuilder
 
     /**
      * @return ClientInterface<T>
+     *
+     * @psalm-mutation-free
      */
     public function build(): ClientInterface
     {
         return new Client($this->driverConfigurations, $this->configuration, $this->formatter, $this->defaultDriver);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function withHttpPsrBindings(HttpPsrBindings $bindings): self
     {
         $config = $this->configuration->withHttpPsrBindings($bindings);

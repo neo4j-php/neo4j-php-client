@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -27,37 +26,32 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-use function sprintf;
 
 /**
- * @template T
+ * A collection of drivers with methods to run queries though them.
  *
- * @implements ClientInterface<T>
+ * @template ResultFormat
+ *
+ * @implements ClientInterface<ResultFormat>
  */
 final class Client implements ClientInterface
 {
     private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
-
-    /** @var CypherMap<DriverSetup> */
-    private CypherMap $driverSetups;
-    /** @var array<string, DriverInterface<T>> */
+    /** @var non-empty-array<string, DriverInterface<ResultFormat>> */
     private array $drivers;
-    /** @var FormatterInterface<T> */
-    private FormatterInterface $formatter;
-    private DriverConfiguration $configuration;
+    /** @psalm-readonly */
     private ?string $default;
 
     /**
-     * @param CypherMap<DriverSetup> $driverConfigurations
-     * @param FormatterInterface<T>  $formatter
+     * @psalm-mutation-free
+     *
+     * @param CypherMap<DriverSetup>           $driverSetups
+     * @param FormatterInterface<ResultFormat> $formatter
      */
-    public function __construct(CypherMap $driverConfigurations, DriverConfiguration $configuration, FormatterInterface $formatter, ?string $default)
+    public function __construct(CypherMap $driverSetups, DriverConfiguration $configuration, FormatterInterface $formatter, ?string $default)
     {
-        $this->driverSetups = $driverConfigurations;
-        $this->drivers = [];
-        $this->formatter = $formatter;
-        $this->configuration = $configuration;
         $this->default = $default;
+        $this->drivers = $this->createDrivers($driverSetups, $formatter, $configuration);
     }
 
     public function run(string $query, iterable $parameters = [], ?string $alias = null)
@@ -80,31 +74,20 @@ final class Client implements ClientInterface
         return $this->startSession($alias, SessionConfiguration::default())->beginTransaction($statements, $config);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getDriver(?string $alias): DriverInterface
     {
-        $this->createDefaultDriverIfNeeded();
-
         $alias = $this->decideAlias($alias);
-
-        if (!isset($this->drivers[$alias])) {
-            if (!$this->driverSetups->hasKey($alias)) {
-                $key = sprintf('The provided alias: "%s" was not found in the connection pool', $alias);
-                throw new InvalidArgumentException($key);
-            }
-
-            $setup = $this->driverSetups->get($alias);
-            $uri = $setup->getUri();
-            $timeout = $setup->getSocketTimeout();
-            $driver = DriverFactory::create($uri, $this->configuration, $setup->getAuth(), $timeout, $this->formatter);
-
-            $this->drivers[$alias] = $driver;
-        }
 
         return $this->drivers[$alias];
     }
 
     /**
-     * @return SessionInterface<T>
+     * @psalm-mutation-free
+     *
+     * @return SessionInterface<ResultFormat>
      */
     private function startSession(?string $alias = null, SessionConfiguration $configuration = null): SessionInterface
     {
@@ -126,14 +109,9 @@ final class Client implements ClientInterface
         return $this->writeTransaction($tsxHandler, $alias, $config);
     }
 
-    private function createDefaultDriverIfNeeded(): void
-    {
-        if ($this->driverSetups->isEmpty() && count($this->drivers) === 0) {
-            $driver = DriverFactory::create(self::DEFAULT_DRIVER_CONFIG, null, null, null, $this->formatter);
-            $this->drivers['default'] = $driver;
-        }
-    }
-
+    /**
+     * @psalm-mutation-free
+     */
     private function decideAlias(?string $alias): string
     {
         if ($alias !== null) {
@@ -144,10 +122,33 @@ final class Client implements ClientInterface
             return $this->default;
         }
 
-        if ($this->driverSetups->count() > 0) {
-            return $this->driverSetups->first()->getKey();
+        return array_key_first($this->drivers);
+    }
+
+    /**
+     * @psalm-mutation-free
+     *
+     * @param CypherMap<DriverSetup>           $driverSetups
+     * @param FormatterInterface<ResultFormat> $formatter
+     *
+     * @return non-empty-array<string, DriverInterface<ResultFormat>>
+     */
+    private function createDrivers(CypherMap $driverSetups, FormatterInterface $formatter, DriverConfiguration $configuration): array
+    {
+        if (count($driverSetups) === 0) {
+            $drivers = ['default' => DriverFactory::create(self::DEFAULT_DRIVER_CONFIG, null, null, null, $formatter)];
+        } else {
+            $drivers = [];
+            foreach ($driverSetups as $alias => $setup) {
+                $uri = $setup->getUri();
+                $timeout = $setup->getSocketTimeout();
+                $auth = $setup->getAuth();
+
+                $drivers[$alias] = DriverFactory::create($uri, $configuration, $auth, $timeout, $formatter);
+            }
         }
 
-        return 'default';
+        /** @var non-empty-array<string, DriverInterface<ResultFormat>> */
+        return $drivers;
     }
 }

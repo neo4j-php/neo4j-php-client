@@ -167,10 +167,25 @@ final class BoltOGMTranslator
 
     private function makeFromBoltPath(BoltPath $path): Path
     {
+        $nodes = [];
+        /** @var list<BoltNode> $boltNodes */
+        $boltNodes = $path->nodes();
+        foreach ($boltNodes as $node) {
+            $nodes[] = $this->makeFromBoltNode($node);
+        }
+        $relationships = [];
+        /** @var list<BoltRelationship> $rels */
+        $rels = $path->rels();
+        foreach ($rels as $rel) {
+            $relationships[] = $this->makeFromBoltRelationship($rel);
+        }
+        /** @var list<int> $ids */
+        $ids = $path->ids();
+
         return new Path(
-            new CypherList($path->ids()),
-            new CypherList($path->rels()),
-            new CypherList($path->nodes())
+            new CypherList($nodes),
+            new CypherList($relationships),
+            new CypherList($ids),
         );
     }
 
