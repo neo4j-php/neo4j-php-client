@@ -255,8 +255,6 @@ CYPHER, [], $alias);
         $result = $this->client->run('RETURN localdatetime() as local', [], $alias)->first()->get('local');
 
         self::assertInstanceOf(LocalDateTime::class, $result);
-        self::assertIsInt($result->seconds);
-        self::assertIsInt($result->nanoseconds);
         $date = $result->toDateTime();
         self::assertEquals($result->getSeconds(), $date->getTimestamp());
     }
