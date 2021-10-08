@@ -47,6 +47,11 @@
                 <directory name="src"/>
             </errorLevel>
         </UnusedForeachValue>
+        <MissingConstructor>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+            </errorLevel>
+        </MissingConstructor>
     </issueHandlers>
     <stubs>
         <file name="./vendor/vimeo/psalm/stubs/ext-ds.phpstub"/>
