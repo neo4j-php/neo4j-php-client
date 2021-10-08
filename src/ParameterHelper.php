@@ -24,6 +24,11 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use stdClass;
 
+/**
+ * Parameter helper class providing convenient functions for converting php objects to cypher parameters.
+ *
+ * @psalm-immutable
+ */
 final class ParameterHelper
 {
     /**
@@ -32,6 +37,8 @@ final class ParameterHelper
      * @param iterable<array-key, T> $iterable
      *
      * @return CypherList<T>
+     *
+     * @pure
      */
     public static function asList(iterable $iterable): CypherList
     {
@@ -71,6 +78,8 @@ final class ParameterHelper
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     private static function stringAbleToString($value): ?string
     {
@@ -85,6 +94,8 @@ final class ParameterHelper
      * @param mixed $value
      *
      * @return scalar|null
+     *
+     * @pure
      */
     private static function filterInvalidType($value)
     {
@@ -97,6 +108,8 @@ final class ParameterHelper
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     private static function emptySequenceToArray($value): ?array
     {
@@ -110,6 +123,8 @@ final class ParameterHelper
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     private static function emptyDictionaryToStdClass($value): ?stdClass
     {

@@ -26,7 +26,7 @@ final class Resolvable
     /** @var callable():Resolved */
     private $toResolve;
 
-    /** @var array<string, self> */
+    /** @var array<string, mixed> */
     private static array $cache = [];
 
     /**
@@ -46,15 +46,17 @@ final class Resolvable
      *
      * @param callable():U $toResolve
      *
-     * @return self<U>
+     * @return Resolvable<U>
      */
     public static function once(string $key, $toResolve): Resolvable
     {
-        $tbr = static function () use ($key, $toResolve): self {
+        /** @psalm-suppress MissingClosureReturnType */
+        $tbr = static function () use ($key, $toResolve) {
             if (!isset(self::$cache[$key])) {
                 self::$cache[$key] = call_user_func($toResolve);
             }
 
+            /** @var U */
             return self::$cache[$key];
         };
 

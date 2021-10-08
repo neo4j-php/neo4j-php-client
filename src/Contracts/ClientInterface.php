@@ -19,7 +19,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
- * @template T
+ * @template ResultFormat
  */
 interface ClientInterface
 {
@@ -30,7 +30,7 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return T
+     * @return ResultFormat
      */
     public function run(string $query, iterable $parameters = [], ?string $alias = null);
 
@@ -39,7 +39,7 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return T
+     * @return ResultFormat
      */
     public function runStatement(Statement $statement, ?string $alias = null);
 
@@ -50,7 +50,7 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return CypherList<T>
+     * @return CypherList<ResultFormat>
      */
     public function runStatements(iterable $statements, ?string $alias = null): CypherList;
 
@@ -61,19 +61,23 @@ interface ClientInterface
      *
      * @throws Neo4jException
      *
-     * @return UnmanagedTransactionInterface<T>
+     * @return UnmanagedTransactionInterface<ResultFormat>
      */
     public function beginTransaction(?iterable $statements = null, ?string $alias = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
 
     /**
-     * @return DriverInterface<T>
+     * Gets the driver with the provided alias. Gets the default driver if no alias is provided.
+     *
+     * @return DriverInterface<ResultFormat>
+     *
+     * @psalm-mutation-free
      */
     public function getDriver(?string $alias): DriverInterface;
 
     /**
      * @template U
      *
-     * @param callable(TransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<ResultFormat>):U $tsxHandler
      *
      * @return U
      */
@@ -82,7 +86,7 @@ interface ClientInterface
     /**
      * @template U
      *
-     * @param callable(TransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<ResultFormat>):U $tsxHandler
      *
      * @return U
      */
@@ -93,7 +97,7 @@ interface ClientInterface
      *
      * @template U
      *
-     * @param callable(TransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<ResultFormat>):U $tsxHandler
      *
      * @return U
      */

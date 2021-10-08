@@ -82,7 +82,7 @@ final class BoltDriver implements DriverInterface
      *           : self<OGMResults>
      *           )
      *
-     * @psalm-mutation-free
+     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): self
     {
