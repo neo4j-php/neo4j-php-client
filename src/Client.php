@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use function array_key_exists;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
@@ -27,7 +28,6 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-use function array_key_exists;
 
 /**
  * A collection of drivers with methods to run queries though them.

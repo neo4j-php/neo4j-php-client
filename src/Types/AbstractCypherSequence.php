@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
 use function array_search;
-use ArrayAccess;
 use function count;
 use Countable;
 use function implode;
@@ -209,9 +208,6 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
 
     /**
      * Joins the values within the sequence together with the provided glue. If the glue is null, it will be an empty string.
-     *
-     * @param string|null $glue
-     * @return string
      */
     public function join(?string $glue = null): string
     {
