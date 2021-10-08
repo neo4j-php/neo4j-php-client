@@ -15,16 +15,25 @@ namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Contracts\PointInterface;
 
-final class CartesianPoint extends AbstractPropertyContainer implements PointInterface
+/**
+ * A cartesian point in two dimensional space.
+ *
+ * @see https://neo4j.com/docs/cypher-manual/current/functions/spatial/#functions-point-cartesian-2d
+ *
+ * @psalm-immutable
+ *
+ * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
+ */
+class CartesianPoint extends AbstractPropertyObject implements PointInterface
 {
     private float $x;
     private float $y;
-    /** @var 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' */
+    /** @var Crs */
     private string $crs;
     private int $srid;
 
     /**
-     * @param 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' $crs
+     * @param Crs $crs
      */
     public function __construct(float $x, float $y, string $crs, int $srid)
     {
@@ -54,11 +63,24 @@ final class CartesianPoint extends AbstractPropertyContainer implements PointInt
         return $this->srid;
     }
 
-    public function getIterator()
+    public function getProperties(): CypherMap
     {
-        yield 'x' => $this->getX();
-        yield 'y' => $this->getY();
-        yield 'crs' => $this->getCrs();
-        yield 'srid' => $this->getSrid();
+        /** @psalm-suppress InvalidReturnStatement False positive */
+        return new CypherMap($this);
+    }
+
+    /**
+     * @psalm-suppress ImplementedReturnTypeMismatch False positive
+     *
+     * @return array{x: float, y: float, crs: Crs, srid: int}
+     */
+    public function toArray(): array
+    {
+        return [
+            'x' => $this->x,
+            'y' => $this->y,
+            'crs' => $this->crs,
+            'srid' => $this->srid,
+        ];
     }
 }

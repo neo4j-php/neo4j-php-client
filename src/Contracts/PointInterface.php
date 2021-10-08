@@ -17,6 +17,8 @@ namespace Laudis\Neo4j\Contracts;
  * Defines a basic Point type in neo4j.
  *
  * @psalm-immutable
+ *
+ * @psalm-type Crs = 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d';
  */
 interface PointInterface
 {
@@ -35,7 +37,7 @@ interface PointInterface
      *
      * @see https://en.wikipedia.org/wiki/Spatial_reference_system
      *
-     * @return 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d'
+     * @return Crs
      */
     public function getCrs(): string;
 

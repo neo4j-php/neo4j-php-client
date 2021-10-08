@@ -15,66 +15,63 @@ namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Contracts\PointInterface;
 
-final class WGS84Point extends AbstractPropertyContainer implements PointInterface
+/**
+ * A WGS84 Point in two dimensional space.
+ *
+ * @psalm-immutable
+ *
+ * @see https://neo4j.com/docs/cypher-manual/current/functions/spatial/#functions-point-wgs84-2d
+ *
+ * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
+ */
+final class WGS84Point extends CartesianPoint implements PointInterface
 {
     private float $latitude;
     private float $longitude;
-    private float $x;
-    private float $y;
-    /** @var 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' */
-    private string $crs;
-    private int $srid;
 
     /**
-     * @param 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' $crs
+     * @param Crs $crs
      */
     public function __construct(float $latitude, float $longitude, float $x, float $y, string $crs, int $srid)
     {
+        parent::__construct($x, $y, $crs, $srid);
         $this->latitude = $latitude;
         $this->longitude = $longitude;
-        $this->x = $x;
-        $this->y = $y;
-        $this->crs = $crs;
-        $this->srid = $srid;
     }
 
+    /**
+     * A numeric expression that represents the latitude/y value in decimal degrees.
+     */
     public function getLatitude(): float
     {
         return $this->latitude;
     }
 
+    /**
+     * A numeric expression that represents the longitude/x value in decimal degrees.
+     */
     public function getLongitude(): float
     {
         return $this->longitude;
     }
 
-    public function getX(): float
+    /**
+     * @return array{
+     *                latitude: float,
+     *                longitude: float,
+     *                x: float,
+     *                y: float,
+     *                crs: Crs,
+     *                srid: int
+     *                }
+     */
+    public function toArray(): array
     {
-        return $this->x;
-    }
+        $tbr = parent::toArray();
 
-    public function getY(): float
-    {
-        return $this->y;
-    }
+        $tbr['longitude'] = $this->longitude;
+        $tbr['latitude'] = $this->latitude;
 
-    public function getCrs(): string
-    {
-        return $this->crs;
-    }
-
-    public function getSrid(): int
-    {
-        return $this->srid;
-    }
-
-    public function getIterator()
-    {
-        yield 'latitude' => $this->getLatitude();
-        yield 'longitude' => $this->getLongitude();
-        yield 'x' => $this->getX();
-        yield 'y' => $this->getY();
-        yield 'crs' => $this->getCrs();
-        yield 'srid' => $this->getSrid();
+        return $tbr;
     }
 }

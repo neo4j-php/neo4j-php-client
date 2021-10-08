@@ -13,7 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-final class Time extends AbstractPropertyContainer
+/**
+ * A time object represented in seconds since the unix epoch.
+ *
+ * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<float, float>
+ */
+final class Time extends AbstractPropertyObject
 {
     private float $seconds;
 
@@ -22,13 +29,24 @@ final class Time extends AbstractPropertyContainer
         $this->seconds = $seconds;
     }
 
+    /**
+     * The seconds since the unix epoch.
+     */
     public function getSeconds(): float
     {
         return $this->seconds;
     }
 
-    public function getIterator()
+    /**
+     * @return array{seconds: float}
+     */
+    public function toArray(): array
     {
-        yield 'seconds' => $this->seconds;
+        return ['seconds' => $this->seconds];
+    }
+
+    public function getProperties(): CypherMap
+    {
+        return new CypherMap($this);
     }
 }

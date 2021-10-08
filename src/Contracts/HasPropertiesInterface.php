@@ -20,20 +20,22 @@ use Laudis\Neo4j\Types\CypherMap;
  * Defines how an object with properties should behave.
  *
  * @psalm-immutable
+ *
+ * @template T
  */
 interface HasPropertiesInterface
 {
     /**
      * Returns the properties a map.
      *
-     * @return CypherMap<mixed>
+     * @return CypherMap<T>
      */
     public function getProperties(): CypherMap;
 
     /**
      * @param string $name
      *
-     * @return mixed
+     * @return T
      */
     public function __get($name);
 
@@ -41,7 +43,7 @@ interface HasPropertiesInterface
      * Always throws an exception as cypher objects are immutable.
      *
      * @param string $name
-     * @param mixed  $value
+     * @param T      $value
      *
      * @throws BadMethodCallException
      */

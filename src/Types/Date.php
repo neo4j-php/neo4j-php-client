@@ -16,7 +16,14 @@ namespace Laudis\Neo4j\Types;
 use DateTimeImmutable;
 use Exception;
 
-final class Date extends AbstractPropertyContainer
+/**
+ * A date represented by days since unix epoch.
+ *
+ * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<int, int>
+ */
+final class Date extends AbstractPropertyObject
 {
     private int $days;
 
@@ -25,12 +32,17 @@ final class Date extends AbstractPropertyContainer
         $this->days = $days;
     }
 
+    /**
+     * The amount of days since unix epoch.
+     */
     public function getDays(): int
     {
         return $this->days;
     }
 
     /**
+     * Casts to an immutable date time.
+     *
      * @throws Exception
      */
     public function toDateTime(): DateTimeImmutable
@@ -38,8 +50,13 @@ final class Date extends AbstractPropertyContainer
         return (new DateTimeImmutable('@0'))->modify(sprintf('+%s days', $this->days));
     }
 
-    public function getIterator()
+    public function getProperties(): CypherMap
     {
-        yield 'days' => $this->days;
+        return new CypherMap($this);
+    }
+
+    public function toArray(): array
+    {
+        return ['days' => $this->days];
     }
 }

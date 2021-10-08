@@ -34,6 +34,8 @@ use function uksort;
 use function usort;
 
 /**
+ * An immutable ordered map of items.
+ *
  * @template TValue
  *
  * @extends AbstractCypherSequence<string, TValue>
@@ -74,6 +76,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Returns the first pair in the map.
+     *
      * @return Pair<string, TValue>
      */
     public function first(): Pair
@@ -87,6 +91,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Returns the last pair in the map.
+     *
      * @return Pair<string, TValue>
      */
     public function last(): Pair
@@ -100,6 +106,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Returns the pair at the nth position of the map.
+     *
      * @return Pair<string, TValue>
      */
     public function skip(int $position): Pair
@@ -116,6 +124,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Returns the keys in the map in order.
+     *
      * @return CypherList<string>
      */
     public function keys(): CypherList
@@ -124,6 +134,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Returns the pairs in the map in order.
+     *
      * @return CypherList<Pair<string, TValue>>
      */
     public function pairs(): CypherList
@@ -137,6 +149,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Create a new map sorted by keys. Natural ordering will be used if no comparator is provided.
+     *
      * @param (callable(string, string):int)|null $comparator
      *
      * @return CypherMap<TValue>
@@ -155,6 +169,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Returns the values in the map in order.
+     *
      * @return CypherList<TValue>
      */
     public function values(): CypherList
@@ -163,6 +179,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Creates a new map using exclusive or on the keys.
+     *
      * @param iterable<TValue> $map
      *
      * @return CypherMap<TValue>
@@ -201,6 +219,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Creates a union of this and the provided map. The items in the original map take precedence.
+     *
      * @param iterable<array-key, TValue> $map
      *
      * @return CypherMap<TValue>
@@ -209,13 +229,17 @@ final class CypherMap extends AbstractCypherSequence
     {
         $tbr = $this->sequence;
         foreach ($map as $key => $value) {
-            $tbr[(string) $key] = $value;
+            if (!array_key_exists($key, $tbr)) {
+                $tbr[(string) $key] = $value;
+            }
         }
 
         return new self($tbr);
     }
 
     /**
+     * Creates a new map from the existing one filtering the values based on the keys that don't exist in the provided map.
+     *
      * @param iterable<array-key, TValue> $map
      *
      * @return static
@@ -234,6 +258,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Creates a new map from the existing one filtering the values based on the keys that also exist in the provided map.
+     *
      * @param iterable<array-key, TValue> $map
      *
      * @return CypherMap<TValue>
@@ -286,6 +312,8 @@ final class CypherMap extends AbstractCypherSequence
     }
 
     /**
+     * Gets the value with the provided key. If a default value is provided, it will return the default instead of throwing an error when the key does not exist.
+     *
      * @template TDefault
      *
      * @param TDefault $default

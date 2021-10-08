@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
 use ArrayAccess;
+use ArrayIterator;
 use BadMethodCallException;
 use function get_class;
 use InvalidArgumentException;
@@ -23,53 +24,73 @@ use JsonSerializable;
 use function sprintf;
 
 /**
- * @implements ArrayAccess<string, static|scalar|null>
- * @implements IteratorAggregate<string, static|scalar|null>
+ * Abstract immutable container with basic functionality to integrate easily into the driver ecosystem.
+ *
+ * @psalm-immutable
+ *
+ * @template TKey of array-key
+ * @template TValue
+ *
+ * @implements ArrayAccess<TKey, TValue>
+ * @implements IteratorAggregate<TKey, TValue>
  */
-abstract class AbstractCypherContainer implements JsonSerializable, ArrayAccess, IteratorAggregate
+abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, IteratorAggregate
 {
-    /** @var array<string, self|scalar|null>|null */
-    private ?array $cachedSerialized = null;
+    /**
+     * Represents the container as an array.
+     *
+     * @return array<TKey, TValue>
+     */
+    abstract public function toArray(): array;
+
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
+    }
 
     /**
-     * @return array<string, static|scalar|null>
+     * @return ArrayIterator<TKey, TValue>
      */
-    final public function jsonSerialize(): array
+    public function getIterator(): ArrayIterator
     {
-        if ($this->cachedSerialized === null) {
-            $tbr = [];
-
-            foreach ($this as $key => $value) {
-                $tbr[$key] = $value;
-            }
-
-            $this->cachedSerialized = $tbr;
-        }
-
-        return $this->cachedSerialized;
+        return new ArrayIterator($this->toArray());
     }
 
+    /**
+     * @param TKey $offset
+     */
     final public function offsetExists($offset): bool
     {
-        return array_key_exists($offset, $this->jsonSerialize());
+        return array_key_exists($offset, $this->toArray());
     }
 
+    /**
+     * @param TKey $offset
+     *
+     * @return TValue
+     */
     final public function offsetGet($offset)
     {
-        $serialized = $this->jsonSerialize();
+        $serialized = $this->toArray();
         if (!array_key_exists($offset, $serialized)) {
             throw new InvalidArgumentException("Offset: $offset does not exists for class: ".static::class);
         }
 
-        /** @psalm-suppress InvalidReturnStatement */
         return $serialized[$offset];
     }
 
+    /**
+     * @param TKey   $offset
+     * @param TValue $value
+     */
     final public function offsetSet($offset, $value): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
     }
 
+    /**
+     * @param TKey $offset
+     */
     final public function offsetUnset($offset): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));

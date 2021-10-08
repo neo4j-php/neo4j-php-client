@@ -15,25 +15,26 @@ namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Contracts\PointInterface;
 
-final class Cartesian3DPoint extends AbstractPropertyContainer implements PointInterface
+/**
+ * A cartesian point in three dimensional space.
+ *
+ * @see https://neo4j.com/docs/cypher-manual/current/functions/spatial/#functions-point-cartesian-3d
+ *
+ * @psalm-immutable
+ *
+ * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
+ */
+class Cartesian3DPoint extends CartesianPoint implements PointInterface
 {
     private float $z;
-    private float $x;
-    private float $y;
-    /** @var 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' */
-    private string $crs;
-    private int $srid;
 
     /**
-     * @param 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' $crs
+     * @param Crs $crs
      */
     public function __construct(float $x, float $y, float $z, string $crs, int $srid)
     {
-        $this->x = $x;
-        $this->y = $y;
+        parent::__construct($x, $y, $crs, $srid);
         $this->z = $z;
-        $this->crs = $crs;
-        $this->srid = $srid;
     }
 
     public function getZ(): float
@@ -41,32 +42,15 @@ final class Cartesian3DPoint extends AbstractPropertyContainer implements PointI
         return $this->z;
     }
 
-    public function getX(): float
+    /**
+     * @return array{x: float, y: float, z: float, srid: int, crs: Crs}
+     */
+    public function toArray(): array
     {
-        return $this->x;
-    }
+        $tbr = parent::toArray();
 
-    public function getY(): float
-    {
-        return $this->y;
-    }
+        $tbr['z'] = $this->z;
 
-    public function getCrs(): string
-    {
-        return $this->crs;
-    }
-
-    public function getSrid(): int
-    {
-        return $this->srid;
-    }
-
-    public function getIterator()
-    {
-        yield 'x' => $this->getX();
-        yield 'y' => $this->getY();
-        yield 'z' => $this->getZ();
-        yield 'crs' => $this->getCrs();
-        yield 'srid' => $this->getSrid();
+        return $tbr;
     }
 }
