@@ -32,6 +32,8 @@ use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
 
 /**
+ * Driver for auto client-side routing.
+ *
  * @template T
  *
  * @implements DriverInterface<T>
