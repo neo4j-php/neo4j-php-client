@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use function array_slice;
 use Bolt\Bolt;
 use function count;
 use Exception;
@@ -94,9 +95,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     private function routingTable(ConnectionInterface $connection): RoutingTable
     {
-        /** @var Bolt */
+        /** @var Bolt $bolt */
         $bolt = $connection->getImplementation();
         $protocol = $connection->getProtocol();
+        $servers = [];
         if ($protocol->compare(ConnectionProtocol::BOLT_V43()) >= 0) {
             /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
             $route = $bolt->route();
@@ -104,29 +106,30 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $ttl += time();
         } elseif ($protocol->compare(ConnectionProtocol::BOLT_V40()) >= 0) {
             $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
-            /**
-             * @var iterable<array{addresses: list<string>, role:string}> $servers
-             * @var int                       $ttl
-             */
-            ['servers' => $servers, 'ttl' => $ttl] = $bolt->pullAll();
-            $ttl += time();
+            /** @var array{0: array{0: int, 1: list<array{addresses: list<string>, role:string}>}} */
+            $response = $bolt->pullAll(1);
+            $response = $response[0];
+
+            $ttl = time() + $response[0];
+            foreach ($response[1] as $server) {
+                $servers[] = ['addresses' => $server['addresses'], 'role' => $server['role']];
+            }
         } else {
             $bolt->run('CALL dbms.cluster.overview()');
-            /** @var list<array{addresses: list<string>, role: string}> */
+            /** @var list<array{0: string, 1: list<string>, 2: string, 4: list, 4:string}> */
             $response = $bolt->pullAll();
-
-            /** @var iterable<array{addresses: list<string>, role:string}> $servers */
-            $servers = [];
+            $response = array_slice($response, 0, count($response) - 1);
             $ttl = time() + 3600;
+
             foreach ($response as $server) {
-                $addresses = $server['addresses'];
+                $addresses = $server[1];
                 $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
                 /**
                  * @psalm-suppress InvalidArrayAssignment
                  *
                  * @var array{addresses: list<string>, role:string}
                  */
-                $servers[] = ['addresses' => $addresses, 'role' => $server['role']];
+                $servers[] = ['addresses' => $addresses, 'role' => $server[2]];
             }
         }
 
