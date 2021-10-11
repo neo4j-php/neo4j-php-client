@@ -426,11 +426,10 @@ $client = \Laudis\Neo4j\ClientBuilder::create()
 
 // The client will run the query on a driver with the provided config,
 // which spawns a session with the provided session config
-// and runs the query in a transaction with he provided transaction config
+// and runs the query in a transaction with the provided transaction config
 $client->run('MATCH (x) RETURN count(x) AS count');
 
 // More granular control can be achieved by requesting the concepts yourself:
-
 $tsx = $client->getDriver('default')
     ->createSession(SessionConfiguration::default()->withDatabase('management-database'))
     ->beginTransaction(null, TransactionConfiguration::default()->withTimeout(200));
