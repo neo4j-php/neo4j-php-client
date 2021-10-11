@@ -232,27 +232,6 @@ Cypher values and types map to these php types and classes:
 
 (*) A point can be one of four types implementing PointInterface: `\Laudis\Neo4j\Types\CartesianPoint` `\Laudis\Neo4j\Types\Cartesian3DPoint` `\Laudis\Neo4j\Types\WGS84Point` `\Laudis\Neo4j\Types\WGS843DPoint`
 
-If you want the results to be just a set of rows, columns, arrays and scalar types, you can use a BasicFormatter:
-
-```php
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Formatter\BasicFormatter;
-
-$client = ClientBuilder::create()->withFormatter(new BasicFormatter())->build();
-
-// Results are a CypherList
-$results = $client->run('MATCH (node:Node) RETURN node, node.id AS id');
-
-// A row is a CypherMap
-foreach ($results as $result) {
-    // Returns an array of attributes instead of a Node.
-    $node = $result->get('node');
-
-    echo $node['id'];
-    echo $result->get('id');
-}
-```
-
 ## Diving Deeper
 
 ### Differentiating between parameter type
@@ -264,11 +243,10 @@ The `ParameterHelper` class is the ideal companion for this:
 ```php
 use Laudis\Neo4j\ParameterHelper;
 
-$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asList([])]); // will return an empty vector
+$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asList([])]); // will return an empty CypherList
 $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => ParameterHelper::asMap([])]); // will error
-$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []]); // will retrun an empty vector
+$client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []]); // will return an empty CypherList
 ```
-
 
 ### Neo4j Version Support
 
@@ -313,8 +291,8 @@ In order to make the results of the bolt protocol and the http uniform, the driv
 
 The default formatter is the `\Laudis\Neo4j\Formatters\OGMFormatter`, which is explained extensively in [the result format section](#accessing-the-results).
 
-The driver also provides three formatters by default, which are all found in the Formatter namespace:
- - `\Laudis\Neo4j\Formatter\BasicFormatter` which erases all the Cypher types and simply returns every value in the resulting map as a scalar, null or array value.
+The driver provides three formatters by default, which are all found in the Formatter namespace:
+ - `\Laudis\Neo4j\Formatter\BasicFormatter` which erases all the Cypher types and simply returns every value in the resulting map as a [scalar](https://www.php.net/manual/en/function.is-scalar.php), null or array value.
  - `\Laudis\Neo4j\Formatter\OGMFormatter` which maps the cypher types to php types as explained [here](#accessing-the-results).
  - `\Laudis\Neo4j\Formatter\SummarizedResultFormatter` which decorates any formatter and adds an extensive result summary.
 
@@ -373,7 +351,7 @@ A **client** manages **drivers** and routes the queries to the correct drivers b
 
 ### Driver
 
-The ** driver** object is the thread-safe backbone that gives access to Neo4j. It owns a connection pool and can spawn **sessions** for carrying out work.
+The **driver** object is the thread-safe backbone that gives access to Neo4j. It owns a connection pool and can spawn **sessions** for carrying out work.
 
 ### Session
 
@@ -417,3 +395,47 @@ This library supports three drivers: bolt, HTTP and neo4j. The scheme part of th
 | neo4j | neo4j | neo4j+s           | neo4j+ssc                                     | Client side routing over bolt |
 | bolt  | bolt  | bolt+s            | bolt+ssc                                      | Single server over bolt       |
 | http  | http  | https             | configured through PSR Client implementation  | Single server over HTTP       |
+
+### Configuration objects
+
+A driver, session and transaction can be configured using configuration objects. An overview of the configuration options can be found here:
+
+| name | concept | description | class |
+|------|---------|-------------|-------|
+| user agent | driver | The user agent used to identify the client to the neo4j server. | `DriverConfiguration` |
+| Http PSR Bindings  | driver  | The relevant PSR implementation used by the driver when using the HTTP protocol. | `DriverConfiguration` |
+| database | session | The database to connect to. | `SessionConfiguration` |
+| fetch size | session | The amount of rows to fetch at once. (experimental) | `SessionConfiguration` |
+| access mode | session | The default mode when accessing the server. | `SessionConfiguration` |
+| bookmarks | session | The bookmarks used in the session. (experimental) | `SessionConfiguration` |
+| metadata | transaction | The metadata used during the transaction. (experimental) | `TransactionConfiguration` |
+| timeout | transaction | The maximum amount of time before timing out. | `TransactionConfiguration` |
+
+Code Example:
+
+```php
+use \Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
+
+$client = \Laudis\Neo4j\ClientBuilder::create()
+    ->withDefaultDriverConfiguration(DriverConfiguration::default()->withUserAgent('MyApp/1.0.0'))
+    ->withDefaultSessionConfiguration(SessionConfiguration::default()->withDatabase('app-database'))
+    ->withDefaultTransactionConfiguration(TransactionConfiguration::default()->withTimeout(5.0))
+    ->build();
+
+// The client will run the query on a driver with the provided config,
+// which spawns a session with the provided session config
+// and runs the query in a transaction with he provided transaction config
+$client->run('MATCH (x) RETURN count(x) AS count');
+
+// More granular control can be achieved by requesting the concepts yourself:
+
+$tsx = $client->getDriver('default')
+    ->createSession(SessionConfiguration::default()->withDatabase('management-database'))
+    ->beginTransaction(null, TransactionConfiguration::default()->withTimeout(200));
+
+$tsx->run('SOME REALLY LONG MANAGEMENT QUERY');
+
+$tsx->commit();
+```
