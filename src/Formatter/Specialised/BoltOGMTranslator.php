@@ -225,6 +225,7 @@ final class BoltOGMTranslator
      */
     public function mapValueToType($value)
     {
+        /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         $type = get_debug_type($value);
         if (!isset($this->rawToTypes[$type])) {
             throw new UnexpectedValueException('Cannot handle value of debug type: '.$type);
