@@ -307,6 +307,40 @@ If you plan on using the HTTP drivers, make sure you have [psr-7](https://www.ph
 composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 ```
 
+## Result formats/hydration
+
+In order to make the results of the bolt protocol and the http uniform, the driver provides result formatters (aka hydrators). The client is configurable with these formatters. You can even implement your own.
+
+The default formatter is the `\Laudis\Neo4j\Formatters\OGMFormatter`, which is explained extensively in [the result format section](#accessing-the-results).
+
+The driver also provides three formatters by default, which are all found in the Formatter namespace:
+ - `\Laudis\Neo4j\Formatter\BasicFormatter` which erases all the Cypher types and simply returns every value in the resulting map as a scalar, null or array value.
+ - `\Laudis\Neo4j\Formatter\OGMFormatter` which maps the cypher types to php types as explained [here](#accessing-the-results).
+ - `\Laudis\Neo4j\Formatter\SummarizedResultFormatter` which decorates any formatter and adds an extensive result summary.
+
+The client builder provides an easy way to change the formatter:
+
+```php
+$client = \Laudis\Neo4j\ClientBuilder::create()
+    ->withFormatter(\Laudis\Neo4j\Formatter\SummarizedResultFormatter::create())
+    ->build();
+
+/**
+ * The client will now return a result, decorated with a summary.
+ *
+ * @var \Laudis\Neo4j\Databags\SummarizedResult $results
+ */
+$summarisedResult = $client->run('MATCH (x) RETURN x');
+
+// The summary contains extensive information such as counters for changed values in the database,
+// information on the database, potential notifications, timing, a (profiled) plan, the type of query
+// and information on the server itself.
+$summary = $summarisedResult->getSummary();
+// The result is exactly the same as the default.
+$result = $summarisedResult->getResult();
+```
+
+In order to use a custom formatter, implement the `Laudis\Neo4j\Contracts\FormatterInterface` and provide it when using the client builder.
 
 ## Concepts
 
