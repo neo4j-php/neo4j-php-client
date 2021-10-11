@@ -35,9 +35,7 @@
         "symfony/polyfill-php80": "^1.2"
     },
     "suggest": {
-        "ext-sockets": "Needed to implement bolt protocol",
         "ext-bcmath": "Needed to implement bolt protocol",
-        "ext-ds": "Needed for optimal performance",
         "ext-json": "Needed to implement http protocol"
     },
     "require-dev": {
