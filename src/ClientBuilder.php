@@ -24,6 +24,7 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\HttpPsrBindings;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -49,7 +50,11 @@ final class ClientBuilder
      */
     private CypherMap $driverConfigurations;
     /** @psalm-readonly */
-    private DriverConfiguration $configuration;
+    private DriverConfiguration $defaultDriverConfig;
+    /** @psalm-readonly */
+    private TransactionConfiguration $defaultTransactionConfig;
+    /** @psalm-readonly */
+    private SessionConfiguration $defaultSessionConfig;
     /** @psalm-readonly */
     private ?string $defaultDriver;
     /** @psalm-readonly */
@@ -61,22 +66,33 @@ final class ClientBuilder
      * @param CypherMap<DriverSetup> $driverConfigurations
      * @param FormatterInterface<T>  $formatter
      */
-    public function __construct(DriverConfiguration $configuration, FormatterInterface $formatter, CypherMap $driverConfigurations, ?string $defaultDriver)
+    public function __construct(DriverConfiguration $configuration, SessionConfiguration $sessionConfiguration, TransactionConfiguration $transactionConfiguration, FormatterInterface $formatter, CypherMap $driverConfigurations, ?string $defaultDriver)
     {
         $this->driverConfigurations = $driverConfigurations;
-        $this->configuration = $configuration;
+        $this->defaultDriverConfig = $configuration;
         $this->defaultDriver = $defaultDriver;
         $this->formatter = $formatter;
+        $this->defaultSessionConfig = $sessionConfiguration;
+        $this->defaultTransactionConfig = $transactionConfiguration;
     }
 
     /**
+     * Creates a client builder with default configurations and an OGMFormatter.
+     *
      * @pure
      *
      * @return ClientBuilder<CypherList<CypherMap<OGMTypes>>>
      */
     public static function create(): ClientBuilder
     {
-        return new self(DriverConfiguration::default(), OGMFormatter::create(), new CypherMap(), null);
+        return new self(
+            DriverConfiguration::default(),
+            SessionConfiguration::default(),
+            TransactionConfiguration::default(),
+            OGMFormatter::create(),
+            new CypherMap(),
+            null
+        );
     }
 
     /**
@@ -108,7 +124,14 @@ final class ClientBuilder
         $setup = new DriverSetup($uri, $authentication, $socketTimeout);
         $configs = new CypherMap(array_merge($this->driverConfigurations->toArray(), [$alias => $setup]));
 
-        return new self($this->configuration, $this->formatter, $configs, $this->defaultDriver);
+        return new self(
+            $this->defaultDriverConfig,
+            $this->defaultSessionConfig,
+            $this->defaultTransactionConfig,
+            $this->formatter,
+            $configs,
+            $this->defaultDriver
+        );
     }
 
     /**
@@ -173,7 +196,9 @@ final class ClientBuilder
         $uri = $uri->withPort($uri->getPort() === 7687 ? 7474 : $uri->getPort());
 
         $self = new self(
-            $this->configuration->withHttpPsrBindings($bindings),
+            $this->defaultDriverConfig->withHttpPsrBindings($bindings),
+            $this->defaultSessionConfig,
+            $this->defaultTransactionConfig,
             $this->formatter,
             $this->driverConfigurations,
             $this->defaultDriver
@@ -204,7 +229,14 @@ final class ClientBuilder
      */
     public function withDefaultDriver(string $alias): self
     {
-        return new self($this->configuration, $this->formatter, $this->driverConfigurations, $alias);
+        return new self(
+            $this->defaultDriverConfig,
+            $this->defaultSessionConfig,
+            $this->defaultTransactionConfig,
+            $this->formatter,
+            $this->driverConfigurations,
+            $alias
+        );
     }
 
     /**
@@ -217,7 +249,14 @@ final class ClientBuilder
      */
     public function withFormatter(FormatterInterface $formatter): self
     {
-        return new self($this->configuration, $formatter, $this->driverConfigurations, $this->defaultDriver);
+        return new self(
+            $this->defaultDriverConfig,
+            $this->defaultSessionConfig,
+            $this->defaultTransactionConfig,
+            $formatter,
+            $this->driverConfigurations,
+            $this->defaultDriver
+        );
     }
 
     /**
@@ -227,16 +266,84 @@ final class ClientBuilder
      */
     public function build(): ClientInterface
     {
-        return new Client($this->driverConfigurations, $this->configuration, $this->formatter, $this->defaultDriver);
+        return new Client(
+            $this->driverConfigurations,
+            $this->defaultDriverConfig,
+            $this->defaultSessionConfig,
+            $this->defaultTransactionConfig,
+            $this->formatter,
+            $this->defaultDriver
+        );
     }
 
     /**
+     * @deprecated
+     * @see self::withDefaultDriverConfiguration
+     *
      * @psalm-mutation-free
      */
     public function withHttpPsrBindings(HttpPsrBindings $bindings): self
     {
-        $config = $this->configuration->withHttpPsrBindings($bindings);
+        $config = $this->defaultDriverConfig->withHttpPsrBindings($bindings);
 
-        return new self($config, $this->formatter, $this->driverConfigurations, $this->defaultDriver);
+        return new self(
+            $config,
+            $this->defaultSessionConfig,
+            $this->defaultTransactionConfig,
+            $this->formatter,
+            $this->driverConfigurations,
+            $this->defaultDriver
+        );
+    }
+
+    /**
+     * @return self<T>
+     *
+     * @psalm-mutation-free
+     */
+    public function withDefaultDriverConfiguration(DriverConfiguration $config): self
+    {
+        return new self(
+            $config,
+            $this->defaultSessionConfig,
+            $this->defaultTransactionConfig,
+            $this->formatter,
+            $this->driverConfigurations,
+            $this->defaultDriver
+        );
+    }
+
+    /**
+     * @return self<T>
+     *
+     * @psalm-mutation-free
+     */
+    public function withDefaultSessionConfiguration(SessionConfiguration $config): self
+    {
+        return new self(
+            $this->defaultDriverConfig,
+            $config,
+            $this->defaultTransactionConfig,
+            $this->formatter,
+            $this->driverConfigurations,
+            $this->defaultDriver
+        );
+    }
+
+    /**
+     * @return self<T>
+     *
+     * @psalm-mutation-free
+     */
+    public function withDefaultTransactionConfiguration(TransactionConfiguration $config): self
+    {
+        return new self(
+            $this->defaultDriverConfig,
+            $this->defaultSessionConfig,
+            $config,
+            $this->formatter,
+            $this->driverConfigurations,
+            $this->defaultDriver
+        );
     }
 }

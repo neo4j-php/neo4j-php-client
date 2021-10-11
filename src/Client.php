@@ -43,6 +43,8 @@ final class Client implements ClientInterface
     private array $drivers;
     /** @psalm-readonly */
     private ?string $default;
+    private SessionConfiguration $defaultSessionConfiguration;
+    private TransactionConfiguration $defaultTransactionConfiguration;
 
     /**
      * @psalm-mutation-free
@@ -50,30 +52,37 @@ final class Client implements ClientInterface
      * @param CypherMap<DriverSetup>           $driverSetups
      * @param FormatterInterface<ResultFormat> $formatter
      */
-    public function __construct(CypherMap $driverSetups, DriverConfiguration $configuration, FormatterInterface $formatter, ?string $default)
+    public function __construct(CypherMap $driverSetups, DriverConfiguration $defaultDriverConfiguration, SessionConfiguration $defaultSessionConfiguration, TransactionConfiguration $defaultTransactionConfiguration, FormatterInterface $formatter, ?string $default)
     {
         $this->default = $default;
-        $this->drivers = $this->createDrivers($driverSetups, $formatter, $configuration);
+        $this->drivers = $this->createDrivers($driverSetups, $formatter, $defaultDriverConfiguration);
+        $this->defaultSessionConfiguration = $defaultSessionConfiguration;
+        $this->defaultTransactionConfiguration = $defaultTransactionConfiguration;
     }
 
     public function run(string $query, iterable $parameters = [], ?string $alias = null)
     {
-        return $this->startSession($alias, SessionConfiguration::default())->run($query, $parameters);
+        return $this->runStatement(Statement::create($query, $parameters), $alias);
     }
 
     public function runStatement(Statement $statement, ?string $alias = null)
     {
-        return $this->startSession($alias, SessionConfiguration::default())->runStatement($statement);
+        return $this->runStatements([$statement], $alias)->first();
     }
 
     public function runStatements(iterable $statements, ?string $alias = null): CypherList
     {
-        return $this->startSession($alias, SessionConfiguration::default())->runStatements($statements);
+        $session = $this->startSession($alias, $this->defaultSessionConfiguration);
+
+        return $session->runStatements($statements, $this->defaultTransactionConfiguration);
     }
 
     public function beginTransaction(?iterable $statements = null, ?string $alias = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        return $this->startSession($alias, SessionConfiguration::default())->beginTransaction($statements, $config);
+        $session = $this->startSession($alias, $this->defaultSessionConfiguration);
+        $config = $this->getTsxConfig($config);
+
+        return $session->beginTransaction($statements, $config);
     }
 
     /**
@@ -95,19 +104,25 @@ final class Client implements ClientInterface
      *
      * @return SessionInterface<ResultFormat>
      */
-    private function startSession(?string $alias = null, SessionConfiguration $configuration = null): SessionInterface
+    private function startSession(?string $alias, SessionConfiguration $configuration): SessionInterface
     {
-        return $this->getDriver($alias)->createSession($configuration ?? SessionConfiguration::default());
+        return $this->getDriver($alias)->createSession($configuration);
     }
 
     public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
-        return $this->startSession($alias, SessionConfiguration::default()->withAccessMode(AccessMode::WRITE()))->writeTransaction($tsxHandler, $config);
+        $sessionConfig = $this->defaultSessionConfiguration->withAccessMode(AccessMode::WRITE());
+        $startSession = $this->startSession($alias, $sessionConfig);
+
+        return $startSession->writeTransaction($tsxHandler, $this->getTsxConfig($config));
     }
 
     public function readTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
-        return $this->startSession($alias, SessionConfiguration::default()->withAccessMode(AccessMode::READ()))->readTransaction($tsxHandler, $config);
+        $sessionConfig = $this->defaultSessionConfiguration->withAccessMode(AccessMode::READ());
+        $session = $this->startSession($alias, $sessionConfig);
+
+        return $session->readTransaction($tsxHandler, $this->getTsxConfig($config));
     }
 
     public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
@@ -156,5 +171,14 @@ final class Client implements ClientInterface
 
         /** @var non-empty-array<string, DriverInterface<ResultFormat>> */
         return $drivers;
+    }
+
+    private function getTsxConfig(?TransactionConfiguration $config): TransactionConfiguration
+    {
+        if ($config !== null) {
+            return $this->defaultTransactionConfiguration->merge($config);
+        }
+
+        return $this->defaultTransactionConfiguration;
     }
 }

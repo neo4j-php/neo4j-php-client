@@ -36,6 +36,7 @@ use UnexpectedValueException;
  * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
  *
  * @implements FormatterInterface<SummarizedResult<T>>
  *
@@ -45,6 +46,34 @@ final class SummarizedResultFormatter implements FormatterInterface
 {
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
+
+    /**
+     * Creates a new instance of itself by decorating an OGMFormatter.
+     *
+     * @return self<OGMResults>
+     *
+     * @pure
+     */
+    public static function create(): self
+    {
+        return self::createWithFormatter(OGMFormatter::create());
+    }
+
+    /**
+     * @template U
+     *
+     * Creates a new summarized result formatter by decorating the given formatter.
+     *
+     * @param FormatterInterface<U> $formatter
+     *
+     * @return self<U>
+     *
+     * @pure
+     */
+    public static function createWithFormatter(FormatterInterface $formatter): self
+    {
+        return new self($formatter);
+    }
 
     /**
      * @param FormatterInterface<T> $formatter

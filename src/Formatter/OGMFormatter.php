@@ -64,6 +64,8 @@ final class OGMFormatter implements FormatterInterface
     }
 
     /**
+     * Creates a new instance of itself.
+     *
      * @pure
      */
     public static function create(): OGMFormatter
