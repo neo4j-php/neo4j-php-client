@@ -294,7 +294,6 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 * PHP >= 7.4
 * A Neo4j database (minimum version 3.5)
 * ext-bcmath *
-* ext-sockets *
 * ext-json **
 
 (*) Needed to implement the bolt protocol
@@ -307,9 +306,6 @@ If you plan on using the HTTP drivers, make sure you have [psr-7](https://www.ph
 ```bash
 composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 ```
-
-If you plan on using the Bolt protocol, make sure you have the sockets extension enabled.
-
 
 
 ## Concepts
