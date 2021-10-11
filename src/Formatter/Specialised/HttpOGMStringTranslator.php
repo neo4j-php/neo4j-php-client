@@ -81,6 +81,7 @@ final class HttpOGMStringTranslator
      */
     private function translateDuration(string $value): Duration
     {
+        /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         if (str_contains($value, '.')) {
             [$format, $secondsFraction] = explode('.', $value);
             $nanoseconds = (int) substr($secondsFraction, 6);
@@ -131,6 +132,7 @@ final class HttpOGMStringTranslator
     {
         [$date, $time] = explode('T', $value);
         $tz = null;
+        /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         if (str_contains($time, '+')) {
             [$time, $timezone] = explode('+', $time);
             [$tzHours, $tzMinutes] = explode(':', $timezone);
