@@ -324,4 +324,14 @@ final class CypherListTest extends TestCase
     {
         self::assertEquals('[]', json_encode(new CypherList(), JSON_THROW_ON_ERROR));
     }
+
+    public function testJoin(): void
+    {
+        self::assertEquals('A;B;C', $this->list->join(';'));
+    }
+
+    public function testJoinEmpty(): void
+    {
+        self::assertEquals('', (new CypherList())->join('A'));
+    }
 }
