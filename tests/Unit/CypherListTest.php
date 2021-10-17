@@ -334,4 +334,18 @@ final class CypherListTest extends TestCase
     {
         self::assertEquals('', (new CypherList())->join('A'));
     }
+
+    public function testSortedDefault(): void
+    {
+        self::assertEquals($this->list, $this->list->sorted());
+        self::assertEquals($this->list, $this->list->reversed()->sorted());
+    }
+
+    public function testSortedCustom(): void
+    {
+        $sorted = $this->list->sorted(static fn (string $x, $y) => -1 * ($x <=> $y));
+
+        self::assertEquals(new CypherList(['C', 'B', 'A']), $sorted);
+        self::assertEquals(new CypherList(['A', 'B', 'C']), $this->list);
+    }
 }
