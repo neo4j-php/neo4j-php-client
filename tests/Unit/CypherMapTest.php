@@ -13,7 +13,12 @@ namespace Laudis\Neo4j\Tests\Unit;
 
 use ArrayIterator;
 use BadMethodCallException;
-use function hexdec;
+use Generator;
+use InvalidArgumentException;
+use IteratorAggregate;
+use function json_encode;
+use const JSON_THROW_ON_ERROR;
+use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use OutOfBoundsException;
@@ -144,106 +149,107 @@ final class CypherMapTest extends TestCase
     {
         $filter = $this->map->map(static fn (string $i, string $x) => $i.':'.$x);
 
-        self::assertEquals(new CypherList(['A:x', 'B:y', 'C:z']), $filter);
+        self::assertEquals(new CypherMap(['A' => 'A:x', 'B' => 'B:y', 'C' => 'C:z']), $filter);
     }
 
     public function testReduce(): void
     {
-        $count = $this->map->reduce(static function (?int $initial, int $key, string $value) {
-            return ($initial ?? 0) + $key * hexdec($value);
+        $count = $this->map->reduce(static function (?int $initial, string $key, string $value) {
+            return ($initial ?? 0) + ord($value) + ord($key);
         }, 5);
 
-        self::assertEquals(5 + hexdec('B') + 2 * hexdec('C'), $count);
+        self::assertEquals(5 + ord('A') + ord('x') + ord('B') + ord('y') + ord('C') + ord('z'), $count);
     }
 
     public function testFind(): void
     {
+        self::assertFalse($this->map->find('A'));
         self::assertFalse($this->map->find('X'));
-        self::assertEquals(0, $this->map->find('A'));
-        self::assertEquals(1, $this->map->find('B'));
-        self::assertEquals(2, $this->map->find('C'));
+        self::assertEquals('C', $this->map->find('z'));
+        self::assertEquals('B', $this->map->find('y'));
+        self::assertEquals('A', $this->map->find('x'));
     }
 
     public function testReversed(): void
     {
-        self::assertEquals(new CypherList(['C', 'B', 'A']), $this->map->reversed());
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $this->map);
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $this->map->reversed()->reversed());
+        self::assertEquals(new CypherMap(['C' => 'z', 'B' => 'y', 'A' => 'x']), $this->map->reversed());
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map->reversed()->reversed());
     }
 
     public function testSliceSingle(): void
     {
         $sliced = $this->map->slice(1, 1);
-        self::assertEquals(new CypherList(['B']), $sliced);
+        self::assertEquals(new CypherMap(['B' => 'y']), $sliced);
     }
 
     public function testSliceDouble(): void
     {
         $sliced = $this->map->slice(1, 2);
-        self::assertEquals(new CypherList(['B', 'C']), $sliced);
+        self::assertEquals(new CypherMap(['B' => 'y', 'C' => 'z']), $sliced);
     }
 
     public function testSliceAll(): void
     {
         $sliced = $this->map->slice(0, 3);
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $sliced);
+        self::assertEquals($this->map, $sliced);
     }
 
     public function testSliceTooMuch(): void
     {
         $sliced = $this->map->slice(0, 5);
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $sliced);
+        self::assertEquals($this->map, $sliced);
     }
 
     public function testSliceEmpty(): void
     {
         $sliced = $this->map->slice(0, 0);
-        self::assertEquals(new CypherList(), $sliced);
+        self::assertEquals(new CypherMap(), $sliced);
     }
 
     public function testGetValid(): void
     {
-        self::assertEquals('A', $this->map->get(0));
-        self::assertEquals('B', $this->map->get(1));
-        self::assertEquals('C', $this->map->get(2));
+        self::assertEquals('x', $this->map->get('A'));
+        self::assertEquals('y', $this->map->get('B'));
+        self::assertEquals('z', $this->map->get('C'));
+    }
+
+    public function testGetDefault(): void
+    {
+        self::assertEquals('x', $this->map->get('A', null));
+        self::assertNull($this->map->get('x', null));
+        self::assertEquals(new stdClass(), $this->map->get('Cd', new stdClass()));
     }
 
     public function testFirst(): void
     {
-        self::assertEquals('A', $this->map->first());
+        self::assertEquals(new Pair('A', 'x'), $this->map->first());
     }
 
     public function testFirstInvalid(): void
     {
         $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Cannot grab first element of an empty list');
-        (new CypherList())->first();
+        $this->expectExceptionMessage('Cannot grab first element of an empty map');
+        (new CypherMap())->first();
     }
 
     public function testLast(): void
     {
-        self::assertEquals('C', $this->map->last());
+        self::assertEquals(new Pair('C', 'z'), $this->map->last());
     }
 
     public function testLastInvalid(): void
     {
         $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Cannot grab last element of an empty list');
-        (new CypherList())->last();
+        $this->expectExceptionMessage('Cannot grab last element of an empty map');
+        (new CypherMap())->last();
     }
 
     public function testGetInvalid(): void
     {
         $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Cannot get item in sequence at position: 3');
-        $this->map->get(3);
-    }
-
-    public function testGetNegative(): void
-    {
-        $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Cannot get item in sequence at position: -1');
-        $this->map->get(-1);
+        $this->expectExceptionMessage('Cannot get item in sequence with key: a');
+        $this->map->get('a');
     }
 
     public function testIteration(): void
@@ -251,7 +257,7 @@ final class CypherMapTest extends TestCase
         $counter = 0;
         foreach ($this->map as $key => $item) {
             ++$counter;
-            self::assertEquals(['A', 'B', 'C'][$key], $item);
+            self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'][$key], $item);
         }
         self::assertEquals(3, $counter);
     }
@@ -259,9 +265,9 @@ final class CypherMapTest extends TestCase
     public function testIterationEmpty(): void
     {
         $counter = 0;
-        foreach ((new CypherList()) as $key => $item) {
+        foreach ((new CypherMap()) as $key => $item) {
             ++$counter;
-            self::assertEquals(['A', 'B', 'C'][$key], $item);
+            self::assertEquals(['A' => 'x'][$key], $item);
         }
         self::assertEquals(0, $counter);
     }
@@ -269,55 +275,185 @@ final class CypherMapTest extends TestCase
     public function testOffsetSet(): void
     {
         $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Laudis\Neo4j\Types\CypherList is immutable');
+        $this->expectExceptionMessage('Laudis\Neo4j\Types\CypherMap is immutable');
 
-        $this->map[0] = 'a';
+        $this->map['A'] = 'a';
     }
 
     public function testOffsetUnset(): void
     {
         $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Laudis\Neo4j\Types\CypherList is immutable');
+        $this->expectExceptionMessage('Laudis\Neo4j\Types\CypherMap is immutable');
 
-        unset($this->map[0]);
+        unset($this->map['A']);
     }
 
     public function testOffsetGetValid(): void
     {
-        self::assertEquals('A', $this->map[0]);
-        self::assertEquals('B', $this->map[1]);
-        self::assertEquals('C', $this->map[2]);
+        self::assertEquals('x', $this->map['A']);
+        self::assertEquals('y', $this->map['B']);
+        self::assertEquals('z', $this->map['C']);
     }
 
     public function testOffsetGetInvalid(): void
     {
         $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Offset: "3" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
-        $this->map[3];
-    }
-
-    public function testOffsetGetNegative(): void
-    {
-        $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Offset: "-1" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
-        $this->map[-1];
+        $this->expectExceptionMessage('Offset: "AA" does not exists in object of instance: Laudis\Neo4j\Types\CypherMap');
+        $this->map['AA'];
     }
 
     public function testIssetValid(): void
     {
-        self::assertTrue(isset($this->map[0]));
-        self::assertTrue(isset($this->map[1]));
-        self::assertTrue(isset($this->map[2]));
+        self::assertTrue(isset($this->map['A']));
+        self::assertTrue(isset($this->map['B']));
+        self::assertTrue(isset($this->map['C']));
     }
 
     public function testIssetInValid(): void
     {
-        self::assertFalse(isset($this->map[-1]));
-        self::assertFalse(isset($this->map[3]));
+        self::assertFalse(isset($this->map['a']));
     }
 
     public function testIssetValidNull(): void
     {
-        self::assertTrue(isset((new CypherList([null]))[0]));
+        self::assertTrue(isset((new CypherMap(['a' => null]))['a']));
     }
+
+    public function testJsonSerialize(): void
+    {
+        self::assertEquals('{"A":"x","B":"y","C":"z"}', json_encode($this->map, JSON_THROW_ON_ERROR));
+    }
+
+    public function testJsonSerializeEmpty(): void
+    {
+        self::assertEquals('{}', json_encode(new CypherMap(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testJoin(): void
+    {
+        self::assertEquals('x;y;z', $this->map->join(';'));
+    }
+
+    public function testJoinEmpty(): void
+    {
+        self::assertEquals('', (new CypherMap())->join('A'));
+    }
+
+    public function testDiff(): void
+    {
+        $subtract = new CypherMap(['B' => null, 'Z' => 'z']);
+        $result = $this->map->diff($subtract);
+
+        self::assertEquals(new CypherMap(['A' => 'x', 'C' => 'z']), $result);
+        self::assertEquals(new CypherMap(['B' => null, 'Z' => 'z']), $subtract);
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+    }
+
+    public function testDiffEmpty(): void
+    {
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map->diff([]));
+    }
+
+    public function testIntersect(): void
+    {
+        $intersect = new CypherMap(['B' => null, 'Z' => 'z']);
+        $result = $this->map->intersect($intersect);
+
+        self::assertEquals(new CypherMap(['B' => 'y']), $result);
+        self::assertEquals(new CypherMap(['B' => null, 'Z' => 'z']), $intersect);
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+    }
+
+    public function testUnion(): void
+    {
+        $intersect = new CypherMap(['B' => null, 'Z' => 'z']);
+        $result = $this->map->union($intersect);
+
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z', 'Z' => 'z']), $result);
+        self::assertEquals(new CypherMap(['B' => null, 'Z' => 'z']), $intersect);
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+    }
+
+    public function testXor(): void
+    {
+        $intersect = new CypherMap(['B' => null, 'Z' => 'z']);
+        $result = $this->map->xor($intersect);
+
+        self::assertEquals(new CypherMap(['A' => 'x', 'C' => 'z', 'Z' => 'z']), $result);
+        self::assertEquals(new CypherMap(['B' => null, 'Z' => 'z']), $intersect);
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+    }
+
+    public function testValue(): void
+    {
+        self::assertEquals(new CypherList(['x', 'y', 'z']), $this->map->values());
+    }
+
+    public function testKeys(): void
+    {
+        self::assertEquals(new CypherList(['A', 'B', 'C']), $this->map->keys());
+    }
+
+    public function testPairs(): void
+    {
+        $list = new CypherList([new Pair('A', 'x'), new Pair('B', 'y'), new Pair('C', 'z')]);
+        self::assertEquals($list, $this->map->pairs());
+    }
+
+    public function testSkip(): void
+    {
+        self::assertEquals(new Pair('A', 'x'), $this->map->skip(0));
+        self::assertEquals(new Pair('B', 'y'), $this->map->skip(1));
+        self::assertEquals(new Pair('C', 'z'), $this->map->skip(2));
+    }
+
+    public function testSkipInvalid(): void
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot skip to a pair at position: 4');
+        self::assertEquals(new Pair('A', 'x'), $this->map->skip(4));
+    }
+
+    public function testInvalidConstruct(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Iterable must have a stringable keys');
+
+        new CypherMap(new class() implements IteratorAggregate {
+            public function getIterator(): Generator
+            {
+                yield new stdClass() => 'x';
+            }
+        });
+    }
+
+    public function testSortedDefault(): void
+    {
+        self::assertEquals($this->map, $this->map->sorted());
+        self::assertEquals($this->map, $this->map->reversed()->sorted());
+    }
+
+    public function testSortedCustom(): void
+    {
+        $sorted = $this->map->sorted(static fn (string $x, $y) => -1 * ($x <=> $y));
+
+        self::assertEquals(new CypherMap(['C' => 'z', 'B' => 'y', 'A' => 'x']), $sorted);
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+    }
+
+    public function testKSorted(): void
+    {
+        self::assertEquals($this->map, $this->map->ksorted());
+        self::assertEquals($this->map, $this->map->reversed()->ksorted());
+    }
+
+    public function testKSortedCustom(): void
+    {
+        $sorted = $this->map->ksorted(static fn (string $x, $y) => -1 * ($x <=> $y));
+
+        self::assertEquals(new CypherMap(['C' => 'z', 'B' => 'y', 'A' => 'x']), $sorted);
+        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+    }
+
+    //test sorted and ksorted
 }
