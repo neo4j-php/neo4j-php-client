@@ -42,7 +42,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      */
     abstract public function toArray(): array;
 
-    public function jsonSerialize(): array
+    public function jsonSerialize()
     {
         return $this->toArray();
     }
