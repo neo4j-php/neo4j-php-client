@@ -14,10 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use BadMethodCallException;
-use InvalidArgumentException;
 use function json_encode;
 use JsonException;
 use Laudis\Neo4j\Types\AbstractCypherObject;
+use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -81,7 +81,7 @@ final class CypherTypeTest extends TestCase
         $caught = null;
         try {
             $empty[0];
-        } catch (InvalidArgumentException $e) {
+        } catch (OutOfBoundsException $e) {
             $caught = true;
         }
         self::assertTrue($caught, 'Empty has still valid access');
@@ -124,7 +124,7 @@ final class CypherTypeTest extends TestCase
         $caught = null;
         try {
             $filled[0];
-        } catch (InvalidArgumentException $e) {
+        } catch (OutOfBoundsException $e) {
             $caught = true;
         }
         self::assertTrue($caught, 'Filled has still valid access');
