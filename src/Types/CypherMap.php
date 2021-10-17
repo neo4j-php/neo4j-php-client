@@ -19,7 +19,6 @@ use function array_key_last;
 use function array_keys;
 use function array_reverse;
 use function array_slice;
-use BadMethodCallException;
 use function func_num_args;
 use InvalidArgumentException;
 use function is_int;
@@ -29,9 +28,9 @@ use function ksort;
 use Laudis\Neo4j\Databags\Pair;
 use function method_exists;
 use OutOfBoundsException;
-use function sort;
+use stdClass;
+use function uasort;
 use function uksort;
-use function usort;
 
 /**
  * An immutable ordered map of items.
@@ -84,7 +83,7 @@ final class CypherMap extends AbstractCypherSequence
     {
         $key = array_key_first($this->sequence);
         if (!is_string($key)) {
-            throw new BadMethodCallException('Cannot grab first element from an empty map');
+            throw new OutOfBoundsException('Cannot grab first element of an empty map');
         }
 
         return new Pair($key, $this->sequence[$key]);
@@ -99,7 +98,7 @@ final class CypherMap extends AbstractCypherSequence
     {
         $key = array_key_last($this->sequence);
         if (!is_string($key)) {
-            throw new BadMethodCallException('Cannot grab last element from an empty map');
+            throw new OutOfBoundsException('Cannot grab last element of an empty map');
         }
 
         return new Pair($key, $this->sequence[$key]);
@@ -120,7 +119,7 @@ final class CypherMap extends AbstractCypherSequence
             return new Pair($key, $this->sequence[$key]);
         }
 
-        throw new OutOfBoundsException();
+        throw new OutOfBoundsException(sprintf('Cannot skip to a pair at position: %s', $position));
     }
 
     /**
@@ -193,8 +192,10 @@ final class CypherMap extends AbstractCypherSequence
          * @var mixed $key
          */
         foreach ($map as $key => $value) {
-            if ((is_int($key) || is_string($key)) && array_key_exists($key, $this->sequence)) {
+            if (array_key_exists($key, $this->sequence)) {
                 unset($tbr[$key]);
+            } else {
+                $tbr[$key] = $value;
             }
         }
 
@@ -270,9 +271,7 @@ final class CypherMap extends AbstractCypherSequence
 
         /** @psalm-suppress UnusedForeachValue */
         foreach ($map as $key => $value) {
-            if (array_key_exists($key, $tbr)) {
-                unset($tbr[$key]);
-            }
+            unset($tbr[$key]);
         }
 
         return new self($tbr);
@@ -303,9 +302,9 @@ final class CypherMap extends AbstractCypherSequence
     {
         $tbr = $this->sequence;
         if ($comparator === null) {
-            sort($tbr);
+            asort($tbr);
         } else {
-            usort($tbr, $comparator);
+            uasort($tbr, $comparator);
         }
 
         return new self($tbr);
@@ -326,12 +325,21 @@ final class CypherMap extends AbstractCypherSequence
     {
         if (func_num_args() === 1) {
             if (!array_key_exists($key, $this->sequence)) {
-                throw new OutOfBoundsException();
+                throw new OutOfBoundsException(sprintf('Cannot get item in sequence with key: %s', $key));
             }
 
             return $this->sequence[$key];
         }
 
         return $this->sequence[$key] ?? $default;
+    }
+
+    public function jsonSerialize()
+    {
+        if ($this->isEmpty()) {
+            return new stdClass();
+        }
+
+        return parent::jsonSerialize();
     }
 }
