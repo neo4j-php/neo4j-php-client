@@ -23,12 +23,14 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 WORKDIR /opt/project
 
-COPY composer.json composer.loc[k] phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.php ./
+COPY composer.json composer.loc[k] ./
+
+RUN composer install
+
+COPY phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.php ./
 COPY src/ src/
 COPY tests/ tests/
 COPY .git/ .git/
 
-
-RUN composer install
 
 
