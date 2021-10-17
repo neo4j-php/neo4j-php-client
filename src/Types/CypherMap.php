@@ -180,7 +180,7 @@ final class CypherMap extends AbstractCypherSequence
     /**
      * Creates a new map using exclusive or on the keys.
      *
-     * @param iterable<TValue> $map
+     * @param iterable<array-key, TValue> $map
      *
      * @return CypherMap<TValue>
      */
@@ -188,14 +188,11 @@ final class CypherMap extends AbstractCypherSequence
     {
         $tbr = $this->sequence;
 
-        /**
-         * @var mixed $key
-         */
         foreach ($map as $key => $value) {
             if (array_key_exists($key, $this->sequence)) {
-                unset($tbr[$key]);
+                unset($tbr[(string) $key]);
             } else {
-                $tbr[$key] = $value;
+                $tbr[(string) $key] = $value;
             }
         }
 
@@ -265,13 +262,13 @@ final class CypherMap extends AbstractCypherSequence
      *
      * @return CypherMap<TValue>
      */
-    public function diff($map): CypherMap
+    public function diff(iterable $map): CypherMap
     {
         $tbr = $this->sequence;
 
         /** @psalm-suppress UnusedForeachValue */
         foreach ($map as $key => $value) {
-            unset($tbr[$key]);
+            unset($tbr[(string) $key]);
         }
 
         return new self($tbr);

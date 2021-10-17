@@ -22,6 +22,7 @@ use stdClass;
 
 final class CypherListTest extends TestCase
 {
+    /** @var CypherList<string> */
     private CypherList $list;
 
     public function setUp(): void
@@ -343,7 +344,7 @@ final class CypherListTest extends TestCase
 
     public function testSortedCustom(): void
     {
-        $sorted = $this->list->sorted(static fn (string $x, $y) => -1 * ($x <=> $y));
+        $sorted = $this->list->sorted(static fn (string $x, string $y): int => -1 * ($x <=> $y));
 
         self::assertEquals(new CypherList(['C', 'B', 'A']), $sorted);
         self::assertEquals(new CypherList(['A', 'B', 'C']), $this->list);

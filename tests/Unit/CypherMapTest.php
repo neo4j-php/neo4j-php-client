@@ -27,6 +27,7 @@ use stdClass;
 
 final class CypherMapTest extends TestCase
 {
+    /** @var CypherMap<string> */
     private CypherMap $map;
 
     public function setUp(): void
@@ -341,11 +342,11 @@ final class CypherMapTest extends TestCase
 
     public function testDiff(): void
     {
-        $subtract = new CypherMap(['B' => null, 'Z' => 'z']);
+        $subtract = new CypherMap(['B' => 'x', 'Z' => 'z']);
         $result = $this->map->diff($subtract);
 
         self::assertEquals(new CypherMap(['A' => 'x', 'C' => 'z']), $result);
-        self::assertEquals(new CypherMap(['B' => null, 'Z' => 'z']), $subtract);
+        self::assertEquals(new CypherMap(['B' => 'x', 'Z' => 'z']), $subtract);
         self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
     }
 
@@ -356,31 +357,31 @@ final class CypherMapTest extends TestCase
 
     public function testIntersect(): void
     {
-        $intersect = new CypherMap(['B' => null, 'Z' => 'z']);
+        $intersect = new CypherMap(['B' => 'x', 'Z' => 'z']);
         $result = $this->map->intersect($intersect);
 
         self::assertEquals(new CypherMap(['B' => 'y']), $result);
-        self::assertEquals(new CypherMap(['B' => null, 'Z' => 'z']), $intersect);
+        self::assertEquals(new CypherMap(['B' => 'x', 'Z' => 'z']), $intersect);
         self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
     }
 
     public function testUnion(): void
     {
-        $intersect = new CypherMap(['B' => null, 'Z' => 'z']);
+        $intersect = new CypherMap(['B' => 'x', 'Z' => 'z']);
         $result = $this->map->union($intersect);
 
         self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z', 'Z' => 'z']), $result);
-        self::assertEquals(new CypherMap(['B' => null, 'Z' => 'z']), $intersect);
+        self::assertEquals(new CypherMap(['B' => 'x', 'Z' => 'z']), $intersect);
         self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
     }
 
     public function testXor(): void
     {
-        $intersect = new CypherMap(['B' => null, 'Z' => 'z']);
+        $intersect = new CypherMap(['B' => 'x', 'Z' => 'z']);
         $result = $this->map->xor($intersect);
 
         self::assertEquals(new CypherMap(['A' => 'x', 'C' => 'z', 'Z' => 'z']), $result);
-        self::assertEquals(new CypherMap(['B' => null, 'Z' => 'z']), $intersect);
+        self::assertEquals(new CypherMap(['B' => 'x', 'Z' => 'z']), $intersect);
         self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
     }
 
@@ -435,7 +436,7 @@ final class CypherMapTest extends TestCase
 
     public function testSortedCustom(): void
     {
-        $sorted = $this->map->sorted(static fn (string $x, $y) => -1 * ($x <=> $y));
+        $sorted = $this->map->sorted(static fn (string $x, string $y): int => -1 * ($x <=> $y));
 
         self::assertEquals(new CypherMap(['C' => 'z', 'B' => 'y', 'A' => 'x']), $sorted);
         self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
@@ -449,7 +450,7 @@ final class CypherMapTest extends TestCase
 
     public function testKSortedCustom(): void
     {
-        $sorted = $this->map->ksorted(static fn (string $x, $y) => -1 * ($x <=> $y));
+        $sorted = $this->map->ksorted(static fn (string $x, string $y) => -1 * ($x <=> $y));
 
         self::assertEquals(new CypherMap(['C' => 'z', 'B' => 'y', 'A' => 'x']), $sorted);
         self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
