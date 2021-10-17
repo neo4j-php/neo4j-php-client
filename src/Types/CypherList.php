@@ -16,7 +16,6 @@ namespace Laudis\Neo4j\Types;
 use function array_key_exists;
 use function array_key_last;
 use function array_slice;
-use BadMethodCallException;
 use function is_int;
 use OutOfBoundsException;
 use function sort;
@@ -72,7 +71,7 @@ final class CypherList extends AbstractCypherSequence
     {
         $key = array_key_last($this->sequence);
         if (!is_int($key)) {
-            throw new BadMethodCallException('Cannot grab last element from an empty list');
+            throw new OutOfBoundsException('Cannot grab last element of an empty list');
         }
 
         return $this->sequence[$key];
@@ -144,7 +143,7 @@ final class CypherList extends AbstractCypherSequence
     public function get(int $key)
     {
         if (!array_key_exists($key, $this->sequence)) {
-            throw new OutOfBoundsException();
+            throw new OutOfBoundsException(sprintf('Cannot get item in sequence at position: %s', $key));
         }
 
         return $this->sequence[$key];

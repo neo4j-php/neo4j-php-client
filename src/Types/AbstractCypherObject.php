@@ -17,10 +17,9 @@ use function array_key_exists;
 use ArrayAccess;
 use ArrayIterator;
 use BadMethodCallException;
-use function get_class;
-use InvalidArgumentException;
 use IteratorAggregate;
 use JsonSerializable;
+use OutOfBoundsException;
 use function sprintf;
 
 /**
@@ -73,7 +72,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
     {
         $serialized = $this->toArray();
         if (!array_key_exists($offset, $serialized)) {
-            throw new InvalidArgumentException("Offset: $offset does not exists for class: ".static::class);
+            throw new OutOfBoundsException("Offset: \"$offset\" does not exists in object of instance: ".static::class);
         }
 
         return $serialized[$offset];
@@ -85,7 +84,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      */
     final public function offsetSet($offset, $value): void
     {
-        throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
+        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
 
     /**
@@ -93,6 +92,6 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      */
     final public function offsetUnset($offset): void
     {
-        throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
+        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
 }
