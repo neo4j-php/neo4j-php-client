@@ -14,7 +14,6 @@ namespace Laudis\Neo4j\Tests\Unit;
 use ArrayIterator;
 use BadMethodCallException;
 use function hexdec;
-use function json_encode;
 use Laudis\Neo4j\Types\CypherList;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
@@ -313,15 +312,5 @@ final class CypherListTest extends TestCase
     public function testIssetValidNull(): void
     {
         self::assertTrue(isset((new CypherList([null]))[0]));
-    }
-
-    public function testJsonSerialize(): void
-    {
-        self::assertEquals('["A","B","C"]', json_encode($this->list, JSON_THROW_ON_ERROR));
-    }
-
-    public function testJsonSerializeEmpty(): void
-    {
-        self::assertEquals('[]', json_encode(new CypherList(), JSON_THROW_ON_ERROR));
     }
 }
