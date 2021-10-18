@@ -13,7 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Laudis\Neo4j\Types\CypherList;
+use ArrayAccess;
+use BadMethodCallException;
+use Generator;
+use function is_iterable;
+use IteratorAggregate;
+use JsonSerializable;
+use function sprintf;
 
 /**
  * A result containing the values and the summary.
@@ -21,16 +27,17 @@ use Laudis\Neo4j\Types\CypherList;
  * @template T
  *
  * @psalm-immutable
+ *
+ * @implements ArrayAccess<string, ResultSummary|T>
  */
-final class SummarizedResult
+final class SummarizedResult implements JsonSerializable, ArrayAccess, IteratorAggregate
 {
     private ResultSummary $summary;
     /** @var T */
     private $result;
 
     /**
-     * @param T                  $result
-     * @param CypherList<string> $keys
+     * @param T $result
      */
     public function __construct($result, ResultSummary $summary)
     {
@@ -54,5 +61,46 @@ final class SummarizedResult
     public function getSummary(): ResultSummary
     {
         return $this->summary;
+    }
+
+    public function getIterator(): Generator
+    {
+        if (is_iterable($this->result)) {
+            yield from $this->result;
+        } else {
+            yield 'summary' => $this->summary;
+            yield 'result' => $this->result;
+        }
+    }
+
+    /**
+     * @return array{summary: ResultSummary, result: T}
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'summary' => $this->summary,
+            'result' => $this->result,
+        ];
+    }
+
+    public function offsetExists($offset)
+    {
+        return array_key_exists($offset, $this->jsonSerialize());
+    }
+
+    public function offsetGet($offset)
+    {
+        return $this->jsonSerialize()[$offset];
+    }
+
+    public function offsetSet($offset, $value)
+    {
+        throw new BadMethodCallException(sprintf('%s is immutable', __CLASS__));
+    }
+
+    public function offsetUnset($offset)
+    {
+        throw new BadMethodCallException(sprintf('%s is immutable', __CLASS__));
     }
 }
