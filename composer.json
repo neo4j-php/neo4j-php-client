@@ -36,7 +36,8 @@
     },
     "suggest": {
         "ext-bcmath": "Needed to implement bolt protocol",
-        "ext-json": "Needed to implement http protocol"
+        "ext-json": "Needed to implement http protocol",
+        "composer-runtime-api": "Install composer 2 for auto detection of version in user agent"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.0",
