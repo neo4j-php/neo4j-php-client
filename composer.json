@@ -32,11 +32,11 @@
         "php-http/message": "^1.0",
         "php-http/message-factory": "^1.0",
         "stefanak-michal/bolt": "^2.5.2",
-        "symfony/polyfill-php80": "^1.2"
+        "symfony/polyfill-php80": "^1.2",
+        "ext-json": "Needed to implement http protocol"
     },
     "suggest": {
         "ext-bcmath": "Needed to implement bolt protocol",
-        "ext-json": "Needed to implement http protocol",
         "composer-runtime-api": "Install composer 2 for auto detection of version in user agent"
     },
     "require-dev": {
