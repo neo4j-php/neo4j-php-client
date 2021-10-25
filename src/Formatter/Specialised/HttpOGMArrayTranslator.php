@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
+use Laudis\Neo4j\Types\Path;
+use Laudis\Neo4j\Types\UnboundRelationship;
 use function is_array;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
@@ -102,12 +104,17 @@ final class HttpOGMArrayTranslator
         $currentMeta = $meta[$metaIndex];
         $metaIncrease = 1;
         $relationshipIncrease = 0;
-        $type = $currentMeta === null ? null : ($currentMeta['type'] ?? null);
+        $type = $currentMeta === null ? null : ($currentMeta['type'] ?? 'path');
 
         switch ($type) {
             case 'relationship':
                 $tbr = $this->relationship($relationships[$relationshipIndex]);
                 ++$relationshipIncrease;
+                break;
+            case 'path':
+                [$path, $relIncrease] = $this->path($currentMeta, $nodes, $relationships, $relationshipIndex);
+                $relationshipIncrease += $relIncrease;
+                $tbr = $path;
                 break;
             case 'point':
                 $tbr = $this->translatePoint($value);
@@ -115,8 +122,8 @@ final class HttpOGMArrayTranslator
             default:
                 /** @var array<array-key, array|scalar|null> $value */
                 $tbr = $this->translateContainer($value);
-                if ($type === 'node' && $tbr instanceof CypherMap && isset($currentMeta['id'])) {
-                    $tbr = $this->translateNode($nodes, $currentMeta['id'], $tbr);
+                if ($type === 'node' && isset($currentMeta['id'])) {
+                    $tbr = $this->translateNode($nodes, $currentMeta['id']);
                 }
                 break;
         }
@@ -124,22 +131,44 @@ final class HttpOGMArrayTranslator
         return [$metaIncrease, $relationshipIncrease, $tbr];
     }
 
+    private function path(array $meta, array $nodes, array $relationships, int $relIndex): array
+    {
+        $nodesTbr = [];
+        $ids = [];
+        $rels = [];
+        $relIncrease = 0;
+        foreach ($meta as $nodeOrRel) {
+            if ($nodeOrRel['type'] === 'relationship') {
+                $rel = $relationships[$relIndex];
+                ++$relIndex;
+                ++$relIncrease;
+                $rels[] = new UnboundRelationship((int) $rel['id'], $rel['type'], new CypherMap($rel['properties']));
+            } else {
+                $nodesTbr[] = $this->translateNode($nodes, $nodeOrRel['id']);
+            }
+            $ids[] = $nodeOrRel['id'];
+        }
+
+        return [new Path(new CypherList($nodesTbr), new CypherList($rels), new CypherList($ids)), $relIncrease];
+    }
+
     /**
      * @param list<NodeArray>     $nodes
-     * @param CypherMap<OGMTypes> $tbr
      */
-    private function translateNode(array $nodes, int $id, CypherMap $tbr): Node
+    private function translateNode(array $nodes, int $id): Node
     {
         /** @var list<string> */
         $labels = [];
+        $props = [];
         foreach ($nodes as $node) {
             if ((int) $node['id'] === $id) {
                 $labels = $node['labels'];
+                $props = $node['properties'];
                 break;
             }
         }
 
-        return new Node($id, new CypherList($labels), $tbr);
+        return new Node($id, new CypherList($labels), new CypherMap($props));
     }
 
     /**

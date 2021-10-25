@@ -24,6 +24,7 @@ use Bolt\structures\Point2D as BoltPoint2D;
 use Bolt\structures\Point3D as BoltPoint3D;
 use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
+use Bolt\structures\UnboundRelationship as BoltUnboundRelationship;
 use function call_user_func;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
@@ -38,6 +39,7 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\UnboundRelationship;
 use UnexpectedValueException;
 
 /**
@@ -65,6 +67,7 @@ final class BoltOGMTranslator
             BoltLocalDateTime::class => [$this, 'makeFromBoltLocalDateTime'],
             BoltLocalTime::class => [$this, 'makeFromBoltLocalTime'],
             BoltRelationship::class => [$this, 'makeFromBoltRelationship'],
+            BoltUnboundRelationship::class => [$this, 'makeFromBoltUnboundRelationship'],
             BoltPath::class => [$this, 'makeFromBoltPath'],
             BoltPoint2D::class => [$this, 'makeFromBoltPoint2D'],
             BoltPoint3D::class => [$this, 'makeFromBoltPoint3D'],
@@ -155,6 +158,25 @@ final class BoltOGMTranslator
         );
     }
 
+    private function makeFromBoltUnboundRelationship(BoltUnboundRelationship $rel): UnboundRelationship
+    {
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
+        /**
+         * @var string $key
+         * @var mixed  $property
+         */
+        foreach ($rel->properties() as $key => $property) {
+            $map[$key] = $this->mapValueToType($property);
+        }
+
+        return new UnboundRelationship(
+            $rel->id(),
+            $rel->type(),
+            new CypherMap($map)
+        );
+    }
+
     private function makeFromBoltPoint2D(BoltPoint2d $x): CartesianPoint
     {
         return new CartesianPoint($x->x(), $x->y(), 'cartesian', $x->srid());
@@ -174,10 +196,10 @@ final class BoltOGMTranslator
             $nodes[] = $this->makeFromBoltNode($node);
         }
         $relationships = [];
-        /** @var list<BoltRelationship> $rels */
+        /** @var list<BoltUnboundRelationship> $rels */
         $rels = $path->rels();
         foreach ($rels as $rel) {
-            $relationships[] = $this->makeFromBoltRelationship($rel);
+            $relationships[] = $this->makeFromBoltUnboundRelationship($rel);
         }
         /** @var list<int> $ids */
         $ids = $path->ids();

@@ -29,6 +29,7 @@ use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
 use function range;
@@ -432,6 +433,32 @@ CYPHER
             , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
 
         self::assertEquals(1, $results->count());
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testPath2(string $alias): void
+    {
+        $results = $this->client->run(<<<'CYPHER'
+MERGE (a:Node {x:$x}) - [b:HasNode {attribute: $xy}] -> (c:Node {y:$y}) - [d:HasNode {attribute: $yz}] -> (e:Node {z:$z})
+RETURN (a) - [b] - (c) - [d] - (e) AS path
+CYPHER
+            , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
+
+        self::assertEquals(1, $results->count());
+        $path = $results->first()->get('path');
+
+        self::assertInstanceOf(Path::class, $path);
+        self::assertCount(2, $path->getRelationships());
+        self::assertCount(3, $path->getNodes());
+
+        self::assertEquals(new CypherMap(['x' => 'x']), $path->getNodes()->get(0)->getProperties());
+        self::assertEquals(new CypherMap(['y' => 'y']), $path->getNodes()->get(1)->getProperties());
+        self::assertEquals(new CypherMap(['z' => 'z']), $path->getNodes()->get(2)->getProperties());
+
+        self::assertEquals(new CypherMap(['attribute' => 'xy']), $path->getRelationships()->get(0)->getProperties());
+        self::assertEquals(new CypherMap(['attribute' => 'yz']), $path->getRelationships()->get(1)->getProperties());
     }
 
     /**

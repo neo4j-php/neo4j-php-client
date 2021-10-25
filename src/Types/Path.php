@@ -18,21 +18,21 @@ namespace Laudis\Neo4j\Types;
  *
  * @psalm-immutable
  *
- * @extends AbstractPropertyObject<CypherList<Node>|CypherList<Relationship>|CypherList<int>, CypherList<Node>|CypherList<Relationship>|CypherList<int>>
+ * @extends AbstractPropertyObject<CypherList<Node>|CypherList<UnboundRelationship>|CypherList<int>, CypherList<Node>|CypherList<UnboundRelationship>|CypherList<int>>
  */
 final class Path extends AbstractPropertyObject
 {
     /** @var CypherList<Node> */
     private CypherList $nodes;
-    /** @var CypherList<Relationship> */
+    /** @var CypherList<UnboundRelationship> */
     private CypherList $relationships;
     /** @var CypherList<int> */
     private CypherList $ids;
 
     /**
-     * @param CypherList<Node>         $nodes
-     * @param CypherList<Relationship> $relationships
-     * @param CypherList<int>          $ids
+     * @param CypherList<Node>                $nodes
+     * @param CypherList<UnboundRelationship> $relationships
+     * @param CypherList<int>                 $ids
      */
     public function __construct(CypherList $nodes, CypherList $relationships, CypherList $ids)
     {
@@ -54,7 +54,7 @@ final class Path extends AbstractPropertyObject
     /**
      * Returns the relationships in the path.
      *
-     * @return CypherList<Relationship>
+     * @return CypherList<UnboundRelationship>
      */
     public function getRelationships(): CypherList
     {
@@ -72,7 +72,7 @@ final class Path extends AbstractPropertyObject
     }
 
     /**
-     * @return array{id: CypherList<int>, nodes: CypherList<Node>, relationships: CypherList<Relationship>}
+     * @return array{id: CypherList<int>, nodes: CypherList<Node>, relationships: CypherList<UnboundRelationship>}
      */
     public function toArray(): array
     {
