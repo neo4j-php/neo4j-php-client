@@ -440,11 +440,12 @@ CYPHER
      */
     public function testPath2(string $alias): void
     {
-        $results = $this->client->run(<<<'CYPHER'
-MERGE (a:Node {x:$x}) - [b:HasNode {attribute: $xy}] -> (c:Node {y:$y}) - [d:HasNode {attribute: $yz}] -> (e:Node {z:$z})
-RETURN (a) - [b] - (c) - [d] - (e) AS path
-CYPHER
-            , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
+        $statement = <<<'CYPHER'
+CREATE path = ((a:Node {x:$x}) - [b:HasNode {attribute: $xy}] -> (c:Node {y:$y}) - [d:HasNode {attribute: $yz}] -> (e:Node {z:$z}))
+RETURN path
+CYPHER;
+
+        $results = $this->client->run($statement, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
 
         self::assertEquals(1, $results->count());
         $path = $results->first()->get('path');
