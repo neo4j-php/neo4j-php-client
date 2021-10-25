@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
-use Laudis\Neo4j\Types\Path;
-use Laudis\Neo4j\Types\UnboundRelationship;
 use function is_array;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
@@ -22,7 +20,9 @@ use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
+use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 
@@ -153,7 +153,7 @@ final class HttpOGMArrayTranslator
     }
 
     /**
-     * @param list<NodeArray>     $nodes
+     * @param list<NodeArray> $nodes
      */
     private function translateNode(array $nodes, int $id): Node
     {

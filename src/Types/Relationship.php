@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
+use function sprintf;
+
 /**
  * A Relationship class representing a Relationship in cypher.
  *
@@ -105,5 +108,19 @@ final class Relationship extends AbstractPropertyObject
             'endNodeId' => $this->getEndNodeId(),
             'properties' => $this->getProperties(),
         ];
+    }
+
+    /**
+     * Gets the property of the relationship by key.
+     *
+     * @return OGMTypes
+     */
+    public function getProperty(string $key)
+    {
+        if (!$this->properties->hasKey($key)) {
+            throw new PropertyDoesNotExistException(sprintf('Property "%s" does not exist on relationship', $key));
+        }
+
+        return $this->properties->get($key);
     }
 }
