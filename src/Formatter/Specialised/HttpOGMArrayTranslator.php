@@ -25,13 +25,15 @@ use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
+use RuntimeException;
 
 /**
  * Maps the arrays to their respective values.
  *
- * @psalm-type RelationshipArray = array{id: string, type: string, startNode: string, endNode: string, properties?: array<string, scalar|null|array<array-key, scalar|null|array>>}
+ * @psalm-type RelationshipArray = array{id: string, type: string, startNode: string, endNode: string, properties: array<string, scalar|null|array<array-key, scalar|null|array>>}
  * @psalm-type NodeArray = array{id: string, labels: list<string>, properties: array<string, scalar|null|array}
- * @psalm-type MetaArray = null|array{id?: int, type: string, deleted?: bool}
+ * @psalm-type Meta = array{id?: int, type: string, deleted?: bool}
+ * @psalm-type MetaArray = list<Meta|null|list<array{id: int, type: string, deleted: bool}>>
  *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  *
@@ -94,10 +96,10 @@ final class HttpOGMArrayTranslator
 
     /**
      * @param list<RelationshipArray> $relationships
-     * @param list<MetaArray|null>    $meta
+     * @param MetaArray               $meta
      * @param list<NodeArray>         $nodes
      *
-     * @return array{0: int, 1: int, 2:Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point}
+     * @return array{0: int, 1: int, 2:Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point|Path}
      */
     public function translate(array $meta, array $relationships, int $metaIndex, int $relationshipIndex, array $nodes, array $value): array
     {
@@ -112,6 +114,11 @@ final class HttpOGMArrayTranslator
                 ++$relationshipIncrease;
                 break;
             case 'path':
+                /**
+                 * @psalm-suppress UnnecessaryVarAnnotation False positive
+                 *
+                 * @var list<array{id: int, type: string, deleted: bool}> $currentMeta
+                 */
                 [$path, $relIncrease] = $this->path($currentMeta, $nodes, $relationships, $relationshipIndex);
                 $relationshipIncrease += $relIncrease;
                 $tbr = $path;
@@ -120,10 +127,13 @@ final class HttpOGMArrayTranslator
                 $tbr = $this->translatePoint($value);
                 break;
             default:
-                /** @var array<array-key, array|scalar|null> $value */
-                $tbr = $this->translateContainer($value);
                 if ($type === 'node' && isset($currentMeta['id'])) {
-                    $tbr = $this->translateNode($nodes, $currentMeta['id']);
+                    /** @var int $id */
+                    $id = $currentMeta['id'];
+                    $tbr = $this->translateNode($nodes, $id);
+                } else {
+                    /** @var array<array-key, array|scalar|null> $value */
+                    $tbr = $this->translateContainer($value);
                 }
                 break;
         }
@@ -131,9 +141,17 @@ final class HttpOGMArrayTranslator
         return [$metaIncrease, $relationshipIncrease, $tbr];
     }
 
+    /**
+     * @param list<array{id: int, type: string, deleted: bool}> $meta
+     * @param list<NodeArray>                                   $nodes
+     * @param list<RelationshipArray>                           $relationships
+     *
+     * @return array{0: Path, 1: int}
+     */
     private function path(array $meta, array $nodes, array $relationships, int $relIndex): array
     {
         $nodesTbr = [];
+        /** @var list<int> $ids */
         $ids = [];
         $rels = [];
         $relIncrease = 0;
@@ -142,7 +160,8 @@ final class HttpOGMArrayTranslator
                 $rel = $relationships[$relIndex];
                 ++$relIndex;
                 ++$relIncrease;
-                $rels[] = new UnboundRelationship((int) $rel['id'], $rel['type'], new CypherMap($rel['properties']));
+                $props = $this->translateCypherMap($rel['properties']);
+                $rels[] = new UnboundRelationship((int) $rel['id'], $rel['type'], $props);
             } else {
                 $nodesTbr[] = $this->translateNode($nodes, $nodeOrRel['id']);
             }
@@ -157,18 +176,13 @@ final class HttpOGMArrayTranslator
      */
     private function translateNode(array $nodes, int $id): Node
     {
-        /** @var list<string> */
-        $labels = [];
-        $props = [];
         foreach ($nodes as $node) {
             if ((int) $node['id'] === $id) {
-                $labels = $node['labels'];
-                $props = $node['properties'];
-                break;
+                return new Node($id, new CypherList($node['labels']), $this->translateCypherMap($node['properties']));
             }
         }
 
-        return new Node($id, new CypherList($labels), new CypherMap($props));
+        throw new RuntimeException('Error when translating node: Cannot find node with id: '.$id);
     }
 
     /**

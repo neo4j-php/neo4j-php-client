@@ -39,7 +39,7 @@ use function substr;
 final class HttpOGMStringTranslator
 {
     /**
-     * @param list<MetaArray> $meta
+     * @param MetaArray $meta
      *
      * @throws Exception
      *

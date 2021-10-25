@@ -43,7 +43,7 @@ use Psr\Http\Message\ResponseInterface;
  * @psalm-import-type MetaArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  * @psalm-import-type RelationshipArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  *
- * @psalm-type CypherResultDataRow = list<array{row: list<scalar|array|null>, meta: list<MetaArray>, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}>
+ * @psalm-type CypherResultDataRow = list<array{row: list<scalar|array|null>, meta: MetaArray, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}>
  * @psalm-type CypherResult = array{columns: list<string>, data: CypherResultDataRow}
  *
  * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
