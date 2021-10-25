@@ -23,7 +23,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 WORKDIR /opt/project
 
-COPY composer.json composer.loc[k] ./
+COPY composer.json ./
 
 RUN composer install
 
