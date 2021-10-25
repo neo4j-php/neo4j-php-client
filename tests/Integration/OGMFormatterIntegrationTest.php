@@ -35,6 +35,7 @@ use Laudis\Neo4j\Types\Time;
 use function range;
 use function sprintf;
 use function str_contains;
+use function str_starts_with;
 
 /**
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -465,6 +466,26 @@ CYPHER;
     /**
      * @dataProvider connectionAliases
      */
+    public function testPathMultiple(string $alias): void
+    {
+        $this->client->run('CREATE (:Node) - [:HasNode] -> (:Node)', [], $alias);
+        $this->client->run('CREATE (:Node) - [:HasNode] -> (:Node)', [], $alias);
+
+        $result = $this->client->run('RETURN (:Node) - [:HasNode] -> (:Node) as paths', [], $alias);
+
+        self::assertCount(1, $result);
+        $paths = $result->first()->get('paths');
+
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not correctly supported path expressions in return statements');
+        }
+        self::assertInstanceOf(CypherList::class, $paths);
+        self::assertCount(2, $paths);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
     public function testPropertyTypes(string $alias): void
     {
         $point = 'point({x: 3, y: 4})';
@@ -478,14 +499,14 @@ CYPHER;
 
         $result = $this->client->run(<<<CYPHER
 WITH
-    $point as p,
-    $list as l,
-    $date as d,
-    $dateTime as dt,
-    $duration as du,
-    $localDateTime as ldt,
-    $localTime as lt,
-    $time as t
+    $point AS p,
+    $list AS l,
+    $date AS d,
+    $dateTime AS dt,
+    $duration AS du,
+    $localDateTime AS ldt,
+    $localTime AS lt,
+    $time AS t
 MERGE (a:AllInOne {
     thePoint: p,
     theList: l,
@@ -523,17 +544,17 @@ CYPHER,
     {
         return <<<CYPHER
 UNWIND [
-    { title: "Cypher Basics I",
-      created: datetime("2019-06-01T18:40:32.142+0100"),
-      datePublished: date("2019-06-01"),
+    { title: 'Cypher Basics I',
+      created: datetime('2019-06-01T18:40:32.142+0100'),
+      datePublished: date('2019-06-01'),
       readingTime: {minutes: 2, seconds: 15} },
-    { title: "Cypher Basics II",
-      created: datetime("2019-06-02T10:23:32.122+0100"),
-      datePublished: date("2019-06-02"),
+    { title: 'Cypher Basics II',
+      created: datetime('2019-06-02T10:23:32.122+0100'),
+      datePublished: date('2019-06-02'),
       readingTime: {minutes: 2, seconds: 30} },
-    { title: "Dates, Datetimes, and Durations in Neo4j",
+    { title: 'Dates, Datetimes, and Durations in Neo4j',
       created: datetime(),
-      datePublished: date("2021-04-25"),
+      datePublished: date('2021-04-25'),
       readingTime: {minutes: 3, seconds: 30} }
 ] AS articleProperties
 

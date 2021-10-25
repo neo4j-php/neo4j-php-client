@@ -72,12 +72,12 @@ final class Path extends AbstractPropertyObject
     }
 
     /**
-     * @return array{id: CypherList<int>, nodes: CypherList<Node>, relationships: CypherList<UnboundRelationship>}
+     * @return array{ids: CypherList<int>, nodes: CypherList<Node>, relationships: CypherList<UnboundRelationship>}
      */
     public function toArray(): array
     {
         return [
-            'id' => $this->ids,
+            'ids' => $this->ids,
             'nodes' => $this->nodes,
             'relationships' => $this->relationships,
         ];
