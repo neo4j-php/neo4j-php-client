@@ -22,8 +22,10 @@ use Laudis\Neo4j\Types\CypherList;
  * A lightweight container for causally chained sequences of transactions to carry out work.
  *
  * @template ResultFormat
+ *
+ * @extends TransactionInterface<ResultFormat>
  */
-interface SessionInterface
+interface SessionInterface extends TransactionInterface
 {
     /**
      * @param iterable<Statement> $statements

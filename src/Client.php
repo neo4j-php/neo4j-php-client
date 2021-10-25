@@ -60,9 +60,9 @@ final class Client implements ClientInterface
         $this->defaultTransactionConfiguration = $defaultTransactionConfiguration;
     }
 
-    public function run(string $query, iterable $parameters = [], ?string $alias = null)
+    public function run(string $statement, iterable $parameters = [], ?string $alias = null)
     {
-        return $this->runStatement(Statement::create($query, $parameters), $alias);
+        return $this->runStatement(Statement::create($statement, $parameters), $alias);
     }
 
     public function runStatement(Statement $statement, ?string $alias = null)
