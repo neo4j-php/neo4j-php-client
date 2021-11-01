@@ -81,6 +81,19 @@ CYPHER, ['listOrMap' => ParameterHelper::asList([1, 2, 3])], $alias);
     /**
      * @dataProvider connectionAliases
      */
+    public function testMergeTransactionFunction(string $alias): void
+    {
+        $this->expectException(Neo4jException::class);
+        $this->client->writeTransaction(static function (TransactionInterface $tsx) {
+            $result = $tsx->run('MERGE (x {y: "z"}:X) return x');
+            /** @psalm-suppress all */
+            return $result->first()->get('x')['y'];
+        }, $alias);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
     public function testValidMapParameterHelper(string $alias): void
     {
         $result = $this->client->run(<<<'CYPHER'
