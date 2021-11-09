@@ -31,7 +31,7 @@ final class RetryableDoneResponse implements TestkitResponseInterface
     public function jsonSerialize(): array
     {
         return [
-            'name' => 'RetryableTry',
+            'name' => 'RetryableDone',
             'data' => [
                 'id' => $this->id->toRfc4122(),
             ],

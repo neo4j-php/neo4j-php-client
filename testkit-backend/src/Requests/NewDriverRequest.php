@@ -25,10 +25,10 @@ final class NewDriverRequest
     public function __construct(
         string $uri,
         AuthorizationTokenRequest $authToken,
-        ?string $userAgent,
-        ?bool $resolverRegistered,
-        ?bool $domainNameResolverRegistered,
-        ?int $connectionTimeoutMs
+        ?string $userAgent = null,
+        ?bool $resolverRegistered = null,
+        ?bool $domainNameResolverRegistered = null,
+        ?int $connectionTimeoutMs = null
     ) {
         $this->uri = $uri;
         $this->authToken = $authToken;
