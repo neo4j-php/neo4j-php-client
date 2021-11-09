@@ -46,7 +46,7 @@ final class TransactionRollback implements RequestHandlerInterface
         try {
             $tsx->rollback();
         } catch (InvalidTransactionStateException $e) {
-            return new DriverErrorResponse($request->getTxId(), '', $e->getMessage(), 'n/a');
+            return new DriverErrorResponse($request->getTxId(), '', $e->getMessage());
         }
 
         return new TransactionResponse($request->getTxId());

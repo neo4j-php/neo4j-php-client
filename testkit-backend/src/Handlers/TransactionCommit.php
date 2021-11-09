@@ -46,7 +46,7 @@ final class TransactionCommit implements RequestHandlerInterface
         try {
             $tsx->commit();
         } catch (InvalidTransactionStateException $e) {
-            return new DriverErrorResponse($request->getTxId(), '', $e->getMessage(), 'n/a');
+            return new DriverErrorResponse($request->getTxId(), '', $e->getMessage());
         }
 
         return new TransactionResponse($request->getTxId());

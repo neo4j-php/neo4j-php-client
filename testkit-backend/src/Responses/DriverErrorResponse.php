@@ -24,14 +24,12 @@ final class DriverErrorResponse implements TestkitResponseInterface
     private Uuid $id;
     private string $errorType;
     private string $message;
-    private string $code;
 
-    public function __construct(Uuid $id, string $errorType, string $message, string $code)
+    public function __construct(Uuid $id, string $errorType, string $message)
     {
         $this->id = $id;
         $this->errorType = $errorType;
         $this->message = $message;
-        $this->code = $code;
     }
 
     public function jsonSerialize(): array
@@ -42,7 +40,6 @@ final class DriverErrorResponse implements TestkitResponseInterface
                 'id' => $this->id->toRfc4122(),
                 'errorType' => $this->errorType,
                 'msg' => $this->message,
-                'code' => $this->code,
             ],
         ];
     }

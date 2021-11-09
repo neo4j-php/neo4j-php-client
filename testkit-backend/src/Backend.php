@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\TestkitBackend;
 
 use DI\ContainerBuilder;
 use Exception;
+use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use function get_debug_type;
 use function json_decode;
 use function json_encode;

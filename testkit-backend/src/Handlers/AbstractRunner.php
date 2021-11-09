@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
@@ -58,12 +57,14 @@ abstract class AbstractRunner implements RequestHandlerInterface
             $result = $session->run($request->getCypher(), $params);
         } catch (Neo4jException|InvalidTransactionStateException $exception) {
             $this->logger->debug($exception->__toString());
-            if ($exception instanceof InvalidTransactionStateException || (str_contains($exception->getMessage(), 'ClientError') && !str_contains($exception->getMessage(), 'ArithmeticError'))) {
+            if ($exception instanceof InvalidTransactionStateException ||
+                str_contains($exception->getMessage(), 'Neo.ClientError.Security.Unauthorized') ||
+                str_contains($exception->getMessage(), 'ClientError')
+            ) {
                 $this->repository->addRecords($id, new DriverErrorResponse(
                     $this->getId($request),
-                    'todo',
-                    $exception->getMessage(),
                     $exception instanceof Neo4jException ? $exception->getNeo4jCode() : 'n/a',
+                    $exception->getMessage(),
                 ));
             } else {
                 $this->repository->addRecords($id, new FrontendErrorResponse(
