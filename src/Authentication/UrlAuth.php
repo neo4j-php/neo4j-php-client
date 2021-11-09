@@ -20,12 +20,25 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use function substr_count;
 
+/**
+ * Authenticates connections based on the information found in the Uri.
+ */
 final class UrlAuth implements AuthenticateInterface
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
-        if (substr_count($uri->getUserInfo(), ':') === 1) {
-            [$user, $pass] = explode(':', $uri->getUserInfo());
+        /**
+         * @psalm-suppress ImpureMethodCall Uri is a pure object:
+         *
+         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
+         */
+        $userInfo = $uri->getUserInfo();
+
+        if (substr_count($userInfo, ':') === 1) {
+            [$user, $pass] = explode(':', $userInfo);
 
             return Authenticate::basic($user, $pass)
                 ->authenticateHttp($request, $uri, $userAgent);
@@ -36,11 +49,27 @@ final class UrlAuth implements AuthenticateInterface
 
     public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
     {
-        if (substr_count($uri->getUserInfo(), ':') === 1) {
-            [$user, $pass] = explode(':', $uri->getUserInfo());
-            Authenticate::basic($user, $pass)->authenticateBolt($bolt, $uri, $userAgent);
-        } else {
-            Authenticate::disabled()->authenticateBolt($bolt, $uri, $userAgent);
+        $this->extractFromUri($uri)->authenticateBolt($bolt, $uri, $userAgent);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function extractFromUri(UriInterface $uri): AuthenticateInterface
+    {
+        /**
+         * @psalm-suppress ImpureMethodCall Uri is a pure object:
+         *
+         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
+         */
+        $userInfo = $uri->getUserInfo();
+
+        if (substr_count($userInfo, ':') === 1) {
+            [$user, $pass] = explode(':', $userInfo);
+
+            return Authenticate::basic($user, $pass);
         }
+
+        return Authenticate::disabled();
     }
 }

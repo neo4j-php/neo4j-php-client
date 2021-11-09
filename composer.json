@@ -30,32 +30,29 @@
         "psr/http-factory": "^1.0",
         "psr/http-client": "^1.0",
         "php-http/message": "^1.0",
-        "php-ds/php-ds": "1.*",
         "php-http/message-factory": "^1.0",
-        "stefanak-michal/bolt": "^2.3",
-        "symfony/polyfill-php80": "^1.2"
+        "stefanak-michal/bolt": "^2.5.2",
+        "symfony/polyfill-php80": "^1.2",
+        "ext-json": "*"
     },
     "suggest": {
-        "ext-sockets": "Needed to implement bolt protocol",
         "ext-bcmath": "Needed to implement bolt protocol",
-        "ext-ds": "Needed for optimal performance",
-        "ext-json": "Needed to implement http protocol"
+        "composer-runtime-api": "Install composer 2 for auto detection of version in user agent"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.0",
         "nyholm/psr7": "^1.3",
         "nyholm/psr7-server": "^1.0",
         "kriswallsmith/buzz": "^1.2",
-        "vimeo/psalm": "^4.7",
-        "friendsofphp/php-cs-fixer": "^3.0",
+        "vimeo/psalm": "^4.10.0",
+        "friendsofphp/php-cs-fixer": "3.0.2",
         "psalm/plugin-phpunit": "^0.15.1",
         "monolog/monolog": "^2.2",
         "psr/log": "^1.1",
         "php-di/php-di": "^6.3",
         "vlucas/phpdotenv": "^5.0",
         "psr/container": "^1.1",
-        "lctrs/psalm-psr-container-plugin": "^1.3",
-        "symfony/uid": "^5.3"
+        "lctrs/psalm-psr-container-plugin": "^1.3"
     },
     "autoload": {
         "psr-4": {

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use function base64_encode;
 use function count;
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -20,6 +21,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
+use function random_bytes;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
@@ -70,6 +72,30 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
             ->get('x');
 
         self::assertEquals(1, $results);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testBigRandomData(string $alias): void
+    {
+        $tsx = $this->client->getDriver($alias)
+            ->createSession()
+            ->beginTransaction();
+
+        $params = [
+            'id' => 'xyz',
+        ];
+
+        for ($i = 0; $i < 100000; ++$i) {
+            $params[base64_encode(random_bytes(32))] = base64_encode(random_bytes(128));
+        }
+
+        $tsx->run('MATCH (a :label {id:$id}) RETURN a', $params);
+
+        $tsx->rollback();
+
+        self::assertTrue(true);
     }
 
     /**
@@ -244,7 +270,7 @@ CYPHER,
     public function testInvalidConnection(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the connection pool');
+        $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the client');
 
         $this->client->run('RETURN 1 AS x', [], 'ghqkneq;tr');
     }

@@ -13,10 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Ds\Set;
 use function in_array;
 use Laudis\Neo4j\Enum\RoutingRoles;
 
+/**
+ * Table containing possible routes to nodes in the cluster.
+ *
+ * @psalm-immutable
+ */
 final class RoutingTable
 {
     /** @var iterable<array{addresses: list<string>, role:string}> */
@@ -32,26 +36,31 @@ final class RoutingTable
         $this->ttl = $ttl;
     }
 
+    /**
+     * Returns the time to live in seconds.
+     */
     public function getTtl(): int
     {
         return $this->ttl;
     }
 
     /**
-     * @return Set<string>
+     * Returns the routes with a given role. If no role is provided it will return all routes.
+     *
+     * @return list<string>
      */
-    public function getWithRole(RoutingRoles $role = null): Set
+    public function getWithRole(RoutingRoles $role = null): array
     {
-        /** @psalm-var Set<string> $tbr */
-        $tbr = new Set();
+        /** @psalm-var list<string> $tbr */
+        $tbr = [];
         foreach ($this->servers as $server) {
             if ($role === null || in_array($server['role'], $role->getValue(), true)) {
                 foreach ($server['addresses'] as $address) {
-                    $tbr->add($address);
+                    $tbr[] = $address;
                 }
             }
         }
 
-        return $tbr;
+        return array_values(array_unique($tbr));
     }
 }

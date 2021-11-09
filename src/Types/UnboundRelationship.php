@@ -14,11 +14,15 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 /**
- * @psalm-immutable
+ * A relationship without any nodes attached to it.
  *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<OGMTypes, int|string|CypherMap<OGMTypes>>
  */
-final class UnboundRelationship extends AbstractCypherContainer
+final class UnboundRelationship extends AbstractPropertyObject
 {
     private int $id;
     private string $type;
@@ -45,18 +49,23 @@ final class UnboundRelationship extends AbstractCypherContainer
         return $this->type;
     }
 
-    /**
-     * @return CypherMap<OGMTypes>
-     */
     public function getProperties(): CypherMap
     {
+        /** @psalm-suppress InvalidReturnStatement false positive with type alias. */
         return $this->properties;
     }
 
-    public function getIterator()
+    /**
+     * @psalm-suppress ImplementedReturnTypeMismatch False positive.
+     *
+     * @return array{id: int, type: string, properties: CypherMap<OGMTypes>}
+     */
+    public function toArray(): array
     {
-        yield 'id' => $this->getId();
-        yield 'type' => $this->getType();
-        yield 'properties' => $this->getProperties();
+        return [
+            'id' => $this->getId(),
+            'type' => $this->getType(),
+            'properties' => $this->getProperties(),
+        ];
     }
 }

@@ -13,12 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
+use function sprintf;
+
 /**
- * @psalm-immutable
+ * A Relationship class representing a Relationship in cypher.
  *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<OGMTypes, int|string|CypherMap<OGMTypes>>
  */
-final class Relationship extends AbstractCypherContainer
+final class Relationship extends AbstractPropertyObject
 {
     private int $id;
 
@@ -43,40 +50,77 @@ final class Relationship extends AbstractCypherContainer
         $this->properties = $properties;
     }
 
+    /**
+     * Returns the id of the relationship.
+     */
     public function getId(): int
     {
         return $this->id;
     }
 
+    /**
+     * Returns the id of the start node.
+     */
     public function getStartNodeId(): int
     {
         return $this->startNodeId;
     }
 
+    /**
+     * Returns the id of the end node.
+     */
     public function getEndNodeId(): int
     {
         return $this->endNodeId;
     }
 
+    /**
+     * Returns the type of the relationship.
+     */
     public function getType(): string
     {
         return $this->type;
     }
 
-    /**
-     * @return CypherMap<OGMTypes>
-     */
     public function getProperties(): CypherMap
     {
+        /** @psalm-suppress InvalidReturnStatement false positive with type alias. */
         return $this->properties;
     }
 
-    public function getIterator()
+    /**
+     * @psalm-suppress ImplementedReturnTypeMismatch False positive.
+     *
+     * @return array{
+     *                id: int,
+     *                type: string,
+     *                startNodeId: int,
+     *                endNodeId: int,
+     *                properties: CypherMap<OGMTypes>
+     *                }
+     */
+    public function toArray(): array
     {
-        yield 'id' => $this->getId();
-        yield 'type' => $this->getType();
-        yield 'startNodeId' => $this->getStartNodeId();
-        yield 'endNodeId' => $this->getEndNodeId();
-        yield 'properties' => $this->getProperties();
+        return [
+            'id' => $this->getId(),
+            'type' => $this->getType(),
+            'startNodeId' => $this->getStartNodeId(),
+            'endNodeId' => $this->getEndNodeId(),
+            'properties' => $this->getProperties(),
+        ];
+    }
+
+    /**
+     * Gets the property of the relationship by key.
+     *
+     * @return OGMTypes
+     */
+    public function getProperty(string $key)
+    {
+        if (!$this->properties->hasKey($key)) {
+            throw new PropertyDoesNotExistException(sprintf('Property "%s" does not exist on relationship', $key));
+        }
+
+        return $this->properties->get($key);
     }
 }

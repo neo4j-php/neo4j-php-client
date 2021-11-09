@@ -56,6 +56,8 @@ final class BoltConfiguration implements ConfigInterface
     private $autoRouting;
 
     /**
+     * @psalm-mutation-free
+     *
      * @param callable():string|?string $database
      * @param LazySSLContextOptions     $sslContextOptions
      * @param callable():bool|bool      $autoRouting
@@ -72,7 +74,7 @@ final class BoltConfiguration implements ConfigInterface
      *
      * @see https://www.php.net/manual/en/context.ssl.php for ssl connections
      *
-     * @psalm-immutable
+     * @pure
      *
      * @return static
      */

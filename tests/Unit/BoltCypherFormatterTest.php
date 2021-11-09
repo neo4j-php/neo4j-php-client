@@ -18,7 +18,7 @@ use Bolt\connection\IConnection;
 use Bolt\structures\Node;
 use Bolt\structures\Path;
 use Bolt\structures\UnboundRelationship;
-use Laudis\Neo4j\Common\Connection;
+use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
@@ -84,16 +84,18 @@ final class BoltCypherFormatterTest extends TestCase
     /**
      * @throws \Exception
      */
-    private function getConnection(): Connection
+    private function getConnection(): BoltConnection
     {
-        return new Connection(
-            new Bolt($this->getMockBuilder(IConnection::class)->getMock()),
+        $connection = $this->getMockBuilder(IConnection::class)->getMock();
+
+        return new BoltConnection(
             '',
             $this->getMockBuilder(UriInterface::class)->getMock(),
             '',
             ConnectionProtocol::BOLT_V43(),
             AccessMode::READ(),
-            new DatabaseInfo('')
+            new DatabaseInfo(''),
+            static fn () => new Bolt($connection),
         );
     }
 }

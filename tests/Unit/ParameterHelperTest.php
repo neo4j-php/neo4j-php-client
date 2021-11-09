@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Ds\Map;
-use Ds\Vector;
 use InvalidArgumentException;
 use Iterator;
 use Laudis\Neo4j\ParameterHelper;
@@ -119,15 +117,15 @@ final class ParameterHelperTest extends TestCase
 
     public function testAsParameterEmptyVector(): void
     {
-        $result = ParameterHelper::asParameter(new Vector());
+        $result = ParameterHelper::asParameter([]);
         self::assertIsArray($result);
         self::assertCount(0, $result);
     }
 
     public function testAsParameterEmptyMap(): void
     {
-        $result = ParameterHelper::asParameter(new Map());
-        self::assertInstanceOf(stdClass::class, $result);
+        $result = ParameterHelper::asParameter([]);
+        self::assertIsArray($result);
     }
 
     public function testAsParameterEmptyArray(): void

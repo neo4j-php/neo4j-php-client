@@ -14,14 +14,13 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use JsonException;
+use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Databags\Bookmark;
-use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -30,7 +29,6 @@ use Laudis\Neo4j\Types\CypherList;
 use function microtime;
 use function parse_url;
 use const PHP_URL_PATH;
-use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -42,27 +40,54 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class HttpSession implements SessionInterface
 {
+    /** @psalm-readonly */
     private SessionConfiguration $config;
-    private StreamFactoryInterface $streamFactory;
+    /**
+     * @psalm-readonly
+     *
+     * @var Resolvable<StreamFactoryInterface>
+     */
+    private Resolvable $streamFactory;
+    /** @psalm-readonly */
     private HttpConnectionPool $pool;
-    /** @var FormatterInterface<T> */
+    /**
+     * @psalm-readonly
+     *
+     * @var FormatterInterface<T>
+     */
     private FormatterInterface $formatter;
-    private RequestFactory $requestFactory;
-    private string $uri;
+    /**
+     * @psalm-readonly
+     *
+     * @var Resolvable<RequestFactory>
+     */
+    private Resolvable $requestFactory;
+    /**
+     * @psalm-readonly
+     *
+     * @var Resolvable<string>
+     */
+    private Resolvable $uri;
+    /** @psalm-readonly */
     private AuthenticateInterface $auth;
+    /** @psalm-readonly */
     private string $userAgent;
-    private BookmarkHolder $bookmarkHolder;
 
     /**
-     * @param FormatterInterface<T> $formatter
+     * @psalm-mutation-free
+     *
+     * @param FormatterInterface<T>              $formatter
+     * @param Resolvable<StreamFactoryInterface> $factory
+     * @param Resolvable<string>                 $uri
+     * @param Resolvable<RequestFactory>         $requestFactory
      */
     public function __construct(
-        StreamFactoryInterface $factory,
+        Resolvable $factory,
         HttpConnectionPool $manager,
         SessionConfiguration $config,
         FormatterInterface $formatter,
-        RequestFactory $requestFactory,
-        string $uri,
+        Resolvable $requestFactory,
+        Resolvable $uri,
         AuthenticateInterface $auth,
         string $userAgent
     ) {
@@ -74,20 +99,19 @@ final class HttpSession implements SessionInterface
         $this->uri = $uri;
         $this->auth = $auth;
         $this->userAgent = $userAgent;
-        $this->bookmarkHolder = new BookmarkHolder();
     }
 
     /**
-     * @throws ClientExceptionInterface|JsonException
+     * @throws JsonException
      */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
         $config ??= TransactionConfiguration::default();
 
-        $request = $this->requestFactory->createRequest('POST', $this->uri);
+        $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve());
         $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->userAgent, $this->config);
-        $content = HttpHelper::statementsToString($this->formatter, $statements);
-        $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->createStream($content));
+        $content = HttpHelper::statementsToJson($this->formatter, $statements);
+        $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->resolve()->createStream($content));
 
         $start = microtime(true);
         $response = $connection->getImplementation()->sendRequest($request);
@@ -95,13 +119,11 @@ final class HttpSession implements SessionInterface
 
         $data = HttpHelper::interpretResponse($response);
 
-        TransactionHelper::incrementBookmark($this->bookmarkHolder);
-
         return $this->formatter->formatHttpResult($response, $data, $connection, $time, $time, $statements);
     }
 
     /**
-     * @throws JsonException|ClientExceptionInterface
+     * @throws JsonException
      */
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
@@ -132,7 +154,7 @@ final class HttpSession implements SessionInterface
     }
 
     /**
-     * @throws ClientExceptionInterface|JsonException
+     * @throws JsonException
      */
     public function runStatement(Statement $statement, ?TransactionConfiguration $config = null)
     {
@@ -140,7 +162,7 @@ final class HttpSession implements SessionInterface
     }
 
     /**
-     * @throws ClientExceptionInterface|JsonException
+     * @throws JsonException
      */
     public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null)
     {
@@ -148,14 +170,14 @@ final class HttpSession implements SessionInterface
     }
 
     /**
-     * @throws JsonException|ClientExceptionInterface
+     * @throws JsonException
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         $config ??= TransactionConfiguration::default();
 
-        $request = $this->requestFactory->createRequest('POST', $this->uri);
-        $request->getBody()->write(HttpHelper::statementsToString($this->formatter, $statements ?? []));
+        $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve());
+        $request->getBody()->write(HttpHelper::statementsToJson($this->formatter, $statements ?? []));
         $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->userAgent, $this->config);
         $response = $connection->getImplementation()->sendRequest($request);
 
@@ -179,9 +201,8 @@ final class HttpSession implements SessionInterface
         return new HttpUnmanagedTransaction(
             $request,
             $connection,
-            $this->streamFactory,
-            $this->formatter,
-            $this->bookmarkHolder
+            $this->streamFactory->resolve(),
+            $this->formatter
         );
     }
 
@@ -191,10 +212,5 @@ final class HttpSession implements SessionInterface
         $uri = $request->getUri()->withPath($path);
 
         return $request->withUri($uri);
-    }
-
-    public function getLastBookmark(): Bookmark
-    {
-        return $this->bookmarkHolder->getBookmark();
     }
 }

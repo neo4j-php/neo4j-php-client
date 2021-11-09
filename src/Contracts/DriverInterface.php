@@ -16,16 +16,20 @@ namespace Laudis\Neo4j\Contracts;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 
 /**
- * @template T
+ * The driver creates sessions for carrying out work.
+ *
+ * @template ResultFormat
  *
  * @psalm-type ParsedUrl = array{host: string, pass: string|null, path: string, port: int, query: array<string,string>, scheme: string, user: string|null}
  *
- * @psalm-type BasicDriver = DriverInterface<\Ds\Vector<\Ds\Map<string, scalar|array|null>>>
+ * @psalm-type BasicDriver = DriverInterface<\Laudis\Neo4j\Formatter\CypherList<\Laudis\Neo4j\Formatter\CypherMap<string, scalar|array|null>>>
+ *
+ * @psalm-immutable
  */
 interface DriverInterface
 {
     /**
-     * @return SessionInterface<T>
+     * @return SessionInterface<ResultFormat>
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface;
 }

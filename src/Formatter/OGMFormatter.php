@@ -14,60 +14,66 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter;
 
 use function array_slice;
-use ArrayIterator;
 use function count;
-use Ds\Map;
-use Ds\Vector;
 use Exception;
+use function is_array;
+use function is_string;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator;
 use Laudis\Neo4j\Formatter\Specialised\HttpOGMStringTranslator;
-use Laudis\Neo4j\Formatter\Specialised\HttpOGMTranslator;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
+ * Formats the result in a basic OGM (Object Graph Mapping) format by mapping al cypher types to types found in the \Laudis\Neo4j\Types namespace.
+ *
  * @see https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-type-mapping
  *
- * @psalm-type OGMTypes = string|\Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime|\Laudis\Neo4j\Types\Time|int|float|bool|null|\Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap|\Laudis\Neo4j\Types\Node|\Laudis\Neo4j\Types\Relationship|\Laudis\Neo4j\Types\Path|\Laudis\Neo4j\Types\Cartesian3DPoint|\Laudis\Neo4j\Types\CartesianPoint|\Laudis\Neo4j\Types\WGS84Point|\Laudis\Neo4j\Types\WGS843DPoint
+ * @psalm-type OGMTypes = string|int|float|bool|null|\Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime|\Laudis\Neo4j\Types\Time|\Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap|\Laudis\Neo4j\Types\Node|\Laudis\Neo4j\Types\Relationship|\Laudis\Neo4j\Types\Path|\Laudis\Neo4j\Types\Cartesian3DPoint|\Laudis\Neo4j\Types\CartesianPoint|\Laudis\Neo4j\Types\WGS84Point|\Laudis\Neo4j\Types\WGS843DPoint
  * @implements FormatterInterface<CypherList<CypherMap<OGMTypes>>>
  *
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  *
  * @psalm-import-type NodeArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
+ * @psalm-import-type MetaArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  * @psalm-import-type RelationshipArray from \Laudis\Neo4j\Formatter\Specialised\HttpOGMArrayTranslator
  *
- * @psalm-type CypherResult = array{columns: list<string>, data: list<array{row: list<scalar|array|null>, meta: array, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}>}
+ * @psalm-type CypherResultDataRow = list<array{row: list<scalar|array|null>, meta: MetaArray, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}>
+ * @psalm-type CypherResult = array{columns: list<string>, data: CypherResultDataRow}
  *
  * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
+ *
+ * @psalm-immutable
  */
 final class OGMFormatter implements FormatterInterface
 {
     private BoltOGMTranslator $boltTranslator;
-    private HttpOGMTranslator $httpTranslator;
+    private HttpOGMArrayTranslator $arrayTranslator;
+    private HttpOGMStringTranslator $stringTranslator;
 
-    public function __construct(BoltOGMTranslator $boltTranslator, HttpOGMTranslator $httpTranslator)
+    public function __construct(BoltOGMTranslator $boltTranslator, HttpOGMArrayTranslator $arrayTranslator, HttpOGMStringTranslator $stringTranslator)
     {
         $this->boltTranslator = $boltTranslator;
-        $this->httpTranslator = $httpTranslator;
+        $this->arrayTranslator = $arrayTranslator;
+        $this->stringTranslator = $stringTranslator;
     }
 
     /**
-     * @psalm-mutation-free
+     * Creates a new instance of itself.
+     *
+     * @pure
      */
     public static function create(): OGMFormatter
     {
         return new self(
             new BoltOGMTranslator(),
-            new HttpOGMTranslator(
-                new HttpOGMArrayTranslator(),
-                new HttpOGMStringTranslator()
-            )
+            new HttpOGMArrayTranslator(),
+            new HttpOGMStringTranslator()
         );
     }
 
@@ -81,11 +87,11 @@ final class OGMFormatter implements FormatterInterface
         /** @var list<list<mixed>> $results */
         $results = array_slice($results, 0, count($results) - 1);
 
-        /** @var Vector<CypherMap<OGMTypes>> $tbr */
-        $tbr = new Vector();
+        /** @var list<CypherMap<OGMTypes>> $tbr */
+        $tbr = [];
 
         foreach ($results as $result) {
-            $tbr->push($this->formatRow($meta, $result));
+            $tbr[] = $this->formatRow($meta, $result);
         }
 
         return new CypherList($tbr);
@@ -96,12 +102,12 @@ final class OGMFormatter implements FormatterInterface
      */
     public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
-        /** @var Vector<CypherList<CypherMap<OGMTypes>>> $tbr */
-        $tbr = new Vector();
+        /** @var list<CypherList<CypherMap<OGMTypes>>> $tbr */
+        $tbr = [];
 
         foreach ($body['results'] as $results) {
             /** @var CypherResult $results */
-            $tbr->push($this->buildResult($results));
+            $tbr[] = $this->buildResult($results);
         }
 
         return new CypherList($tbr);
@@ -116,22 +122,37 @@ final class OGMFormatter implements FormatterInterface
      */
     private function buildResult(array $result): CypherList
     {
-        /** @var Vector<CypherMap<OGMTypes>> $tbr */
-        $tbr = new Vector();
+        /** @var list<CypherMap<OGMTypes>> $tbr */
+        $tbr = [];
 
         $columns = $result['columns'];
         foreach ($result['data'] as $data) {
-            $meta = new ArrayIterator($data['meta']);
+            $meta = $data['meta'];
             $nodes = $data['graph']['nodes'];
-            $relationship = new ArrayIterator($data['graph']['relationships']);
+            $relationship = $data['graph']['relationships'];
+            $metaIndex = 0;
+            $relationshipIndex = 0;
 
-            /** @var Map<string, OGMTypes> $record */
-            $record = new Map();
+            /** @var array<string, OGMTypes> $record */
+            $record = [];
             foreach ($data['row'] as $i => $value) {
-                $record->put($columns[$i], $this->httpTranslator->translate($meta, $relationship, $nodes, $value));
+                if (is_array($value)) {
+                    $translation = $this->arrayTranslator->translate($meta, $relationship, $metaIndex, $relationshipIndex, $nodes, $value);
+
+                    $relationshipIndex += $translation[1];
+                    $metaIndex += $translation[0];
+                    $record[$columns[$i]] = $translation[2];
+                } elseif (is_string($value)) {
+                    [$metaIncrement, $translation] = $this->stringTranslator->translate($metaIndex, $meta, $value);
+                    $metaIndex += $metaIncrement;
+                    $record[$columns[$i]] = $translation;
+                } else {
+                    $record[$columns[$i]] = $value;
+                    ++$metaIndex;
+                }
             }
 
-            $tbr->push(new CypherMap($record));
+            $tbr[] = new CypherMap($record);
         }
 
         return new CypherList($tbr);
@@ -145,10 +166,10 @@ final class OGMFormatter implements FormatterInterface
      */
     private function formatRow(array $meta, array $result): CypherMap
     {
-        /** @var Map<string, OGMTypes> $map */
-        $map = new Map();
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
         foreach ($meta['fields'] as $i => $column) {
-            $map->put($column, $this->boltTranslator->mapValueToType($result[$i]));
+            $map[$column] = $this->boltTranslator->mapValueToType($result[$i]);
         }
 
         return new CypherMap($map);

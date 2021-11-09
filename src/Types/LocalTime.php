@@ -14,9 +14,13 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 /**
+ * The time of day represented in nanoseconds.
+ *
  * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<int, int>
  */
-final class LocalTime extends AbstractCypherContainer
+final class LocalTime extends AbstractPropertyObject
 {
     private int $nanoseconds;
 
@@ -25,13 +29,24 @@ final class LocalTime extends AbstractCypherContainer
         $this->nanoseconds = $nanoseconds;
     }
 
+    /**
+     * The nanoseconds that have passed since midnight.
+     */
     public function getNanoseconds(): int
     {
         return $this->nanoseconds;
     }
 
-    public function getIterator()
+    /**
+     * @return array{nanoseconds: int}
+     */
+    public function toArray(): array
     {
-        yield 'nanoseconds' => $this->nanoseconds;
+        return ['nanoseconds' => $this->nanoseconds];
+    }
+
+    public function getProperties(): CypherMap
+    {
+        return new CypherMap($this);
     }
 }

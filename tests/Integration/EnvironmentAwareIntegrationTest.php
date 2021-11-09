@@ -49,12 +49,21 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
         $connections = $this->getConnections();
 
         $builder = ClientBuilder::create();
+        $aliases = [];
         foreach ($connections as $i => $connection) {
             $uri = Uri::create($connection);
-            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection);
+            $alias = $uri->getScheme().'_'.$i;
+            $aliases[] = $alias;
+            $builder = $builder->withDriver($alias, $connection);
         }
 
-        return $builder->withFormatter($this->formatter())->build();
+        $client = $builder->withFormatter($this->formatter())->build();
+
+        foreach ($aliases as $alias) {
+            $client->run('MATCH (x) DETACH DELETE x', [], $alias);
+        }
+
+        return $client;
     }
 
     /**

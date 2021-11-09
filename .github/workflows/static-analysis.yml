@@ -1,4 +1,4 @@
-on: [ pull_request ]
+on: [ push, pull_request ]
 name: Lint
 jobs:
   php-cs-fixer:
@@ -7,11 +7,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: "PHP-CS-Fixer"
-        uses: docker://oskarstark/php-cs-fixer-ga:2.19.0
+        uses: docker://oskarstark/php-cs-fixer-ga:3.0.2
         with:
           args: --dry-run
       - name: "PSalm"
-        uses: docker://vimeo/psalm-github-actions
+        uses: docker://vimeo/psalm-github-actions:4.10.0
         with:
           composer_require_dev: true
           composer_ignore_platform_reqs: false

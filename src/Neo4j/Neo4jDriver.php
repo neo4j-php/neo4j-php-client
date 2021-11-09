@@ -17,6 +17,7 @@ use Bolt\Bolt;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -31,11 +32,15 @@ use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
 
 /**
+ * Driver for auto client-side routing.
+ *
  * @template T
  *
  * @implements DriverInterface<T>
  *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class Neo4jDriver implements DriverInterface
 {
@@ -78,7 +83,7 @@ final class Neo4jDriver implements DriverInterface
      *           ? self<U>
      *           : self<OGMResults>
      *           )
-     * @psalm-mutation-free
+     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): self
     {
@@ -92,7 +97,7 @@ final class Neo4jDriver implements DriverInterface
             return new self(
                 $uri,
                 $authenticate ?? Authenticate::fromUrl(),
-                new Neo4jConnectionPool(),
+                new Neo4jConnectionPool(new BoltConnectionPool()),
                 $configuration ?? DriverConfiguration::default(),
                 $formatter,
                 $socketTimeout
@@ -102,7 +107,7 @@ final class Neo4jDriver implements DriverInterface
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl(),
-            new Neo4jConnectionPool(),
+            new Neo4jConnectionPool(new BoltConnectionPool()),
             $configuration ?? DriverConfiguration::default(),
             OGMFormatter::create(),
             $socketTimeout

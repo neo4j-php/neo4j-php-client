@@ -19,24 +19,77 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Psr\Http\Message\UriInterface;
 
 /**
- * @template T
+ * A connection is an abstraction over a protocol used to communicate between driver and server.
+ *
+ * @template ProtocolImplementation The implementation of the protocol.
  */
 interface ConnectionInterface
 {
     /**
-     * @return T
+     * Returns the underlying protocol implementation to actually the connection.
+     *
+     * @psalm-mutation-free
+     *
+     * @return ProtocolImplementation
      */
     public function getImplementation();
 
+    /**
+     * Returns the agent the servers uses to identify itself.
+     *
+     * @psalm-mutation-free
+     */
     public function getServerAgent(): string;
 
+    /**
+     * Returns the Uri used to connect to the server.
+     *
+     * @psalm-mutation-free
+     */
     public function getServerAddress(): UriInterface;
 
+    /**
+     * Returns the version of the neo4j server.
+     *
+     * @psalm-mutation-free
+     */
     public function getServerVersion(): string;
 
+    /**
+     * Returns the protocol used to connect to the server.
+     *
+     * @psalm-mutation-free
+     */
     public function getProtocol(): ConnectionProtocol;
 
+    /**
+     * Returns the mode of access.
+     *
+     * @psalm-mutation-free
+     */
     public function getAccessMode(): AccessMode;
 
+    /**
+     * Returns the information about the database the connection reaches.
+     *
+     * @psalm-mutation-free
+     */
     public function getDatabaseInfo(): DatabaseInfo;
+
+    /**
+     * Opens the connection.
+     */
+    public function open(): void;
+
+    /**
+     * Closes the connection.
+     */
+    public function close(): void;
+
+    /**
+     * Checks to see if the connection is open.
+     *
+     * @psalm-mutation-free
+     */
+    public function isOpen(): bool;
 }

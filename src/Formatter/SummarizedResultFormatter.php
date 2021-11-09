@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use Ds\Vector;
 use function in_array;
 use function is_int;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -30,18 +29,51 @@ use Psr\Http\Message\ResponseInterface;
 use UnexpectedValueException;
 
 /**
+ * Decorates the result of the provided format with an extensive summary.
+ *
  * @template T
  *
  * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
  *
  * @implements FormatterInterface<SummarizedResult<T>>
+ *
+ * @psalm-immutable
  */
 final class SummarizedResultFormatter implements FormatterInterface
 {
     /** @var FormatterInterface<T> */
     private FormatterInterface $formatter;
+
+    /**
+     * Creates a new instance of itself by decorating an OGMFormatter.
+     *
+     * @return self<OGMResults>
+     *
+     * @pure
+     */
+    public static function create(): self
+    {
+        return self::createWithFormatter(OGMFormatter::create());
+    }
+
+    /**
+     * @template U
+     *
+     * Creates a new summarized result formatter by decorating the given formatter.
+     *
+     * @param FormatterInterface<U> $formatter
+     *
+     * @return self<U>
+     *
+     * @pure
+     */
+    public static function createWithFormatter(FormatterInterface $formatter): self
+    {
+        return new self($formatter);
+    }
 
     /**
      * @param FormatterInterface<T> $formatter
@@ -83,7 +115,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         $summary = new ResultSummary(
             $counters,
             $connection->getDatabaseInfo(),
-            new CypherList(new Vector()),
+            new CypherList(),
             null,
             null,
             $statement,
@@ -149,7 +181,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         $summary = new ResultSummary(
             $counters,
             $connection->getDatabaseInfo(),
-            new CypherList(new Vector()),
+            new CypherList(),
             null,
             null,
             $statement,
@@ -169,14 +201,14 @@ final class SummarizedResultFormatter implements FormatterInterface
 
     public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
-        /** @var Vector<SummarizedResult<T>> */
-        $tbr = new Vector();
+        /** @var list<SummarizedResult<T>> */
+        $tbr = [];
 
         $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);
         $i = 0;
         foreach ($statements as $statement) {
             $result = $body['results'][$i];
-            $tbr->push($this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i)));
+            $tbr[] = $this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i));
             ++$i;
         }
 

@@ -11,34 +11,42 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\Common;
+namespace Laudis\Neo4j\Http;
 
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\UriInterface;
 
 /**
- * @template T
- * @implements ConnectionInterface<T>
+ * @implements ConnectionInterface<ClientInterface>
  */
-final class Connection implements ConnectionInterface
+final class HttpConnection implements ConnectionInterface
 {
-    /** @var T */
-    private $socket;
+    /** @psalm-readonly */
     private string $serverAgent;
+    /** @psalm-readonly */
     private UriInterface $serverAddress;
+    /** @psalm-readonly */
     private string $serverVersion;
+    /** @psalm-readonly */
     private ConnectionProtocol $protocol;
+    /** @psalm-readonly */
     private AccessMode $accessMode;
+    /** @psalm-readonly */
     private DatabaseInfo $databaseInfo;
+    /** @psalm-readonly */
+    private ClientInterface $client;
+
+    private bool $isOpen = true;
 
     /**
-     * @param T $socket
+     * @psalm-mutation-free
      */
     public function __construct(
-        $socket,
+        ClientInterface $client,
         string $serverAgent,
         UriInterface $serverAddress,
         string $serverVersion,
@@ -46,47 +54,92 @@ final class Connection implements ConnectionInterface
         AccessMode $accessMode,
         DatabaseInfo $databaseInfo
     ) {
-        $this->socket = $socket;
         $this->serverAgent = $serverAgent;
         $this->serverAddress = $serverAddress;
         $this->serverVersion = $serverVersion;
         $this->protocol = $protocol;
         $this->accessMode = $accessMode;
         $this->databaseInfo = $databaseInfo;
+        $this->client = $client;
     }
 
-    public function getImplementation()
+    /**
+     * @psalm-mutation-free
+     */
+    public function getImplementation(): ClientInterface
     {
-        return $this->socket;
+        return $this->client;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getServerAgent(): string
     {
         return $this->serverAgent;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getServerAddress(): UriInterface
     {
         return $this->serverAddress;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getServerVersion(): string
     {
         return $this->serverVersion;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getProtocol(): ConnectionProtocol
     {
         return $this->protocol;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getAccessMode(): AccessMode
     {
         return $this->accessMode;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getDatabaseInfo(): DatabaseInfo
     {
         return $this->databaseInfo;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isOpen(): bool
+    {
+        return $this->isOpen;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function open(): void
+    {
+        $this->isOpen = true;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function close(): void
+    {
+        $this->isOpen = false;
     }
 }

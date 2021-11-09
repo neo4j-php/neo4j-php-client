@@ -13,55 +13,58 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
-use Ds\Map;
-use Ds\Vector;
 use function is_array;
-use Iterator;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
+use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
+use RuntimeException;
 
 /**
- * @psalm-type RelationshipArray = array{id: string, type: string, startNode: string, endNode: string, properties?: array<string, scalar|null|array<array-key, scalar|null|array>>}
+ * Maps the arrays to their respective values.
+ *
+ * @psalm-type RelationshipArray = array{id: string, type: string, startNode: string, endNode: string, properties: array<string, scalar|null|array<array-key, scalar|null|array>>}
  * @psalm-type NodeArray = array{id: string, labels: list<string>, properties: array<string, scalar|null|array}
- * @psalm-type MetaArray = null|array{id?: int, type: string, deleted?: bool}
+ * @psalm-type Meta = array{id?: int, type: string, deleted?: bool}
+ * @psalm-type MetaArray = list<Meta|null|list<array{id: int, type: string, deleted: bool}>>
  *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class HttpOGMArrayTranslator
 {
     /**
-     * @param Iterator<RelationshipArray> $relationship
+     * @param RelationshipArray $relationship
      */
-    private function relationship(Iterator $relationship): Relationship
+    private function relationship(array $relationship): Relationship
     {
-        $rel = $relationship->current();
-        $relationship->next();
-        /** @var Map<string, OGMTypes> $map */
-        $map = new Map();
-        foreach ($rel['properties'] ?? [] as $key => $x) {
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
+        foreach ($relationship['properties'] ?? [] as $key => $x) {
             // We only need to recurse over array types.
             // Nested types gets erased in the legacy http api.
             // We need to use JOLT instead for finer control,
             // which will be a different translator.
             if (is_array($x)) {
-                $map->put($key, $this->translateContainer($x));
+                $map[$key] = $this->translateContainer($x);
             } else {
-                $map->put($key, $x);
+                $map[$key] = $x;
             }
         }
 
         return new Relationship(
-            (int) $rel['id'],
-            (int) $rel['startNode'],
-            (int) $rel['endNode'],
-            $rel['type'],
+            (int) $relationship['id'],
+            (int) $relationship['startNode'],
+            (int) $relationship['endNode'],
+            $relationship['type'],
             new CypherMap($map)
         );
     }
@@ -73,8 +76,8 @@ final class HttpOGMArrayTranslator
      */
     private function translateCypherList(array $value): CypherList
     {
-        /** @var Vector<OGMTypes> $tbr */
-        $tbr = new Vector();
+        /** @var array<OGMTypes> $tbr */
+        $tbr = [];
         foreach ($value as $x) {
             // We only need to recurse over array types.
             // Nested types gets erased in the legacy http api.
@@ -82,9 +85,9 @@ final class HttpOGMArrayTranslator
             // which will be a different translator.
             if (is_array($x)) {
                 /** @var array<array-key, array|scalar|null> $x */
-                $tbr->push($this->translateContainer($x));
+                $tbr[] = $this->translateContainer($x);
             } else {
-                $tbr->push($x);
+                $tbr[] = $x;
             }
         }
 
@@ -92,53 +95,94 @@ final class HttpOGMArrayTranslator
     }
 
     /**
-     * @param Iterator<RelationshipArray> $relationship
-     * @param Iterator<MetaArray>         $meta
-     * @param list<NodeArray>             $nodes
+     * @param list<RelationshipArray> $relationships
+     * @param MetaArray               $meta
+     * @param list<NodeArray>         $nodes
      *
-     * @return Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point
+     * @return array{0: int, 1: int, 2:Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point|Path}
      */
-    public function translate(Iterator $meta, Iterator $relationship, array $nodes, array $value): object
+    public function translate(array $meta, array $relationships, int $metaIndex, int $relationshipIndex, array $nodes, array $value): array
     {
-        $currentMeta = $meta->current();
-        $meta->next();
-        $type = $currentMeta['type'] ?? null;
+        $currentMeta = $meta[$metaIndex];
+        $metaIncrease = 1;
+        $relationshipIncrease = 0;
+        $type = $currentMeta === null ? null : ($currentMeta['type'] ?? 'path');
 
         switch ($type) {
             case 'relationship':
-                $tbr = $this->relationship($relationship);
+                $tbr = $this->relationship($relationships[$relationshipIndex]);
+                ++$relationshipIncrease;
+                break;
+            case 'path':
+                /**
+                 * @psalm-suppress UnnecessaryVarAnnotation False positive
+                 *
+                 * @var list<array{id: int, type: string, deleted: bool}> $currentMeta
+                 */
+                [$path, $relIncrease] = $this->path($currentMeta, $nodes, $relationships, $relationshipIndex);
+                $relationshipIncrease += $relIncrease;
+                $tbr = $path;
                 break;
             case 'point':
                 $tbr = $this->translatePoint($value);
                 break;
             default:
-                /** @var array<array-key, array|scalar|null> $value */
-                $tbr = $this->translateContainer($value);
-                if ($type === 'node' && $tbr instanceof CypherMap && isset($currentMeta['id'])) {
-                    $tbr = $this->translateNode($nodes, $currentMeta['id'], $tbr);
+                if ($type === 'node' && isset($currentMeta['id'])) {
+                    /** @var int $id */
+                    $id = $currentMeta['id'];
+                    $tbr = $this->translateNode($nodes, $id);
+                } else {
+                    /** @var array<array-key, array|scalar|null> $value */
+                    $tbr = $this->translateContainer($value);
                 }
                 break;
         }
 
-        return $tbr;
+        return [$metaIncrease, $relationshipIncrease, $tbr];
     }
 
     /**
-     * @param list<NodeArray>     $nodes
-     * @param CypherMap<OGMTypes> $tbr
+     * @param list<array{id: int, type: string, deleted: bool}> $meta
+     * @param list<NodeArray>                                   $nodes
+     * @param list<RelationshipArray>                           $relationships
+     *
+     * @return array{0: Path, 1: int}
      */
-    private function translateNode(array $nodes, int $id, CypherMap $tbr): Node
+    private function path(array $meta, array $nodes, array $relationships, int $relIndex): array
     {
-        /** @var Vector<string> */
-        $labels = new Vector();
+        $nodesTbr = [];
+        /** @var list<int> $ids */
+        $ids = [];
+        $rels = [];
+        $relIncrease = 0;
+        foreach ($meta as $nodeOrRel) {
+            if ($nodeOrRel['type'] === 'relationship') {
+                $rel = $relationships[$relIndex];
+                ++$relIndex;
+                ++$relIncrease;
+                $props = $this->translateCypherMap($rel['properties']);
+                $rels[] = new UnboundRelationship((int) $rel['id'], $rel['type'], $props);
+            } else {
+                $nodesTbr[] = $this->translateNode($nodes, $nodeOrRel['id']);
+            }
+            $ids[] = $nodeOrRel['id'];
+        }
+
+        return [new Path(new CypherList($nodesTbr), new CypherList($rels), new CypherList($ids)), $relIncrease];
+    }
+
+    /**
+     * @param list<NodeArray> $nodes
+     */
+    private function translateNode(array $nodes, int $id): Node
+    {
         foreach ($nodes as $node) {
             if ((int) $node['id'] === $id) {
-                $labels = new Vector($node['labels']);
-                break;
+                return new Node($id, new CypherList($node['labels']), $this->translateCypherMap($node['properties']));
             }
         }
 
-        return new Node($id, new CypherList($labels), $tbr);
+        throw new RuntimeException('Error when translating node: Cannot find node with id: '.$id);
     }
 
     /**
@@ -195,8 +239,8 @@ final class HttpOGMArrayTranslator
      */
     private function translateCypherMap(array $value): CypherMap
     {
-        /** @var Map<string, OGMTypes> $tbr */
-        $tbr = new Map();
+        /** @var array<string, OGMTypes> $tbr */
+        $tbr = [];
         foreach ($value as $key => $x) {
             // We only need to recurse over array types.
             // Nested types gets erased in the legacy http api.
@@ -204,9 +248,9 @@ final class HttpOGMArrayTranslator
             // which will be a different translator.
             if (is_array($x)) {
                 /** @var array<array-key, scalar|array|null> $x */
-                $tbr->put($key, $this->translateContainer($x));
+                $tbr[$key] = $this->translateContainer($x);
             } else {
-                $tbr->put($key, $x);
+                $tbr[$key] = $x;
             }
         }
 

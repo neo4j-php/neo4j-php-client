@@ -17,12 +17,16 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Psr\Http\Message\UriInterface;
 
 /**
- * @template T
+ * A connection pool acts as a connection factory by managing multiple connections.
+ *
+ * @template ProtocolImplementation The implementation of the protocol used in the connection.
  */
 interface ConnectionPoolInterface
 {
     /**
-     * @return ConnectionInterface<T>
+     * Acquires a connection from the pool.
+     *
+     * @return ConnectionInterface<ProtocolImplementation>
      */
     public function acquire(
         UriInterface $uri,

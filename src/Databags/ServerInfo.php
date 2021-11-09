@@ -14,13 +14,14 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Laudis\Neo4j\Enum\ConnectionProtocol;
-use Laudis\Neo4j\Types\AbstractCypherContainer;
 use Psr\Http\Message\UriInterface;
 
 /**
+ * Provides some basic information of the server where the result is obtained from.
+ *
  * @psalm-immutable
  */
-final class ServerInfo extends AbstractCypherContainer
+final class ServerInfo
 {
     private UriInterface $address;
     private ConnectionProtocol $protocol;
@@ -33,25 +34,27 @@ final class ServerInfo extends AbstractCypherContainer
         $this->agent = $agent;
     }
 
+    /**
+     * Returns the uri of the server the query was executed.
+     */
     public function getAddress(): UriInterface
     {
         return $this->address;
     }
 
-    public function getProtocolVersion(): ConnectionProtocol
+    /**
+     * Returns Connection Protocol version with which the remote server communicates.
+     */
+    public function getProtocol(): ConnectionProtocol
     {
         return $this->protocol;
     }
 
+    /**
+     * Returns server agent string by which the remote server identifies itself.
+     */
     public function getAgent(): string
     {
         return $this->agent;
-    }
-
-    public function getIterator()
-    {
-        yield 'address' => $this->address;
-        yield 'protocolVersion' => $this->protocol;
-        yield 'agent' => $this->agent;
     }
 }

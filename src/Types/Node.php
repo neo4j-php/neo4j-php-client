@@ -13,19 +13,22 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use BadMethodCallException;
-use Ds\Map;
-use Ds\Vector;
-use function get_class;
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 use function sprintf;
 
 /**
- * @psalm-immutable
+ * A Node class representing a Node in cypher.
  *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
+ *
+ * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<OGMTypes, int|string|CypherMap<OGMTypes>>
+ * @extends AbstractPropertyObject<OGMTypes, int|CypherList<string>|CypherMap<OGMTypes>>
  */
-final class Node extends AbstractCypherContainer
+final class Node extends AbstractPropertyObject
 {
     private int $id;
     /** @var CypherList<string> */
@@ -44,21 +47,20 @@ final class Node extends AbstractCypherContainer
         $this->properties = $properties;
     }
 
-    public static function makeFromHttpNode(array $node): self
+    /**
+     * @deprecated
+     * @see self::getLabels
+     *
+     * @return CypherList<string>
+     */
+    public function labels(): CypherList
     {
-        /**
-         * @psalm-suppress PossiblyUndefinedStringArrayOffset
-         * @psalm-suppress MixedArgumentTypeCoercion
-         * @psalm-suppress MixedArgument
-         */
-        return new self(
-            $node['id'],
-            new CypherList(new Vector($node['labels'])),
-            new CypherMap(new Map($node['properties']))
-        );
+        return $this->labels;
     }
 
     /**
+     * The labels on the node.
+     *
      * @return CypherList<string>
      */
     public function getLabels(): CypherList
@@ -68,18 +70,35 @@ final class Node extends AbstractCypherContainer
 
     /**
      * @return CypherMap<OGMTypes>
+     *
+     * @deprecated
+     * @see self::getProperties
      */
-    public function getProperties(): CypherMap
+    public function properties(): CypherMap
     {
         return $this->properties;
     }
 
+    /**
+     * @deprecated
+     * @see self::getId
+     */
+    public function id(): int
+    {
+        return $this->id;
+    }
+
+    /**
+     * The id of the node.
+     */
     public function getId(): int
     {
         return $this->id;
     }
 
     /**
+     * Gets the property of the node by key.
+     *
      * @return OGMTypes
      */
     public function getProperty(string $key)
@@ -91,31 +110,23 @@ final class Node extends AbstractCypherContainer
         return $this->properties->get($key);
     }
 
-    public function getIterator()
-    {
-        yield 'id' => $this->id;
-        yield 'labels' => $this->labels;
-        yield 'properties' => $this->properties;
-    }
-
     /**
-     * @return OGMTypes
+     * @psalm-suppress ImplementedReturnTypeMismatch False positive.
+     *
+     * @return array{id: int, labels: CypherList<string>, properties: CypherMap<OGMTypes>}
      */
-    public function __get(string $key)
+    public function toArray(): array
     {
-        return $this->getProperty($key);
+        return [
+            'id' => $this->id,
+            'labels' => $this->labels,
+            'properties' => $this->properties,
+        ];
     }
 
-    /**
-     * @param OGMTypes $value
-     */
-    public function __set(string $key, $value)
+    public function getProperties(): CypherMap
     {
-        throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
-    }
-
-    public function __isset(string $key)
-    {
-        return $this->properties->offsetExists($key);
+        /** @psalm-suppress InvalidReturnStatement false positive with type alias. */
+        return $this->properties;
     }
 }

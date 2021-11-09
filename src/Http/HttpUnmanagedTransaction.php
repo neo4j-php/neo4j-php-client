@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use JsonException;
-use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -34,15 +33,26 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
 {
+    /** @psalm-readonly */
     private RequestInterface $request;
+    /** @psalm-readonly */
     private StreamFactoryInterface $factory;
-    /** @var ConnectionInterface<ClientInterface> */
+    /**
+     * @psalm-readonly
+     *
+     * @var ConnectionInterface<ClientInterface>
+     */
     private ConnectionInterface $connection;
-    /** @var FormatterInterface<T> */
+    /**
+     * @psalm-readonly
+     *
+     * @var FormatterInterface<T>
+     */
     private FormatterInterface $formatter;
-    private BookmarkHolder $bookmarkHolder;
 
     /**
+     * @psalm-mutation-free
+     *
      * @param FormatterInterface<T>                $formatter
      * @param ConnectionInterface<ClientInterface> $connection
      */
@@ -50,14 +60,12 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         RequestInterface $request,
         ConnectionInterface $connection,
         StreamFactoryInterface $factory,
-        FormatterInterface $formatter,
-        BookmarkHolder $bookmarkHolder
+        FormatterInterface $formatter
     ) {
         $this->request = $request;
         $this->factory = $factory;
         $this->connection = $connection;
         $this->formatter = $formatter;
-        $this->bookmarkHolder = $bookmarkHolder;
     }
 
     /**
@@ -77,13 +85,13 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @throws JsonException|ClientExceptionInterface
+     * @throws JsonException
      */
     public function runStatements(iterable $statements): CypherList
     {
         $request = $this->request->withMethod('POST');
 
-        $body = HttpHelper::statementsToString($this->formatter, $statements);
+        $body = HttpHelper::statementsToJson($this->formatter, $statements);
 
         $request = $request->withBody($this->factory->createStream($body));
         $start = microtime(true);
@@ -95,13 +103,13 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @throws JsonException|ClientExceptionInterface
+     * @throws JsonException
      */
     public function commit(iterable $statements = []): CypherList
     {
         $uri = $this->request->getUri();
         $request = $this->request->withUri($uri->withPath($uri->getPath().'/commit'))->withMethod('POST');
-        $content = HttpHelper::statementsToString($this->formatter, $statements);
+        $content = HttpHelper::statementsToJson($this->formatter, $statements);
         $request = $request->withBody($this->factory->createStream($content));
 
         $start = microtime(true);
@@ -110,13 +118,11 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
 
         $data = HttpHelper::interpretResponse($response);
 
-        TransactionHelper::incrementBookmark($this->bookmarkHolder);
-
         return $this->formatter->formatHttpResult($response, $data, $this->connection, $total, $total, $statements);
     }
 
     /**
-     * @throws JsonException|ClientExceptionInterface
+     * @throws JsonException
      */
     public function rollback(): void
     {
@@ -124,5 +130,10 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $response = $this->connection->getImplementation()->sendRequest($request);
 
         HttpHelper::interpretResponse($response);
+    }
+
+    public function __destruct()
+    {
+        $this->connection->close();
     }
 }

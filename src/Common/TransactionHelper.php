@@ -13,24 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use Bolt\Bolt;
-use Bolt\connection\StreamSocket;
-use const FILTER_VALIDATE_IP;
-use function filter_var;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Databags\BookmarkHolder;
-use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
-use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use function microtime;
 use function preg_match;
 use const PREG_OFFSET_CAPTURE;
-use Psr\Http\Message\UriInterface;
 use Throwable;
 
 final class TransactionHelper
@@ -67,61 +56,6 @@ final class TransactionHelper
         }
     }
 
-    public static function enableSsl(string $host, string $sslConfig, StreamSocket $sock): void
-    {
-        $options = [
-            'verify_peer' => true,
-            'peer_name' => $host,
-        ];
-        if (!filter_var($host, FILTER_VALIDATE_IP)) {
-            $options['SNI_enabled'] = true;
-        }
-        if ($sslConfig === 's') {
-            $sock->setSslContextOptions($options);
-        } elseif ($sslConfig === 'ssc') {
-            $options['allow_self_signed'] = true;
-            $sock->setSslContextOptions($options);
-        }
-    }
-
-    /**
-     * @return ConnectionInterface<Bolt>
-     */
-    public static function connectionFromSocket(
-        StreamSocket $socket,
-        UriInterface $uri,
-        string $userAgent,
-        AuthenticateInterface $authenticate,
-        SessionConfiguration $config
-    ): ConnectionInterface {
-        $bolt = new Bolt($socket);
-        $authenticate->authenticateBolt($bolt, $uri, $userAgent);
-
-        /**
-         * @var array{'name': 0, 'version': 1, 'edition': 2}
-         * @psalm-suppress all
-         */
-        $fields = array_flip($bolt->run(<<<'CYPHER'
-CALL dbms.components()
-YIELD name, versions, edition
-UNWIND versions AS version
-RETURN name, version, edition
-CYPHER)['fields']);
-
-        /** @var array{0: array{0: string, 1: string, 2: string}} $results */
-        $results = $bolt->pullAll();
-
-        return new Connection(
-            $bolt,
-            $results[0][$fields['name']].'-'.$results[0][$fields['edition']].'/'.$results[0][$fields['version']],
-            $uri,
-            $results[0][$fields['version']],
-            ConnectionProtocol::determineBoltVersion($bolt),
-            $config->getAccessMode(),
-            new DatabaseInfo($config->getDatabase())
-        );
-    }
-
     public static function extractCode(Throwable $throwable): ?string
     {
         $message = $throwable->getMessage();
@@ -135,10 +69,5 @@ CYPHER)['fields']);
         }
 
         return null;
-    }
-
-    public static function incrementBookmark(BookmarkHolder $holder): void
-    {
-        $holder->setBookmark($holder->getBookmark()->withIncrement());
     }
 }

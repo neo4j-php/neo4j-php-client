@@ -1,4 +1,4 @@
-FROM php:8.0-cli
+FROM php:7.4-cli
 RUN apt-get update && apt-get install -y \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
@@ -23,12 +23,14 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 WORKDIR /opt/project
 
-COPY composer.json composer.loc[k] phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.php ./
+COPY composer.json ./
+
+RUN composer install
+
+COPY phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.php ./
 COPY src/ src/
 COPY tests/ tests/
 COPY .git/ .git/
 
-
-RUN composer install
 
 

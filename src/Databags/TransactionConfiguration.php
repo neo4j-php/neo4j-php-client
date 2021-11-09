@@ -13,22 +13,26 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Ds\Map;
 use function is_callable;
 
+/**
+ * Configuration object for transactions.
+ *
+ * @psalm-immutable
+ */
 final class TransactionConfiguration
 {
     public const DEFAULT_TIMEOUT = 15.0;
     public const DEFAULT_METADATA = '[]';
 
-    /** @var callable():(float|null)|float|null */
+    /** @var pure-callable():(float|null)|float|null */
     private $timeout;
-    /** @var callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null */
+    /** @var pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null */
     private $metaData;
 
     /**
-     * @param callable():(float|null)|float|null                                                             $timeout  timeout in seconds
-     * @param callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
+     * @param pure-callable():(float|null)|float|null                                                             $timeout  timeout in seconds
+     * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
      */
     public function __construct($timeout = null, $metaData = null)
     {
@@ -37,8 +41,10 @@ final class TransactionConfiguration
     }
 
     /**
-     * @param callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
-     * @param callable():(float|null)|float|null                                                             $timeout  timeout in seconds
+     * @pure
+     *
+     * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
+     * @param pure-callable():(float|null)|float|null                                                             $timeout  timeout in seconds
      */
     public static function create($timeout = null, $metaData = null): self
     {
@@ -46,7 +52,7 @@ final class TransactionConfiguration
     }
 
     /**
-     * @psalm-mutation-free
+     * @pure
      */
     public static function default(): self
     {
@@ -54,6 +60,8 @@ final class TransactionConfiguration
     }
 
     /**
+     * Get the configured transaction metadata.
+     *
      * @return iterable<string, scalar|array|null>
      */
     public function getMetaData(): iterable
@@ -63,11 +71,11 @@ final class TransactionConfiguration
             $tbr = $tbr();
         }
 
-        return $tbr ?? new Map();
+        return $tbr ?? [];
     }
 
     /**
-     * Timeout in seconds.
+     * Get the configured transaction timeout in seconds.
      */
     public function getTimeout(): float
     {
@@ -80,7 +88,9 @@ final class TransactionConfiguration
     }
 
     /**
-     * @param callable():(float|null)|float|null $timeout timeout in seconds
+     * Creates a new transaction object with the provided timeout.
+     *
+     * @param pure-callable():(float|null)|float|null $timeout timeout in seconds
      */
     public function withTimeout($timeout): self
     {
@@ -88,13 +98,19 @@ final class TransactionConfiguration
     }
 
     /**
-     * @param callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
+     * Creates a new transaction object with the provided metadata.
+     *
+     * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
      */
     public function withMetaData($metaData): self
     {
         return new self($this->timeout, $metaData);
     }
 
+    /**
+     * Creates a new transaction object by merging this one with the provided configuration.
+     * The provided config overrides this config.
+     */
     public function merge(?TransactionConfiguration $config): self
     {
         $tsxConfig = $this;

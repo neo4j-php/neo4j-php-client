@@ -21,6 +21,8 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
+ * A formatter (aka Hydrator) is reponsible for formatting the incoming results of the driver.
+ *
  * @psalm-type CypherStats = array{
  *     nodes_created: int,
  *     nodes_deleted: int,
@@ -60,32 +62,47 @@ use Psr\Http\Message\ResponseInterface;
  *
  * @psalm-type BoltMeta = array{t_first: int, fields: list<string>}
  *
- * @template T
+ * @template ResultFormat
+ *
+ * @psalm-immutable
  */
 interface FormatterInterface
 {
     /**
+     * Formats the results of the bolt protocol to the unified format.
+     *
      * @param BoltMeta                  $meta
      * @param array<array-key, array>   $results
      * @param ConnectionInterface<Bolt> $connection
      *
-     * @return T
+     * @return ResultFormat
      */
     public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement);
 
     /**
+     * Formats the results of the HTTP protocol to the unified format.
+     *
      * @param CypherResponseSet   $body
      * @param iterable<Statement> $statements
      *
      * @throws JsonException
      *
-     * @return CypherList<T>
+     * @return CypherList<ResultFormat>
      */
     public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
 
+    /**
+     * Decorates a request to make make sure it requests the correct format.
+     *
+     * @see https://neo4j.com/docs/http-api/current/actions/result-format/
+     */
     public function decorateRequest(RequestInterface $request): RequestInterface;
 
     /**
+     * Overrides the statement config of the HTTP protocol.
+     *
+     * @see https://neo4j.com/docs/http-api/current/actions/result-format/
+     *
      * @return array{resultDataContents?: list<'GRAPH'|'ROW'|'REST'>, includeStats?:bool}
      */
     public function statementConfigOverride(): array;

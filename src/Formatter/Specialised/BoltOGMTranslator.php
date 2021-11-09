@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
-use function array_key_exists;
 use Bolt\structures\Date as BoltDate;
 use Bolt\structures\DateTime as BoltDateTime;
 use Bolt\structures\Duration as BoltDuration;
@@ -27,8 +26,6 @@ use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
 use Bolt\structures\UnboundRelationship as BoltUnboundRelationship;
 use function call_user_func;
-use Ds\Map;
-use Ds\Vector;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
@@ -46,7 +43,11 @@ use Laudis\Neo4j\Types\UnboundRelationship;
 use UnexpectedValueException;
 
 /**
+ * Translates Bolt objects to Driver Types.
+ *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class BoltOGMTranslator
 {
@@ -81,14 +82,14 @@ final class BoltOGMTranslator
 
     private function makeFromBoltNode(BoltNode $node): Node
     {
-        /** @var Map<string, OGMTypes> $properties */
-        $properties = new Map();
+        /** @var array<string, OGMTypes> $properties */
+        $properties = [];
         /**
          * @var string $name
          * @var mixed  $property
          */
         foreach ($node->properties() as $name => $property) {
-            $properties->put($name, $this->mapValueToType($property));
+            $properties[$name] = $this->mapValueToType($property);
         }
 
         /**
@@ -96,7 +97,7 @@ final class BoltOGMTranslator
          */
         return new Node(
             $node->id(),
-            new CypherList(new Vector($node->labels())),
+            new CypherList($node->labels()),
             new CypherMap($properties)
         );
     }
@@ -138,14 +139,14 @@ final class BoltOGMTranslator
 
     private function makeFromBoltRelationship(BoltRelationship $rel): Relationship
     {
-        /** @var Map<string, OGMTypes> $map */
-        $map = new Map();
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
         /**
          * @var string $key
          * @var mixed  $property
          */
         foreach ($rel->properties() as $key => $property) {
-            $map->put($key, $this->mapValueToType($property));
+            $map[$key] = $this->mapValueToType($property);
         }
 
         return new Relationship(
@@ -159,14 +160,14 @@ final class BoltOGMTranslator
 
     private function makeFromBoltUnboundRelationship(BoltUnboundRelationship $rel): UnboundRelationship
     {
-        /** @var Map<string, OGMTypes> $map */
-        $map = new Map();
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
         /**
          * @var string $key
          * @var mixed  $property
          */
         foreach ($rel->properties() as $key => $property) {
-            $map->put($key, $this->mapValueToType($property));
+            $map[$key] = $this->mapValueToType($property);
         }
 
         return new UnboundRelationship(
@@ -188,24 +189,25 @@ final class BoltOGMTranslator
 
     private function makeFromBoltPath(BoltPath $path): Path
     {
-        $relationships = new Vector();
-        /** @var UnboundRelationship $rel */
-        foreach ($path->rels() as $rel) {
-            $relationships->push($this->mapValueToType($rel));
+        $nodes = [];
+        /** @var list<BoltNode> $boltNodes */
+        $boltNodes = $path->nodes();
+        foreach ($boltNodes as $node) {
+            $nodes[] = $this->makeFromBoltNode($node);
         }
-        $nodes = new Vector();
-        /** @var BoltNode $node */
-        foreach ($path->nodes() as $node) {
-            $nodes->push($this->mapValueToType($node));
+        $relationships = [];
+        /** @var list<BoltUnboundRelationship> $rels */
+        $rels = $path->rels();
+        foreach ($rels as $rel) {
+            $relationships[] = $this->makeFromBoltUnboundRelationship($rel);
         }
-
         /** @var list<int> $ids */
         $ids = $path->ids();
 
         return new Path(
             new CypherList($nodes),
             new CypherList($relationships),
-            new CypherList(new Vector($ids))
+            new CypherList($ids),
         );
     }
 
@@ -214,25 +216,25 @@ final class BoltOGMTranslator
      */
     private function mapArray(array $value)
     {
-        if (array_key_exists(0, $value)) {
-            /** @var Vector<OGMTypes> $vector */
-            $vector = new Vector();
+        if (isset($value[0])) {
+            /** @var array<OGMTypes> $vector */
+            $vector = [];
             /** @var mixed $x */
             foreach ($value as $x) {
-                $vector->push($this->mapValueToType($x));
+                $vector[] = $this->mapValueToType($x);
             }
 
             return new CypherList($vector);
         }
 
-        /** @var Map<string, OGMTypes> */
-        $map = new Map();
+        /** @var array<string, OGMTypes> */
+        $map = [];
         /**
          * @var string $key
          * @var mixed  $x
          */
         foreach ($value as $key => $x) {
-            $map->put($key, $this->mapValueToType($x));
+            $map[$key] = $this->mapValueToType($x);
         }
 
         return new CypherMap($map);
@@ -245,6 +247,7 @@ final class BoltOGMTranslator
      */
     public function mapValueToType($value)
     {
+        /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         $type = get_debug_type($value);
         if (!isset($this->rawToTypes[$type])) {
             throw new UnexpectedValueException('Cannot handle value of debug type: '.$type);

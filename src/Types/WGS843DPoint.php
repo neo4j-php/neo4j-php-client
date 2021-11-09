@@ -16,38 +16,29 @@ namespace Laudis\Neo4j\Types;
 use Laudis\Neo4j\Contracts\PointInterface;
 
 /**
+ * A WGS84 Point in three dimensional space.
+ *
+ * @see https://neo4j.com/docs/cypher-manual/current/functions/spatial/#functions-point-wgs84-3d
+ *
  * @psalm-immutable
+ *
+ * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
  */
-final class WGS843DPoint extends AbstractCypherContainer implements PointInterface
+final class WGS843DPoint extends Cartesian3DPoint implements PointInterface
 {
     private float $latitude;
     private float $longitude;
     private float $height;
-    private float $x;
-    private float $y;
-    private float $z;
-    /** @var 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' */
-    private string $crs;
-    private int $srid;
 
     /**
-     * @param 'wgs-84'|'wgs-84-3d'|'cartesian'|'cartesian-3d' $crs
+     * @param Crs $crs
      */
     public function __construct(float $latitude, float $longitude, float $height, float $x, float $y, float $z, string $crs, int $srid)
     {
+        parent::__construct($x, $y, $z, $crs, $srid);
         $this->latitude = $latitude;
         $this->longitude = $longitude;
         $this->height = $height;
-        $this->x = $x;
-        $this->y = $y;
-        $this->z = $z;
-        $this->crs = $crs;
-        $this->srid = $srid;
-    }
-
-    public function getZ(): float
-    {
-        return $this->z;
     }
 
     public function getLatitude(): float
@@ -65,35 +56,28 @@ final class WGS843DPoint extends AbstractCypherContainer implements PointInterfa
         return $this->height;
     }
 
-    public function getX(): float
+    /**
+     * @psalm-suppress ImplementedReturnTypeMismatch False positive
+     *
+     * @return array{
+     *                latitude: float,
+     *                longitude: float,
+     *                height: float,
+     *                x: float,
+     *                y: float,
+     *                z: float,
+     *                crs: Crs,
+     *                srid: int
+     *                }
+     */
+    public function toArray(): array
     {
-        return $this->x;
-    }
+        $tbr = parent::toArray();
 
-    public function getY(): float
-    {
-        return $this->y;
-    }
+        $tbr['latitude'] = $this->latitude;
+        $tbr['longitude'] = $this->longitude;
+        $tbr['height'] = $this->height;
 
-    public function getCrs(): string
-    {
-        return $this->crs;
-    }
-
-    public function getSrid(): int
-    {
-        return $this->srid;
-    }
-
-    public function getIterator()
-    {
-        yield 'latitude' => $this->getLatitude();
-        yield 'longitude' => $this->getLongitude();
-        yield 'height' => $this->getHeight();
-        yield 'x' => $this->getX();
-        yield 'y' => $this->getY();
-        yield 'z' => $this->getZ();
-        yield 'crs' => $this->getCrs();
-        yield 'srid' => $this->getSrid();
+        return $tbr;
     }
 }

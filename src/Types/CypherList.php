@@ -13,232 +13,139 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use BadMethodCallException;
-use Ds\Vector;
-use Generator;
-use Laudis\Neo4j\Contracts\CypherContainerInterface;
+use function array_key_exists;
+use function array_key_last;
+use function array_slice;
+use function is_int;
+use OutOfBoundsException;
+use function sort;
+use function usort;
 
 /**
- * @template T
+ * An immutable ordered sequence of items.
  *
- * @implements CypherContainerInterface<int, T>
+ * @template TValue
+ *
+ * @extends AbstractCypherSequence<int, TValue>
  *
  * @psalm-immutable
  */
-final class CypherList implements CypherContainerInterface
+final class CypherList extends AbstractCypherSequence
 {
-    /** @var Vector<T> */
-    private Vector $vector;
-
     /**
-     * @param Vector<T> $vector
+     * @param iterable<TValue> $iterable
      */
-    public function __construct(Vector $vector)
+    public function __construct(iterable $iterable = [])
     {
-        $this->vector = $vector;
-    }
-
-    public function count(): int
-    {
-        return $this->vector->count();
-    }
-
-    /**
-     * @return CypherList<T>
-     */
-    public function copy(): CypherList
-    {
-        return new CypherList($this->vector->copy());
-    }
-
-    public function isEmpty(): bool
-    {
-        return $this->vector->isEmpty();
+        if ($iterable instanceof self) {
+            /** @psalm-suppress InvalidPropertyAssignmentValue */
+            $this->sequence = $iterable->sequence;
+        } else {
+            $this->sequence = [];
+            foreach ($iterable as $value) {
+                $this->sequence[] = $value;
+            }
+        }
     }
 
     /**
-     * @return list<T>
-     */
-    public function toArray(): array
-    {
-        return $this->vector->toArray();
-    }
-
-    /**
-     * @return Generator<int, T>
-     */
-    public function getIterator(): Generator
-    {
-        yield from $this->vector;
-    }
-
-    public function offsetExists($offset): bool
-    {
-        return $offset < $this->vector->count();
-    }
-
-    /**
-     * @param int $offset
+     * Returns the first element in the sequence.
      *
-     * @return T
-     */
-    public function offsetGet($offset)
-    {
-        return $this->vector->get($offset);
-    }
-
-    /**
-     * @param int $offset
-     * @param T   $value
-     */
-    public function offsetSet($offset, $value)
-    {
-        throw new BadMethodCallException('A cypher list is immutable');
-    }
-
-    /**
-     * @param int $offset
-     */
-    public function offsetUnset($offset)
-    {
-        throw new BadMethodCallException('A cypher list is immutable');
-    }
-
-    /**
-     * @param T ...$values
-     */
-    public function contains(...$values): bool
-    {
-        return $this->vector->contains(...$values);
-    }
-
-    /**
-     * @param (callable(T):bool)|null $callback
-     *
-     * @return CypherList<T>
-     */
-    public function filter(callable $callback = null): CypherList
-    {
-        return new CypherList($this->vector->filter($callback));
-    }
-
-    /**
-     * @param T $value
-     *
-     * @return false|int
-     */
-    public function find($value)
-    {
-        return $this->vector->find($value);
-    }
-
-    /**
-     * @return T
+     * @return TValue
      */
     public function first()
     {
-        return $this->vector->first();
-    }
-
-    /**
-     * @return T
-     */
-    public function get(int $index)
-    {
-        return $this->vector->get($index);
-    }
-
-    public function join(?string $glue = null): string
-    {
-        if ($glue === null) {
-            return $this->vector->join();
+        if (!array_key_exists(0, $this->sequence)) {
+            throw new OutOfBoundsException('Cannot grab first element of an empty list');
         }
 
-        return $this->vector->join($glue);
+        return $this->sequence[0];
     }
 
     /**
-     * @return T
+     * Returns the last element in the sequence.
+     *
+     * @return TValue
      */
     public function last()
     {
-        return $this->vector->last();
+        $key = array_key_last($this->sequence);
+        if (!is_int($key)) {
+            throw new OutOfBoundsException('Cannot grab last element of an empty list');
+        }
+
+        return $this->sequence[$key];
     }
 
     /**
-     * @template U
+     * @param iterable<TValue> $values
      *
-     * @param callable(T):U $callback
-     *
-     * @return CypherList<U>
-     */
-    public function map(callable $callback): CypherList
-    {
-        return new CypherList($this->vector->map($callback));
-    }
-
-    /**
-     * @param iterable<T> $values
-     *
-     * @return CypherList<T>
+     * @return CypherList<TValue>
      */
     public function merge($values): CypherList
     {
-        return new CypherList($this->vector->merge($values));
+        $tbr = $this->sequence;
+        foreach ($values as $value) {
+            $tbr[] = $value;
+        }
+
+        return new CypherList($tbr);
     }
 
     /**
-     * @param callable(T, T|null):T $callback
-     * @param T|null                $initial
-     *
-     * @return T|null
-     */
-    public function reduce(callable $callback, $initial = null)
-    {
-        return $this->vector->reduce($callback, $initial);
-    }
-
-    /**
-     * @return CypherList<T>
+     * @return CypherList<TValue>
      */
     public function reversed(): CypherList
     {
-        return new CypherList($this->vector->reversed());
-    }
-
-    public function slice(int $index, int $length = null): CypherList
-    {
-        return new CypherList($this->vector->slice($index, $length));
+        return new CypherList(array_reverse($this->sequence));
     }
 
     /**
-     * @param (callable(T,T):int)|null $comparator
+     * @return CypherList<TValue>
+     */
+    public function slice(int $offset, int $length = null): CypherList
+    {
+        return new CypherList(array_slice($this->sequence, $offset, $length));
+    }
+
+    /**
+     * @param (pure-callable(TValue, TValue):int)|null $comparator
      *
-     * @return CypherList<T>
+     * @return CypherList<TValue>
      */
     public function sorted(callable $comparator = null): CypherList
     {
-        return new CypherList($this->vector->sorted($comparator));
+        $tbr = $this->sequence;
+        if ($comparator === null) {
+            sort($tbr);
+        } else {
+            usort($tbr, $comparator);
+        }
+
+        return new CypherList($tbr);
     }
 
     /**
-     * @return float|int
+     * @pure
      */
-    public function sum()
+    public static function fromIterable(iterable $iterable): AbstractCypherSequence
     {
-        return $this->vector->sum();
-    }
-
-    public function jsonSerialize()
-    {
-        return $this->vector->toArray();
+        return new self($iterable);
     }
 
     /**
-     * @return list<T>
+     * Gets the nth element in the list.
+     *
+     * @throws OutOfBoundsException
+     *
+     * @return TValue
      */
-    public function __debugInfo()
+    public function get(int $key)
     {
-        return $this->vector->toArray();
+        if (!array_key_exists($key, $this->sequence)) {
+            throw new OutOfBoundsException(sprintf('Cannot get item in sequence at position: %s', $key));
+        }
+
+        return $this->sequence[$key];
     }
 }

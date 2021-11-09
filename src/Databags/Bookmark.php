@@ -13,40 +13,65 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Ds\Set;
-use Symfony\Component\Uid\Uuid;
+use Exception;
+use function bin2hex;
+use function random_bytes;
+use function substr;
 
 final class Bookmark
 {
-    /** @var Set<string> */
-    private Set $bookmarks;
+    /** @var list<string> */
+    private array $bookmarks;
 
     /**
-     * @param Set<string> $bookmarks
+     * @param list<string> $bookmarks
      */
-    public function __construct(?Set $bookmarks = null)
+    public function __construct(?array $bookmarks = null)
     {
-        $this->bookmarks = $bookmarks ?? new Set();
+        $this->bookmarks = $bookmarks ?? [];
     }
 
     public function isEmpty(): bool
     {
-        return $this->bookmarks->isEmpty();
+        return count($this->bookmarks) === 0;
     }
 
     /**
-     * @return Set<string>
+     * @return list<string>
      */
-    public function values(): Set
+    public function values(): array
     {
         return $this->bookmarks;
     }
 
+    /**
+     * @throws Exception
+     */
     public function withIncrement(?string $bookmark = null): self
     {
-        $copy = $this->bookmarks->copy();
-        $copy->add($bookmark ?? Uuid::v4()->toRfc4122());
+        $copy = $this->bookmarks;
+        if ($bookmark === null) {
+            $bookmark = $this->generateUuidV4();
+        }
+        $copy[] = $bookmark;
 
         return new self($copy);
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function generateUuidV4(): string
+    {
+        $uuid = random_bytes(16);
+        $uuid[6] = ((int) $uuid[6]) & 0x0F | 0x40;
+        $uuid[8] = ((int) $uuid[8]) & 0x3F | 0x80;
+        $uuid = bin2hex($uuid);
+
+        return substr($uuid, 0, 8).'-'
+            .substr($uuid, 8, 4).'-'
+            .substr($uuid, 12, 4).'-'
+            .substr($uuid, 16, 4).'-'
+            .substr($uuid, 20, 12);
     }
 }

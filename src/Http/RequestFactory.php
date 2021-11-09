@@ -18,13 +18,23 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Request factory decorator to correctly configure a default Request.
+ */
 final class RequestFactory implements RequestFactoryInterface
 {
+    /** @readonly */
     private RequestFactoryInterface $requestFactory;
+    /** @readonly */
     private AuthenticateInterface $authenticate;
+    /** @readonly */
     private string $userAgent;
+    /** @readonly */
     private UriInterface $authUri;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         RequestFactoryInterface $requestFactory,
         AuthenticateInterface $authenticate,

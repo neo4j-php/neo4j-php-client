@@ -30,11 +30,15 @@ use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
 
 /**
+ * Drives a singular bolt connections.
+ *
  * @template T
  *
  * @implements DriverInterface<T>
  *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class BoltDriver implements DriverInterface
 {
@@ -77,7 +81,8 @@ final class BoltDriver implements DriverInterface
      *           ? self<U>
      *           : self<OGMResults>
      *           )
-     * @psalm-mutation-free
+     *
+     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): self
     {
@@ -113,11 +118,13 @@ final class BoltDriver implements DriverInterface
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
-        $config ??= SessionConfiguration::default();
-        $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl));
+        $sessionConfig = SessionConfiguration::fromUri($this->parsedUrl);
+        if ($config !== null) {
+            $sessionConfig = $sessionConfig->merge($config);
+        }
 
         return new Session(
-            $config,
+            $sessionConfig,
             $this->pool,
             $this->formatter,
             $this->config->getUserAgent(),

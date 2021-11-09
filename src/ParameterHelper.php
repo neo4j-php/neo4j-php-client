@@ -14,9 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use function count;
-use Ds\Map;
-use Ds\Sequence;
-use Ds\Vector;
 use function gettype;
 use InvalidArgumentException;
 use function is_array;
@@ -27,6 +24,11 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use stdClass;
 
+/**
+ * Parameter helper class providing convenient functions for converting php objects to cypher parameters.
+ *
+ * @psalm-immutable
+ */
 final class ParameterHelper
 {
     /**
@@ -35,10 +37,12 @@ final class ParameterHelper
      * @param iterable<array-key, T> $iterable
      *
      * @return CypherList<T>
+     *
+     * @pure
      */
     public static function asList(iterable $iterable): CypherList
     {
-        return new CypherList(new Vector($iterable));
+        return new CypherList($iterable);
     }
 
     /**
@@ -50,13 +54,12 @@ final class ParameterHelper
      */
     public static function asMap(iterable $iterable): CypherMap
     {
-        /** @var Map<string, mixed> $map */
-        $map = new Map();
+        $tbr = [];
         foreach ($iterable as $key => $value) {
-            $map->put((string) $key, $value);
+            $tbr[(string) $key] = $value;
         }
 
-        return new CypherMap($map);
+        return new CypherMap($tbr);
     }
 
     /**
@@ -75,6 +78,8 @@ final class ParameterHelper
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     private static function stringAbleToString($value): ?string
     {
@@ -89,6 +94,8 @@ final class ParameterHelper
      * @param mixed $value
      *
      * @return scalar|null
+     *
+     * @pure
      */
     private static function filterInvalidType($value)
     {
@@ -101,10 +108,12 @@ final class ParameterHelper
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     private static function emptySequenceToArray($value): ?array
     {
-        if (($value instanceof Sequence && $value->count() === 0) ||
+        if ((($value instanceof CypherList || $value instanceof CypherMap) && $value->count() === 0) ||
             (is_array($value) && count($value) === 0)) {
             return [];
         }
@@ -114,10 +123,12 @@ final class ParameterHelper
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     private static function emptyDictionaryToStdClass($value): ?stdClass
     {
-        if (($value instanceof Map || $value instanceof CypherMap) && $value->count() === 0) {
+        if (($value instanceof CypherMap) && $value->count() === 0) {
             return new stdClass();
         }
 
@@ -139,21 +150,21 @@ final class ParameterHelper
     /**
      * @param iterable<iterable|scalar|null> $parameters
      *
-     * @return Map<array-key, iterable|scalar|stdClass|null>
+     * @return CypherMap<iterable|scalar|stdClass|null>
      */
-    public static function formatParameters(iterable $parameters): Map
+    public static function formatParameters(iterable $parameters): CypherMap
     {
-        /** @var Map<array-key, iterable|scalar|stdClass|null> $tbr */
-        $tbr = new Map();
+        /** @var array<string, iterable|scalar|stdClass|null> $tbr */
+        $tbr = [];
         foreach ($parameters as $key => $value) {
             if (!(is_int($key) || is_string($key))) {
                 $msg = 'The parameters must have an integer or string as key values, '.gettype($key).' received.';
                 throw new InvalidArgumentException($msg);
             }
-            $tbr->put($key, self::asParameter($value));
+            $tbr[(string) $key] = self::asParameter($value);
         }
 
-        return $tbr;
+        return new CypherMap($tbr);
     }
 
     private static function iterableToArray(iterable $value): array

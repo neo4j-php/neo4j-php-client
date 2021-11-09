@@ -14,9 +14,13 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 /**
+ * A Path class representing a Path in cypher.
+ *
  * @psalm-immutable
+ *
+ * @extends AbstractPropertyObject<CypherList<Node>|CypherList<UnboundRelationship>|CypherList<int>, CypherList<Node>|CypherList<UnboundRelationship>|CypherList<int>>
  */
-final class Path extends AbstractCypherContainer
+final class Path extends AbstractPropertyObject
 {
     /** @var CypherList<Node> */
     private CypherList $nodes;
@@ -38,6 +42,8 @@ final class Path extends AbstractCypherContainer
     }
 
     /**
+     * Returns the node in the path.
+     *
      * @return CypherList<Node>
      */
     public function getNodes(): CypherList
@@ -46,6 +52,8 @@ final class Path extends AbstractCypherContainer
     }
 
     /**
+     * Returns the relationships in the path.
+     *
      * @return CypherList<UnboundRelationship>
      */
     public function getRelationships(): CypherList
@@ -54,6 +62,8 @@ final class Path extends AbstractCypherContainer
     }
 
     /**
+     * Returns the ids of the items in the path.
+     *
      * @return CypherList<int>
      */
     public function getIds(): CypherList
@@ -61,10 +71,20 @@ final class Path extends AbstractCypherContainer
         return $this->ids;
     }
 
-    public function getIterator()
+    /**
+     * @return array{ids: CypherList<int>, nodes: CypherList<Node>, relationships: CypherList<UnboundRelationship>}
+     */
+    public function toArray(): array
     {
-        yield 'id' => $this->ids;
-        yield 'nodes' => $this->nodes;
-        yield 'relationships' => $this->relationships;
+        return [
+            'ids' => $this->ids,
+            'nodes' => $this->nodes,
+            'relationships' => $this->relationships,
+        ];
+    }
+
+    public function getProperties(): CypherMap
+    {
+        return new CypherMap($this);
     }
 }

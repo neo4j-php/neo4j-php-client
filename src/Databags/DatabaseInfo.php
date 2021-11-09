@@ -13,12 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Laudis\Neo4j\Types\AbstractCypherContainer;
-
 /**
+ * Stores relevant information of a database.
+ *
  * @psalm-immutable
  */
-final class DatabaseInfo extends AbstractCypherContainer
+final class DatabaseInfo
 {
     private string $name;
 
@@ -27,13 +27,11 @@ final class DatabaseInfo extends AbstractCypherContainer
         $this->name = $name;
     }
 
+    /**
+     * Returns the name of the database.
+     */
     public function getName(): string
     {
         return $this->name;
-    }
-
-    public function getIterator()
-    {
-        yield 'name' => $this->name;
     }
 }

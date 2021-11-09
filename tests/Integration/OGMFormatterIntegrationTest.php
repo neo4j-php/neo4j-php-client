@@ -29,11 +29,13 @@ use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
 use function range;
 use function sprintf;
 use function str_contains;
+use function str_starts_with;
 
 /**
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -147,11 +149,6 @@ CYPHER, [], $alias);
      * @dataProvider connectionAliases
      *
      * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
      */
     public function testDate(string $alias): void
     {
@@ -162,11 +159,13 @@ CYPHER, [], $alias);
 
         self::assertEquals(3, $results->count());
 
-        self::assertInstanceOf(Date::class, $results[0]['published_at']);
-        self::assertEquals(18048, $results[0]['published_at']->getDays());
+        $publishedAt = $results[0]['published_at'];
+        self::assertInstanceOf(Date::class, $publishedAt);
+        self::assertEquals(18048, $publishedAt->getDays());
         self::assertEquals(
             json_encode(['days' => 18048], JSON_THROW_ON_ERROR),
-            json_encode($results[0]['published_at'], JSON_THROW_ON_ERROR));
+            json_encode($publishedAt, JSON_THROW_ON_ERROR));
+        self::assertEquals(18048, $publishedAt->days);
 
         self::assertInstanceOf(Date::class, $results[1]['published_at']);
         self::assertEquals(18049, $results[1]['published_at']->getDays());
@@ -191,6 +190,7 @@ CYPHER, [], $alias);
         $time = $results->first()->get('time');
         self::assertInstanceOf(Time::class, $time);
         self::assertEquals((float) 12 * 60 * 60, $time->getSeconds());
+        self::assertEquals((float) 12 * 60 * 60, $time->seconds);
     }
 
     /**
@@ -211,6 +211,7 @@ CYPHER, [], $alias);
         $time = $results->first()->get('time');
         self::assertInstanceOf(LocalTime::class, $time);
         self::assertEquals(33822000000000, $time->getNanoseconds());
+        self::assertEquals(33822000000000, $time->nanoseconds);
     }
 
     /**
@@ -228,11 +229,15 @@ CYPHER, [], $alias);
 
         self::assertEquals(3, $results->count());
 
-        self::assertInstanceOf(DateTime::class, $results[0]['created_at']);
-        self::assertEquals(1559414432, $results[0]['created_at']->getSeconds());
-        self::assertEquals(142000000, $results[0]['created_at']->getNanoseconds());
-        self::assertEquals(3600, $results[0]['created_at']->getTimeZoneOffsetSeconds());
-        self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($results[0]['created_at'], JSON_THROW_ON_ERROR));
+        $createdAt = $results[0]['created_at'];
+        self::assertInstanceOf(DateTime::class, $createdAt);
+        self::assertEquals(1559414432, $createdAt->getSeconds());
+        self::assertEquals(142000000, $createdAt->getNanoseconds());
+        self::assertEquals(3600, $createdAt->getTimeZoneOffsetSeconds());
+        self::assertEquals(1559414432, $createdAt->seconds);
+        self::assertEquals(142000000, $createdAt->nanoseconds);
+        self::assertEquals(3600, $createdAt->tzOffsetSeconds);
+        self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
 
         self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
         self::assertEquals(1559471012, $results[1]['created_at']->getSeconds());
@@ -281,6 +286,10 @@ CYPHER, [], $alias);
         $duration = $results[1]['aDuration'];
         self::assertInstanceOf(Duration::class, $duration);
         self::assertEquals(new Duration(5, 1, 43200, 0), $duration);
+        self::assertEquals(5, $duration->months);
+        self::assertEquals(1, $duration->days);
+        self::assertEquals(43200, $duration->seconds);
+        self::assertEquals(0, $duration->nanoseconds);
         self::assertEquals(new Duration(0, 22, 71509, 500000000), $results[2]['aDuration']);
         self::assertEquals(new Duration(0, 17, 43200, 0), $results[3]['aDuration']);
         self::assertEquals(new Duration(0, 0, 91, 123456789), $results[4]['aDuration']);
@@ -299,7 +308,6 @@ CYPHER, [], $alias);
      * @dataProvider connectionAliases
      *
      * @throws JsonException
-     * @throws JsonException
      */
     public function testPoint(string $alias): void
     {
@@ -314,6 +322,10 @@ CYPHER, [], $alias);
         self::assertEquals(4.0, $point->getY());
         self::assertEquals('cartesian', $point->getCrs());
         self::assertGreaterThan(0, $point->getSrid());
+        self::assertEquals(3.0, $point->x);
+        self::assertEquals(4.0, $point->y);
+        self::assertEquals('cartesian', $point->crs);
+        self::assertGreaterThan(0, $point->srid);
         self::assertEquals(
             json_encode([
                 'x' => 3,
@@ -349,27 +361,29 @@ CYPHER, [], $alias);
         /** @var Node $u */
         $u = $results[0]['u'];
         self::assertInstanceOf(Node::class, $u);
-        self::assertEquals(['User'], $u->getLabels()->toArray());
-        self::assertEquals($email, $u->getProperties()['email']);
-        self::assertEquals($uuid, $u->getProperties()['uuid']);
+        self::assertEquals(['User'], $u->labels()->toArray());
+        self::assertEquals($email, $u->properties()['email']);
+        self::assertEquals($uuid, $u->properties()['uuid']);
+        self::assertEquals($email, $u->email);
+        self::assertEquals($uuid, $u->uuid);
         self::assertEquals(
             json_encode([
-                'id' => $u->getId(),
-                'labels' => $u->getLabels()->jsonSerialize(),
-                'properties' => $u->getProperties()->jsonSerialize(),
+                'id' => $u->id(),
+                'labels' => $u->labels()->jsonSerialize(),
+                'properties' => $u->properties()->jsonSerialize(),
             ], JSON_THROW_ON_ERROR),
             json_encode($u, JSON_THROW_ON_ERROR));
 
         /** @var Node $p */
         $p = $results[0]['p'];
         self::assertInstanceOf(Node::class, $p);
-        self::assertEquals(['Food', 'Pizza'], $p->getLabels()->toArray());
-        self::assertEquals($type, $p->getProperties()['type']);
+        self::assertEquals(['Food', 'Pizza'], $p->labels()->toArray());
+        self::assertEquals($type, $p->properties()['type']);
         self::assertEquals(
             json_encode([
-                'id' => $p->getId(),
-                'labels' => $p->getLabels()->jsonSerialize(),
-                'properties' => $p->getProperties()->jsonSerialize(),
+                'id' => $p->id(),
+                'labels' => $p->labels()->jsonSerialize(),
+                'properties' => $p->properties()->jsonSerialize(),
             ], JSON_THROW_ON_ERROR),
             json_encode($p, JSON_THROW_ON_ERROR)
         );
@@ -392,6 +406,8 @@ CYPHER, [], $alias)->first()->get('xy');
         self::assertInstanceOf(Relationship::class, $result);
         self::assertEquals('XY', $result->getType());
         self::assertEquals(['x' => 1, 'y' => 1], $result->getProperties()->toArray());
+        self::assertEquals(1, $result->x);
+        self::assertEquals(1, $result->y);
         self::assertEquals(
             json_encode([
                 'id' => $result->getId(),
@@ -423,6 +439,53 @@ CYPHER
     /**
      * @dataProvider connectionAliases
      */
+    public function testPath2(string $alias): void
+    {
+        $statement = <<<'CYPHER'
+CREATE path = ((a:Node {x:$x}) - [b:HasNode {attribute: $xy}] -> (c:Node {y:$y}) - [d:HasNode {attribute: $yz}] -> (e:Node {z:$z}))
+RETURN path
+CYPHER;
+
+        $results = $this->client->run($statement, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
+
+        self::assertEquals(1, $results->count());
+        $path = $results->first()->get('path');
+
+        self::assertInstanceOf(Path::class, $path);
+        self::assertCount(2, $path->getRelationships());
+        self::assertCount(3, $path->getNodes());
+
+        self::assertEquals(new CypherMap(['x' => 'x']), $path->getNodes()->get(0)->getProperties());
+        self::assertEquals(new CypherMap(['y' => 'y']), $path->getNodes()->get(1)->getProperties());
+        self::assertEquals(new CypherMap(['z' => 'z']), $path->getNodes()->get(2)->getProperties());
+
+        self::assertEquals(new CypherMap(['attribute' => 'xy']), $path->getRelationships()->get(0)->getProperties());
+        self::assertEquals(new CypherMap(['attribute' => 'yz']), $path->getRelationships()->get(1)->getProperties());
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testPathMultiple(string $alias): void
+    {
+        $this->client->run('CREATE (:Node) - [:HasNode] -> (:Node)', [], $alias);
+        $this->client->run('CREATE (:Node) - [:HasNode] -> (:Node)', [], $alias);
+
+        $result = $this->client->run('RETURN (:Node) - [:HasNode] -> (:Node) as paths', [], $alias);
+
+        self::assertCount(1, $result);
+        $paths = $result->first()->get('paths');
+
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not correctly supported path expressions in return statements');
+        }
+        self::assertInstanceOf(CypherList::class, $paths);
+        self::assertCount(2, $paths);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
     public function testPropertyTypes(string $alias): void
     {
         $point = 'point({x: 3, y: 4})';
@@ -436,14 +499,14 @@ CYPHER
 
         $result = $this->client->run(<<<CYPHER
 WITH
-    $point as p,
-    $list as l,
-    $date as d,
-    $dateTime as dt,
-    $duration as du,
-    $localDateTime as ldt,
-    $localTime as lt,
-    $time as t
+    $point AS p,
+    $list AS l,
+    $date AS d,
+    $dateTime AS dt,
+    $duration AS du,
+    $localDateTime AS ldt,
+    $localTime AS lt,
+    $time AS t
 MERGE (a:AllInOne {
     thePoint: p,
     theList: l,
@@ -481,17 +544,17 @@ CYPHER,
     {
         return <<<CYPHER
 UNWIND [
-    { title: "Cypher Basics I",
-      created: datetime("2019-06-01T18:40:32.142+0100"),
-      datePublished: date("2019-06-01"),
+    { title: 'Cypher Basics I',
+      created: datetime('2019-06-01T18:40:32.142+0100'),
+      datePublished: date('2019-06-01'),
       readingTime: {minutes: 2, seconds: 15} },
-    { title: "Cypher Basics II",
-      created: datetime("2019-06-02T10:23:32.122+0100"),
-      datePublished: date("2019-06-02"),
+    { title: 'Cypher Basics II',
+      created: datetime('2019-06-02T10:23:32.122+0100'),
+      datePublished: date('2019-06-02'),
       readingTime: {minutes: 2, seconds: 30} },
-    { title: "Dates, Datetimes, and Durations in Neo4j",
+    { title: 'Dates, Datetimes, and Durations in Neo4j',
       created: datetime(),
-      datePublished: date("2021-04-25"),
+      datePublished: date('2021-04-25'),
       readingTime: {minutes: 3, seconds: 30} }
 ] AS articleProperties
 

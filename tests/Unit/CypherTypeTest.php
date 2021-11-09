@@ -13,13 +13,39 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use ArrayIterator;
 use BadMethodCallException;
-use InvalidArgumentException;
 use function json_encode;
 use JsonException;
-use Laudis\Neo4j\Types\AbstractCypherContainer;
+use Laudis\Neo4j\Types\AbstractCypherObject;
+use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
+
+/**
+ * @extends AbstractCypherObject<string, mixed>
+ * @psalm-immutable
+ */
+final class BogusCypherObject extends AbstractCypherObject
+{
+    public function toArray(): array
+    {
+        return [];
+    }
+}
+
+/**
+ * @extends AbstractCypherObject<string, mixed>
+ * @psalm-immutable
+ */
+final class BogusCypherObjectFilled extends AbstractCypherObject
+{
+    public function toArray(): array
+    {
+        return [
+            'a' => 'b',
+            'c' => 'd',
+        ];
+    }
+}
 
 final class CypherTypeTest extends TestCase
 {
@@ -30,12 +56,7 @@ final class CypherTypeTest extends TestCase
      */
     public function testEmpty(): void
     {
-        $empty = new /** @psalm-immutable */ class() extends AbstractCypherContainer {
-            public function getIterator()
-            {
-                return new ArrayIterator([]);
-            }
-        };
+        $empty = new BogusCypherObject();
 
         self::assertEquals('[]', json_encode($empty, JSON_THROW_ON_ERROR));
         self::assertFalse(isset($empty[0]));
@@ -60,7 +81,7 @@ final class CypherTypeTest extends TestCase
         $caught = null;
         try {
             $empty[0];
-        } catch (InvalidArgumentException $e) {
+        } catch (OutOfBoundsException $e) {
             $caught = true;
         }
         self::assertTrue($caught, 'Empty has still valid access');
@@ -73,13 +94,7 @@ final class CypherTypeTest extends TestCase
      */
     public function testFilled(): void
     {
-        $filled = new /** @psalm-immutable */ class() extends AbstractCypherContainer {
-            public function getIterator()
-            {
-                yield 'a' => 'b';
-                yield 'c' => 'd';
-            }
-        };
+        $filled = new BogusCypherObjectFilled();
 
         self::assertEquals('{"a":"b","c":"d"}', json_encode($filled, JSON_THROW_ON_ERROR));
 
@@ -109,7 +124,7 @@ final class CypherTypeTest extends TestCase
         $caught = null;
         try {
             $filled[0];
-        } catch (InvalidArgumentException $e) {
+        } catch (OutOfBoundsException $e) {
             $caught = true;
         }
         self::assertTrue($caught, 'Filled has still valid access');

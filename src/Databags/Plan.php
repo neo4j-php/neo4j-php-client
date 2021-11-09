@@ -13,14 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Laudis\Neo4j\Types\AbstractCypherContainer;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 
 /**
+ * This describes the plan that the database planner produced and used (or will use) to execute your query.
+ *
+ * @see https://neo4j.com/docs/cypher-manual/current/execution-plans/
+ *
  * @psalm-immutable
  */
-final class Plan extends AbstractCypherContainer
+final class Plan
 {
     /** @var CypherMap<mixed> */
     private CypherMap $arguments;
@@ -48,6 +51,8 @@ final class Plan extends AbstractCypherContainer
     }
 
     /**
+     * Returns the arguments for the operator.
+     *
      * @return CypherMap<mixed>
      */
     public function getArguments(): CypherMap
@@ -56,6 +61,8 @@ final class Plan extends AbstractCypherContainer
     }
 
     /**
+     * Returns the sub-plans.
+     *
      * @return CypherList<Plan>
      */
     public function getList(): CypherList
@@ -64,6 +71,8 @@ final class Plan extends AbstractCypherContainer
     }
 
     /**
+     * Identifiers used by this part of the plan.
+     *
      * @return CypherList<String>
      */
     public function getIdentifiers(): CypherList
@@ -71,16 +80,11 @@ final class Plan extends AbstractCypherContainer
         return $this->identifiers;
     }
 
+    /**
+     * The operation this plan is performing.
+     */
     public function getOperator(): string
     {
         return $this->operator;
-    }
-
-    public function getIterator()
-    {
-        yield 'arguments' => $this->arguments;
-        yield 'list' => $this->list;
-        yield 'identifiers' => $this->identifiers;
-        yield 'operator' => $this->operator;
     }
 }

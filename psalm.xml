@@ -42,6 +42,17 @@
                 <directory name="src"/>
             </errorLevel>
         </DeprecatedInterface>
+        <UnusedForeachValue>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+                <directory name="src"/>
+            </errorLevel>
+        </UnusedForeachValue>
+        <MissingConstructor>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+            </errorLevel>
+        </MissingConstructor>
         <UncaughtThrowInGlobalScope>
             <errorLevel type="suppress">
                 <file name="testkit-backend/index.php"/>
@@ -53,5 +64,6 @@
     </stubs>
     <plugins>
         <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
-    <pluginClass class="Lctrs\PsalmPsrContainerPlugin\Plugin"/></plugins>
+        <pluginClass class="Lctrs\PsalmPsrContainerPlugin\Plugin"/>
+    </plugins>
 </psalm>
