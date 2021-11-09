@@ -51,22 +51,21 @@ final class SummaryCounters extends AbstractCypherObject
     private int $systemUpdates;
 
     public function __construct(
-        int  $nodesCreated = 0,
-        int  $nodesDeleted = 0,
-        int  $relationshipsCreated = 0,
-        int  $relationshipsDeleted = 0,
-        int  $propertiesSet = 0,
-        int  $labelsAdded = 0,
-        int  $labelsRemoved = 0,
-        int  $indexesAdded = 0,
-        int  $indexesRemoved = 0,
-        int  $constraintsAdded = 0,
-        int  $constraintsRemoved = 0,
+        int $nodesCreated = 0,
+        int $nodesDeleted = 0,
+        int $relationshipsCreated = 0,
+        int $relationshipsDeleted = 0,
+        int $propertiesSet = 0,
+        int $labelsAdded = 0,
+        int $labelsRemoved = 0,
+        int $indexesAdded = 0,
+        int $indexesRemoved = 0,
+        int $constraintsAdded = 0,
+        int $constraintsRemoved = 0,
         bool $containsUpdates = false,
         bool $containsSystemUpdates = false,
-        int  $systemUpdates = 0
-    )
-    {
+        int $systemUpdates = 0
+    ) {
         $this->nodesCreated = $nodesCreated;
         $this->nodesDeleted = $nodesDeleted;
         $this->relationshipsCreated = $relationshipsCreated;

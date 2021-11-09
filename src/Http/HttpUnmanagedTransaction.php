@@ -17,7 +17,6 @@ use JsonException;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
 use function microtime;

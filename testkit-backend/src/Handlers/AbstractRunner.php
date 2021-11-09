@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Ds\Map;
-use Ds\Vector;
 use Laudis\Neo4j\Contracts\CypherContainerInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
@@ -26,6 +24,7 @@ use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
+use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
@@ -82,7 +81,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
     /**
      * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> $params
      *
-     * @return array<string, scalar|CypherContainerInterface|iterable|null>
+     * @return array<string, scalar|AbstractCypherObject|iterable|null>
      */
     private function decodeToValue(iterable $params): array
     {
@@ -91,13 +90,13 @@ abstract class AbstractRunner implements RequestHandlerInterface
             if (is_iterable($param['data']['value'])) {
                 if ($param['name'] === 'CypherMap') {
                     /** @psalm-suppress MixedArgumentTypeCoercion */
-                    $tbr[$key] = new CypherMap(new Map($this->decodeToValue($param['data']['value'])));
+                    $tbr[$key] = new CypherMap($this->decodeToValue($param['data']['value']));
                     continue;
                 }
 
                 if ($param['name'] === 'CypherList') {
                     /** @psalm-suppress MixedArgumentTypeCoercion */
-                    $tbr[$key] = new CypherList(new Vector($this->decodeToValue($param['data']['value'])));
+                    $tbr[$key] = new CypherList($this->decodeToValue($param['data']['value']));
                     continue;
                 }
             }

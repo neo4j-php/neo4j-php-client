@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Responses\Types;
 
-use Ds\Map;
-use Ds\Vector;
 use function get_debug_type;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherList;
@@ -67,7 +65,7 @@ final class CypherObject implements TestkitResponseInterface
                     $list[] = self::autoDetect($item);
                 }
 
-                $tbr = new CypherObject('CypherList', new CypherList(new Vector($list)));
+                $tbr = new CypherObject('CypherList', new CypherList($list));
                 break;
             case CypherMap::class:
                 /** @var CypherMap<OGMTypes> $value */
@@ -79,7 +77,7 @@ final class CypherObject implements TestkitResponseInterface
                         $map[$key] = self::autoDetect($item);
                     }
 
-                    $tbr = new CypherObject('CypherMap', new CypherMap(new Map($map)));
+                    $tbr = new CypherObject('CypherMap', new CypherMap($map));
                 }
                 break;
             case 'int':
@@ -101,18 +99,20 @@ final class CypherObject implements TestkitResponseInterface
                 }
                 $props = [];
                 foreach ($value->getProperties() as $key => $property) {
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     $props[$key] = self::autoDetect($property);
                 }
 
                 $tbr = new CypherNode(
                     new CypherObject('CypherInt', $value->getId()),
-                    new CypherObject('CypherList', new CypherList(new Vector($labels))),
-                    new CypherObject('CypherMap', new CypherMap(new Map($props)))
+                    new CypherObject('CypherList', new CypherList($labels)),
+                    new CypherObject('CypherMap', new CypherMap($props))
                 );
                 break;
             case Relationship::class:
                 $props = [];
                 foreach ($value->getProperties() as $key => $property) {
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     $props[$key] = self::autoDetect($property);
                 }
 
@@ -121,23 +121,23 @@ final class CypherObject implements TestkitResponseInterface
                     new CypherObject('CypherInt', $value->getStartNodeId()),
                     new CypherObject('CypherInt', $value->getEndNodeId()),
                     new CypherObject('CypherString', $value->getType()),
-                    new CypherObject('CypherMap', new CypherMap(new Map($props))),
+                    new CypherObject('CypherMap', new CypherMap($props)),
                 );
                 break;
             case Path::class:
-                $nodes = new Vector();
+                $nodes = [];
                 foreach ($value->getNodes() as $node) {
-                    $nodes->push(self::autoDetect($node));
+                    $nodes[] = self::autoDetect($node);
                 }
-                $rels = new Vector();
+                $rels = [];
                 foreach ($value->getRelationships() as $i => $rel) {
-                    $rels->push(self::autoDetect(new Relationship(
+                    $rels[] = self::autoDetect(new Relationship(
                         $rel->getId(),
                         $value->getNodes()->get($i)->getId(),
                         $value->getNodes()->get($i + 1)->getId(),
                         $rel->getType(),
                         $rel->getProperties()
-                    )));
+                    ));
                 }
                 $tbr = new CypherPath(
                     new CypherObject('CypherList', new CypherList($nodes)),
@@ -147,6 +147,7 @@ final class CypherObject implements TestkitResponseInterface
             case UnboundRelationship::class:
                 $props = [];
                 foreach ($value->getProperties() as $key => $property) {
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     $props[$key] = self::autoDetect($property);
                 }
 
@@ -155,7 +156,7 @@ final class CypherObject implements TestkitResponseInterface
                     new CypherObject('CypherNull', null),
                     new CypherObject('CypherNull', null),
                     new CypherObject('CypherString', $value->getType()),
-                    new CypherObject('CypherMap', new CypherMap(new Map($props)))
+                    new CypherObject('CypherMap', new CypherMap($props))
                 );
                 break;
             default:

@@ -15,29 +15,19 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
-use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionLastBookmarksRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\BookmarksResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\SkipTestResponse;
 
 /**
  * @implements RequestHandlerInterface<SessionLastBookmarksRequest>
  */
 final class SessionLastBookmarks implements RequestHandlerInterface
 {
-    private MainRepository $repository;
-
-    public function __construct(MainRepository $repository)
-    {
-        $this->repository = $repository;
-    }
-
     /**
      * @param SessionLastBookmarksRequest $request
      */
     public function handle($request): TestkitResponseInterface
     {
-        $bookmark = $this->repository->getSession($request->getSessionId())->getLastBookmark();
-
-        return new BookmarksResponse($bookmark->values());
+        return new SkipTestResponse('Bookmarks not implemented yet');
     }
 }
