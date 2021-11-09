@@ -30,30 +30,30 @@ use Traversable;
  */
 final class MainRepository
 {
-    /** @var Map<string, DriverInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
-    private Map $drivers;
-    /** @var Map<string, SessionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
-    private Map $sessions;
-    /** @var Map<string, SummarizedResult<CypherList<CypherMap<OGMTypes>>>|TestkitResponseInterface> */
-    private Map $records;
-    /** @var Map<string, Iterator<int, CypherMap<OGMTypes>>> */
-    private Map $recordIterators;
-    /** @var Map<string, UnmanagedTransactionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
-    private Map $transactions;
+    /** @var array<string, DriverInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
+    private array $drivers;
+    /** @var array<string, SessionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
+    private array $sessions;
+    /** @var array<string, SummarizedResult<CypherList<CypherMap<OGMTypes>>>|TestkitResponseInterface> */
+    private array $records;
+    /** @var array<string, Iterator<int, CypherMap<OGMTypes>>> */
+    private array $recordIterators;
+    /** @var array<string, UnmanagedTransactionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
+    private array $transactions;
 
     /**
-     * @param Map<string, DriverInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>>               $drivers
-     * @param Map<string, SessionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>>              $sessions
-     * @param Map<string, SummarizedResult<CypherList<CypherMap<OGMTypes>>>|TestkitResponseInterface>       $records
-     * @param Map<string, UnmanagedTransactionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> $transactions
+     * @param array<string, DriverInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>>               $drivers
+     * @param array<string, SessionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>>              $sessions
+     * @param array<string, SummarizedResult<CypherList<CypherMap<OGMTypes>>>|TestkitResponseInterface>       $records
+     * @param array<string, UnmanagedTransactionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> $transactions
      */
-    public function __construct(Map $drivers, Map $sessions, Map $records, Map $transactions)
+    public function __construct(array $drivers, array $sessions, array $records, array $transactions)
     {
         $this->drivers = $drivers;
         $this->sessions = $sessions;
         $this->records = $records;
         $this->transactions = $transactions;
-        $this->recordIterators = new Map();
+        $this->recordIterators = [];
     }
 
     /**
@@ -61,12 +61,12 @@ final class MainRepository
      */
     public function addDriver(Uuid $id, DriverInterface $driver): void
     {
-        $this->drivers->put($id->toRfc4122(), $driver);
+        $this->drivers[$id->toRfc4122()] = $driver;
     }
 
     public function removeDriver(Uuid $id): void
     {
-        $this->drivers->remove($id->toRfc4122());
+        unset($this->drivers[$id->toRfc4122()]);
     }
 
     /**
@@ -74,7 +74,7 @@ final class MainRepository
      */
     public function getIterator(Uuid $id): Iterator
     {
-        return $this->recordIterators->get($id->toRfc4122());
+        return $this->recordIterators[$id->toRfc4122()];
     }
 
     /**
@@ -82,7 +82,7 @@ final class MainRepository
      */
     public function getDriver(Uuid $id): DriverInterface
     {
-        return $this->drivers->get($id->toRfc4122());
+        return $this->drivers[$id->toRfc4122()];
     }
 
     /**
@@ -90,12 +90,12 @@ final class MainRepository
      */
     public function addSession(Uuid $id, SessionInterface $session): void
     {
-        $this->sessions->put($id->toRfc4122(), $session);
+        $this->sessions[$id->toRfc4122()] = $session;
     }
 
     public function removeSession(Uuid $id): void
     {
-        $this->sessions->remove($id->toRfc4122());
+        unset($this->sessions[$id->toRfc4122()]);
     }
 
     /**
@@ -103,7 +103,7 @@ final class MainRepository
      */
     public function getSession(Uuid $id): SessionInterface
     {
-        return $this->sessions->get($id->toRfc4122());
+        return $this->sessions[$id->toRfc4122()];
     }
 
     /**
@@ -111,16 +111,16 @@ final class MainRepository
      */
     public function addRecords(Uuid $id, $result): void
     {
-        $this->records->put($id->toRfc4122(), $result);
+        $this->records[$id->toRfc4122()] = $result;
         if ($result instanceof SummarizedResult) {
             /** @var SummarizedResult<CypherList<CypherMap<OGMTypes>>> $result */
-            $this->recordIterators->put($id->toRfc4122(), $result->getResult()->getIterator());
+            $this->recordIterators[$id->toRfc4122()] = $result->getResult()->getIterator();
         }
     }
 
     public function removeRecords(Uuid $id): void
     {
-        $this->records->remove($id->toRfc4122());
+        unset($this->records[$id->toRfc4122()]);
     }
 
     /**
@@ -128,7 +128,7 @@ final class MainRepository
      */
     public function getRecords(Uuid $id)
     {
-        return $this->records->get($id->toRfc4122());
+        return $this->records[$id->toRfc4122()];
     }
 
     /**
@@ -136,12 +136,12 @@ final class MainRepository
      */
     public function addTransaction(Uuid $id, UnmanagedTransactionInterface $transaction): void
     {
-        $this->transactions->put($id->toRfc4122(), $transaction);
+        $this->transactions[$id->toRfc4122()] = $transaction;
     }
 
     public function removeTransaction(Uuid $id): void
     {
-        $this->transactions->remove($id->toRfc4122());
+        unset($this->transactions[$id->toRfc4122()]);
     }
 
     /**
@@ -149,6 +149,6 @@ final class MainRepository
      */
     public function getTransaction(Uuid $id): UnmanagedTransactionInterface
     {
-        return $this->transactions->get($id->toRfc4122());
+        return $this->transactions[$id->toRfc4122()];
     }
 }

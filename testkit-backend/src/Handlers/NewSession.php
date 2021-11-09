@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Ds\Map;
-use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
@@ -30,9 +28,6 @@ final class NewSession implements RequestHandlerInterface
 {
     private MainRepository $repository;
 
-    /**
-     * @param Map<string, DriverInterface> $drivers
-     */
     public function __construct(MainRepository $repository)
     {
         $this->repository = $repository;

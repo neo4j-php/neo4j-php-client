@@ -15,19 +15,31 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\RetryablePositiveRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\RetryableDoneResponse;
 
 /**
  * @implements RequestHandlerInterface<RetryablePositiveRequest>
  */
 final class RetryablePositive implements RequestHandlerInterface
 {
+    private MainRepository $repository;
+
+    public function __construct(MainRepository $repository)
+    {
+        $this->repository = $repository;
+    }
+
     /**
      * @param RetryablePositiveRequest $request
      */
     public function handle($request): TestkitResponseInterface
     {
-        return new BackendErrorResponse('Retryable positive not implemented yet'); // TODO
+        $tsx = $this->repository->getTransaction($request->getSessionId());
+
+        $tsx->commit();
+
+        return new RetryableDoneResponse($request->getSessionId());
     }
 }

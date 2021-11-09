@@ -11,7 +11,6 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-use Ds\Map;
 use Laudis\Neo4j\TestkitBackend\Handlers\GetFeatures;
 use Laudis\Neo4j\TestkitBackend\Handlers\StartTest;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -34,17 +33,17 @@ return [
     },
 
     StartTest::class => static function () {
-        $acceptedTests = require __DIR__ . '/blacklist.php';
+        $acceptedTests = require __DIR__.'/blacklist.php';
 
         return new StartTest($acceptedTests);
     },
 
     MainRepository::class => static function () {
         return new MainRepository(
-            new Map(),
-            new Map(),
-            new Map(),
-            new Map(),
+            [],
+            [],
+            [],
+            [],
         );
     },
 ];

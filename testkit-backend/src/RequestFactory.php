@@ -80,7 +80,9 @@ final class RequestFactory
 
         $params = [];
         foreach ($data as $value) {
-            if (is_string($value) && Uuid::isValid($value)) {
+            if (is_array($value) && isset($value['name'])) {
+                $params[] = $this->create($value['name'], $value['data']);
+            } elseif (is_string($value) && Uuid::isValid($value)) {
                 $params[] = Uuid::fromString($value);
             } else {
                 $params[] = $value;

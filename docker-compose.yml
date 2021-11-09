@@ -58,6 +58,8 @@ services:
         volumes:
             - .:/opt/project
         command: php /opt/project/testkit-backend/index.php
+        networks:
+          - neo4j
         ports:
           - "9876:9876"
     neo4j:
