@@ -57,6 +57,7 @@ services:
         working_dir: /opt/project
         volumes:
             - .:/opt/project
+        command: php /opt/project/testkit-backend/index.php
         ports:
           - "9876:9876"
     neo4j:
