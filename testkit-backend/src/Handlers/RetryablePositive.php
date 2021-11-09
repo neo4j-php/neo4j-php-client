@@ -36,10 +36,11 @@ final class RetryablePositive implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        $tsx = $this->repository->getTransaction($request->getSessionId());
+        $id = $this->repository->getTsxIdFromSession($request->getSessionId());
+        $tsx = $this->repository->getTransaction($id);
 
         $tsx->commit();
 
-        return new RetryableDoneResponse($request->getSessionId());
+        return new RetryableDoneResponse($id);
     }
 }

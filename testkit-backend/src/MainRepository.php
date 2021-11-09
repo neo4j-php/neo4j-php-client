@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend;
 
-use Ds\Map;
 use Iterator;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
@@ -23,7 +22,6 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Symfony\Component\Uid\Uuid;
-use Traversable;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -40,6 +38,8 @@ final class MainRepository
     private array $recordIterators;
     /** @var array<string, UnmanagedTransactionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
     private array $transactions;
+    /** @var array<string, Uuid> */
+    private array $sessionToTransactions = [];
 
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>>               $drivers
@@ -150,5 +150,20 @@ final class MainRepository
     public function getTransaction(Uuid $id): UnmanagedTransactionInterface
     {
         return $this->transactions[$id->toRfc4122()];
+    }
+
+    public function bindTransactionToSession(Uuid $sessionId, Uuid $transactionId): void
+    {
+        $this->sessionToTransactions[$sessionId->toRfc4122()] = $transactionId;
+    }
+
+    public function detachTransactionFromSession(Uuid $sessionId): void
+    {
+        unset($this->sessionToTransactions[$sessionId->toRfc4122()]);
+    }
+
+    public function getTsxIdFromSession(Uuid $sessionId): Uuid
+    {
+        return $this->sessionToTransactions[$sessionId->toRfc4122()];
     }
 }

@@ -55,6 +55,7 @@ final class SessionWriteTransaction implements RequestHandlerInterface
         $id = Uuid::v4();
 
         $this->repository->addTransaction($id, $transaction);
+        $this->repository->bindTransactionToSession($request->getSessionId(), $id);
 
         return new RetryableTryResponse($id);
     }
