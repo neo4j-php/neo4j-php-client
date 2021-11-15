@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use function array_pop;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\BasicFormatter;
@@ -65,5 +66,28 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
         self::assertEquals(['name' => 'aaa'], $results->first()->get('n'));
         self::assertEquals(['name' => 'bbb'], $results->get(1)->get('n'));
         self::assertEquals(['name' => 'ccc'], $results->last()->get('n'));
+    }
+
+    public function testConsistencyMultiple(): void
+    {
+        $aliases = $this->connectionAliases();
+        $tsxs = [];
+        for ($i = 0; $i < 1000; ++$i) {
+            $alias = $aliases[$i % count($aliases)][0];
+            if ($i % 2 === 0) {
+                $tsx = $this->client->beginTransaction(null, $alias);
+                $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
+                $tsxs[] = $tsx;
+            } else {
+                $x = $this->client->run('RETURN 1 AS x', [], $alias)->first()->get('x');
+            }
+
+            self::assertEquals(1, $x);
+            if ($i % 50 === 9) {
+                for ($j = 0; $j < 24; ++$j) {
+                    array_pop($tsxs);
+                }
+            }
+        }
     }
 }
