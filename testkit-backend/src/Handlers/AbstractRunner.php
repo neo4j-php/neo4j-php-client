@@ -24,7 +24,6 @@ use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\AbstractCypherObject;
-use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -53,7 +52,10 @@ abstract class AbstractRunner implements RequestHandlerInterface
         $id = Uuid::v4();
 
         try {
-            $params = $this->decodeToValue($request->getParams());
+            $params = [];
+            foreach ($request->getParams() as $key => $value) {
+                $params[$key] = $this->decodeToValue($value);
+            }
             $result = $session->run($request->getCypher(), $params);
         } catch (Neo4jException|InvalidTransactionStateException $exception) {
             $this->logger->debug($exception->__toString());
@@ -80,31 +82,35 @@ abstract class AbstractRunner implements RequestHandlerInterface
     }
 
     /**
-     * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> $params
+     * @param array{name: string, data: array{value: iterable|scalar|null}} $param
      *
-     * @return array<string, scalar|AbstractCypherObject|iterable|null>
+     * @return scalar|AbstractCypherObject|iterable|null
      */
-    private function decodeToValue(iterable $params): array
+    private function decodeToValue(array $param)
     {
-        $tbr = [];
-        foreach ($params as $key => $param) {
-            if (is_iterable($param['data']['value'])) {
-                if ($param['name'] === 'CypherMap') {
-                    /** @psalm-suppress MixedArgumentTypeCoercion */
-                    $tbr[$key] = new CypherMap($this->decodeToValue($param['data']['value']));
-                    continue;
+        $value = $param['data']['value'];
+        if (is_iterable($value)) {
+            if ($param['name'] === 'CypherMap') {
+                /** @psalm-suppress MixedArgumentTypeCoercion */
+                $map = [];
+                foreach ($value as $k => $v) {
+                    $map[(string) $k] = $this->decodeToValue($v);
                 }
 
-                if ($param['name'] === 'CypherList') {
-                    /** @psalm-suppress MixedArgumentTypeCoercion */
-                    $tbr[$key] = new CypherList($this->decodeToValue($param['data']['value']));
-                    continue;
-                }
+                return new CypherMap($map);
             }
-            $tbr[$key] = $param['data']['value'];
+
+            if ($param['name'] === 'CypherList') {
+                $list = [];
+                foreach ($value as $v) {
+                    $list[] = $this->decodeToValue($v);
+                }
+
+                return new CypherMap($list);
+            }
         }
 
-        return $tbr;
+        return $value;
     }
 
     /**
