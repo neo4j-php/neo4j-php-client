@@ -43,6 +43,8 @@ final class ConnectionProtocol extends TypedEnum
 
     /**
      * @pure
+     *
+     * @psalm-suppress ImpureMethodCall
      */
     public static function determineBoltVersion(Bolt $bolt): self
     {

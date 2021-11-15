@@ -131,6 +131,8 @@ final class SessionConfiguration
 
     /**
      * The type of access required by units of work in this session.
+     *
+     * @psalm-suppress ImpureMethodCall
      */
     public function getAccessMode(): AccessMode
     {

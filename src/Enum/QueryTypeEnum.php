@@ -39,6 +39,8 @@ final class QueryTypeEnum extends TypedEnum
      * Decide the type of the query from the provided counters.
      *
      * @pure
+     *
+     * @psalm-suppress ImpureMethodCall
      */
     public static function fromCounters(SummaryCounters $counters): self
     {
