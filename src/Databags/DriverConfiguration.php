@@ -28,13 +28,13 @@ final class DriverConfiguration
 {
     public const DEFAULT_USER_AGENT = 'neo4j-php-client/%s';
 
-    /** @var pure-callable():(string|null)|string|null */
+    /** @var string|null */
     private $userAgent;
     /** @var pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
     private $httpPsrBindings;
 
     /**
-     * @param pure-callable():(string|null)|string|null                   $userAgent
+     * @param string|null                                                 $userAgent
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      */
     public function __construct($userAgent, $httpPsrBindings)
@@ -46,7 +46,7 @@ final class DriverConfiguration
     /**
      * @pure
      *
-     * @param pure-callable():(string|null)|string|null                   $userAgent
+     * @param string|null                                                 $userAgent
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      */
     public static function create($userAgent, $httpPsrBindings): self
@@ -70,25 +70,24 @@ final class DriverConfiguration
 
     public function getUserAgent(): string
     {
-        $userAgent = (is_callable($this->userAgent)) ? call_user_func($this->userAgent) : $this->userAgent;
-
-        if ($userAgent === null) {
+        if ($this->userAgent === null) {
             if (function_exists('InstalledVersions::getPrettyVersion')) {
                 /** @psalm-suppress ImpureMethodCall */
                 $version = InstalledVersions::getPrettyVersion('laudis/neo4j-php-client') ?? 'provided/replaced';
             } else {
                 $version = '2';
             }
-            $userAgent = sprintf(self::DEFAULT_USER_AGENT, $version);
+
+            return sprintf(self::DEFAULT_USER_AGENT, $version);
         }
 
-        return $userAgent;
+        return $this->userAgent;
     }
 
     /**
      * Creates a new configuration with the provided user agent.
      *
-     * @param pure-callable():(string|null)|string|null $userAgent
+     * @param string|null $userAgent
      */
     public function withUserAgent($userAgent): self
     {

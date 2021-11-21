@@ -31,7 +31,7 @@ final class SessionConfiguration
     public const DEFAULT_ACCESS_MODE = 'WRITE';
     public const DEFAULT_BOOKMARKS = '[]';
 
-    /** @var pure-callable():(string|null)|string|null */
+    /** @var string|null */
     private $database;
     /** @var pure-callable():(int|null)|int|null */
     private $fetchSize;
@@ -41,7 +41,7 @@ final class SessionConfiguration
     private $bookmarks;
 
     /**
-     * @param pure-callable():(string|null)|string|null                     $database
+     * @param string|null                                                   $database
      * @param pure-callable():(int|null)|int|null                           $fetchSize
      * @param pure-callable():(AccessMode|null)|AccessMode|null             $defaultAccessMode
      * @param pure-callable():(iterable<string>|null)|iterable<string>|null $bookmarks
@@ -61,7 +61,7 @@ final class SessionConfiguration
     /**
      * @pure
      *
-     * @param pure-callable():(string|null)|string|null                $database
+     * @param string|null                                              $database
      * @param pure-callable():(int|null)|int|null                      $fetchSize
      * @param pure-callable():(AccessMode|null)|AccessMode|null        $defaultAccessMode
      * @param pure-callable():(iterable<string>|null)|iterable<string> $bookmarks
@@ -82,7 +82,7 @@ final class SessionConfiguration
     /**
      * Creates a new session with the provided database.
      *
-     * @param string|pure-callable():(string|null)|null $database
+     * @param string|null $database
      */
     public function withDatabase($database): self
     {
@@ -146,9 +146,7 @@ final class SessionConfiguration
      */
     public function getDatabase(): string
     {
-        $database = is_callable($this->database) ? call_user_func($this->database) : $this->database;
-
-        return $database ?? self::DEFAULT_DATABASE;
+        return $this->database ?? self::DEFAULT_DATABASE;
     }
 
     /**
