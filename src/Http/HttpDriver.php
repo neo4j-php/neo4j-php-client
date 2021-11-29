@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use Http\Message\StreamFactory;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\Resolvable;
@@ -24,6 +25,7 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
+use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriInterface;
 use function str_replace;
 use function uniqid;
@@ -61,8 +63,6 @@ use function uniqid;
  * }
  *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
- *
- * @psalm-immutable
  */
 final class HttpDriver implements DriverInterface
 {
@@ -129,20 +129,19 @@ final class HttpDriver implements DriverInterface
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
-        $bindings = $this->config->getHttpPsrBindings();
-        $factory = Resolvable::once($this->key.':requestFactory', function () use ($bindings) {
-            return new RequestFactory($bindings->getRequestFactory(), $this->auth, $this->uri, $this->config->getUserAgent());
-        });
+        $factory = $this->resolvableFactory();
         $config ??= SessionConfiguration::default();
         $config = $config->merge(SessionConfiguration::fromUri($this->uri));
-        $streamFactoryResolve = Resolvable::once($this->key.':streamFactory', static fn () => $bindings->getStreamFactory());
-        $clientResolve = Resolvable::once($this->key.':client', static fn () => $bindings->getClient());
+        $streamFactoryResolve = $this->streamFactory();
 
         return new HttpSession(
             $streamFactoryResolve,
-            new HttpConnectionPool($clientResolve, $factory, $streamFactoryResolve),
+            $this->getHttpConnectionPool(),
             $config,
             $this->formatter,
             $factory,
@@ -171,5 +170,46 @@ final class HttpDriver implements DriverInterface
             $this->auth,
             $this->config->getUserAgent()
         );
+    }
+
+    public function canMakeValidConnection(?SessionConfiguration $config = null): bool
+    {
+        return $this->getHttpConnectionPool()->canConnect($this->uri, $this->auth);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function getHttpConnectionPool(): HttpConnectionPool
+    {
+        return new HttpConnectionPool(
+            Resolvable::once($this->key.':client', static fn () => $this->config->getHttpPsrBindings()->getClient()),
+            $this->resolvableFactory(),
+            $this->streamFactory()
+        );
+    }
+
+    /**
+     * @return Resolvable<RequestFactory>
+     *
+     * @psalm-mutation-free
+     */
+    private function resolvableFactory(): Resolvable
+    {
+        return Resolvable::once($this->key.':requestFactory', function () {
+            $bindings = $this->config->getHttpPsrBindings();
+
+            return new RequestFactory($bindings->getRequestFactory(), $this->auth, $this->uri, $this->config->getUserAgent());
+        });
+    }
+
+    /**
+     * @return Resolvable<StreamFactoryInterface>
+     *
+     * @psalm-mutation-free
+     */
+    private function streamFactory(): Resolvable
+    {
+        return Resolvable::once($this->key.':streamFactory', fn () => $this->config->getHttpPsrBindings()->getStreamFactory());
     }
 }

@@ -29,6 +29,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
+use Throwable;
 use WeakReference;
 
 /**
@@ -154,5 +155,22 @@ CYPHER
             $options['allow_self_signed'] = true;
             $sock->setSslContextOptions($options);
         }
+    }
+
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?RoutingTable $table = null, ?UriInterface $server = null): bool
+    {
+        $connectingTo = $server ?? $uri;
+        $socket = new StreamSocket($uri->getHost(), $connectingTo->getPort() ?? 7687);
+
+        $this->configureSsl($uri, $connectingTo, $socket, $table);
+
+        try {
+            $bolt = new Bolt($socket);
+            $authenticate->authenticateBolt($bolt, $connectingTo, 'ping');
+        } catch (Throwable $e) {
+            return false;
+        }
+
+        return true;
     }
 }

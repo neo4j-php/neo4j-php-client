@@ -105,4 +105,12 @@ CYPHER
             new DatabaseInfo($config->getDatabase())
         );
     }
+
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
+    {
+        $request = $this->requestFactory->resolve()->createRequest('GET', $uri);
+        $client = $this->client->resolve();
+
+        return $client->sendRequest($request)->getStatusCode() === 200;
+    }
 }

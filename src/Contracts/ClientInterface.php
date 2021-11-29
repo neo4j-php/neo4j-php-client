@@ -104,4 +104,9 @@ interface ClientInterface extends TransactionInterface
      * @return U
      */
     public function transaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null);
+
+    /**
+     * Checks to see if the driver can make a valid connection to the configured neo4j server.
+     */
+    public function canMakeValidConnection(?string $driver = null): bool;
 }
