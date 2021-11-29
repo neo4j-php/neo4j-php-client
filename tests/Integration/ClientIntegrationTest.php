@@ -289,8 +289,6 @@ CYPHER,
         self::assertFalse($client->canMakeValidConnection('http'));
     }
 
-
-
     /**
      * @dataProvider connectionAliases
      */
