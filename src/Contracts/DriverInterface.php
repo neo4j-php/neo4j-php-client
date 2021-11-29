@@ -23,13 +23,18 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
  * @psalm-type ParsedUrl = array{host: string, pass: string|null, path: string, port: int, query: array<string,string>, scheme: string, user: string|null}
  *
  * @psalm-type BasicDriver = DriverInterface<\Laudis\Neo4j\Formatter\CypherList<\Laudis\Neo4j\Formatter\CypherMap<string, scalar|array|null>>>
- *
- * @psalm-immutable
  */
 interface DriverInterface
 {
     /**
      * @return SessionInterface<ResultFormat>
+     *
+     * @psalm-mutation-free
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface;
+
+    /**
+     * Returns true if the driver can make a valid connection with the server.
+     */
+    public function canMakeValidConnection(): bool;
 }
