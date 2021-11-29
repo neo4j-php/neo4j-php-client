@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 use function base64_encode;
 use function count;
 use InvalidArgumentException;
+use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
@@ -273,5 +274,28 @@ CYPHER,
         $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the client');
 
         $this->client->run('RETURN 1 AS x', [], 'ghqkneq;tr');
+    }
+
+    public function testInvalidConnectionCheck(): void
+    {
+        $client = ClientBuilder::create()
+            ->withDriver('bolt', 'bolt://localboast')
+            ->withDriver('neo4j', 'neo4j://localboast')
+            ->withDriver('http', 'http://localboast')
+            ->build();
+
+        self::assertFalse($client->canMakeValidConnection('bolt'));
+        self::assertFalse($client->canMakeValidConnection('neo4j'));
+        self::assertFalse($client->canMakeValidConnection('http'));
+    }
+
+
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testValidConnectionCheck(string $alias): void
+    {
+        self::assertTrue($this->client->canMakeValidConnection($alias));
     }
 }

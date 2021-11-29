@@ -183,7 +183,7 @@ final class HttpDriver implements DriverInterface
     private function getHttpConnectionPool(): HttpConnectionPool
     {
         return new HttpConnectionPool(
-            Resolvable::once($this->key.':client', static fn () => $this->config->getHttpPsrBindings()->getClient()),
+            Resolvable::once($this->key.':client', fn () => $this->config->getHttpPsrBindings()->getClient()),
             $this->resolvableFactory(),
             $this->streamFactory()
         );
