@@ -92,7 +92,7 @@ services:
     core1:
         image: neo4j:4.2-enterprise
         healthcheck:
-            test: neo4j status
+            test: wget http://localhost:7474 || exit 1
         networks:
             - neo4j
         expose:
@@ -114,7 +114,7 @@ services:
     core2:
         image: neo4j:4.2-enterprise
         healthcheck:
-            test: neo4j status
+            test: wget http://localhost:7474 || exit 1
         networks:
             - neo4j
         expose:
@@ -136,7 +136,7 @@ services:
     core3:
         image: neo4j:4.2-enterprise
         healthcheck:
-            test: neo4j status
+            test: wget http://localhost:7474 || exit 1
         networks:
             - neo4j
         expose:
@@ -158,7 +158,7 @@ services:
     readreplica1:
         image: neo4j:4.2-enterprise
         healthcheck:
-            test: neo4j status
+            test: wget http://localhost:7474 || exit 1
         networks:
             - neo4j
         expose:

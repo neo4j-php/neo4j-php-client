@@ -26,6 +26,11 @@ jobs:
           - 7687:7687
         env:
           NEO4J_AUTH: neo4j/test
+        options: >-
+          --health-cmd "wget http://localhost:7474 || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
 
       core1:
         image: neo4j:${{ matrix.neo4j-version }}-enterprise
@@ -44,6 +49,11 @@ jobs:
           NEO4J_causalClustering_initialDiscoveryMembers: core1:5000,core2:5000,core3:5000
           NEO4J_causal__clustering_disable__middleware__logging: false
           NEO4J_dbms_connectors_default__advertised__address: core1
+        options: >-
+          --health-cmd "wget http://localhost:7474 || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
 
       core2:
         image: neo4j:${{ matrix.neo4j-version }}-enterprise
@@ -61,6 +71,11 @@ jobs:
           NEO4J_causalClustering_raftAdvertisedAddress: core2:7000
           NEO4J_causalClustering_initialDiscoveryMembers: core1:5000,core2:5000,core3:5000
           NEO4J_dbms_connectors_default__advertised__address: core2
+        options: >-
+          --health-cmd "wget http://localhost:7474 || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
 
       core3:
         image: neo4j:${{ matrix.neo4j-version }}-enterprise
@@ -78,6 +93,11 @@ jobs:
           NEO4J_causalClustering_raftAdvertisedAddress: core3:7000
           NEO4J_causalClustering_initialDiscoveryMembers: core1:5000,core2:5000,core3:5000
           NEO4J_dbms_connectors_default__advertised__address: core3
+        options: >-
+          --health-cmd "wget http://localhost:7474 || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
 
       readreplica1:
         image: neo4j:${{ matrix.neo4j-version }}-enterprise
@@ -95,6 +115,11 @@ jobs:
           NEO4J_causalClustering_raftAdvertisedAddress: readreplica1:7000
           NEO4J_causalClustering_initialDiscoveryMembers: core1:5000,core2:5000,core3:5000
           NEO4J_dbms_connectors_default__advertised__address: readreplica1
+        options: >-
+          --health-cmd "wget http://localhost:7474 || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v2
