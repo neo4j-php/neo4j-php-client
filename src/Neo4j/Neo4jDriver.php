@@ -135,7 +135,7 @@ final class Neo4jDriver implements DriverInterface
         );
     }
 
-    public function canMakeValidConnection(): bool
+    public function verifyConnectivity(): bool
     {
         return $this->pool->canConnect($this->parsedUrl, $this->auth);
     }

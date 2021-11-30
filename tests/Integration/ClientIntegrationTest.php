@@ -284,9 +284,9 @@ CYPHER,
             ->withDriver('http', 'http://localboast')
             ->build();
 
-        self::assertFalse($client->canMakeValidConnection('bolt'));
-        self::assertFalse($client->canMakeValidConnection('neo4j'));
-        self::assertFalse($client->canMakeValidConnection('http'));
+        self::assertFalse($client->verifyConnectivity('bolt'));
+        self::assertFalse($client->verifyConnectivity('neo4j'));
+        self::assertFalse($client->verifyConnectivity('http'));
     }
 
     /**
@@ -294,6 +294,6 @@ CYPHER,
      */
     public function testValidConnectionCheck(string $alias): void
     {
-        self::assertTrue($this->client->canMakeValidConnection($alias));
+        self::assertTrue($this->client->verifyConnectivity($alias));
     }
 }

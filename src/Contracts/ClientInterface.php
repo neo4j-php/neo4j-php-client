@@ -108,5 +108,5 @@ interface ClientInterface extends TransactionInterface
     /**
      * Checks to see if the driver can make a valid connection to the configured neo4j server.
      */
-    public function canMakeValidConnection(?string $driver = null): bool;
+    public function verifyConnectivity(?string $driver = null): bool;
 }

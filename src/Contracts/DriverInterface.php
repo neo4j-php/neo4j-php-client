@@ -36,5 +36,5 @@ interface DriverInterface
     /**
      * Returns true if the driver can make a valid connection with the server.
      */
-    public function canMakeValidConnection(): bool;
+    public function verifyConnectivity(): bool;
 }

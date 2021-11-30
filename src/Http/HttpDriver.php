@@ -172,7 +172,7 @@ final class HttpDriver implements DriverInterface
         );
     }
 
-    public function canMakeValidConnection(?SessionConfiguration $config = null): bool
+    public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
         return $this->getHttpConnectionPool()->canConnect($this->uri, $this->auth);
     }
