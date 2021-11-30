@@ -25,6 +25,7 @@ use Laudis\Neo4j\Formatter\BasicFormatter;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriInterface;
+use Throwable;
 
 /**
  * @implements ConnectionPoolInterface<ClientInterface>
@@ -111,6 +112,10 @@ CYPHER
         $request = $this->requestFactory->resolve()->createRequest('GET', $uri);
         $client = $this->client->resolve();
 
-        return $client->sendRequest($request)->getStatusCode() === 200;
+        try {
+            return $client->sendRequest($request)->getStatusCode() === 200;
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 }
