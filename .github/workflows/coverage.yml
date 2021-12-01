@@ -12,11 +12,13 @@ jobs:
     name: "Create Test Coverage Report"
 
     container:
-      image:  php:8-cli
+      image:  php:8.0-cli
+      env:
+        NEO4J_CONNECTIONS: ${{ secrets.NEO4J_CONNECTIONS }}
 
     services:
       neo4j:
-        image: neo4j:4.2
+        image: neo4j:4.3
         ports:
           - 7474:7474
           - 7687:7687
