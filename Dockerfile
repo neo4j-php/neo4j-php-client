@@ -1,17 +1,11 @@
 FROM php:7.4-cli
-RUN apt-get update && apt-get install -y \
-        libfreetype6-dev \
-        libjpeg62-turbo-dev \
-        libmcrypt-dev \
-        libpng-dev \
+RUN apt-get update \
+    && apt-get install -y \
         libzip-dev \
-        zip \
         unzip \
         git \
         wget \
-    && docker-php-ext-install -j$(nproc) gd sockets bcmath \
-    && pecl install ds pcov \
-    && docker-php-ext-enable ds \
+    && docker-php-ext-install -j$(nproc) bcmath \
     && wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 \
     && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
     && chmod +x /usr/bin/cc-test-reporter
