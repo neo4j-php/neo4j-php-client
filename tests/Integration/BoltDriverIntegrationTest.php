@@ -47,7 +47,7 @@ final class BoltDriverIntegrationTest extends TestCase
      */
     public function testValidHostname(): void
     {
-        $results = BoltDriver::create('bolt://neo4j:test@neo4j')->createSession()->run(<<<'CYPHER'
+        $results = BoltDriver::create($this->uri->__toString())->createSession()->run(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER);
         self::assertEquals(1, $results->first()->get('x'));

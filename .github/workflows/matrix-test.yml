@@ -1,4 +1,4 @@
-name: Unit and Integration Tests
+name: Integration Tests
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEO4J_CONNECTIONS: bolt://neo4j:test@localhost,http://neo4j:test@localhost
-    name: "Running test for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }} with simple config"
+    name: "Running Integration tests for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }} with simple config"
     strategy:
       fail-fast: false
       matrix:
@@ -44,3 +44,4 @@ jobs:
           php_extensions: bcmath
           memory_limit: 1024M
           bootstrap: vendor/autoload.php
+          args: --testsuite "Integration"
