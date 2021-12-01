@@ -1,4 +1,4 @@
-name: Unit and Integration Tests
+name: Full Test
 
 on:
   push:
@@ -10,20 +10,30 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     name: "Create Test Coverage Report"
+    env:
+      NEO4J_CONNECTIONS: ${{ secrets.NEO4J_CONNECTIONS }}
 
-    container:
-      image:  php:8.0-cli
-      env:
-        NEO4J_CONNECTIONS: ${{ secrets.NEO4J_CONNECTIONS }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: php-actions/composer@v6
+        with:
+          progress: yes
+          php_version: 7.4
+          version: 2
+      - uses: php-actions/phpunit@v3
+        with:
+          configuration: phpunit.xml.dist
+          php_version: 7.4
+          php_extensions: bcmath
+          memory_limit: 1024M
+          bootstrap: vendor/autoload.php
 
     services:
       neo4j:
         image: neo4j:4.3
-        ports:
-          - 7474:7474
-          - 7687:7687
         env:
           NEO4J_AUTH: neo4j/test
+          NEO4JLABS_PLUGINS: '["apoc"]'
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
           --health-interval 30s
@@ -32,13 +42,9 @@ jobs:
 
       core1:
         image: neo4j:4.3-enterprise
-        ports:
-          - 7686:7686
-          - 5000
-          - 6000
-          - 7000
         env:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4JLABS_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/test
           NEO4J_dbms_mode: CORE
           NEO4J_causalClustering_discoveryAdvertisedAddress: core1:5000
@@ -49,18 +55,11 @@ jobs:
           NEO4J_dbms_connectors_default__advertised__address: core1
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
-          --health-interval 30s
-          --health-timeout 10s
-          --health-retries 5
       core2:
         image: neo4j:4.3-enterprise
-        ports:
-          - 7686
-          - 5000
-          - 6000
-          - 7000
         env:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4JLABS_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/test
           NEO4J_dbms_mode: CORE
           NEO4J_causalClustering_discoveryAdvertisedAddress: core2:5000
@@ -71,13 +70,9 @@ jobs:
 
       core3:
         image: neo4j:4.3-enterprise
-        ports:
-          - 7686
-          - 5000
-          - 6000
-          - 7000
         env:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4JLABS_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/test
           NEO4J_dbms_mode: CORE
           NEO4J_causalClustering_discoveryAdvertisedAddress: core3:5000
@@ -87,19 +82,12 @@ jobs:
           NEO4J_dbms_connectors_default__advertised__address: core3
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
-          --health-interval 30s
-          --health-timeout 10s
-          --health-retries 5
 
       readreplica1:
         image: neo4j:4.3-enterprise
-        ports:
-          - 7686
-          - 5000
-          - 6000
-          - 7000
         env:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4JLABS_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/test
           NEO4J_dbms_mode: READ_REPLICA
           NEO4J_causalClustering_discoveryAdvertisedAddress: readreplica1:5000
@@ -109,37 +97,4 @@ jobs:
           NEO4J_dbms_connectors_default__advertised__address: readreplica1
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
-          --health-interval 30s
-          --health-timeout 10s
-          --health-retries 5
 
-    steps:
-      - uses: actions/checkout@v1
-      - name: Setup PHP
-        run: |
-          apt-get update && apt-get install -y \
-            libzip-dev \
-            unzip \
-            wget \
-            git \
-            && docker-php-ext-install -j$(nproc) bcmath \
-            && pecl install xdebug \
-            && docker-php-ext-enable xdebug
-      - name: Install Composer
-        run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-      - name: Install dependencies
-        run: /usr/local/bin/composer install
-      - name: Install Code Climate Test Reporter
-        run: |
-          wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 \
-              && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
-              && chmod +x /usr/bin/cc-test-reporter
-      - name: Run PHPUnit Coverage
-        run: |
-          cc-test-reporter before-build \
-            && XDEBUG_MODE=coverage vendor/bin/phpunit --config phpunit.coverage.xml.dist -d memory_limit=1024M \
-            && mkdir -p out/phpunit \
-            && cp out/phpunit/clover.xml clover.xml
-      - name: Run Code Climate Test Reporter
-        run: |
-          cc-test-reporter after-build --id ec331dd009edca126a4c27f4921c129de840c8a117643348e3b75ec547661f28 --exit-code 0
