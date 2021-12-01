@@ -84,10 +84,12 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
 
             self::assertEquals(1, $x);
             if ($i % 20 === 19) {
-                $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
                 self::assertEquals(1, $x);
                 for ($j = 0; $j < 9; ++$j) {
                     $tsx = array_pop($tsxs);
+                    $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
+
+                    self::assertEquals(1, $x);
 
                     if ($j % 2 === 0) {
                         $tsx->commit();
