@@ -13,12 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use function explode;
+use function getenv;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\UriInterface;
-use function explode;
-use function getenv;
 
 final class ClientBuilderTest extends TestCase
 {

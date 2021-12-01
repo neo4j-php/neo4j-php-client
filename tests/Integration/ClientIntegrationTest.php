@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use function base64_encode;
 use function count;
 use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
@@ -22,7 +21,6 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use function random_bytes;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter

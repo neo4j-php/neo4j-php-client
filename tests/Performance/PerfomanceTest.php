@@ -1,13 +1,22 @@
 <?php
 
+/*
+ * This file is part of the Laudis Neo4j package.
+ *
+ * (c) Laudis technologies <http://laudis.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Laudis\Neo4j\Tests\Performance;
 
-use Laudis\Neo4j\Contracts\FormatterInterface;
-use Laudis\Neo4j\Formatter\BasicFormatter;
-use Laudis\Neo4j\Tests\Integration\EnvironmentAwareIntegrationTest;
 use function array_pop;
 use function base64_encode;
 use function count;
+use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Formatter\BasicFormatter;
+use Laudis\Neo4j\Tests\Integration\EnvironmentAwareIntegrationTest;
 use function random_bytes;
 
 /**
@@ -17,7 +26,6 @@ use function random_bytes;
  */
 final class PerfomanceTest extends EnvironmentAwareIntegrationTest
 {
-
     protected function formatter(): FormatterInterface
     {
         /** @psalm-suppress InvalidReturnStatement */
