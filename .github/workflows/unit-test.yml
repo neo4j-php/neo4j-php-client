@@ -1,0 +1,31 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: ['**']
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    name: "Running Unit tests for PHP ${{ matrix.php-version }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['7.4', '8.0', '8.1']
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: php-actions/composer@v6
+        with:
+          progress: yes
+          php_version: ${{ matrix.php-version }}
+          version: 2
+      - uses: php-actions/phpunit@v3
+        with:
+          configuration: phpunit.xml.dist
+          php_version: ${{ matrix.php-version }}
+          php_extensions: bcmath
+          bootstrap: vendor/autoload.php
+          args: --testsuite "Unit"

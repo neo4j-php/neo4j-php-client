@@ -4,6 +4,7 @@ x-shared:
   &common
   NEO4J_AUTH: neo4j/test
   NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+  NEO4JLABS_PLUGINS: '["apoc"]'
   NEO4J_dbms_security_allow__csv__import__from__file__urls: "true"
 
 x-shared-cluster:
@@ -36,12 +37,6 @@ services:
             - neo4j
         volumes:
             - .:/opt/project
-        depends_on:
-            - neo4j
-            - core1
-            - core2
-            - core3
-            - readreplica1
         expose:
             - 9000
         env_file:
@@ -55,12 +50,9 @@ services:
             interval: 30s
             timeout: 10s
             retries: 5
-        expose:
-            - 7474
-            - 7687
         ports:
-            - "7474:7474"
-            - "7687:7687"
+          - "7687:7687"
+          - "7474:7474"
         environment:
           <<: *common
         volumes:
@@ -74,15 +66,6 @@ services:
             retries: 5
         networks:
             - neo4j
-        expose:
-            - 7474
-            - 7686
-            - 5000
-            - 6000
-            - 7000
-        ports:
-            - "7475:7474"
-            - "7688:7687"
         volumes:
           - ./tests/resources:/import
         environment:
@@ -102,12 +85,6 @@ services:
             retries: 5
         networks:
             - neo4j
-        expose:
-            - 7474
-            - 7686
-            - 5000
-            - 6000
-            - 7000
         environment:
           <<: *common-core
           NEO4J_causal__clustering_discovery__advertised__address: core2:5000
@@ -127,12 +104,6 @@ services:
             retries: 5
         networks:
             - neo4j
-        expose:
-            - 7474
-            - 7686
-            - 5000
-            - 6000
-            - 7000
         environment:
           <<: *common-core
           NEO4J_causal__clustering_discovery__advertised__address: core3:5000
@@ -152,17 +123,13 @@ services:
             retries: 5
         networks:
             - neo4j
-        expose:
-            - 7474
-            - 7686
-            - 5000
-            - 6000
-            - 7000
         environment:
           <<: *common-cluster
           NEO4J_dbms_mode: READ_REPLICA
           NEO4J_causal__clustering_discovery__advertised__address: readreplica1:5000
           NEO4J_causal__clustering_transaction__advertised__address: readreplica1:6000
           NEO4J_causal__clustering_raft__advertised__address: readreplica1:7000
+          NEO4J_dbms_connector_http_advertised__address: readreplica1:7474
+          NEO4J_dbms_connector_bolt_advertised__address: readreplica1:7687
         volumes:
           - ./tests/resources:/import

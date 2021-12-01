@@ -11,7 +11,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\Tests\Unit;
+namespace Laudis\Neo4j\Tests\Integration;
 
 use function explode;
 use function getenv;

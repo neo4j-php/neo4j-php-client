@@ -50,15 +50,15 @@ jobs:
           NEO4JLABS_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/test
           NEO4J_dbms_mode: CORE
-          NEO4J_causalClustering_discoveryAdvertisedAddress: core1:5000
-          NEO4J_causalClustering_transactionAdvertisedAddress: core1:6000
-          NEO4J_causalClustering_raftAdvertisedAddress: core1:7000
-          NEO4J_causalClustering_initialDiscoveryMembers: core1:5000,core2:5000,core3:5000
-          NEO4J_causal__clustering_disable__middleware__logging: false
+          NEO4J_causal__clustering_discovery__advertised__address: core1:5000
+          NEO4J_causal__clustering_transaction__advertised__address: core1:6000
+          NEO4J_causal__clustering_raft__advertised__address: core1:7000
+          NEO4J_causal__clustering_initial__discovery__members: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__listen__address: 0.0.0.0:5000
+          NEO4J_causal__clustering_transaction__listen__address: 0.0.0.0:6000
+          NEO4J_causal__clustering_raft__listen__address: 0.0.0.0:7000
           NEO4J_dbms_connector_bolt_advertised__address: localhost:17687
-          NEO4J_dbms_connector_bolt_listen__address: 0.0.0.0:7687
           NEO4J_dbms_connector_http_advertised__address: localhost:17474
-          NEO4J_dbms_connector_http_listen__address: 0.0.0.0:7474
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
         ports:
@@ -71,14 +71,15 @@ jobs:
           NEO4JLABS_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/test
           NEO4J_dbms_mode: CORE
-          NEO4J_causalClustering_discoveryAdvertisedAddress: core2:5000
-          NEO4J_causalClustering_transactionAdvertisedAddress: core2:6000
-          NEO4J_causalClustering_raftAdvertisedAddress: core2:7000
-          NEO4J_causalClustering_initialDiscoveryMembers: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__advertised__address: core2:5000
+          NEO4J_causal__clustering_transaction__advertised__address: core2:6000
+          NEO4J_causal__clustering_raft__advertised__address: core2:7000
+          NEO4J_causal__clustering_initial__discovery__members: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__listen__address: 0.0.0.0:5000
+          NEO4J_causal__clustering_transaction__listen__address: 0.0.0.0:6000
+          NEO4J_causal__clustering_raft__listen__address: 0.0.0.0:7000
           NEO4J_dbms_connector_bolt_advertised__address: localhost:27687
-          NEO4J_dbms_connector_bolt_listen__address: 0.0.0.0:7687
           NEO4J_dbms_connector_http_advertised__address: localhost:27474
-          NEO4J_dbms_connector_http_listen__address: 0.0.0.0:7474
         ports:
           - 27687:7687
           - 27474:7474
@@ -90,14 +91,15 @@ jobs:
           NEO4JLABS_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/test
           NEO4J_dbms_mode: CORE
-          NEO4J_causalClustering_discoveryAdvertisedAddress: core3:5000
-          NEO4J_causalClustering_transactionAdvertisedAddress: core3:6000
-          NEO4J_causalClustering_raftAdvertisedAddress: core3:7000
-          NEO4J_causalClustering_initialDiscoveryMembers: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__advertised__address: core3:5000
+          NEO4J_causal__clustering_transaction__advertised__address: core3:6000
+          NEO4J_causal__clustering_raft__advertised__address: core3:7000
+          NEO4J_causal__clustering_initial__discovery__members: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__listen__address: 0.0.0.0:5000
+          NEO4J_causal__clustering_transaction__listen__address: 0.0.0.0:6000
+          NEO4J_causal__clustering_raft__listen__address: 0.0.0.0:7000
           NEO4J_dbms_connector_bolt_advertised__address: localhost:37687
-          NEO4J_dbms_connector_bolt_listen__address: 0.0.0.0:7687
           NEO4J_dbms_connector_http_advertised__address: localhost:37474
-          NEO4J_dbms_connector_http_listen__address: 0.0.0.0:7474
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
         ports:
@@ -111,14 +113,15 @@ jobs:
           NEO4JLABS_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/test
           NEO4J_dbms_mode: READ_REPLICA
-          NEO4J_causalClustering_discoveryAdvertisedAddress: readreplica1:5000
-          NEO4J_causalClustering_transactionAdvertisedAddress: readreplica1:6000
-          NEO4J_causalClustering_raftAdvertisedAddress: readreplica1:7000
-          NEO4J_causalClustering_initialDiscoveryMembers: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__advertised__address: readreplica1:5000
+          NEO4J_causal__clustering_transaction__advertised__address: readreplica1:6000
+          NEO4J_causal__clustering_raft__advertised__address: readreplica1:7000
+          NEO4J_causal__clustering_initial__discovery__members: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__listen__address: 0.0.0.0:5000
+          NEO4J_causal__clustering_transaction__listen__address: 0.0.0.0:6000
+          NEO4J_causal__clustering_raft__listen__address: 0.0.0.0:7000
           NEO4J_dbms_connector_bolt_advertised__address: localhost:47687
-          NEO4J_dbms_connector_bolt_listen__address: 0.0.0.0:7687
           NEO4J_dbms_connector_http_advertised__address: localhost:47474
-          NEO4J_dbms_connector_http_listen__address: 0.0.0.0:7474
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
         ports:
