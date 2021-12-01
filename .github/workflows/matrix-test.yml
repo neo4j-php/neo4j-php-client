@@ -10,7 +10,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      NEO4J_CONNECTIONS: bolt://neo4j:test@neo4j,http://neo4j:test@neo4j
+      NEO4J_CONNECTIONS: bolt://neo4j:test@localhost,http://neo4j:test@localhost
     name: "Running test for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }} with simple config"
     strategy:
       fail-fast: false
@@ -24,6 +24,9 @@ jobs:
         env:
           NEO4J_AUTH: neo4j/test
           NEO4JLABS_PLUGINS: '["apoc"]'
+        ports:
+          - 7687:7687
+          - 7474:7474
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
 
