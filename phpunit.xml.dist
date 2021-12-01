@@ -7,8 +7,14 @@
          convertDeprecationsToExceptions="false"
 >
     <testsuites>
-        <testsuite name="Neo4j php test suite">
-            <directory>./tests</directory>
+        <testsuite name="Integration">
+            <directory>./tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Performance">
+            <directory>./tests/Performance</directory>
+        </testsuite>
+        <testsuite name="Unit">
+            <directory>./tests/Unit</directory>
         </testsuite>
     </testsuites>
 </phpunit>
