@@ -78,30 +78,6 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
     /**
      * @dataProvider connectionAliases
      */
-    public function testBigRandomData(string $alias): void
-    {
-        $tsx = $this->client->getDriver($alias)
-            ->createSession()
-            ->beginTransaction();
-
-        $params = [
-            'id' => 'xyz',
-        ];
-
-        for ($i = 0; $i < 100000; ++$i) {
-            $params[base64_encode(random_bytes(32))] = base64_encode(random_bytes(128));
-        }
-
-        $tsx->run('MATCH (a :label {id:$id}) RETURN a', $params);
-
-        $tsx->rollback();
-
-        self::assertTrue(true);
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
     public function testTransactionFunction(string $alias): void
     {
         $result = $this->client->transaction(static function (TransactionInterface $tsx) {

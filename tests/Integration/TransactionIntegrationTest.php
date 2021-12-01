@@ -33,35 +33,6 @@ final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
     /**
      * @dataProvider connectionAliases
      */
-    public function testMultipleTransactions(string $alias): void
-    {
-        $this->client->run('MATCH (x) DETACH DELETE (x)', [], $alias);
-
-        for ($i = 0; $i < 2; ++$i) {
-            $tsxs = [];
-            for ($j = 0; $j < 100; ++$j) {
-                $tsxs[] = $this->client->beginTransaction(null, $alias);
-            }
-
-            foreach ($tsxs as $tsx) {
-                $tsx->run('CREATE (:X {y: "z"})');
-            }
-
-            self::assertEquals(0 + $i * 100, $this->client->run('MATCH (x) RETURN count(x) AS x', [], $alias)->first()->get('x'));
-
-            foreach ($tsxs as $j => $tsx) {
-                $tsx->commit();
-
-                self::assertEquals($j + 1 + $i * 100, $this->client->run('MATCH (x) RETURN count(x) AS x', [], $alias)->first()->get('x'));
-            }
-
-            self::assertEquals(($i + 1) * 100, $this->client->run('MATCH (x) RETURN count(x) AS x', [], $alias)->first()->get('x'));
-        }
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
     public function testValidRun(string $alias): void
     {
         $response = $this->client->beginTransaction(null, $alias)->run(<<<'CYPHER'

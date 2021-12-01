@@ -9,7 +9,7 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: "Create Test Coverage Report"
+    name: "Running full tests"
     env:
       NEO4J_CONNECTIONS: ${{ secrets.NEO4J_CONNECTIONS }}
 

@@ -67,35 +67,4 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
         self::assertEquals(['name' => 'bbb'], $results->get(1)->get('n'));
         self::assertEquals(['name' => 'ccc'], $results->last()->get('n'));
     }
-
-    public function testConsistencyMultiple(): void
-    {
-        $aliases = $this->connectionAliases();
-        $tsxs = [];
-        for ($i = 0; $i < 200; ++$i) {
-            $alias = $aliases[$i % count($aliases)][0];
-            if ($i % 2 === 0) {
-                $tsx = $this->client->beginTransaction(null, $alias);
-                $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
-                $tsxs[] = $tsx;
-            } else {
-                $x = $this->client->run('RETURN 1 AS x', [], $alias)->first()->get('x');
-            }
-
-            self::assertEquals(1, $x);
-            if ($i % 20 === 19) {
-                self::assertEquals(1, $x);
-                for ($j = 0; $j < 9; ++$j) {
-                    $tsx = array_pop($tsxs);
-                    $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
-
-                    self::assertEquals(1, $x);
-
-                    if ($j % 2 === 0) {
-                        $tsx->commit();
-                    }
-                }
-            }
-        }
-    }
 }
