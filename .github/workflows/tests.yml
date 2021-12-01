@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['7.4', '8']
+        php-version: ['7.4', '8.0', '8.1']
         neo4j-version: ["3.5", "4.0", "4.1", "4.2", "4.3"]
     name: "Running Tests for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }}"
     container:
