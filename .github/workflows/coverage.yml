@@ -29,7 +29,7 @@ jobs:
           --health-retries 5
 
       core1:
-        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        image: neo4j:4.3-enterprise
         ports:
           - 7686:7686
           - 5000
@@ -51,7 +51,7 @@ jobs:
           --health-timeout 10s
           --health-retries 5
       core2:
-        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        image: neo4j:4.3-enterprise
         ports:
           - 7686
           - 5000
@@ -68,7 +68,7 @@ jobs:
           NEO4J_dbms_connectors_default__advertised__address: core2
 
       core3:
-        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        image: neo4j:4.3-enterprise
         ports:
           - 7686
           - 5000
@@ -90,7 +90,7 @@ jobs:
           --health-retries 5
 
       readreplica1:
-        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        image: neo4j:4.3-enterprise
         ports:
           - 7686
           - 5000

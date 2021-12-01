@@ -9,18 +9,15 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ['7.4', '8.0', '8.1']
-        neo4j-version: ["3.5", "4.0", "4.1", "4.2", "4.3"]
-    name: "Running Tests for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }}"
+    name: "Running Tests for PHP 7.4 on Neo4j with complex config"
     container:
-      image:  php:${{ matrix.php-version }}-cli
+      image:  php:7.4-cli
+      env:
+        NEO4J_CONNECTIONS: ${{ secrets.NEO4J_CONNECTIONS }}
 
     services:
       neo4j:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:4.3
         ports:
           - 7474:7474
           - 7687:7687
@@ -33,7 +30,7 @@ jobs:
           --health-retries 5
 
       core1:
-        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        image: neo4j:4.3-enterprise
         ports:
           - 7686:7686
           - 5000
@@ -56,7 +53,7 @@ jobs:
           --health-retries 5
 
       core2:
-        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        image: neo4j:4.3-enterprise
         ports:
           - 7686
           - 5000
@@ -78,7 +75,7 @@ jobs:
           --health-retries 5
 
       core3:
-        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        image: neo4j:4.3-enterprise
         ports:
           - 7686
           - 5000
@@ -100,7 +97,7 @@ jobs:
           --health-retries 5
 
       readreplica1:
-        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        image: neo4j:4.3-enterprise
         ports:
           - 7686
           - 5000

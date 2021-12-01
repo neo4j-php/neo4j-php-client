@@ -1,0 +1,52 @@
+name: Unit and Integration Tests
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: ['**']
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['7.4', '8.0', '8.1']
+        neo4j-version: ["3.5", "4.0", "4.1", "4.2", "4.3"]
+    name: "Running test for PHP ${{ matrix.php-version }} on Neo4j ${{ matrix.neo4j-version }} with simple config"
+    container:
+      image:  php:${{ matrix.php-version }}-cli
+      env:
+        NEO4J_CONNECTIONS: bolt://neo4j:test@neo4j,http://neo4j:test@neo4j
+
+    services:
+      neo4j:
+        image: neo4j:${{ matrix.neo4j-version }}
+        ports:
+          - 7474:7474
+          - 7687:7687
+        env:
+          NEO4J_AUTH: neo4j/test
+        options: >-
+          --health-cmd "wget http://localhost:7474 || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup PHP
+        run: |
+          apt-get update && apt-get install -y \
+            libzip-dev \
+            unzip \
+            && docker-php-ext-install -j$(nproc) bcmath \
+      - name: Install Composer
+        run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      - name: Install dependencies
+        run: /usr/local/bin/composer install
+      - name: Run Unit tests
+        run: vendor/bin/phpunit tests/Unit
+      - name: Run Integration tests
+        run: vendor/bin/phpunit tests/Integration
