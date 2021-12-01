@@ -119,18 +119,13 @@ jobs:
       - name: Setup PHP
         run: |
           apt-get update && apt-get install -y \
-            libfreetype6-dev \
-            libjpeg62-turbo-dev \
-            libmcrypt-dev \
-            libpng-dev \
             libzip-dev \
-            zip \
             unzip \
             wget \
             git \
-            && docker-php-ext-install -j$(nproc) gd sockets bcmath \
-            && pecl install ds xdebug \
-            && docker-php-ext-enable ds xdebug
+            && docker-php-ext-install -j$(nproc) bcmath \
+            && pecl install xdebug \
+            && docker-php-ext-enable xdebug
       - name: Install Composer
         run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       - name: Install dependencies
