@@ -16,10 +16,32 @@ namespace Laudis\Neo4j\Tests\Integration;
 use Bolt\error\ConnectException;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
+use Laudis\Neo4j\Common\Uri;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\UriInterface;
 
 final class BoltDriverIntegrationTest extends TestCase
 {
+    private UriInterface $uri;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->uri = $this->getBoltUri();
+    }
+
+    private function getBoltUri(): UriInterface
+    {
+        foreach (explode(',', (string) getenv('NEO4J_CONNECTIONS')) as $uri) {
+            $psrUri = Uri::create($uri);
+            if ($psrUri->getScheme() === 'bolt') {
+                return $psrUri;
+            }
+        }
+
+        return Uri::create('bolt://neo4j:test@neo4j');
+    }
+
     /**
      * @throws Exception
      */
@@ -36,8 +58,8 @@ CYPHER);
      */
     public function testValidUrl(): void
     {
-        $ip = gethostbyname('neo4j');
-        $results = BoltDriver::create('bolt://neo4j:test@'.$ip)->createSession()->run(<<<'CYPHER'
+        $ip = gethostbyname($this->uri->getHost());
+        $results = BoltDriver::create($this->uri->withHost($ip)->__toString())->createSession()->run(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER);
         self::assertEquals(1, $results->first()->get('x'));
