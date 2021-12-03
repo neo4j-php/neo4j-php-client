@@ -225,4 +225,18 @@ final class CypherMap extends Map
 
         return $this->getAsObject($key, WGS843DPoint::class, $default);
     }
+
+    /**
+     * @template Value
+     *
+     * @param iterable<Value> $iterable
+     *
+     * @return self<Value>
+     *
+     * @pure
+     */
+    public static function fromIterable(iterable $iterable): CypherMap
+    {
+        return new self($iterable);
+    }
 }

@@ -24,6 +24,7 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Enum\QueryTypeEnum;
 use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use UnexpectedValueException;
@@ -31,65 +32,40 @@ use UnexpectedValueException;
 /**
  * Decorates the result of the provided format with an extensive summary.
  *
- * @template T
- *
  * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  *
- * @implements FormatterInterface<SummarizedResult<T>>
+ * @implements FormatterInterface<SummarizedResult<CypherMap<OGMTypes>>>
  *
  * @psalm-immutable
  */
 final class SummarizedResultFormatter implements FormatterInterface
 {
-    /** @var FormatterInterface<T> */
-    private FormatterInterface $formatter;
+    private OGMFormatter $formatter;
 
     /**
-     * Creates a new instance of itself by decorating an OGMFormatter.
-     *
-     * @return self<OGMResults>
-     *
      * @pure
      */
     public static function create(): self
     {
-        return self::createWithFormatter(OGMFormatter::create());
+        return new self(OGMFormatter::create());
     }
 
-    /**
-     * @template U
-     *
-     * Creates a new summarized result formatter by decorating the given formatter.
-     *
-     * @param FormatterInterface<U> $formatter
-     *
-     * @return self<U>
-     *
-     * @pure
-     */
-    public static function createWithFormatter(FormatterInterface $formatter): self
-    {
-        return new self($formatter);
-    }
-
-    /**
-     * @param FormatterInterface<T> $formatter
-     */
-    public function __construct(FormatterInterface $formatter)
+    public function __construct(OGMFormatter $formatter)
     {
         $this->formatter = $formatter;
     }
 
     /**
-     * @param CypherResponse $response
-     * @param T              $results
+     * @param CypherResponse                  $response
+     * @param CypherList<CypherMap<OGMTypes>> $results
      *
-     * @return SummarizedResult<T>
+     * @return SummarizedResult<CypherMap<OGMTypes>>
      */
-    public function formatHttpStats(array $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, $results): SummarizedResult
+    public function formatHttpStats(array $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
     {
         if (!isset($response['stats'])) {
             throw new UnexpectedValueException('No stats found in the response set');
@@ -129,7 +105,7 @@ final class SummarizedResultFormatter implements FormatterInterface
             )
         );
 
-        return new SummarizedResult($results, $summary);
+        return new SummarizedResult($summary, $results->toArray());
     }
 
     /**
@@ -196,12 +172,12 @@ final class SummarizedResultFormatter implements FormatterInterface
         );
         $formattedResult = $this->formatter->formatBoltResult($meta, $results, $connection, $resultAvailableAfter, $resultConsumedAfter, $statement);
 
-        return new SummarizedResult($formattedResult, $summary);
+        return new SummarizedResult($summary, $formattedResult->toArray());
     }
 
     public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
-        /** @var list<SummarizedResult<T>> */
+        /** @var list<SummarizedResult<CypherMap<OGMTypes>>> */
         $tbr = [];
 
         $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);

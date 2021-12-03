@@ -13,46 +13,40 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use ArrayAccess;
-use BadMethodCallException;
-use Generator;
-use function is_iterable;
-use IteratorAggregate;
-use JsonSerializable;
-use function sprintf;
+use Laudis\Neo4j\Types\CypherList;
 
 /**
  * A result containing the values and the summary.
  *
- * @template T
+ * @template TValue
+ *
+ * @extends CypherList<TValue>
  *
  * @psalm-immutable
- *
- * @implements ArrayAccess<string, ResultSummary|T>
  */
-final class SummarizedResult implements JsonSerializable, ArrayAccess, IteratorAggregate
+final class SummarizedResult extends CypherList
 {
     private ResultSummary $summary;
-    /** @var T */
-    private $result;
 
     /**
-     * @param T $result
+     * @param iterable<mixed, TValue> $iterable
      */
-    public function __construct($result, ResultSummary $summary)
+    public function __construct(ResultSummary $summary, iterable $iterable = [])
     {
+        parent::__construct($iterable);
         $this->summary = $summary;
-        $this->result = $result;
     }
 
     /**
-     * Returns the actual result.
+     * @template Value
      *
-     * @return T
+     * @param iterable<mixed, Value> $iterable
+     *
+     * @return static<Value>
      */
-    public function getResult()
+    protected function withIterable(iterable $iterable): SummarizedResult
     {
-        return $this->result;
+        return new self($this->summary, $iterable);
     }
 
     /**
@@ -63,44 +57,14 @@ final class SummarizedResult implements JsonSerializable, ArrayAccess, IteratorA
         return $this->summary;
     }
 
-    public function getIterator(): Generator
-    {
-        if (is_iterable($this->result)) {
-            yield from $this->result;
-        } else {
-            yield 'summary' => $this->summary;
-            yield 'result' => $this->result;
-        }
-    }
-
     /**
-     * @return array{summary: ResultSummary, result: T}
+     * @return array{summary: ResultSummary, result: mixed}
      */
     public function jsonSerialize(): array
     {
         return [
             'summary' => $this->summary,
-            'result' => $this->result,
+            'result' => parent::jsonSerialize(),
         ];
-    }
-
-    public function offsetExists($offset)
-    {
-        return array_key_exists($offset, $this->jsonSerialize());
-    }
-
-    public function offsetGet($offset)
-    {
-        return $this->jsonSerialize()[$offset];
-    }
-
-    public function offsetSet($offset, $value)
-    {
-        throw new BadMethodCallException(sprintf('%s is immutable', __CLASS__));
-    }
-
-    public function offsetUnset($offset)
-    {
-        throw new BadMethodCallException(sprintf('%s is immutable', __CLASS__));
     }
 }

@@ -17,19 +17,19 @@ use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
-use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Laudis\Neo4j\Types\CypherMap;
 
 /**
- * @extends EnvironmentAwareIntegrationTest<SummarizedResult<BasicResults>>
+ * @extends EnvironmentAwareIntegrationTest<SummarizedResult<CypherMap<OGMTypes>>>
  *
- * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  */
 final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTest
 {
     protected function formatter(): FormatterInterface
     {
-        return new SummarizedResultFormatter(new BasicFormatter());
+        return SummarizedResultFormatter::create();
     }
 
     /**
@@ -39,7 +39,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
     {
         $result = $this->client->run('RETURN 1 AS one', [], $alias);
         self::assertInstanceOf(SummarizedResult::class, $result);
-        self::assertEquals(1, $result->getResult()->first()->get('one'));
+        self::assertEquals(1, $result->first()->get('one'));
     }
 
     /**

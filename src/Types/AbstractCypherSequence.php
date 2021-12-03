@@ -29,8 +29,6 @@ use function in_array;
  * @extends AbstractCypherObject<TKey, TValue>
  *
  * @psalm-immutable
- *
- * @psalm-suppress UnsafeInstantiation
  */
 abstract class AbstractCypherSequence extends AbstractCypherObject implements Countable
 {
@@ -38,9 +36,13 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     protected array $sequence = [];
 
     /**
-     * @param iterable<TKey, TValue> $iterable
+     * @template Value
+     *
+     * @param iterable<Value> $iterable
+     *
+     * @return static<Value, array-key>
      */
-    abstract public function __construct(iterable $iterable);
+    abstract protected function withIterable(iterable $iterable): AbstractCypherSequence;
 
     final public function count(): int
     {
@@ -57,7 +59,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
         // Make sure the sequence is actually copied by reassigning it.
         $map = $this->sequence;
 
-        return new static($map);
+        return $this->withIterable($map);
     }
 
     /**
@@ -124,7 +126,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
             }
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -144,7 +146,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
             $tbr[$key] = $callback($value, $key);
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**

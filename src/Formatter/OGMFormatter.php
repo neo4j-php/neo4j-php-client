@@ -35,7 +35,6 @@ use Psr\Http\Message\ResponseInterface;
  * @see https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-type-mapping
  *
  * @psalm-type OGMTypes = string|int|float|bool|null|\Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime|\Laudis\Neo4j\Types\Time|\Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap|\Laudis\Neo4j\Types\Node|\Laudis\Neo4j\Types\Relationship|\Laudis\Neo4j\Types\Path|\Laudis\Neo4j\Types\Cartesian3DPoint|\Laudis\Neo4j\Types\CartesianPoint|\Laudis\Neo4j\Types\WGS84Point|\Laudis\Neo4j\Types\WGS843DPoint
- * @implements FormatterInterface<CypherList<CypherMap<OGMTypes>>>
  *
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  *
@@ -47,6 +46,8 @@ use Psr\Http\Message\ResponseInterface;
  * @psalm-type CypherResult = array{columns: list<string>, data: CypherResultDataRow}
  *
  * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
+ *
+ * @implements FormatterInterface<CypherList<CypherMap<OGMTypes>>>
  *
  * @psalm-immutable
  */
@@ -97,9 +98,6 @@ final class OGMFormatter implements FormatterInterface
         return new CypherList($tbr);
     }
 
-    /**
-     * @throws Exception
-     */
     public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
         /** @var list<CypherList<CypherMap<OGMTypes>>> $tbr */

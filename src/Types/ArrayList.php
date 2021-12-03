@@ -32,15 +32,13 @@ use function usort;
  * @extends AbstractCypherSequence<TValue, int>
  *
  * @psalm-immutable
- *
- * @psalm-suppress UnsafeGenericInstantiation
  */
 class ArrayList extends AbstractCypherSequence
 {
     /**
      * @param iterable<mixed, TValue> $iterable
      */
-    final public function __construct(iterable $iterable = [])
+    public function __construct(iterable $iterable = [])
     {
         if ($iterable instanceof self) {
             /** @psalm-suppress InvalidPropertyAssignmentValue */
@@ -51,6 +49,19 @@ class ArrayList extends AbstractCypherSequence
                 $this->sequence[] = $value;
             }
         }
+    }
+
+    /**
+     * @template Value
+     *
+     * @param iterable<mixed, Value> $iterable
+     *
+     * @return static<Value>
+     */
+    protected function withIterable(iterable $iterable): ArrayList
+    {
+        /** @psalm-suppress UnsafeInstantiation */
+        return new static($iterable);
     }
 
     /**
@@ -94,7 +105,7 @@ class ArrayList extends AbstractCypherSequence
             $tbr[] = $value;
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -102,7 +113,7 @@ class ArrayList extends AbstractCypherSequence
      */
     public function reversed(): ArrayList
     {
-        return new static(array_reverse($this->sequence));
+        return $this->withIterable(array_reverse($this->sequence));
     }
 
     /**
@@ -110,7 +121,7 @@ class ArrayList extends AbstractCypherSequence
      */
     public function slice(int $offset, int $length = null): ArrayList
     {
-        return new static(array_slice($this->sequence, $offset, $length));
+        return $this->withIterable(array_slice($this->sequence, $offset, $length));
     }
 
     /**
@@ -128,7 +139,7 @@ class ArrayList extends AbstractCypherSequence
             usort($tbr, $comparator);
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -251,13 +262,12 @@ class ArrayList extends AbstractCypherSequence
      *
      * @param iterable<Value> $iterable
      *
-     * @return static<Value>
+     * @return self<Value>
      *
      * @pure
      */
     public static function fromIterable(iterable $iterable): ArrayList
     {
-        /** @psalm-suppress UnsafeGenericInstantiation */
-        return new static($iterable);
+        return new self($iterable);
     }
 }
