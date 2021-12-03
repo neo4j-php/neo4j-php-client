@@ -16,6 +16,7 @@ use BadMethodCallException;
 use Generator;
 use InvalidArgumentException;
 use IteratorAggregate;
+use Laudis\Neo4j\Exception\RuntimeTypeException;
 use function json_encode;
 use const JSON_THROW_ON_ERROR;
 use Laudis\Neo4j\Databags\Pair;
@@ -141,14 +142,14 @@ final class CypherMapTest extends TestCase
 
     public function testFilterSelective(): void
     {
-        $filter = $this->map->filter(static fn (string $i, string $x) => !($i === 'B' || $x === 'z'));
+        $filter = $this->map->filter(static fn (string $x, string $i) => !($i === 'B' || $x === 'z'));
 
         self::assertEquals(new CypherMap(['A' => 'x']), $filter);
     }
 
     public function testMap(): void
     {
-        $filter = $this->map->map(static fn (string $i, string $x) => $i.':'.$x);
+        $filter = $this->map->map(static fn (string $x, string $i) => $i.':'.$x);
 
         self::assertEquals(new CypherMap(['A' => 'A:x', 'B' => 'B:y', 'C' => 'C:z']), $filter);
     }
@@ -456,5 +457,13 @@ final class CypherMapTest extends TestCase
         self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
     }
 
-    //test sorted and ksorted
+    public function testCasts(): void
+    {
+        $map = new CypherMap(['a' => null]);
+
+        self::assertEquals('', $map->getAsString('a'));
+
+        $this->expectException(RuntimeTypeException::class);
+        $map->getAsCartesian3DPoint('a');
+    }
 }
