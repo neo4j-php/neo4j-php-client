@@ -212,7 +212,7 @@ final class CypherList extends AbstractCypherSequence
      *
      * @return U
      */
-    public function getAsObject(int $key, string $class): bool
+    public function getAsObject(int $key, string $class): object
     {
         $value = $this->get($key);
         $tbr = TypeCaster::toClass($value, $class);
