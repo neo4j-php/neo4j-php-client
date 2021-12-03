@@ -18,6 +18,7 @@ use function array_key_last;
 use function array_slice;
 use function is_int;
 use OutOfBoundsException;
+use function is_string;
 use function sort;
 use function usort;
 
@@ -147,5 +148,13 @@ final class CypherList extends AbstractCypherSequence
         }
 
         return $this->sequence[$key];
+    }
+
+    public function getAsString(int $key): string
+    {
+        $mixed = $this->get($key);
+        if (!is_string($mixed)) {
+            throw new
+        }
     }
 }
