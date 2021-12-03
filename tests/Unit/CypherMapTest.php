@@ -16,6 +16,7 @@ use BadMethodCallException;
 use Generator;
 use InvalidArgumentException;
 use IteratorAggregate;
+use Laudis\Neo4j\Types\ArrayList;
 use function json_encode;
 use const JSON_THROW_ON_ERROR;
 use Laudis\Neo4j\Databags\Pair;
@@ -388,17 +389,17 @@ final class CypherMapTest extends TestCase
 
     public function testValue(): void
     {
-        self::assertEquals(new CypherList(['x', 'y', 'z']), $this->map->values());
+        self::assertEquals(new ArrayList(['x', 'y', 'z']), $this->map->values());
     }
 
     public function testKeys(): void
     {
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $this->map->keys());
+        self::assertEquals(new ArrayList(['A', 'B', 'C']), $this->map->keys());
     }
 
     public function testPairs(): void
     {
-        $list = new CypherList([new Pair('A', 'x'), new Pair('B', 'y'), new Pair('C', 'z')]);
+        $list = new ArrayList([new Pair('A', 'x'), new Pair('B', 'y'), new Pair('C', 'z')]);
         self::assertEquals($list, $this->map->pairs());
     }
 
