@@ -106,6 +106,7 @@ final class TypeCaster
     public static function toClass($value, string $class): ?object
     {
         if (is_a($value, $class)) {
+            /** @var T */
             return $value;
         }
 
@@ -115,13 +116,17 @@ final class TypeCaster
     /**
      * @param mixed $value
      *
-     * @pure
+     * @return list<mixed>
+     *
+     * @psalm-external-mutation-free
      */
     public static function toArray($value): ?array
     {
         if (is_iterable($value)) {
             $tbr = [];
+            /** @var mixed $x */
             foreach ($value as $x) {
+                /** @var mixed */
                 $tbr[] = $x;
             }
 
@@ -133,6 +138,8 @@ final class TypeCaster
 
     /**
      * @param mixed $value
+     *
+     * @return CypherList<mixed>|null
      *
      * @pure
      */
@@ -147,6 +154,8 @@ final class TypeCaster
 
     /**
      * @param mixed $value
+     *
+     * @return CypherMap<mixed>|null
      *
      * @pure
      */

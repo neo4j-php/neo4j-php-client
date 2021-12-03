@@ -351,6 +351,7 @@ class Map extends AbstractCypherSequence
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
+            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toString($value);
@@ -369,6 +370,7 @@ class Map extends AbstractCypherSequence
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
+            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toInt($value);
@@ -382,11 +384,12 @@ class Map extends AbstractCypherSequence
     /**
      * @param mixed $default
      */
-    public function getAsFloat(int $key, $default = null): float
+    public function getAsFloat(string $key, $default = null): float
     {
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
+            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toFloat($value);
@@ -400,11 +403,12 @@ class Map extends AbstractCypherSequence
     /**
      * @param mixed $default
      */
-    public function getAsBool(int $key, $default = null): bool
+    public function getAsBool(string $key, $default = null): bool
     {
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
+            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toBool($value);
@@ -420,9 +424,10 @@ class Map extends AbstractCypherSequence
      *
      * @return null
      */
-    public function getAsNull(int $key, $default = null)
+    public function getAsNull(string $key, $default = null)
     {
         if (func_num_args() === 1) {
+            /** @psalm-suppress UnusedMethodCall */
             $this->get($key);
         }
 
@@ -437,11 +442,12 @@ class Map extends AbstractCypherSequence
      *
      * @return U
      */
-    public function getAsObject(int $key, string $class, $default = null): object
+    public function getAsObject(string $key, string $class, $default = null): object
     {
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
+            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toClass($value, $class);
@@ -457,11 +463,12 @@ class Map extends AbstractCypherSequence
      *
      * @return Map<mixed>
      */
-    public function getAsMap(int $key, $default = null): Map
+    public function getAsMap(string $key, $default = null): Map
     {
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
+            /** @var mixed */
             $value = $this->get($key, $default);
         }
 
@@ -475,13 +482,14 @@ class Map extends AbstractCypherSequence
     /**
      * @param mixed $default
      *
-     * @return CypherList<mixed>
+     * @return ArrayList<mixed>
      */
-    public function getAsArrayList(int $key, $default = null): ArrayList
+    public function getAsArrayList(string $key, $default = null): ArrayList
     {
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
+            /** @var mixed */
             $value = $this->get($key, $default);
         }
         if (!is_iterable($value)) {
