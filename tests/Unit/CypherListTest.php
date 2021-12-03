@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /*
  * This file is part of the Laudis Neo4j package.
@@ -130,21 +131,21 @@ final class CypherListTest extends TestCase
 
     public function testFilterSelective(): void
     {
-        $filter = $this->list->filter(static fn (int $i, string $x) => $x === 'B' || $i === 2);
+        $filter = $this->list->filter(static fn (string $x, int $i) => $x === 'B' || $i === 2);
 
         self::assertEquals(new CypherList(['B', 'C']), $filter);
     }
 
     public function testMap(): void
     {
-        $filter = $this->list->map(static fn (int $i, string $x) => $i.':'.$x);
+        $filter = $this->list->map(static fn (string $x, int $i) => $i.':'.$x);
 
         self::assertEquals(new CypherList(['0:A', '1:B', '2:C']), $filter);
     }
 
     public function testReduce(): void
     {
-        $count = $this->list->reduce(static function (?int $initial, int $key, string $value) {
+        $count = $this->list->reduce(static function (?int $initial, string $value, int $key) {
             return ($initial ?? 0) + $key * hexdec($value);
         }, 5);
 

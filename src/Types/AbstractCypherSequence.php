@@ -116,7 +116,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Creates a filtered the sequence with the provided callback.
      *
-     * @param pure-callable(TKey, TValue):bool $callback
+     * @param pure-callable(TValue, TKey):bool $callback
      *
      * @return static
      */
@@ -124,7 +124,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     {
         $tbr = [];
         foreach ($this->sequence as $key => $value) {
-            if ($callback($key, $value)) {
+            if ($callback($value, $key)) {
                 $tbr[$key] = $value;
             }
         }
@@ -137,7 +137,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @template U
      *
-     * @param pure-callable(TKey, TValue):U $callback
+     * @param pure-callable(TValue, TKey):U $callback
      *
      * @return static
      */
@@ -145,7 +145,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     {
         $tbr = [];
         foreach ($this->sequence as $key => $value) {
-            $tbr[$key] = $callback($key, $value);
+            $tbr[$key] = $callback($value, $key);
         }
 
         return $this::fromIterable($tbr);
@@ -156,7 +156,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @template TInitial
      *
-     * @param pure-callable(TInitial|null, TKey, TValue):TInitial $callback
+     * @param pure-callable(TInitial|null, TValue, TKey):TInitial $callback
      * @param TInitial|null                                       $initial
      *
      * @return TInitial
@@ -164,7 +164,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     final public function reduce(callable $callback, $initial = null)
     {
         foreach ($this->sequence as $key => $value) {
-            $initial = $callback($initial, $key, $value);
+            $initial = $callback($initial, $value, $key);
         }
 
         return $initial;
