@@ -20,6 +20,7 @@ use function is_int;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use OutOfBoundsException;
+use function is_iterable;
 use function sort;
 use function usort;
 
@@ -224,30 +225,28 @@ class ArrayList extends AbstractCypherSequence
     }
 
     /**
-     * @return CypherMap<mixed>
+     * @return Map<mixed>
      */
-    public function getAsCypherMap(int $key): CypherMap
+    public function getAsMap(int $key): Map
     {
         $value = $this->get($key);
-        $tbr = TypeCaster::toCypherMap($value);
-        if ($tbr === null) {
-            throw new RuntimeTypeException($value, CypherMap::class);
+        if (!is_iterable($value)) {
+            throw new RuntimeTypeException($value, Map::class);
         }
 
-        return $tbr;
+        return Map::fromIterable($value);
     }
 
     /**
-     * @return CypherList<mixed>
+     * @return ArrayList<mixed>
      */
-    public function getAsCypherList(int $key): CypherList
+    public function getAsArrayList(int $key): ArrayList
     {
         $value = $this->get($key);
-        $tbr = TypeCaster::toCypherList($value);
-        if ($tbr === null) {
-            throw new RuntimeTypeException($value, CypherList::class);
+        if (!is_iterable($value)) {
+            throw new RuntimeTypeException($value, ArrayList::class);
         }
 
-        return $tbr;
+        return ArrayList::fromIterable($value);
     }
 }
