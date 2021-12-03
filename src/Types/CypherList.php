@@ -25,7 +25,7 @@ use Laudis\Neo4j\TypeCaster;
  *
  * @psalm-immutable
  */
-final class CypherList extends ArrayList
+class CypherList extends ArrayList
 {
     /**
      * @return CypherMap<mixed>
@@ -118,5 +118,19 @@ final class CypherList extends ArrayList
     public function getAsWGS843DPoint(int $key): WGS843DPoint
     {
         return $this->getAsObject($key, WGS843DPoint::class);
+    }
+
+    /**
+     * @template Value
+     *
+     * @param iterable<Value> $iterable
+     *
+     * @return self<Value>
+     *
+     * @pure
+     */
+    public static function fromIterable(iterable $iterable): CypherList
+    {
+        return new self($iterable);
     }
 }

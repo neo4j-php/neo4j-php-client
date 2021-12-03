@@ -43,8 +43,6 @@ use function uksort;
  * @extends AbstractCypherSequence<TValue, string>
  *
  * @psalm-immutable
- *
- * @psalm-suppress UnsafeGenericInstantiation
  */
 class Map extends AbstractCypherSequence
 {
@@ -122,26 +120,26 @@ class Map extends AbstractCypherSequence
     /**
      * Returns the keys in the map in order.
      *
-     * @return CypherList<string>
+     * @return ArrayList<string>
      */
-    public function keys(): CypherList
+    public function keys(): ArrayList
     {
-        return new CypherList(array_keys($this->sequence));
+        return new ArrayList(array_keys($this->sequence));
     }
 
     /**
      * Returns the pairs in the map in order.
      *
-     * @return CypherList<Pair<string, TValue>>
+     * @return ArrayList<Pair<string, TValue>>
      */
-    public function pairs(): CypherList
+    public function pairs(): ArrayList
     {
         $tbr = [];
         foreach ($this->sequence as $key => $value) {
             $tbr[] = new Pair($key, $value);
         }
 
-        return new CypherList($tbr);
+        return new ArrayList($tbr);
     }
 
     /**
@@ -161,17 +159,17 @@ class Map extends AbstractCypherSequence
             uksort($tbr, $comparator);
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
      * Returns the values in the map in order.
      *
-     * @return CypherList<TValue>
+     * @return ArrayList<TValue>
      */
-    public function values(): CypherList
+    public function values(): ArrayList
     {
-        return new CypherList($this->sequence);
+        return new ArrayList($this->sequence);
     }
 
     /**
@@ -193,7 +191,7 @@ class Map extends AbstractCypherSequence
             }
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -203,14 +201,13 @@ class Map extends AbstractCypherSequence
      */
     public function merge(iterable $values): Map
     {
-        $other = new static($values);
         $tbr = $this->sequence;
 
-        foreach ($other as $key => $value) {
+        foreach ($values as $key => $value) {
             $tbr[$key] = $value;
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -229,7 +226,7 @@ class Map extends AbstractCypherSequence
             }
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -249,7 +246,7 @@ class Map extends AbstractCypherSequence
             }
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -268,7 +265,7 @@ class Map extends AbstractCypherSequence
             unset($tbr[(string) $key]);
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -276,7 +273,7 @@ class Map extends AbstractCypherSequence
      */
     public function reversed(): Map
     {
-        return new static(array_reverse($this->sequence, true));
+        return $this->withIterable(array_reverse($this->sequence, true));
     }
 
     /**
@@ -284,7 +281,7 @@ class Map extends AbstractCypherSequence
      */
     public function slice(int $offset, int $length = null): Map
     {
-        return new static(array_slice($this->sequence, $offset, $length, true));
+        return $this->withIterable(array_slice($this->sequence, $offset, $length, true));
     }
 
     /**
@@ -302,7 +299,7 @@ class Map extends AbstractCypherSequence
             uasort($tbr, $comparator);
         }
 
-        return new static($tbr);
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -499,12 +496,25 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<Value> $iterable
      *
-     * @return static<Value>
+     * @return Map<Value>
      *
      * @pure
      */
     public static function fromIterable(iterable $iterable): Map
     {
+        return new self($iterable);
+    }
+
+    /**
+     * @template Value
+     *
+     * @param iterable<mixed, Value> $iterable
+     *
+     * @return static<Value>
+     */
+    protected function withIterable(iterable $iterable): Map
+    {
+        /** @psalm-suppress UnsafeGenericInstantiation */
         return new static($iterable);
     }
 }
