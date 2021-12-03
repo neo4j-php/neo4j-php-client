@@ -34,6 +34,34 @@ use function usort;
  */
 final class CypherList extends ArrayList
 {
+    /**
+     * @return CypherMap<mixed>
+     */
+    public function getAsCypherMap(int $key): CypherMap
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toCypherMap($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, CypherMap::class);
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @return CypherList<mixed>
+     */
+    public function getAsCypherList(int $key): CypherList
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toCypherList($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, CypherList::class);
+        }
+
+        return $tbr;
+    }
+
     public function getAsDate(int $key): Date
     {
         return $this->getAsObject($key, Date::class);
