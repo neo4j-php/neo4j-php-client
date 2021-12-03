@@ -26,6 +26,8 @@ final class TypeCaster
 {
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     public static function toString($value): ?string
     {
@@ -38,6 +40,8 @@ final class TypeCaster
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     public static function toFloat($value): ?float
     {
@@ -51,6 +55,8 @@ final class TypeCaster
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     public static function toInt($value): ?int
     {
@@ -64,6 +70,8 @@ final class TypeCaster
 
     /**
      * @return null
+     *
+     * @pure
      */
     public static function toNull()
     {
@@ -72,6 +80,8 @@ final class TypeCaster
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     public static function toBool($value): ?bool
     {
@@ -90,6 +100,8 @@ final class TypeCaster
      * @param class-string<T> $class
      *
      * @return T|null
+     *
+     * @pure
      */
     public static function toClass($value, string $class): ?object
     {
@@ -102,6 +114,8 @@ final class TypeCaster
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     public static function toArray($value): ?array
     {
@@ -119,6 +133,8 @@ final class TypeCaster
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     public static function toCypherList($value): ?CypherList
     {
@@ -131,6 +147,8 @@ final class TypeCaster
 
     /**
      * @param mixed $value
+     *
+     * @pure
      */
     public static function toCypherMap($value): ?CypherMap
     {

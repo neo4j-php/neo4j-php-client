@@ -17,8 +17,9 @@ use function array_key_exists;
 use function array_key_last;
 use function array_slice;
 use function is_int;
+use Laudis\Neo4j\Exception\RuntimeTypeException;
+use Laudis\Neo4j\TypeCaster;
 use OutOfBoundsException;
-use function is_string;
 use function sort;
 use function usort;
 
@@ -152,9 +153,166 @@ final class CypherList extends AbstractCypherSequence
 
     public function getAsString(int $key): string
     {
-        $mixed = $this->get($key);
-        if (!is_string($mixed)) {
-            throw new
+        $value = $this->get($key);
+        $tbr = TypeCaster::toString($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'string');
         }
+
+        return $tbr;
+    }
+
+    public function getAsInt(int $key): int
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toInt($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'int');
+        }
+
+        return $tbr;
+    }
+
+    public function getAsFloat(int $key): float
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toFloat($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'float');
+        }
+
+        return $tbr;
+    }
+
+    public function getAsBool(int $key): bool
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toBool($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'bool');
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @return null
+     */
+    public function getAsNull(int $key)
+    {
+        $this->get($key);
+
+        return TypeCaster::toNull();
+    }
+
+    /**
+     * @template U
+     *
+     * @param class-string<U> $class
+     *
+     * @return U
+     */
+    public function getAsObject(int $key, string $class): bool
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toClass($value, $class);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, $class);
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @return CypherMap<mixed>
+     */
+    public function getAsCypherMap(int $key): CypherMap
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toCypherMap($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, CypherMap::class);
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @return CypherList<mixed>
+     */
+    public function getAsCypherList(int $key): CypherList
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toCypherList($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, CypherList::class);
+        }
+
+        return $tbr;
+    }
+
+    public function getAsDate(int $key): Date
+    {
+        return $this->getAsObject($key, Date::class);
+    }
+
+    public function getAsDateTime(int $key): DateTime
+    {
+        return $this->getAsObject($key, DateTime::class);
+    }
+
+    public function getAsDuration(int $key): Duration
+    {
+        return $this->getAsObject($key, Duration::class);
+    }
+
+    public function getAsLocalDateTime(int $key): LocalDateTime
+    {
+        return $this->getAsObject($key, LocalDateTime::class);
+    }
+
+    public function getAsLocalTime(int $key): LocalTime
+    {
+        return $this->getAsObject($key, LocalTime::class);
+    }
+
+    public function getAsTime(int $key): Time
+    {
+        return $this->getAsObject($key, Time::class);
+    }
+
+    public function getAsNode(int $key): Node
+    {
+        return $this->getAsObject($key, Node::class);
+    }
+
+    public function getAsRelationship(int $key): Relationship
+    {
+        return $this->getAsObject($key, Relationship::class);
+    }
+
+    public function getAsPath(int $key): Path
+    {
+        return $this->getAsObject($key, Path::class);
+    }
+
+    public function getAsCartesian3DPoint(int $key): Cartesian3DPoint
+    {
+        return $this->getAsObject($key, Cartesian3DPoint::class);
+    }
+
+    public function getAsCartesianPoint(int $key): CartesianPoint
+    {
+        return $this->getAsObject($key, CartesianPoint::class);
+    }
+
+    public function getAsWGS84Point(int $key): WGS84Point
+    {
+        return $this->getAsObject($key, WGS84Point::class);
+    }
+
+    public function getAsWGS843DPoint(int $key): WGS843DPoint
+    {
+        return $this->getAsObject($key, WGS843DPoint::class);
     }
 }
