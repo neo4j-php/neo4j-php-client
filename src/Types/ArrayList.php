@@ -17,10 +17,10 @@ use function array_key_exists;
 use function array_key_last;
 use function array_slice;
 use function is_int;
+use function is_iterable;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use OutOfBoundsException;
-use function is_iterable;
 use function sort;
 use function usort;
 
@@ -201,6 +201,7 @@ class ArrayList extends AbstractCypherSequence
      */
     public function getAsNull(int $key)
     {
+        /** @psalm-suppress UnusedMethodCall */
         $this->get($key);
 
         return TypeCaster::toNull();

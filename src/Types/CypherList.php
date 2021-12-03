@@ -13,15 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use function array_key_exists;
-use function array_key_last;
-use function array_slice;
-use function is_int;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
-use OutOfBoundsException;
-use function sort;
-use function usort;
 
 /**
  * An immutable ordered sequence of items.

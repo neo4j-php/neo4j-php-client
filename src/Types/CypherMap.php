@@ -33,11 +33,12 @@ final class CypherMap extends Map
      *
      * @return CypherMap<mixed>
      */
-    public function getAsCypherMap(int $key, $default = null): CypherMap
+    public function getAsCypherMap(string $key, $default = null): CypherMap
     {
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
+            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toCypherMap($value);
@@ -53,11 +54,12 @@ final class CypherMap extends Map
      *
      * @return CypherList<mixed>
      */
-    public function getAsCypherList(int $key, $default = null): CypherList
+    public function getAsCypherList(string $key, $default = null): CypherList
     {
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
+            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toCypherList($value);
@@ -71,7 +73,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsDate(int $key, $default = null): Date
+    public function getAsDate(string $key, $default = null): Date
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, Date::class);
@@ -83,7 +85,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsDateTime(int $key, $default = null): DateTime
+    public function getAsDateTime(string $key, $default = null): DateTime
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, DateTime::class);
@@ -95,7 +97,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsDuration(int $key, $default = null): Duration
+    public function getAsDuration(string $key, $default = null): Duration
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, Duration::class);
@@ -107,7 +109,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsLocalDateTime(int $key, $default = null): LocalDateTime
+    public function getAsLocalDateTime(string $key, $default = null): LocalDateTime
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, LocalDateTime::class);
@@ -119,7 +121,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsLocalTime(int $key, $default = null): LocalTime
+    public function getAsLocalTime(string $key, $default = null): LocalTime
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, LocalTime::class);
@@ -131,7 +133,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsTime(int $key, $default = null): Time
+    public function getAsTime(string $key, $default = null): Time
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, Time::class);
@@ -143,7 +145,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsNode(int $key, $default = null): Node
+    public function getAsNode(string $key, $default = null): Node
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, Node::class);
@@ -155,7 +157,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsRelationship(int $key, $default = null): Relationship
+    public function getAsRelationship(string $key, $default = null): Relationship
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, Relationship::class);
@@ -167,7 +169,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsPath(int $key, $default = null): Path
+    public function getAsPath(string $key, $default = null): Path
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, Path::class);
@@ -179,7 +181,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsCartesian3DPoint(int $key, $default = null): Cartesian3DPoint
+    public function getAsCartesian3DPoint(string $key, $default = null): Cartesian3DPoint
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, Cartesian3DPoint::class);
@@ -191,7 +193,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsCartesianPoint(int $key, $default = null): CartesianPoint
+    public function getAsCartesianPoint(string $key, $default = null): CartesianPoint
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, CartesianPoint::class);
@@ -203,7 +205,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsWGS84Point(int $key, $default = null): WGS84Point
+    public function getAsWGS84Point(string $key, $default = null): WGS84Point
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, WGS84Point::class);
@@ -215,7 +217,7 @@ final class CypherMap extends Map
     /**
      * @param mixed $default
      */
-    public function getAsWGS843DPoint(int $key, $default = null): WGS843DPoint
+    public function getAsWGS843DPoint(string $key, $default = null): WGS843DPoint
     {
         if (func_num_args() === 1) {
             return $this->getAsObject($key, WGS843DPoint::class);
