@@ -352,6 +352,15 @@ final class CypherListTest extends TestCase
         self::assertEquals(new CypherList(['A', 'B', 'C']), $this->list);
     }
 
+    public function testEach(): void
+    {
+        $cntr = -1;
+        /** @psalm-suppress UnusedClosureParam */
+        $this->list->each(static function (string $x, int $key) use (&$cntr) { $cntr = $key; });
+
+        self::assertEquals($this->list->count() - 1, $cntr);
+    }
+
     public function testMapTypings(): void
     {
         $map = CypherList::fromIterable(['a', 'b', 'c'])

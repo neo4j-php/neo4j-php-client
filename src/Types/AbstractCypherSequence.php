@@ -212,4 +212,20 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
         /** @psalm-suppress MixedArgumentTypeCoercion */
         return implode($glue ?? '', $this->sequence);
     }
+
+    /**
+     * Iterates over the sequence and applies the callable.
+     *
+     * @param callable(TValue, TKey):void $callable
+     *
+     * @return static<TValue, TKey>
+     */
+    public function each(callable $callable): self
+    {
+        foreach ($this->sequence as $key => $value) {
+            $callable($value, $key);
+        }
+
+        return $this;
+    }
 }
