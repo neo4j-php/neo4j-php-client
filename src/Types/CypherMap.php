@@ -26,6 +26,8 @@ use function is_object;
 use function is_string;
 use function ksort;
 use Laudis\Neo4j\Databags\Pair;
+use Laudis\Neo4j\Exception\RuntimeTypeException;
+use Laudis\Neo4j\TypeCaster;
 use function method_exists;
 use OutOfBoundsException;
 use stdClass;
@@ -338,5 +340,297 @@ final class CypherMap extends AbstractCypherSequence
         }
 
         return parent::jsonSerialize();
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsString(string $key, $default = null): string
+    {
+        if (func_num_args() === 1) {
+            $value = $this->get($key);
+        } else {
+            $value = $this->get($key, $default);
+        }
+        $tbr = TypeCaster::toString($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'string');
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsInt(string $key, $default): int
+    {
+        if (func_num_args() === 1) {
+            $value = $this->get($key);
+        } else {
+            $value = $this->get($key, $default);
+        }
+        $tbr = TypeCaster::toInt($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'int');
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsFloat(int $key, $default = null): float
+    {
+        if (func_num_args() === 1) {
+            $value = $this->get($key);
+        } else {
+            $value = $this->get($key, $default);
+        }
+        $tbr = TypeCaster::toFloat($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'float');
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsBool(int $key, $default = null): bool
+    {
+        if (func_num_args() === 1) {
+            $value = $this->get($key);
+        } else {
+            $value = $this->get($key, $default);
+        }
+        $tbr = TypeCaster::toBool($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'bool');
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @param mixed $default
+     *
+     * @return null
+     */
+    public function getAsNull(int $key, $default = null)
+    {
+        if (func_num_args() === 1) {
+            $this->get($key);
+        }
+
+        return TypeCaster::toNull();
+    }
+
+    /**
+     * @template U
+     *
+     * @param class-string<U> $class
+     * @param mixed           $default
+     *
+     * @return U
+     */
+    public function getAsObject(int $key, string $class, $default = null): object
+    {
+        if (func_num_args() === 1) {
+            $value = $this->get($key);
+        } else {
+            $value = $this->get($key, $default);
+        }
+        $tbr = TypeCaster::toClass($value, $class);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, $class);
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @param mixed $default
+     *
+     * @return CypherMap<mixed>
+     */
+    public function getAsCypherMap(int $key, $default = null): CypherMap
+    {
+        if (func_num_args() === 1) {
+            $value = $this->get($key);
+        } else {
+            $value = $this->get($key, $default);
+        }
+        $tbr = TypeCaster::toCypherMap($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, CypherMap::class);
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @param mixed $default
+     *
+     * @return CypherList<mixed>
+     */
+    public function getAsCypherList(int $key, $default = null): CypherList
+    {
+        if (func_num_args() === 1) {
+            $value = $this->get($key);
+        } else {
+            $value = $this->get($key, $default);
+        }
+        $tbr = TypeCaster::toCypherList($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, CypherList::class);
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsDate(int $key, $default = null): Date
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, Date::class);
+        }
+        return $this->getAsObject($key, Date::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsDateTime(int $key, $default = null): DateTime
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, DateTime::class);
+        }
+        return $this->getAsObject($key, DateTime::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsDuration(int $key, $default = null): Duration
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, Duration::class);
+        }
+        return $this->getAsObject($key, Duration::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsLocalDateTime(int $key, $default = null): LocalDateTime
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, LocalDateTime::class);
+        }
+        return $this->getAsObject($key, LocalDateTime::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsLocalTime(int $key, $default = null): LocalTime
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, LocalTime::class);
+        }
+        return $this->getAsObject($key, LocalTime::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsTime(int $key, $default = null): Time
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, Time::class);
+        }
+        return $this->getAsObject($key, Time::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsNode(int $key, $default = null): Node
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, Node::class);
+        }
+        return $this->getAsObject($key, Node::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsRelationship(int $key, $default = null): Relationship
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, Relationship::class);
+        }
+        return $this->getAsObject($key, Relationship::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsPath(int $key, $default = null): Path
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, Path::class);
+        }
+        return $this->getAsObject($key, Path::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsCartesian3DPoint(int $key, $default = null): Cartesian3DPoint
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, Cartesian3DPoint::class);
+        }
+        return $this->getAsObject($key, Cartesian3DPoint::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsCartesianPoint(int $key, $default = null): CartesianPoint
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, CartesianPoint::class);
+        }
+        return $this->getAsObject($key, CartesianPoint::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsWGS84Point(int $key, $default = null): WGS84Point
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, WGS84Point::class);
+        }
+        return $this->getAsObject($key, WGS84Point::class, $default);
+    }
+
+    /**
+     * @param mixed $default
+     */
+    public function getAsWGS843DPoint(int $key, $default = null): WGS843DPoint
+    {
+        if (func_num_args() === 1) {
+            return $this->getAsObject($key, WGS843DPoint::class);
+        }
+        return $this->getAsObject($key, WGS843DPoint::class, $default);
     }
 }
