@@ -40,22 +40,16 @@ use function uksort;
  *
  * @template TValue
  *
- * @extends AbstractCypherSequence<string, TValue>
+ * @extends AbstractCypherSequence<TValue, string>
  *
  * @psalm-immutable
+ *
+ * @psalm-suppress UnsafeGenericInstantiation
  */
 class Map extends AbstractCypherSequence
 {
     /**
-     * @pure
-     */
-    public static function fromIterable(iterable $iterable): AbstractCypherSequence
-    {
-        return new static($iterable);
-    }
-
-    /**
-     * @param iterable<TValue> $iterable
+     * @param iterable<mixed, TValue> $iterable
      */
     final public function __construct(iterable $iterable = [])
     {
@@ -167,7 +161,7 @@ class Map extends AbstractCypherSequence
             uksort($tbr, $comparator);
         }
 
-        return static::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
@@ -199,7 +193,7 @@ class Map extends AbstractCypherSequence
             }
         }
 
-        return static::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
@@ -209,14 +203,14 @@ class Map extends AbstractCypherSequence
      */
     public function merge(iterable $values): Map
     {
-        $other = new self($values);
+        $other = new static($values);
         $tbr = $this->sequence;
 
         foreach ($other as $key => $value) {
             $tbr[$key] = $value;
         }
 
-        return static::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
@@ -235,7 +229,7 @@ class Map extends AbstractCypherSequence
             }
         }
 
-        return static::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
@@ -255,7 +249,7 @@ class Map extends AbstractCypherSequence
             }
         }
 
-        return static::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
@@ -274,7 +268,7 @@ class Map extends AbstractCypherSequence
             unset($tbr[(string) $key]);
         }
 
-        return static::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
@@ -282,7 +276,7 @@ class Map extends AbstractCypherSequence
      */
     public function reversed(): Map
     {
-        return static::fromIterable(array_reverse($this->sequence, true));
+        return new static(array_reverse($this->sequence, true));
     }
 
     /**
@@ -290,11 +284,11 @@ class Map extends AbstractCypherSequence
      */
     public function slice(int $offset, int $length = null): Map
     {
-        return static::fromIterable(array_slice($this->sequence, $offset, $length, true));
+        return new static(array_slice($this->sequence, $offset, $length, true));
     }
 
     /**
-     * @param (pure-callable(TValue, TValue):int)|null $comparator
+     * @param (callable(TValue, TValue):int)|null $comparator
      *
      * @return static<TValue>
      */
@@ -304,10 +298,11 @@ class Map extends AbstractCypherSequence
         if ($comparator === null) {
             asort($tbr);
         } else {
+            /** @psalm-suppress ImpureFunctionCall */
             uasort($tbr, $comparator);
         }
 
-        return static::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
@@ -476,7 +471,7 @@ class Map extends AbstractCypherSequence
             throw new RuntimeTypeException($value, Map::class);
         }
 
-        return Map::fromIterable($value);
+        return new Map($value);
     }
 
     /**
@@ -496,6 +491,20 @@ class Map extends AbstractCypherSequence
             throw new RuntimeTypeException($value, ArrayList::class);
         }
 
-        return ArrayList::fromIterable($value);
+        return new ArrayList($value);
+    }
+
+    /**
+     * @template Value
+     *
+     * @param iterable<Value> $iterable
+     *
+     * @return static<Value>
+     *
+     * @pure
+     */
+    public static function fromIterable(iterable $iterable): Map
+    {
+        return new static($iterable);
     }
 }

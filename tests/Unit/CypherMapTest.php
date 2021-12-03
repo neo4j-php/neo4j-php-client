@@ -16,10 +16,10 @@ use BadMethodCallException;
 use Generator;
 use InvalidArgumentException;
 use IteratorAggregate;
-use Laudis\Neo4j\Exception\RuntimeTypeException;
 use function json_encode;
 use const JSON_THROW_ON_ERROR;
 use Laudis\Neo4j\Databags\Pair;
+use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use OutOfBoundsException;
@@ -465,5 +465,23 @@ final class CypherMapTest extends TestCase
 
         $this->expectException(RuntimeTypeException::class);
         $map->getAsCartesian3DPoint('a');
+    }
+
+    public function getMap(): void
+    {
+        $map = CypherMap::fromIterable(['a' => 'b', 'c' => 'd'])
+            ->map(static function (string $value, string $key) {
+                $tbr = new stdClass();
+
+                $tbr->key = $key;
+                $tbr->value = $value;
+
+                return $tbr;
+            })
+            ->map(static function (stdClass $class) {
+                return (string) $class->value;
+            });
+
+        self::assertEquals(CypherMap::fromIterable(['a' => 'b', 'c' => 'd']), $map);
     }
 }

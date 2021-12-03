@@ -29,14 +29,16 @@ use function usort;
  *
  * @template TValue
  *
- * @extends AbstractCypherSequence<int, TValue>
+ * @extends AbstractCypherSequence<TValue, int>
  *
  * @psalm-immutable
+ *
+ * @psalm-suppress UnsafeGenericInstantiation
  */
 class ArrayList extends AbstractCypherSequence
 {
     /**
-     * @param iterable<TValue> $iterable
+     * @param iterable<mixed, TValue> $iterable
      */
     final public function __construct(iterable $iterable = [])
     {
@@ -92,7 +94,7 @@ class ArrayList extends AbstractCypherSequence
             $tbr[] = $value;
         }
 
-        return static::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
@@ -100,7 +102,7 @@ class ArrayList extends AbstractCypherSequence
      */
     public function reversed(): ArrayList
     {
-        return static::fromIterable(array_reverse($this->sequence));
+        return new static(array_reverse($this->sequence));
     }
 
     /**
@@ -108,11 +110,11 @@ class ArrayList extends AbstractCypherSequence
      */
     public function slice(int $offset, int $length = null): ArrayList
     {
-        return static::fromIterable(array_slice($this->sequence, $offset, $length));
+        return new static(array_slice($this->sequence, $offset, $length));
     }
 
     /**
-     * @param (pure-callable(TValue, TValue):int)|null $comparator
+     * @param (callable(TValue, TValue):int)|null $comparator
      *
      * @return static<TValue>
      */
@@ -122,18 +124,11 @@ class ArrayList extends AbstractCypherSequence
         if ($comparator === null) {
             sort($tbr);
         } else {
+            /** @psalm-suppress ImpureFunctionCall */
             usort($tbr, $comparator);
         }
 
-        return static::fromIterable($tbr);
-    }
-
-    /**
-     * @pure
-     */
-    public static function fromIterable(iterable $iterable): AbstractCypherSequence
-    {
-        return new static($iterable);
+        return new static($tbr);
     }
 
     /**
@@ -235,7 +230,7 @@ class ArrayList extends AbstractCypherSequence
             throw new RuntimeTypeException($value, Map::class);
         }
 
-        return Map::fromIterable($value);
+        return new Map($value);
     }
 
     /**
@@ -248,6 +243,21 @@ class ArrayList extends AbstractCypherSequence
             throw new RuntimeTypeException($value, ArrayList::class);
         }
 
-        return ArrayList::fromIterable($value);
+        return new ArrayList($value);
+    }
+
+    /**
+     * @template Value
+     *
+     * @param iterable<Value> $iterable
+     *
+     * @return static<Value>
+     *
+     * @pure
+     */
+    public static function fromIterable(iterable $iterable): ArrayList
+    {
+        /** @psalm-suppress UnsafeGenericInstantiation */
+        return new static($iterable);
     }
 }
