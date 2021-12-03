@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /*
@@ -349,5 +350,23 @@ final class CypherListTest extends TestCase
 
         self::assertEquals(new CypherList(['C', 'B', 'A']), $sorted);
         self::assertEquals(new CypherList(['A', 'B', 'C']), $this->list);
+    }
+
+    public function testMapTypings(): void
+    {
+        $map = CypherList::fromIterable(['a', 'b', 'c'])
+            ->map(static function (string $value, int $key): stdClass {
+                $tbr = new stdClass();
+
+                $tbr->key = $key;
+                $tbr->value = $value;
+
+                return $tbr;
+            })
+            ->map(static function (stdClass $class) {
+                return (string) $class->value;
+            });
+
+        self::assertEquals(CypherList::fromIterable(['a', 'b', 'c']), $map);
     }
 }

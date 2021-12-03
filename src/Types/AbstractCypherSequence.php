@@ -23,30 +23,24 @@ use function in_array;
 /**
  * Abstract immutable sequence with basic functional methods.
  *
- * @template TKey of array-key
  * @template TValue
+ * @template TKey of array-key
  *
  * @extends AbstractCypherObject<TKey, TValue>
  *
  * @psalm-immutable
+ *
+ * @psalm-suppress UnsafeInstantiation
  */
 abstract class AbstractCypherSequence extends AbstractCypherObject implements Countable
 {
     /** @var array<TKey, TValue> */
-    protected array $sequence;
+    protected array $sequence = [];
 
     /**
-     * Creates a new instance from the given iterable.
-     *
-     * @template Value
-     *
-     * @param iterable<Value> $iterable
-     *
-     * @return static
-     *
-     * @pure
+     * @param iterable<TKey, TValue> $iterable
      */
-    abstract public static function fromIterable(iterable $iterable): self;
+    abstract public function __construct(iterable $iterable);
 
     final public function count(): int
     {
@@ -56,14 +50,14 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Copies the sequence.
      *
-     * @return static
+     * @return static<TValue, TKey>
      */
     final public function copy(): self
     {
         // Make sure the sequence is actually copied by reassigning it.
         $map = $this->sequence;
 
-        return $this::fromIterable($map);
+        return new static($map);
     }
 
     /**
@@ -89,7 +83,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param iterable<array-key, TValue> $values
      *
-     * @return static
+     * @return static<TValue, TKey>
      */
     abstract public function merge(iterable $values): self;
 
@@ -116,12 +110,13 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Creates a filtered the sequence with the provided callback.
      *
-     * @param pure-callable(TValue, TKey):bool $callback
+     * @param callable(TValue, TKey):bool $callback
      *
-     * @return static
+     * @return static<TValue, TKey>
      */
     final public function filter(callable $callback): self
     {
+        /** @var array<TKey, TValue> $tbr */
         $tbr = [];
         foreach ($this->sequence as $key => $value) {
             if ($callback($value, $key)) {
@@ -129,26 +124,27 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
             }
         }
 
-        return $this::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
      * Maps the values of this sequence to a new one with the provided callback.
      *
-     * @template U
+     * @template ReturnType
      *
-     * @param pure-callable(TValue, TKey):U $callback
+     * @param callable(TValue, TKey):ReturnType $callback
      *
-     * @return static
+     * @return static<ReturnType, TKey>
      */
     final public function map(callable $callback): self
     {
+        /** @var array<TKey, ReturnType> $tbr */
         $tbr = [];
         foreach ($this->sequence as $key => $value) {
             $tbr[$key] = $callback($value, $key);
         }
 
-        return $this::fromIterable($tbr);
+        return new static($tbr);
     }
 
     /**
@@ -156,8 +152,8 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @template TInitial
      *
-     * @param pure-callable(TInitial|null, TValue, TKey):TInitial $callback
-     * @param TInitial|null                                       $initial
+     * @param callable(TInitial|null, TValue, TKey):TInitial $callback
+     * @param TInitial|null                                  $initial
      *
      * @return TInitial
      */
@@ -185,7 +181,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Creates a reversed sequence.
      *
-     * @return static
+     * @return static<TValue, TKey>
      */
     abstract public function reversed(): self;
 
@@ -193,16 +189,16 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * Slices a new sequence starting from the given offset with a certain length.
      * If the length is null it will slice the entire remainder starting from the offset.
      *
-     * @return static
+     * @return static<TValue, TKey>
      */
     abstract public function slice(int $offset, int $length = null): self;
 
     /**
      * Creates a sorted sequence. If the compoarator is null it will use natural ordering.
      *
-     * @param (pure-callable(TValue, TValue):int)|null $comparator
+     * @param (callable(TValue, TValue):int)|null $comparator
      *
-     * @return static
+     * @return static<TValue, TKey>
      */
     abstract public function sorted(?callable $comparator = null): self;
 
