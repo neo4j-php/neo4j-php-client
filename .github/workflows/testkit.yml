@@ -9,9 +9,7 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    env:
-      NEO4J_CONNECTIONS: bolt://neo4j:test@localhost,http://neo4j:test@localhost
-    name: "Running Integration tests for PHP 7.4 on Neo4j ${{ matrix.neo4j-version }} with simple config"
+    name: "Running Testkit tests for PHP ${{matrix.php-version}} on Neo4j and testkit ${{ matrix.neo4j-version }} with simple config"
     strategy:
       fail-fast: false
       matrix:
@@ -29,28 +27,46 @@ jobs:
           - 7474:7474
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
-      testkit-backend:
-        image: php:${{ matrix.neo4j-version }}
-        env:
-          NEO4J_AUTH: neo4j/test
-          NEO4JLABS_PLUGINS: '["apoc"]'
-        ports:
-          - 7687:7687
-          - 7474:7474
-        options: >-
-          --health-cmd "wget http://localhost:7474 || exit 1"
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: php-actions/composer@v6
+      - name: Checkout driver
+        uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          progress: yes
-          php_version: 7.4
-          version: 2
-      - uses: php-actions/phpunit@v3
+          php-version: ${{ matrix.php-version }}
+
+      - name: Checkout TestKit (testing tool)
+        uses: actions/checkout@v2
         with:
-          configuration: phpunit.xml.dist
-          php_version: 7.4
-          php_extensions: bcmath
-          bootstrap: vendor/autoload.php
-          args: --testsuite "Integration"
+          repository: neo4j-drivers/testkit
+          path: testkit
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          # install docker
+          sudo apt-get install \
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg \
+            lsb-release
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install docker-ce docker-ce-cli containerd.io
+          # Python (needed for dummy driver and TestKit)
+          sudo apt-get install python3 python3-pip
+
+      - name: Run TestKit
+        env:
+          TEST_NEO4J_HOST: localhost
+          TEST_NEO4J_USER: neo4j
+          TEST_NEO4J_PASS: test
+          TEST_DRIVER_NAME: php
+        run: |
+          cd testkit
+          python3 -m unittest -v "tests.neo4j.test_authentication.TestAuthenticationBasic"
