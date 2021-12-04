@@ -21,20 +21,11 @@ use Symfony\Component\Uid\Uuid;
  */
 final class RetryableDoneResponse implements TestkitResponseInterface
 {
-    private Uuid $id;
-
-    public function __construct(Uuid $id)
-    {
-        $this->id = $id;
-    }
-
     public function jsonSerialize(): array
     {
         return [
             'name' => 'RetryableDone',
-            'data' => [
-                'id' => $this->id->toRfc4122(),
-            ],
+            'data' => [],
         ];
     }
 }

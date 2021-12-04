@@ -23,6 +23,7 @@ use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
 use Symfony\Component\Uid\Uuid;
+use function var_export;
 
 /**
  * @implements RequestHandlerInterface<NewDriverRequest>
@@ -55,6 +56,7 @@ final class NewDriver implements RequestHandlerInterface
         $formatter = SummarizedResultFormatter::create();
         $authenticate = Authenticate::basic($user, $pass);
         $driver = DriverFactory::create($request->getUri(), $config, $authenticate, $timeout, $formatter);
+
         $id = Uuid::v4();
         $this->repository->addDriver($id, $driver);
 
