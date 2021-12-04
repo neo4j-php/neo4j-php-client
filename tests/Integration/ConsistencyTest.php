@@ -24,7 +24,7 @@ use Laudis\Neo4j\Formatter\BasicFormatter;
  */
 final class ConsistencyTest extends EnvironmentAwareIntegrationTest
 {
-    protected function formatter(): FormatterInterface
+    protected static function formatter(): FormatterInterface
     {
         /** @psalm-suppress InvalidReturnStatement */
         return new BasicFormatter();
@@ -35,12 +35,12 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
      */
     public function testConsistency(string $alias): void
     {
-        $this->client->run('MATCH (x) DETACH DELETE x', [], $alias);
-        $res = $this->client->run('MERGE (n:zzz {name: "bbbb"}) RETURN n', [], $alias);
+        $this->getClient()->run('MATCH (x) DETACH DELETE x', [], $alias);
+        $res = $this->getClient()->run('MERGE (n:zzz {name: "bbbb"}) RETURN n', [], $alias);
         self::assertEquals(1, $res->count());
         self::assertEquals(['name' => 'bbbb'], $res->first()->get('n'));
 
-        $res = $this->client->run('MATCH (n:zzz {name: $name}) RETURN n', ['name' => 'bbbb'], $alias);
+        $res = $this->getClient()->run('MATCH (n:zzz {name: $name}) RETURN n', ['name' => 'bbbb'], $alias);
         self::assertEquals(1, $res->count());
         self::assertEquals(['name' => 'bbbb'], $res->first()->get('n'));
     }
@@ -50,8 +50,8 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
      */
     public function testConsistencyTransaction(string $alias): void
     {
-        $this->client->run('MATCH (x) DETACH DELETE x', [], $alias);
-        $tsx = $this->client->beginTransaction([
+        $this->getClient()->run('MATCH (x) DETACH DELETE x', [], $alias);
+        $tsx = $this->getClient()->beginTransaction([
             Statement::create('CREATE (n:aaa) SET n.name="aaa" return n'),
         ], $alias);
 
@@ -59,7 +59,7 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
 
         $tsx->commit([Statement::create('CREATE (n:bbb) SET n.name="bbb" return n')]);
 
-        $results = $this->client->run('MATCH (n) RETURN n ORDER BY n.name', [], $alias);
+        $results = $this->getClient()->run('MATCH (n) RETURN n ORDER BY n.name', [], $alias);
 
         self::assertEquals(3, $results->count());
         self::assertEquals(['name' => 'aaa'], $results->first()->get('n'));

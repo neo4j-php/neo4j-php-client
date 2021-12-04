@@ -21,13 +21,13 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherMap;
 
 /**
- * @extends EnvironmentAwareIntegrationTest<SummarizedResult<CypherMap<OGMTypes>>>
- *
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @extends EnvironmentAwareIntegrationTest<SummarizedResult<CypherMap<OGMTypes>>>
  */
 final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTest
 {
-    protected function formatter(): FormatterInterface
+    protected static function formatter(): FormatterInterface
     {
         return SummarizedResultFormatter::create();
     }
@@ -37,7 +37,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
      */
     public function testAcceptanceRead(string $alias): void
     {
-        $result = $this->client->run('RETURN 1 AS one', [], $alias);
+        $result = $this->getClient()->run('RETURN 1 AS one', [], $alias);
         self::assertInstanceOf(SummarizedResult::class, $result);
         self::assertEquals(1, $result->first()->get('one'));
     }
@@ -49,6 +49,6 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
      */
     public function testAcceptanceWrite(string $alias): void
     {
-        self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias)->getSummary()->getCounters());
+        self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->getClient()->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias)->getSummary()->getCounters());
     }
 }

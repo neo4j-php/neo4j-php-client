@@ -27,39 +27,31 @@ use PHPUnit\Framework\TestCase;
  */
 abstract class EnvironmentAwareIntegrationTest extends TestCase
 {
-    /** @var ClientInterface<T> */
-    protected ClientInterface $client;
-
-    /**
-     * @psalm-suppress InternalMethod
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->client = $this->createClient();
-//        if ($this->usesDataProvider()) {
-//            $data = $this->getProvidedData();
-//            /** @var string|null */
-//            $alias = $data[0] ?? null;
-//            $this->client->run('MATCH (x) DETACH DELETE (x)', [], $alias);
-//        } else {
-//            foreach ($this->connectionAliases() as $alias) {
-//                $this->client->run('MATCH (x) DETACH DELETE (x)', [], $alias[0]);
-//            }
-//        }
-    }
-
-    /**
-     * @return FormatterInterface<T>
-     */
-    abstract protected function formatter(): FormatterInterface;
+    /** @var ClientInterface<mixed> */
+    protected static ClientInterface $client;
 
     /**
      * @return ClientInterface<T>
      */
-    protected function createClient(): ClientInterface
+    protected function getClient(): ClientInterface
     {
-        $connections = $this->getConnections();
+        return self::$client;
+    }
+
+    /**
+     * @psalm-suppress InternalMethod
+     */
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+        self::$client = self::createClient();
+    }
+
+    abstract protected static function formatter(): FormatterInterface;
+
+    protected static function createClient(): ClientInterface
+    {
+        $connections = self::buildConnections();
 
         $builder = ClientBuilder::create();
         foreach ($connections as $i => $connection) {
@@ -68,7 +60,7 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
             $builder = $builder->withDriver($alias, $connection);
         }
 
-        return $builder->withFormatter($this->formatter())->build();
+        return $builder->withFormatter(static::formatter())->build();
     }
 
     /**
@@ -92,7 +84,7 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     /**
      * @return list<string>
      */
-    protected function getConnections(): array
+    protected static function buildConnections(): array
     {
         $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
@@ -100,5 +92,13 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
         }
 
         return explode(',', $connections);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function getConnections(): array
+    {
+        return self::buildConnections();
     }
 }

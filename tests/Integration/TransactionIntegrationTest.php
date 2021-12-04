@@ -21,11 +21,11 @@ use Laudis\Neo4j\Formatter\BasicFormatter;
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
  *
- * @extends EnvironmentAwareIntegrationTest<\Laudis\Neo4j\Types\CypherList<\Laudis\Neo4j\Types\CypherMap<scalar|array|null>>>
+ * @extends EnvironmentAwareIntegrationTest<BasicResults>
  */
 final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    protected function formatter(): FormatterInterface
+    protected static function formatter(): FormatterInterface
     {
         return new BasicFormatter();
     }
@@ -35,7 +35,7 @@ final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testValidRun(string $alias): void
     {
-        $response = $this->client->beginTransaction(null, $alias)->run(<<<'CYPHER'
+        $response = $this->getClient()->beginTransaction(null, $alias)->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
@@ -58,7 +58,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
      */
     public function testInvalidRun(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction = $this->getClient()->beginTransaction(null, $alias);
         $exception = false;
         try {
             $transaction->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
@@ -74,7 +74,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
      */
     public function testValidStatement(string $alias): void
     {
-        $response = $this->client->beginTransaction(null, $alias)->runStatement(
+        $response = $this->getClient()->beginTransaction(null, $alias)->runStatement(
             Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
@@ -99,7 +99,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
      */
     public function testInvalidStatement(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction = $this->getClient()->beginTransaction(null, $alias);
         $exception = false;
         try {
             $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
@@ -115,7 +115,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
      */
     public function testStatements(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction = $this->getClient()->beginTransaction(null, $alias);
         $params = ['test' => 'a', 'otherTest' => 'b'];
         $response = $transaction->runStatements([
             Statement::create(<<<'CYPHER'
@@ -147,7 +147,7 @@ CYPHER,
      */
     public function testInvalidStatements(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction = $this->getClient()->beginTransaction(null, $alias);
         $exception = false;
         try {
             $params = ['test' => 'a', 'otherTest' => 'b'];
@@ -175,7 +175,7 @@ CYPHER,
      */
     public function testCommitValidEmpty(string $alias): void
     {
-        $result = $this->client->beginTransaction(null, $alias)->commit();
+        $result = $this->getClient()->beginTransaction(null, $alias)->commit();
         self::assertEquals(0, $result->count());
     }
 
@@ -184,7 +184,7 @@ CYPHER,
      */
     public function testCommitValidFilled(string $alias): void
     {
-        $result = $this->client->beginTransaction(null, $alias)->commit([Statement::create(<<<'CYPHER'
+        $result = $this->getClient()->beginTransaction(null, $alias)->commit([Statement::create(<<<'CYPHER'
 UNWIND [1, 2, 3] AS x
 RETURN x
 CYPHER
@@ -198,7 +198,7 @@ CYPHER
      */
     public function testCommitValidFilledWithInvalidStatement(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction = $this->getClient()->beginTransaction(null, $alias);
         $exception = false;
         try {
             $transaction->commit([Statement::create('adkjbehqjk')]);
@@ -213,7 +213,7 @@ CYPHER
      */
     public function testCommitInvalid(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction = $this->getClient()->beginTransaction(null, $alias);
         $transaction->commit();
         $exception = false;
         try {
@@ -229,7 +229,7 @@ CYPHER
      */
     public function testRollbackValid(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction = $this->getClient()->beginTransaction(null, $alias);
         $transaction->rollback();
         self::assertTrue(true);
     }
@@ -239,7 +239,7 @@ CYPHER
      */
     public function testRollbackInvalid(string $alias): void
     {
-        $transaction = $this->client->beginTransaction(null, $alias);
+        $transaction = $this->getClient()->beginTransaction(null, $alias);
         $transaction->rollback();
         $exception = false;
         try {

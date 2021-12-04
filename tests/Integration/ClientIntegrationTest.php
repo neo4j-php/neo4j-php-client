@@ -19,20 +19,21 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Formatter\BasicFormatter;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Laudis\Neo4j\Types\CypherMap;
 
 /**
- * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  *
- * @extends EnvironmentAwareIntegrationTest<BasicResults>
+ * @extends EnvironmentAwareIntegrationTest<SummarizedResult<CypherMap<OGMTypes>>>
  */
 final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    protected function formatter(): FormatterInterface
+    protected static function formatter(): FormatterInterface
     {
-        /** @psalm-suppress InvalidReturnStatement */
-        return new BasicFormatter();
+        return SummarizedResultFormatter::create();
     }
 
     public function testEqualEffect(): void
@@ -48,8 +49,8 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
         $prev = null;
         foreach ($this->connectionAliases() as $current) {
             if ($prev !== null) {
-                $x = $this->client->runStatement($statement, $prev);
-                $y = $this->client->runStatement($statement, $current[0]);
+                $x = $this->getClient()->runStatement($statement, $prev);
+                $y = $this->getClient()->runStatement($statement, $current[0]);
 
                 self::assertEquals($x, $y);
                 self::assertEquals($x->toArray(), $y->toArray());
@@ -63,7 +64,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testAvailabilityFullImplementation(string $alias): void
     {
-        $results = $this->client->getDriver($alias)
+        $results = $this->getClient()->getDriver($alias)
             ->createSession()
             ->beginTransaction()
             ->run('UNWIND [1] AS x RETURN x')
@@ -78,20 +79,20 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testTransactionFunction(string $alias): void
     {
-        $result = $this->client->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
+        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x');
         }, $alias);
 
         self::assertEquals(1, $result);
 
-        $result = $this->client->readTransaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
+        $result = $this->getClient()->readTransaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x');
         }, $alias);
 
         self::assertEquals(1, $result);
 
-        $result = $this->client->writeTransaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->get('x');
+        $result = $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x');
         }, $alias);
 
         self::assertEquals(1, $result);
@@ -102,7 +103,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testValidRun(string $alias): void
     {
-        $response = $this->client->run(<<<'CYPHER'
+        $response = $this->getClient()->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
@@ -127,7 +128,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'], $alias);
     {
         $exception = false;
         try {
-            $this->client->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b'], $alias);
+            $this->getClient()->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b'], $alias);
         } catch (Neo4jException $e) {
             $exception = true;
         }
@@ -139,7 +140,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'], $alias);
      */
     public function testValidStatement(string $alias): void
     {
-        $response = $this->client->runStatement(
+        $response = $this->getClient()->runStatement(
             Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
@@ -168,7 +169,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']),
         $exception = false;
         try {
             $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
-            $this->client->runStatement($statement, $alias);
+            $this->getClient()->runStatement($statement, $alias);
         } catch (Neo4jException $e) {
             $exception = true;
         }
@@ -181,7 +182,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']),
     public function testStatements(string $alias): void
     {
         $params = ['test' => 'a', 'otherTest' => 'b'];
-        $response = $this->client->runStatements([
+        $response = $this->getClient()->runStatements([
             Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 CYPHER,
@@ -215,7 +216,7 @@ CYPHER,
     {
         $this->expectException(Neo4jException::class);
         $params = ['test' => 'a', 'otherTest' => 'b'];
-        $this->client->runStatements([
+        $this->getClient()->runStatements([
             Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 CYPHER,
@@ -235,8 +236,8 @@ CYPHER,
      */
     public function testMultipleTransactions(string $alias): void
     {
-        $x = $this->client->beginTransaction(null, $alias);
-        $y = $this->client->beginTransaction(null, $alias);
+        $x = $this->getClient()->beginTransaction(null, $alias);
+        $y = $this->getClient()->beginTransaction(null, $alias);
         self::assertNotSame($x, $y);
         $x->rollback();
         $y->rollback();
@@ -247,7 +248,7 @@ CYPHER,
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The provided alias: "ghqkneq;tr" was not found in the client');
 
-        $this->client->run('RETURN 1 AS x', [], 'ghqkneq;tr');
+        $this->getClient()->run('RETURN 1 AS x', [], 'ghqkneq;tr');
     }
 
     public function testInvalidConnectionCheck(): void
@@ -268,6 +269,6 @@ CYPHER,
      */
     public function testValidConnectionCheck(string $alias): void
     {
-        self::assertTrue($this->client->verifyConnectivity($alias));
+        self::assertTrue($this->getClient()->verifyConnectivity($alias));
     }
 }

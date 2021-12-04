@@ -357,7 +357,7 @@ class Map extends AbstractCypherSequence
     /**
      * @param mixed $default
      */
-    public function getAsInt(string $key, $default): int
+    public function getAsInt(string $key, $default = null): int
     {
         if (func_num_args() === 1) {
             $value = $this->get($key);
