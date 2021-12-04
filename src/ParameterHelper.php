@@ -134,7 +134,6 @@ final class ParameterHelper
         if ($value instanceof CypherMap) {
             $tbr = new stdClass();
             foreach ($value as $key => $val) {
-                $key = (string) $key;
                 $tbr->$key = $val;
             }
 

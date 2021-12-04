@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Exception;
-use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
@@ -42,6 +41,7 @@ final class GetRoutingTable implements RequestHandlerInterface
 
     /**
      * @param GetRoutingTableRequest $request
+     *
      * @throws ReflectionException
      * @throws Exception
      */
@@ -59,7 +59,6 @@ final class GetRoutingTable implements RequestHandlerInterface
             $tableProperty->setAccessible(true);
             /** @var RoutingTable $table */
             $table = $tableProperty->getValue($pool);
-
 
             return new RoutingTableResponse(
                 $request->getDatabase(),

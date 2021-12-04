@@ -52,7 +52,7 @@ final class NewDriver implements RequestHandlerInterface
             $config = $config->withUserAgent($ua);
         }
 
-        $formatter = new SummarizedResultFormatter(OGMFormatter::create());
+        $formatter = SummarizedResultFormatter::create();
         $authenticate = Authenticate::basic($user, $pass);
         $driver = DriverFactory::create($request->getUri(), $config, $authenticate, $timeout, $formatter);
         $id = Uuid::v4();

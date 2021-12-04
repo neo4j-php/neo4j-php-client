@@ -28,24 +28,24 @@ use Symfony\Component\Uid\Uuid;
  */
 final class MainRepository
 {
-    /** @var array<string, DriverInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
+    /** @var array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>> */
     private array $drivers;
-    /** @var array<string, SessionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
+    /** @var array<string, SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>> */
     private array $sessions;
-    /** @var array<string, SummarizedResult<CypherList<CypherMap<OGMTypes>>>|TestkitResponseInterface> */
+    /** @var array<string, SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface> */
     private array $records;
     /** @var array<string, Iterator<int, CypherMap<OGMTypes>>> */
     private array $recordIterators;
-    /** @var array<string, UnmanagedTransactionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> */
+    /** @var array<string, UnmanagedTransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>> */
     private array $transactions;
     /** @var array<string, Uuid> */
     private array $sessionToTransactions = [];
 
     /**
-     * @param array<string, DriverInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>>               $drivers
-     * @param array<string, SessionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>>              $sessions
-     * @param array<string, SummarizedResult<CypherList<CypherMap<OGMTypes>>>|TestkitResponseInterface>       $records
-     * @param array<string, UnmanagedTransactionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>> $transactions
+     * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
+     * @param array<string, SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>>              $sessions
+     * @param array<string, SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface>       $records
+     * @param array<string, UnmanagedTransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>> $transactions
      */
     public function __construct(array $drivers, array $sessions, array $records, array $transactions)
     {
@@ -57,7 +57,7 @@ final class MainRepository
     }
 
     /**
-     * @param DriverInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>> $driver
+     * @param DriverInterface<SummarizedResult<CypherMap<OGMTypes>>> $driver
      */
     public function addDriver(Uuid $id, DriverInterface $driver): void
     {
@@ -78,7 +78,7 @@ final class MainRepository
     }
 
     /**
-     * @return DriverInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>
+     * @return DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>
      */
     public function getDriver(Uuid $id): DriverInterface
     {
@@ -86,7 +86,7 @@ final class MainRepository
     }
 
     /**
-     * @param SessionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>> $session
+     * @param SessionInterface<SummarizedResult<CypherMap<OGMTypes>>> $session
      */
     public function addSession(Uuid $id, SessionInterface $session): void
     {
@@ -99,7 +99,7 @@ final class MainRepository
     }
 
     /**
-     * @return SessionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>
+     * @return SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>
      */
     public function getSession(Uuid $id): SessionInterface
     {
@@ -107,14 +107,14 @@ final class MainRepository
     }
 
     /**
-     * @param SummarizedResult<CypherList<CypherMap<OGMTypes>>>|TestkitResponseInterface $result
+     * @param SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface $result
      */
     public function addRecords(Uuid $id, $result): void
     {
         $this->records[$id->toRfc4122()] = $result;
         if ($result instanceof SummarizedResult) {
-            /** @var SummarizedResult<CypherList<CypherMap<OGMTypes>>> $result */
-            $this->recordIterators[$id->toRfc4122()] = $result->getResult()->getIterator();
+            /** @var SummarizedResult<CypherMap<OGMTypes>> $result */
+            $this->recordIterators[$id->toRfc4122()] = $result->getIterator();
         }
     }
 
@@ -124,7 +124,7 @@ final class MainRepository
     }
 
     /**
-     * @return SummarizedResult<CypherList<CypherMap<OGMTypes>>>|TestkitResponseInterface
+     * @return SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface
      */
     public function getRecords(Uuid $id)
     {
@@ -132,7 +132,7 @@ final class MainRepository
     }
 
     /**
-     * @param UnmanagedTransactionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>> $transaction
+     * @param UnmanagedTransactionInterface<SummarizedResult<CypherMap<OGMTypes>>> $transaction
      */
     public function addTransaction(Uuid $id, UnmanagedTransactionInterface $transaction): void
     {
@@ -145,7 +145,7 @@ final class MainRepository
     }
 
     /**
-     * @return UnmanagedTransactionInterface<SummarizedResult<CypherList<CypherMap<OGMTypes>>>>
+     * @return UnmanagedTransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>
      */
     public function getTransaction(Uuid $id): UnmanagedTransactionInterface
     {

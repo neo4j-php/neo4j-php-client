@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  *
  * @template T of \Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest|\Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest
  *
@@ -78,7 +78,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
         }
         $this->repository->addRecords($id, $result);
 
-        return new ResultResponse($id, $result->getResult()->isEmpty() ? [] : $result->getResult()->first()->keys());
+        return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
     }
 
     /**
@@ -93,7 +93,12 @@ abstract class AbstractRunner implements RequestHandlerInterface
             if ($param['name'] === 'CypherMap') {
                 /** @psalm-suppress MixedArgumentTypeCoercion */
                 $map = [];
+                /**
+                 * @var numeric $k
+                 * @var mixed   $v
+                 */
                 foreach ($value as $k => $v) {
+                    /** @psalm-suppress MixedArgument */
                     $map[(string) $k] = $this->decodeToValue($v);
                 }
 
@@ -102,7 +107,11 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             if ($param['name'] === 'CypherList') {
                 $list = [];
+                /**
+                 * @var mixed $v
+                 */
                 foreach ($value as $v) {
+                    /** @psalm-suppress MixedArgument */
                     $list[] = $this->decodeToValue($v);
                 }
 
@@ -116,7 +125,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
     /**
      * @param T $request
      *
-     * @return SessionInterface<SummarizedResult<OGMResults>>|TransactionInterface<SummarizedResult<OGMResults>>
+     * @return SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>|TransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>
      */
     abstract protected function getRunner($request);
 
