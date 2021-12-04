@@ -45,6 +45,7 @@ jobs:
         with:
           repository: neo4j-drivers/testkit
           path: testkit
+          with: '4.3'
 
       - name: Install dependencies
         run: |
@@ -70,4 +71,5 @@ jobs:
           TEST_NEO4J_PASS: test
           TEST_DRIVER_NAME: php
         run: |
+          cd testkit
           python3 -m unittest -v "tests.neo4j.test_authentication.TestAuthenticationBasic"
