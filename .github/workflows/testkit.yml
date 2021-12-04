@@ -37,6 +37,9 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
 
+      - name: Setup backend
+        run: php testkit-backend/index.php &
+
       - name: Checkout TestKit (testing tool)
         uses: actions/checkout@v2
         with:
