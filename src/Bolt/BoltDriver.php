@@ -37,8 +37,6 @@ use Psr\Http\Message\UriInterface;
  * @implements DriverInterface<T>
  *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
- *
- * @psalm-immutable
  */
 final class BoltDriver implements DriverInterface
 {
@@ -53,6 +51,8 @@ final class BoltDriver implements DriverInterface
     /**
      * @param FormatterInterface<T>         $formatter
      * @param ConnectionPoolInterface<Bolt> $pool
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         UriInterface $parsedUrl,
@@ -115,6 +115,8 @@ final class BoltDriver implements DriverInterface
 
     /**
      * @throws Exception
+     *
+     * @psalm-mutation-free
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
@@ -132,5 +134,10 @@ final class BoltDriver implements DriverInterface
             $this->auth,
             $this->socketTimeout
         );
+    }
+
+    public function verifyConnectivity(): bool
+    {
+        return $this->pool->canConnect($this->parsedUrl, $this->auth);
     }
 }

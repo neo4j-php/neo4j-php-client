@@ -25,11 +25,12 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\HttpPsrBindings;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
 use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Http\HttpConfig;
-use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 
 /**
@@ -81,7 +82,7 @@ final class ClientBuilder
      *
      * @pure
      *
-     * @return ClientBuilder<CypherList<CypherMap<OGMTypes>>>
+     * @return ClientBuilder<SummarizedResult<CypherMap<OGMTypes>>>
      */
     public static function create(): ClientBuilder
     {
@@ -89,7 +90,7 @@ final class ClientBuilder
             DriverConfiguration::default(),
             SessionConfiguration::default(),
             TransactionConfiguration::default(),
-            OGMFormatter::create(),
+            SummarizedResultFormatter::create(),
             new CypherMap(),
             null
         );

@@ -6,7 +6,7 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/275c2269aa54c2c43210/maintainability)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/275c2269aa54c2c43210/test_coverage)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/test_coverage)
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/laudis-technologies/neo4j-php-client/blob/main/LICENSE)
-![example workflow](https://github.com/neo4j-php/neo4j-php-client/actions/workflows/tests.yml/badge.svg)
+![example workflow](https://github.com/neo4j-php/neo4j-php-client/actions/workflows/full-test.yml/badge.svg)
 
 ## Control to worlds' most powerful graph database
 - Pick and choose your drivers with easy configuration

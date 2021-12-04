@@ -1,10 +1,20 @@
 <phpunit colors="true" verbose="true"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         convertErrorsToExceptions="true"
+         convertDeprecationsToExceptions="false"
 >
     <testsuites>
-        <testsuite name="Neo4j php test suite">
-            <directory>./tests</directory>
+        <testsuite name="Integration">
+            <directory>./tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Performance">
+            <directory>./tests/Performance</directory>
+        </testsuite>
+        <testsuite name="Unit">
+            <directory>./tests/Unit</directory>
         </testsuite>
     </testsuites>
 </phpunit>

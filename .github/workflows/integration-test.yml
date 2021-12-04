@@ -1,0 +1,45 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: ['**']
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    env:
+      NEO4J_CONNECTIONS: bolt://neo4j:test@localhost,http://neo4j:test@localhost
+    name: "Running Integration tests for PHP 7.4 on Neo4j ${{ matrix.neo4j-version }} with simple config"
+    strategy:
+      fail-fast: false
+      matrix:
+        neo4j-version: ["3.5", "4.0", "4.1", "4.2", "4.3"]
+
+    services:
+      neo4j:
+        image: neo4j:${{ matrix.neo4j-version }}
+        env:
+          NEO4J_AUTH: neo4j/test
+          NEO4JLABS_PLUGINS: '["apoc"]'
+        ports:
+          - 7687:7687
+          - 7474:7474
+        options: >-
+          --health-cmd "wget http://localhost:7474 || exit 1"
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: php-actions/composer@v6
+        with:
+          progress: yes
+          php_version: 7.4
+          version: 2
+      - uses: php-actions/phpunit@v3
+        with:
+          configuration: phpunit.xml.dist
+          php_version: 7.4
+          php_extensions: bcmath
+          bootstrap: vendor/autoload.php
+          args: --testsuite "Integration"

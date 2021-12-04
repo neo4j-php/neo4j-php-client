@@ -130,6 +130,11 @@ final class Client implements ClientInterface
         return $this->writeTransaction($tsxHandler, $alias, $config);
     }
 
+    public function verifyConnectivity(?string $driver = null): bool
+    {
+        return $this->getDriver($driver)->verifyConnectivity();
+    }
+
     /**
      * @psalm-mutation-free
      */

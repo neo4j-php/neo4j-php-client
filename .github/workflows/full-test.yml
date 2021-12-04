@@ -1,0 +1,129 @@
+name: Full Test
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    name: "Running full tests"
+    env:
+      NEO4J_CONNECTIONS: ${{ secrets.NEO4J_CONNECTIONS }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: php-actions/composer@v6
+        with:
+          progress: yes
+          php_version: 7.4
+          version: 2
+      - uses: php-actions/phpunit@v3
+        with:
+          configuration: phpunit.xml.dist
+          php_version: 7.4
+          php_extensions: bcmath
+          memory_limit: 1024M
+          bootstrap: vendor/autoload.php
+
+    services:
+      neo4j:
+        image: neo4j:4.3
+        options: >-
+          --health-cmd "wget http://localhost:7474 || exit 1"
+        ports:
+          - 7687:7687
+          - 7474:7474
+        env:
+          NEO4J_AUTH: neo4j/test
+          NEO4JLABS_PLUGINS: '["apoc"]'
+
+      core1:
+        image: neo4j:4.3-enterprise
+        options: >-
+          --health-cmd "wget http://localhost:7475 || exit 1"
+        ports:
+          - 7688:7688
+          - 7475:7475
+        env:
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4JLABS_PLUGINS: '["apoc"]'
+          NEO4J_AUTH: neo4j/test
+          NEO4J_dbms_mode: CORE
+          NEO4J_causal__clustering_discovery__advertised__address: core1:5000
+          NEO4J_causal__clustering_transaction__advertised__address: core1:6000
+          NEO4J_causal__clustering_raft__advertised__address: core1:7000
+          NEO4J_causal__clustering_initial__discovery__members: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__listen__address: 0.0.0.0:5000
+          NEO4J_causal__clustering_transaction__listen__address: 0.0.0.0:6000
+          NEO4J_causal__clustering_raft__listen__address: 0.0.0.0:7000
+          NEO4J_dbms_connector_http_listen__address: 0.0.0.0:7475
+          NEO4J_dbms_connector_bolt_listen__address: 0.0.0.0:7688
+
+      core2:
+        image: neo4j:4.3-enterprise
+        options: >-
+          --health-cmd "wget http://localhost:7476 || exit 1"
+        ports:
+          - 7689:7689
+          - 7476:7476
+        env:
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4JLABS_PLUGINS: '["apoc"]'
+          NEO4J_AUTH: neo4j/test
+          NEO4J_dbms_mode: CORE
+          NEO4J_causal__clustering_discovery__advertised__address: core2:5000
+          NEO4J_causal__clustering_transaction__advertised__address: core2:6000
+          NEO4J_causal__clustering_raft__advertised__address: core2:7000
+          NEO4J_causal__clustering_initial__discovery__members: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__listen__address: 0.0.0.0:5000
+          NEO4J_causal__clustering_transaction__listen__address: 0.0.0.0:6000
+          NEO4J_causal__clustering_raft__listen__address: 0.0.0.0:7000
+          NEO4J_dbms_connector_http_listen__address: 0.0.0.0:7476
+          NEO4J_dbms_connector_bolt_listen__address: 0.0.0.0:7689
+
+      core3:
+        image: neo4j:4.3-enterprise
+        options: >-
+          --health-cmd "wget http://localhost:7477 || exit 1"
+        ports:
+          - 7690:7690
+          - 7477:7477
+        env:
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4JLABS_PLUGINS: '["apoc"]'
+          NEO4J_AUTH: neo4j/test
+          NEO4J_dbms_mode: CORE
+          NEO4J_causal__clustering_discovery__advertised__address: core3:5000
+          NEO4J_causal__clustering_transaction__advertised__address: core3:6000
+          NEO4J_causal__clustering_raft__advertised__address: core3:7000
+          NEO4J_causal__clustering_initial__discovery__members: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__listen__address: 0.0.0.0:5000
+          NEO4J_causal__clustering_transaction__listen__address: 0.0.0.0:6000
+          NEO4J_causal__clustering_raft__listen__address: 0.0.0.0:7000
+          NEO4J_dbms_connector_http_listen__address: 0.0.0.0:7477
+          NEO4J_dbms_connector_bolt_listen__address: 0.0.0.0:7690
+
+      readreplica1:
+        image: neo4j:4.3-enterprise
+        options: >-
+          --health-cmd "wget http://localhost:7478 || exit 1"
+        ports:
+          - 7691:7691
+          - 7478:7478
+        env:
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4JLABS_PLUGINS: '["apoc"]'
+          NEO4J_AUTH: neo4j/test
+          NEO4J_dbms_mode: READ_REPLICA
+          NEO4J_causal__clustering_discovery__advertised__address: readreplica1:5000
+          NEO4J_causal__clustering_transaction__advertised__address: readreplica1:6000
+          NEO4J_causal__clustering_raft__advertised__address: readreplica1:7000
+          NEO4J_causal__clustering_initial__discovery__members: core1:5000,core2:5000,core3:5000
+          NEO4J_causal__clustering_discovery__listen__address: 0.0.0.0:5000
+          NEO4J_causal__clustering_transaction__listen__address: 0.0.0.0:6000
+          NEO4J_causal__clustering_raft__listen__address: 0.0.0.0:7000
+          NEO4J_dbms_connector_http_listen__address: 0.0.0.0:7478
+          NEO4J_dbms_connector_bolt_listen__address: 0.0.0.0:7691

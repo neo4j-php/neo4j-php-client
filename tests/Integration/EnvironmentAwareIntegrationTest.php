@@ -27,43 +27,40 @@ use PHPUnit\Framework\TestCase;
  */
 abstract class EnvironmentAwareIntegrationTest extends TestCase
 {
-    /** @var ClientInterface<T> */
-    protected ClientInterface $client;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->client = $this->createClient();
-    }
-
-    /**
-     * @return FormatterInterface<T>
-     */
-    abstract protected function formatter(): FormatterInterface;
+    /** @var ClientInterface<mixed> */
+    protected static ClientInterface $client;
 
     /**
      * @return ClientInterface<T>
      */
-    protected function createClient(): ClientInterface
+    protected function getClient(): ClientInterface
     {
-        $connections = $this->getConnections();
+        return self::$client;
+    }
+
+    /**
+     * @psalm-suppress InternalMethod
+     */
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+        self::$client = self::createClient();
+    }
+
+    abstract protected static function formatter(): FormatterInterface;
+
+    protected static function createClient(): ClientInterface
+    {
+        $connections = self::buildConnections();
 
         $builder = ClientBuilder::create();
-        $aliases = [];
         foreach ($connections as $i => $connection) {
             $uri = Uri::create($connection);
             $alias = $uri->getScheme().'_'.$i;
-            $aliases[] = $alias;
             $builder = $builder->withDriver($alias, $connection);
         }
 
-        $client = $builder->withFormatter($this->formatter())->build();
-
-        foreach ($aliases as $alias) {
-            $client->run('MATCH (x) DETACH DELETE x', [], $alias);
-        }
-
-        return $client;
+        return $builder->withFormatter(static::formatter())->build();
     }
 
     /**
@@ -87,13 +84,21 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     /**
      * @return list<string>
      */
-    protected function getConnections(): array
+    protected static function buildConnections(): array
     {
         $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
-            return [];
+            return ['bolt://neo4j:test@neo4j', 'neo4j://neo4j:test@core1', 'http://neo4j:test@neo4j'];
         }
 
         return explode(',', $connections);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function getConnections(): array
+    {
+        return self::buildConnections();
     }
 }

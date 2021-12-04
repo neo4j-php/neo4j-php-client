@@ -13,23 +13,26 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use function bin2hex;
 use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
-use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Laudis\Neo4j\Types\CypherMap;
+use function random_bytes;
 
 /**
- * @extends EnvironmentAwareIntegrationTest<SummarizedResult<BasicResults>>
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  *
- * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ * @extends EnvironmentAwareIntegrationTest<SummarizedResult<CypherMap<OGMTypes>>>
  */
 final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTest
 {
-    protected function formatter(): FormatterInterface
+    protected static function formatter(): FormatterInterface
     {
-        return new SummarizedResultFormatter(new BasicFormatter());
+        return SummarizedResultFormatter::create();
     }
 
     /**
@@ -37,9 +40,11 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
      */
     public function testAcceptanceRead(string $alias): void
     {
-        $result = $this->client->run('RETURN 1 AS one', [], $alias);
+        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN 1 AS one');
+        }, $alias);
         self::assertInstanceOf(SummarizedResult::class, $result);
-        self::assertEquals(1, $result->getResult()->first()->get('one'));
+        self::assertEquals(1, $result->first()->get('one'));
     }
 
     /**
@@ -49,6 +54,9 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
      */
     public function testAcceptanceWrite(string $alias): void
     {
-        self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $this->client->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))], $alias)->getSummary()->getCounters());
+        $counters = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))]);
+        }, $alias)->getSummary()->getCounters();
+        self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $counters);
     }
 }

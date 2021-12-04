@@ -19,7 +19,8 @@ use IteratorAggregate;
 use function json_encode;
 use const JSON_THROW_ON_ERROR;
 use Laudis\Neo4j\Databags\Pair;
-use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Exception\RuntimeTypeException;
+use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherMap;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
@@ -141,14 +142,14 @@ final class CypherMapTest extends TestCase
 
     public function testFilterSelective(): void
     {
-        $filter = $this->map->filter(static fn (string $i, string $x) => !($i === 'B' || $x === 'z'));
+        $filter = $this->map->filter(static fn (string $x, string $i) => !($i === 'B' || $x === 'z'));
 
         self::assertEquals(new CypherMap(['A' => 'x']), $filter);
     }
 
     public function testMap(): void
     {
-        $filter = $this->map->map(static fn (string $i, string $x) => $i.':'.$x);
+        $filter = $this->map->map(static fn (string $x, string $i) => $i.':'.$x);
 
         self::assertEquals(new CypherMap(['A' => 'A:x', 'B' => 'B:y', 'C' => 'C:z']), $filter);
     }
@@ -387,17 +388,17 @@ final class CypherMapTest extends TestCase
 
     public function testValue(): void
     {
-        self::assertEquals(new CypherList(['x', 'y', 'z']), $this->map->values());
+        self::assertEquals(new ArrayList(['x', 'y', 'z']), $this->map->values());
     }
 
     public function testKeys(): void
     {
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $this->map->keys());
+        self::assertEquals(new ArrayList(['A', 'B', 'C']), $this->map->keys());
     }
 
     public function testPairs(): void
     {
-        $list = new CypherList([new Pair('A', 'x'), new Pair('B', 'y'), new Pair('C', 'z')]);
+        $list = new ArrayList([new Pair('A', 'x'), new Pair('B', 'y'), new Pair('C', 'z')]);
         self::assertEquals($list, $this->map->pairs());
     }
 
@@ -456,5 +457,31 @@ final class CypherMapTest extends TestCase
         self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
     }
 
-    //test sorted and ksorted
+    public function testCasts(): void
+    {
+        $map = new CypherMap(['a' => null]);
+
+        self::assertEquals('', $map->getAsString('a'));
+
+        $this->expectException(RuntimeTypeException::class);
+        $map->getAsCartesian3DPoint('a');
+    }
+
+    public function getMap(): void
+    {
+        $map = CypherMap::fromIterable(['a' => 'b', 'c' => 'd'])
+            ->map(static function (string $value, string $key) {
+                $tbr = new stdClass();
+
+                $tbr->key = $key;
+                $tbr->value = $value;
+
+                return $tbr;
+            })
+            ->map(static function (stdClass $class) {
+                return (string) $class->value;
+            });
+
+        self::assertEquals(CypherMap::fromIterable(['a' => 'b', 'c' => 'd']), $map);
+    }
 }

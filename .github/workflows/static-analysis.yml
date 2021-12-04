@@ -11,7 +11,7 @@ jobs:
         with:
           args: --dry-run
       - name: "PSalm"
-        uses: docker://vimeo/psalm-github-actions:4.10.0
+        uses: docker://vimeo/psalm-github-actions:4.13.1
         with:
           composer_require_dev: true
           composer_ignore_platform_reqs: false

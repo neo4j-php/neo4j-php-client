@@ -13,12 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use function compact;
 use DateInterval;
 use Exception;
 use function json_encode;
 use JsonException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
@@ -44,7 +46,7 @@ use function str_starts_with;
  */
 final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    protected function formatter(): FormatterInterface
+    protected static function formatter(): FormatterInterface
     {
         /** @psalm-suppress InvalidReturnStatement */
         return OGMFormatter::create();
@@ -55,7 +57,9 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testNull(string $alias): void
     {
-        $results = $this->client->run('RETURN null as x', [], $alias);
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN null as x');
+        }, $alias);
 
         self::assertNull($results->first()->get('x'));
     }
@@ -70,7 +74,9 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testList(string $alias): void
     {
-        $results = $this->client->run('RETURN range(5, 15) as list, range(16, 35) as list2', [], $alias);
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN range(5, 15) as list, range(16, 35) as list2');
+        }, $alias);
 
         $list = $results->first()->get('list');
         $list2 = $results->first()->get('list2');
@@ -90,7 +96,9 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testMap(string $alias): void
     {
-        $map = $this->client->run('RETURN {a: "b", c: "d"} as map', [], $alias)->first()->get('map');
+        $map = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN {a: "b", c: "d"} as map')->first()->get('map');
+        }, $alias);
         self::assertInstanceOf(CypherMap::class, $map);
         self::assertEquals(['a' => 'b', 'c' => 'd'], $map->toArray());
         self::assertEquals(json_encode(['a' => 'b', 'c' => 'd'], JSON_THROW_ON_ERROR), json_encode($map, JSON_THROW_ON_ERROR));
@@ -101,7 +109,9 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testBoolean(string $alias): void
     {
-        $results = $this->client->run('RETURN true as bool1, false as bool2', [], $alias);
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN true as bool1, false as bool2');
+        }, $alias);
 
         self::assertEquals(1, $results->count());
         self::assertIsBool($results->first()->get('bool1'));
@@ -113,11 +123,14 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testInteger(string $alias): void
     {
-        $results = $this->client->run(<<<CYPHER
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run(<<<CYPHER
 UNWIND [{num: 1}, {num: 2}, {num: 3}] AS x
 RETURN x.num
 ORDER BY x.num ASC
-CYPHER, [], $alias);
+CYPHER
+            );
+        }, $alias);
 
         self::assertEquals(3, $results->count());
         self::assertEquals(1, $results[0]['x.num']);
@@ -130,7 +143,9 @@ CYPHER, [], $alias);
      */
     public function testFloat(string $alias): void
     {
-        $results = $this->client->run('RETURN 0.1 AS float', [], $alias);
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN 0.1 AS float');
+        }, $alias);
 
         self::assertIsFloat($results->first()->get('float'));
     }
@@ -140,7 +155,9 @@ CYPHER, [], $alias);
      */
     public function testString(string $alias): void
     {
-        $results = $this->client->run('RETURN "abc" AS string', [], $alias);
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN "abc" AS string');
+        }, $alias);
 
         self::assertIsString($results->first()->get('string'));
     }
@@ -152,10 +169,12 @@ CYPHER, [], $alias);
      */
     public function testDate(string $alias): void
     {
-        $query = $this->articlesQuery();
-        $query .= 'RETURN article.datePublished as published_at';
+        $results = $this->getClient()->transaction(function (TransactionInterface $tsx) {
+            $query = $this->articlesQuery();
+            $query .= 'RETURN article.datePublished as published_at';
 
-        $results = $this->client->run($query, [], $alias);
+            return $tsx->run($query);
+        }, $alias);
 
         self::assertEquals(3, $results->count());
 
@@ -185,12 +204,14 @@ CYPHER, [], $alias);
      */
     public function testTime(string $alias): void
     {
-        $results = $this->client->run('RETURN time("12:00:00.000000000") AS time', [], $alias);
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN time("12:00:00.000000000") AS time');
+        }, $alias);
 
         $time = $results->first()->get('time');
         self::assertInstanceOf(Time::class, $time);
-        self::assertEquals((float) 12 * 60 * 60, $time->getSeconds());
-        self::assertEquals((float) 12 * 60 * 60, $time->seconds);
+        self::assertEquals(12.0 * 60 * 60, $time->getSeconds());
+        self::assertEquals(12.0 * 60 * 60, $time->seconds);
     }
 
     /**
@@ -198,14 +219,16 @@ CYPHER, [], $alias);
      */
     public function testLocalTime(string $alias): void
     {
-        $results = $this->client->run('RETURN localtime("12") AS time', [], $alias);
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN localtime("12") AS time');
+        }, $alias);
 
         /** @var LocalTime $time */
         $time = $results->first()->get('time');
         self::assertInstanceOf(LocalTime::class, $time);
         self::assertEquals(43200000000000, $time->getNanoseconds());
 
-        $results = $this->client->run('RETURN localtime("09:23:42.000") AS time', [], $alias);
+        $results = $this->getClient()->run('RETURN localtime("09:23:42.000") AS time', [], $alias);
 
         /** @var LocalTime $time */
         $time = $results->first()->get('time');
@@ -222,10 +245,12 @@ CYPHER, [], $alias);
      */
     public function testDateTime(string $alias): void
     {
-        $query = $this->articlesQuery();
-        $query .= 'RETURN article.created as created_at';
+        $results = $this->getClient()->transaction(function (TransactionInterface $tsx) {
+            $query = $this->articlesQuery();
+            $query .= 'RETURN article.created as created_at';
 
-        $results = $this->client->run($query, [], $alias);
+            return $tsx->run($query);
+        }, $alias);
 
         self::assertEquals(3, $results->count());
 
@@ -254,7 +279,9 @@ CYPHER, [], $alias);
      */
     public function testLocalDateTime(string $alias): void
     {
-        $result = $this->client->run('RETURN localdatetime() as local', [], $alias)->first()->get('local');
+        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN localdatetime() as local')->first()->get('local');
+        }, $alias);
 
         self::assertInstanceOf(LocalDateTime::class, $result);
         $date = $result->toDateTime();
@@ -269,7 +296,8 @@ CYPHER, [], $alias);
      */
     public function testDuration(string $alias): void
     {
-        $results = $this->client->run(<<<CYPHER
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run(<<<CYPHER
 UNWIND [
   duration({days: 14, hours:16, minutes: 12}),
   duration({months: 5, days: 1.5}),
@@ -279,7 +307,9 @@ UNWIND [
   duration({minutes: 1.5, seconds: 1, nanoseconds: 123456789})
 ] AS aDuration
 RETURN aDuration
-CYPHER, [], $alias);
+CYPHER
+            );
+        }, $alias);
 
         self::assertEquals(6, $results->count());
         self::assertEquals(new Duration(0, 14, 58320, 0), $results[0]['aDuration']);
@@ -311,7 +341,9 @@ CYPHER, [], $alias);
      */
     public function testPoint(string $alias): void
     {
-        $result = $this->client->run('RETURN point({x: 3, y: 4}) AS point', [], $alias);
+        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run('RETURN point({x: 3, y: 4}) AS point');
+        }, $alias);
         self::assertInstanceOf(CypherList::class, $result);
         $row = $result->first();
         self::assertInstanceOf(CypherMap::class, $row);
@@ -351,10 +383,12 @@ CYPHER, [], $alias);
         $email = 'a@b.c';
         $type = 'pepperoni';
 
-        $results = $this->client->run(
-            'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
-            compact('email', 'uuid', 'type'), $alias
-        );
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) use ($email, $uuid, $type) {
+            return $tsx->run(
+                'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
+                compact('email', 'uuid', 'type')
+            );
+        }, $alias);
 
         self::assertEquals(1, $results->count());
 
@@ -397,11 +431,11 @@ CYPHER, [], $alias);
      */
     public function testRelationship(string $alias): void
     {
-        $this->client->run('MATCH (n) DETACH DELETE n', [], $alias);
-        $result = $this->client->run(<<<CYPHER
-MERGE (x:X {x: 1}) - [xy:XY {x: 1, y: 1}] -> (y:Y {y: 1})
-RETURN xy
-CYPHER, [], $alias)->first()->get('xy');
+        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            $tsx->run('MATCH (n) DETACH DELETE n');
+
+            return $tsx->run('MERGE (x:X {x: 1}) - [xy:XY {x: 1, y: 1}] -> (y:Y {y: 1}) RETURN xy')->first()->get('xy');
+        }, $alias);
 
         self::assertInstanceOf(Relationship::class, $result);
         self::assertEquals('XY', $result->getType());
@@ -425,13 +459,14 @@ CYPHER, [], $alias)->first()->get('xy');
      */
     public function testPath(string $alias): void
     {
-        $results = $this->client->run(<<<'CYPHER'
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run(<<<'CYPHER'
 MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
 WITH b
 MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
 RETURN x, y, z
-CYPHER
-            , ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
+        }, $alias);
 
         self::assertEquals(1, $results->count());
     }
@@ -441,12 +476,12 @@ CYPHER
      */
     public function testPath2(string $alias): void
     {
-        $statement = <<<'CYPHER'
+        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run(<<<'CYPHER'
 CREATE path = ((a:Node {x:$x}) - [b:HasNode {attribute: $xy}] -> (c:Node {y:$y}) - [d:HasNode {attribute: $yz}] -> (e:Node {z:$z}))
 RETURN path
-CYPHER;
-
-        $results = $this->client->run($statement, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z'], $alias);
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
+        }, $alias);
 
         self::assertEquals(1, $results->count());
         $path = $results->first()->get('path');
@@ -468,16 +503,19 @@ CYPHER;
      */
     public function testPathMultiple(string $alias): void
     {
-        $this->client->run('CREATE (:Node) - [:HasNode] -> (:Node)', [], $alias);
-        $this->client->run('CREATE (:Node) - [:HasNode] -> (:Node)', [], $alias);
+        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            $tsx->run('MATCH (x) DETACH DELETE (x)');
+            $tsx->run('CREATE (:Node) - [:HasNode] -> (:Node)');
+            $tsx->run('CREATE (:Node) - [:HasNode] -> (:Node)');
 
-        $result = $this->client->run('RETURN (:Node) - [:HasNode] -> (:Node) as paths', [], $alias);
+            return $tsx->run('RETURN (:Node) - [:HasNode] -> (:Node) as paths');
+        }, $alias);
 
         self::assertCount(1, $result);
         $paths = $result->first()->get('paths');
 
         if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not correctly supported path expressions in return statements');
+            self::markTestSkipped('Http does not correctly support path expressions in return statements');
         }
         self::assertInstanceOf(CypherList::class, $paths);
         self::assertCount(2, $paths);
@@ -488,25 +526,17 @@ CYPHER;
      */
     public function testPropertyTypes(string $alias): void
     {
-        $point = 'point({x: 3, y: 4})';
-        $list = 'range(5, 15)';
-        $date = 'date("2019-06-01")';
-        $dateTime = 'datetime("2019-06-01T18:40:32.142+0100")';
-        $duration = 'duration({days: 14, hours:16, minutes: 12})';
-        $localDateTime = 'localdatetime()';
-        $localTime = 'localtime("12")';
-        $time = 'time("12:00:00.000000000")';
-
-        $result = $this->client->run(<<<CYPHER
+        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+            return $tsx->run(<<<CYPHER
 WITH
-    $point AS p,
-    $list AS l,
-    $date AS d,
-    $dateTime AS dt,
-    $duration AS du,
-    $localDateTime AS ldt,
-    $localTime AS lt,
-    $time AS t
+    point({x: 3, y: 4}) AS p,
+    range(5, 15) AS l,
+    date("2019-06-01") AS d,
+    datetime("2019-06-01T18:40:32.142+0100") AS dt,
+    duration({days: 14, hours:16, minutes: 12}) AS du,
+    localdatetime() AS ldt,
+    localtime("12") AS lt,
+    time("12:00:00.000000000") AS t
 MERGE (a:AllInOne {
     thePoint: p,
     theList: l,
@@ -519,9 +549,9 @@ MERGE (a:AllInOne {
 })
 
 RETURN a
-CYPHER,
-            compact('point', 'list', 'date', 'dateTime', 'duration', 'localDateTime', 'localTime', 'time'), $alias
-        );
+CYPHER
+            );
+        }, $alias);
 
         $node = $result->first()->get('a');
 
