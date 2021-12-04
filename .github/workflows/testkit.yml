@@ -32,6 +32,12 @@ jobs:
       - name: Checkout driver
         uses: actions/checkout@v2
 
+      - uses: php-actions/composer@v6
+        with:
+          progress: yes
+          php_version: ${{ matrix.php-version }}
+          version: 2
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
