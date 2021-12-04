@@ -468,6 +468,7 @@ CYPHER;
      */
     public function testPathMultiple(string $alias): void
     {
+        $this->client->run('MATCH (x) DETACH DELETE (x)', [], $alias);
         $this->client->run('CREATE (:Node) - [:HasNode] -> (:Node)', [], $alias);
         $this->client->run('CREATE (:Node) - [:HasNode] -> (:Node)', [], $alias);
 

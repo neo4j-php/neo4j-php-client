@@ -30,10 +30,23 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     /** @var ClientInterface<T> */
     protected ClientInterface $client;
 
+    /**
+     * @psalm-suppress InternalMethod
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->client = $this->createClient();
+//        if ($this->usesDataProvider()) {
+//            $data = $this->getProvidedData();
+//            /** @var string|null */
+//            $alias = $data[0] ?? null;
+//            $this->client->run('MATCH (x) DETACH DELETE (x)', [], $alias);
+//        } else {
+//            foreach ($this->connectionAliases() as $alias) {
+//                $this->client->run('MATCH (x) DETACH DELETE (x)', [], $alias[0]);
+//            }
+//        }
     }
 
     /**
@@ -49,21 +62,13 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
         $connections = $this->getConnections();
 
         $builder = ClientBuilder::create();
-        $aliases = [];
         foreach ($connections as $i => $connection) {
             $uri = Uri::create($connection);
             $alias = $uri->getScheme().'_'.$i;
-            $aliases[] = $alias;
             $builder = $builder->withDriver($alias, $connection);
         }
 
-        $client = $builder->withFormatter($this->formatter())->build();
-
-        foreach ($aliases as $alias) {
-            $client->run('MATCH (x) DETACH DELETE x', [], $alias);
-        }
-
-        return $client;
+        return $builder->withFormatter($this->formatter())->build();
     }
 
     /**
