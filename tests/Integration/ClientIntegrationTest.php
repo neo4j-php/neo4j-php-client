@@ -19,21 +19,21 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  *
- * @extends EnvironmentAwareIntegrationTest<SummarizedResult<CypherMap<OGMTypes>>>
+ * @extends EnvironmentAwareIntegrationTest<CypherList<CypherMap<OGMTypes>>>
  */
 final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 {
     protected static function formatter(): FormatterInterface
     {
-        return SummarizedResultFormatter::create();
+        return OGMFormatter::create();
     }
 
     public function testEqualEffect(): void
@@ -52,8 +52,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
                 $x = $this->getClient()->runStatement($statement, $prev);
                 $y = $this->getClient()->runStatement($statement, $current[0]);
 
-                self::assertEquals($x, $y);
-                self::assertEquals($x->toArray(), $y->toArray());
+                self::assertEquals($x->first()->getAsNode('u')->getProperties(), $y->first()->getAsNode('u')->getProperties());
             }
             $prev = $current[0];
         }
@@ -114,11 +113,11 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'], $alias);
         self::assertEquals(1, $response->count());
         $map = $response->first();
         self::assertEquals(5, $map->count());
-        self::assertEquals(['test' => 'a'], $map->get('x'));
-        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals(['test' => 'a'], $map->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals(['test' => 'b'], $map->getAsNode('y')->getProperties()->toArray());
         self::assertEquals('a', $map->get('test'));
-        self::assertEquals(['c' => 'd'], $map->get('map'));
-        self::assertEquals([1, 2, 3], $map->get('list'));
+        self::assertEquals(new CypherMap(['c' => 'd']), $map->get('map'));
+        self::assertEquals(new CypherList([1, 2, 3]), $map->get('list'));
     }
 
     /**
@@ -154,11 +153,11 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']),
         self::assertEquals(1, $response->count());
         $map = $response->first();
         self::assertEquals(5, $map->count());
-        self::assertEquals(['test' => 'a'], $map->get('x'));
-        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals(['test' => 'a'], $map->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals(['test' => 'b'], $map->getAsNode('y')->getProperties()->toArray());
         self::assertEquals('a', $map->get('test'));
-        self::assertEquals(['c' => 'd'], $map->get('map'));
-        self::assertEquals([1, 2, 3], $map->get('list'));
+        self::assertEquals(new CypherMap(['c' => 'd']), $map->get('map'));
+        self::assertEquals(new CypherList([1, 2, 3]), $map->get('list'));
     }
 
     /**

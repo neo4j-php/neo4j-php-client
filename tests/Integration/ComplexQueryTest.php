@@ -27,7 +27,9 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
+use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Node;
 use function str_starts_with;
 
 /**
@@ -76,7 +78,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asList([])], $alias);
 RETURN $listOrMap AS x
 CYPHER, ['listOrMap' => ParameterHelper::asList([1, 2, 3])], $alias);
         self::assertEquals(1, $result->count());
-        self::assertEquals([1, 2, 3], $result->first()->get('x'));
+        self::assertEquals(new CypherList([1, 2, 3]), $result->first()->get('x'));
     }
 
     /**
@@ -102,7 +104,7 @@ CYPHER, ['listOrMap' => ParameterHelper::asList([1, 2, 3])], $alias);
 RETURN $listOrMap AS x
 CYPHER, ['listOrMap' => ParameterHelper::asMap(['a' => 'b', 'c' => 'd'])], $alias);
         self::assertEquals(1, $result->count());
-        self::assertEquals(['a' => 'b', 'c' => 'd'], $result->first()->get('x'));
+        self::assertEquals(new CypherMap(['a' => 'b', 'c' => 'd']), $result->first()->get('x'));
     }
 
     /**
@@ -164,7 +166,7 @@ RETURN x
 CYPHER
             , ['x' => 'x'], $alias)->first();
 
-        self::assertEquals(['x' => 'x'], $result->get('x'));
+        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
     }
 
     /**
@@ -172,6 +174,10 @@ CYPHER
      */
     public function testPath(string $alias): void
     {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http cannot detected nested attributes');
+        }
+
         $results = $this->getClient()->run(<<<'CYPHER'
 MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
 WITH b
@@ -183,9 +189,20 @@ CYPHER
         self::assertEquals(1, $results->count());
         $result = $results->first();
         self::assertEquals(3, $result->count());
-        self::assertEquals(['x' => 'x'], $result->get('x'));
-        self::assertEquals([['attribute' => 'xy'], ['attribute' => 'yz']], $result->get('y'));
-        self::assertEquals(['z' => 'z'], $result->get('z'));
+        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals(
+            [['attribute' => 'xy'], ['attribute' => 'yz']],
+            /** @psalm-suppress MissingClosureReturnType */
+            $result->getAsCypherList('y')->map(static function ($r) {
+                /**
+                 * @psalm-suppress MixedMethodCall
+                 *
+                 * @var array <string, string>
+                 */
+                return $r->getProperties()->toArray();
+            })->toArray()
+        );
+        self::assertEquals(['z' => 'z'], $result->getAsNode('z')->getProperties()->toArray());
     }
 
     /**
@@ -202,8 +219,8 @@ CYPHER
         $result = $results->first();
         self::assertEquals(3, $result->count());
         self::assertNull($result->get('x'));
-        self::assertEquals([1, 2, 3], $result->get('y'));
-        self::assertEquals(['x' => 'x', 'y' => 'y', 'z' => 'z'], $result->get('z'));
+        self::assertEquals([1, 2, 3], $result->getAsMap('y')->toArray());
+        self::assertEquals(['x' => 'x', 'y' => 'y', 'z' => 'z'], $result->getAsMap('z')->toArray());
     }
 
     /**
@@ -223,8 +240,8 @@ CYPHER
         self::assertEquals(1, $results->count());
         $result = $results->first();
         self::assertEquals(2, $result->count());
-        self::assertEquals(['x' => 'x'], $result->get('x'));
-        self::assertEquals(['list' => [1, 2, 3]], $result->get('y'));
+        self::assertEquals(new CypherMap(['x' => 'x']), $result->getAsNode('x')->getProperties());
+        self::assertEquals(new CypherMap(['list' => new CypherList([1, 2, 3])]), $result->getAsNode('y')->getProperties());
     }
 
     /**
@@ -250,11 +267,12 @@ CYPHER
         self::assertEquals(1, $result->count());
         self::assertEquals([
             ['x' => 'x'],
-            [],
             ['x' => 'y'],
-            [],
             ['x' => 'z'],
-        ], $result->get('p'));
+        ], $result->getAsPath('p')->getNodes()->map(static function (Node $x) {
+            /** @var array<string, string> */
+            return $x->getProperties()->toArray();
+        })->toArray());
     }
 
     /**
@@ -305,10 +323,11 @@ CYPHER);
      */
     public function testLongQueryFunction(string $alias): void
     {
-        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
-            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
-        }, $alias, TransactionConfiguration::default()->withTimeout(100000));
-        self::assertTrue(true);
+        self::markTestSkipped('Async needs to be implemented before timeout is supported');
+//        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
+//            $tsx->run('CALL apoc.util.sleep(10000)');
+//        }, $alias, TransactionConfiguration::default()->withTimeout(100000));
+//        self::assertTrue(true);
     }
 
     /**
@@ -316,14 +335,14 @@ CYPHER);
      */
     public function testLongQueryFunctionNegative(string $alias): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
-        }
-
-        $this->expectException(ConnectException::class);
-        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
-            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
-        }, $alias, TransactionConfiguration::default()->withTimeout(1));
+        self::markTestSkipped('Async needs to be implemented before timeout is supported');
+//        if (str_starts_with($alias, 'http')) {
+//            self::markTestSkipped('Transaction timeout only work when async mode is implemented');
+//        }
+//        $this->expectException(ConnectException::class);
+//        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
+//            $tsx->run('CALL apoc.util.sleep(10000)');
+//        }, $alias, TransactionConfiguration::default()->withTimeout(1));
     }
 
     /**
@@ -331,9 +350,10 @@ CYPHER);
      */
     public function testLongQueryUnmanaged(string $alias): void
     {
-        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
-        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
-        self::assertTrue(true);
+        self::markTestSkipped('Async needs to be implemented before timeout is supported');
+//        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
+//        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+//        self::assertTrue(true);
     }
 
     /**
@@ -341,9 +361,10 @@ CYPHER);
      */
     public function testLongQueryAuto(string $alias): void
     {
-        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
-        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
-        self::assertTrue(true);
+        self::markTestSkipped('Async needs to be implemented before timeout is supported');
+//        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
+//        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+//        self::assertTrue(true);
     }
 
     /**
@@ -351,12 +372,13 @@ CYPHER);
      */
     public function testLongQueryUnmanagedNegative(string $alias): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
-        }
-
-        $this->expectException(ConnectException::class);
-        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
-        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        self::markTestSkipped('Async needs to be implemented before timeout is supported');
+//        if (str_starts_with($alias, 'http')) {
+//            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
+//        }
+//
+//        $this->expectException(ConnectException::class);
+//        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+//        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
     }
 }
