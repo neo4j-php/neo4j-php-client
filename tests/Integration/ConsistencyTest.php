@@ -14,8 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\BasicFormatter;
+use function str_starts_with;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
@@ -35,12 +37,15 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
      */
     public function testConsistency(string $alias): void
     {
-        $this->getClient()->run('MATCH (x) DETACH DELETE x', [], $alias);
-        $res = $this->getClient()->run('MERGE (n:zzz {name: "bbbb"}) RETURN n', [], $alias);
-        self::assertEquals(1, $res->count());
-        self::assertEquals(['name' => 'bbbb'], $res->first()->get('n'));
+        $res = $this->getClient()->transaction(function (TSX $tsx) {
+            $tsx->run('MATCH (x) DETACH DELETE x', []);
+            $res = $tsx->run('MERGE (n:zzz {name: "bbbb"}) RETURN n');
+            self::assertEquals(1, $res->count());
+            self::assertEquals(['name' => 'bbbb'], $res->first()->get('n'));
 
-        $res = $this->getClient()->run('MATCH (n:zzz {name: $name}) RETURN n', ['name' => 'bbbb'], $alias);
+            return $tsx->run('MATCH (n:zzz {name: $name}) RETURN n', ['name' => 'bbbb']);
+        }, $alias);
+
         self::assertEquals(1, $res->count());
         self::assertEquals(['name' => 'bbbb'], $res->first()->get('n'));
     }
@@ -50,6 +55,10 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
      */
     public function testConsistencyTransaction(string $alias): void
     {
+        if (str_starts_with($alias, 'neo4j')) {
+            self::markTestSkipped('Cannot guarantee successful test in cluster');
+        }
+
         $this->getClient()->run('MATCH (x) DETACH DELETE x', [], $alias);
         $tsx = $this->getClient()->beginTransaction([
             Statement::create('CREATE (n:aaa) SET n.name="aaa" return n'),

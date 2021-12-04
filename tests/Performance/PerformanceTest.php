@@ -13,11 +13,17 @@ namespace Laudis\Neo4j\Tests\Performance;
 
 use function array_pop;
 use function base64_encode;
+use Bolt\error\ConnectException;
 use function count;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Tests\Integration\EnvironmentAwareIntegrationTest;
 use function random_bytes;
+use RuntimeException;
+use function sleep;
+use function str_starts_with;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
@@ -36,51 +42,40 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
      */
     public function testBigRandomData(string $alias): void
     {
-        $tsx = $this->getClient()->getDriver($alias)
-            ->createSession()
-            ->beginTransaction();
+        $this->expectException(RuntimeException::class);
+        $this->expectErrorMessage('Rollback please');
 
-        $params = [
-            'id' => 'xyz',
-        ];
+        $this->getClient()->transaction(static function (TSX $tsx) {
+            $params = [
+                'id' => 'xyz',
+            ];
 
-        for ($i = 0; $i < 100000; ++$i) {
-            $params[base64_encode(random_bytes(32))] = base64_encode(random_bytes(128));
-        }
+            for ($i = 0; $i < 100000; ++$i) {
+                $params[base64_encode(random_bytes(32))] = base64_encode(random_bytes(128));
+            }
 
-        $tsx->run('MATCH (a :label {id:$id}) RETURN a', $params);
+            $tsx->run('MATCH (a :label {id:$id}) RETURN a', $params);
 
-        $tsx->rollback();
-
-        self::assertTrue(true);
+            throw new RuntimeException('Rollback please');
+        }, $alias);
     }
 
+    /**
+     * @throws ConnectException
+     */
     public function testMultipleTransactions(): void
     {
         $aliases = $this->connectionAliases();
         $tsxs = [];
         for ($i = 0; $i < 1000; ++$i) {
             $alias = $aliases[$i % count($aliases)][0];
-            if ($i % 2 === 0) {
-                $tsx = $this->getClient()->beginTransaction(null, $alias);
-                $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
-                $tsxs[] = $tsx;
-            } else {
-                $x = $this->getClient()->run('RETURN 1 AS x', [], $alias)->first()->get('x');
-            }
 
-            self::assertEquals(1, $x);
-            if ($i % 200 === 49) {
-                self::assertEquals(1, $x);
-                for ($j = 0; $j < 19; ++$j) {
-                    $tsx = array_pop($tsxs);
-                    $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
+            $tsxs = $this->addTransactionOrRun($i, $alias, $tsxs);
 
-                    self::assertEquals(1, $x);
-
-                    if ($j % 2 === 0) {
-                        $tsx->commit();
-                    }
+            if (count($tsxs) >= 50) {
+                shuffle($tsxs);
+                for ($j = 0; $j < 25; ++$j) {
+                    $tsxs = $this->testAndDestructTransaction($tsxs, $j);
                 }
             }
         }
@@ -91,7 +86,11 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
      */
     public function testMultipleTransactionsCorrectness(string $alias): void
     {
-        $this->getClient()->run('MATCH (x) DETACH DELETE (x)', [], $alias);
+        if (str_starts_with($alias, 'neo4j')) {
+            self::markTestSkipped('Cannot guarantee successful test in cluster');
+        }
+
+        $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run('MATCH (x) DETACH DELETE (x)'), $alias);
 
         for ($i = 0; $i < 2; ++$i) {
             $tsxs = [];
@@ -113,5 +112,69 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
 
             self::assertEquals(($i + 1) * 100, $this->getClient()->run('MATCH (x) RETURN count(x) AS x', [], $alias)->first()->get('x'));
         }
+    }
+
+    /**
+     * @param list<UnmanagedTransactionInterface<BasicResults>> $tsxs
+     *
+     * @throws ConnectException
+     *
+     * @return list<UnmanagedTransactionInterface<BasicResults>>
+     */
+    private function addTransactionOrRun(int $i, string $alias, array $tsxs, int $retriesLeft = 10): array
+    {
+        try {
+            if ($i % 2 === 0) {
+                $tsx = $this->getClient()->beginTransaction(null, $alias);
+                $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
+                $tsxs[] = $tsx;
+            } else {
+                $x = $this->getClient()->run('RETURN 1 AS x', [], $alias)->first()->get('x');
+            }
+            self::assertEquals(1, $x);
+        } catch (ConnectException $e) {
+            --$retriesLeft;
+            if ($retriesLeft === 0) {
+                throw $e;
+            }
+
+            sleep(5);
+
+            return $this->addTransactionOrRun($i, $alias, $tsxs, $retriesLeft);
+        }
+
+        return $tsxs;
+    }
+
+    /**
+     * @param list<UnmanagedTransactionInterface<BasicResults>> $tsxs
+     *
+     * @throws ConnectException
+     *
+     * @return list<UnmanagedTransactionInterface<BasicResults>>
+     */
+    private function testAndDestructTransaction(array $tsxs, int $j, int $retriesLeft = 10): array
+    {
+        $tsx = array_pop($tsxs);
+        try {
+            $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
+
+            self::assertEquals(1, $x);
+
+            if ($j % 2 === 0) {
+                $tsx->commit();
+            }
+        } catch (ConnectException $e) {
+            --$retriesLeft;
+            if ($retriesLeft === 0) {
+                throw $e;
+            }
+
+            sleep(5);
+
+            return $this->testAndDestructTransaction($tsxs, $j, $retriesLeft);
+        }
+
+        return $tsxs;
     }
 }
