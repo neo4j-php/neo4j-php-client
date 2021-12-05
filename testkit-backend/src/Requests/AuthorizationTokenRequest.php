@@ -25,14 +25,14 @@ final class AuthorizationTokenRequest
         string $scheme,
         string $principal,
         string $credentials,
-        string $realm,
-        string $ticket
+        string $realm = null,
+        string $ticket = null
     ) {
         $this->scheme = $scheme;
         $this->principal = $principal;
         $this->credentials = $credentials;
-        $this->realm = $realm;
-        $this->ticket = $ticket;
+        $this->realm = $realm ?? '';
+        $this->ticket = $ticket ?? '';
     }
 
     public function getScheme(): string
