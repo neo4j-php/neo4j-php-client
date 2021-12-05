@@ -43,9 +43,6 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
 
-      - name: Setup backend
-        run: php testkit-backend/index.php &
-
       - name: Checkout TestKit (testing tool)
         uses: actions/checkout@v2
         with:
@@ -77,5 +74,7 @@ jobs:
           TEST_NEO4J_PASS: test
           TEST_DRIVER_NAME: php
         run: |
+          php testkit-backend/index.php &
           cd testkit
+          sleep 2
           python3 -m unittest -v "tests.neo4j.test_authentication.TestAuthenticationBasic"
