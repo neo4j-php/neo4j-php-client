@@ -13,11 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Laudis\Neo4j\Bolt\BoltConnectionPool;
+use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\InvalidTransactionStateException;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
+use ReflectionClass;
+use function str_starts_with;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
@@ -297,5 +301,39 @@ CYPHER
             $exception = true;
         }
         self::assertTrue($exception);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     * @noinspection PhpUnusedLocalVariableInspection
+     * @psalm-suppress UnusedVariable
+     */
+    public function testCorrectConnectionReuse(string $alias): void
+    {
+        $driver = $this->getClient()->getDriver($alias);
+        if (!$driver instanceof BoltDriver) {
+            self::markTestSkipped('Can only white box test bolt driver');
+        }
+
+        $poolReflection = new ReflectionClass(BoltConnectionPool::class);
+        $poolReflection->setStaticPropertyValue('connectionCache', []);
+
+        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+        $a = $this->getClient()->beginTransaction([], $alias);
+        $b = $this->getClient()->beginTransaction([], $alias);
+        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+
+        $poolReflection = new ReflectionClass(BoltConnectionPool::class);
+        /** @var array $cache */
+        $cache = $poolReflection->getStaticPropertyValue('connectionCache');
+
+        $key = array_key_first($cache);
+        self::assertIsString($key);
+        self::assertArrayHasKey($key, $cache);
+        /** @psalm-suppress MixedArgument */
+        self::assertCount(3, $cache[$key]);
     }
 }

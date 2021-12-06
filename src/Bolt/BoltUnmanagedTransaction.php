@@ -163,4 +163,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         return $this->connection->getImplementation();
     }
+
+    public function __destruct()
+    {
+        $this->connection->close();
+    }
 }
