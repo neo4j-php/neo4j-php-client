@@ -105,7 +105,6 @@ CYPHER
             static function () use ($socket, $authenticate, $connectingTo, $userAgent, $originalBolt) {
                 $bolt = $originalBolt->get();
                 if ($bolt === null) {
-                    $socket->connect();
                     $bolt = new Bolt($socket);
                     $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
                 }
