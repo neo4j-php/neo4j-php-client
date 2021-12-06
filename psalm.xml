@@ -12,7 +12,8 @@
 >
     <projectFiles>
         <directory name="src"/>
-        <directory ignoreTypeStats="true" name="tests"/>
+        <directory name="tests"/>
+        <directory name="testkit-backend"/>
         <ignoreFiles>
             <directory name="vendor"/>
         </ignoreFiles>
@@ -52,11 +53,17 @@
                 <directory name="tests"/>
             </errorLevel>
         </MissingConstructor>
+        <UncaughtThrowInGlobalScope>
+            <errorLevel type="suppress">
+                <file name="testkit-backend/index.php"/>
+            </errorLevel>
+        </UncaughtThrowInGlobalScope>
     </issueHandlers>
     <stubs>
         <file name="./vendor/vimeo/psalm/stubs/ext-ds.phpstub"/>
     </stubs>
     <plugins>
         <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
+        <pluginClass class="Lctrs\PsalmPsrContainerPlugin\Plugin"/>
     </plugins>
 </psalm>

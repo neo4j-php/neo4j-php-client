@@ -140,15 +140,7 @@ final class Client implements ClientInterface
      */
     private function decideAlias(?string $alias): string
     {
-        if ($alias !== null) {
-            return $alias;
-        }
-
-        if ($this->default !== null) {
-            return $this->default;
-        }
-
-        return array_key_first($this->drivers);
+        return $alias ?? $this->default ?? array_key_first($this->drivers);
     }
 
     /**

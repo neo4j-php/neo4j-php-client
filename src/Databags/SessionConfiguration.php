@@ -138,6 +138,7 @@ final class SessionConfiguration
     {
         $accessMode = is_callable($this->accessMode) ? call_user_func($this->accessMode) : $this->accessMode;
 
+        /** @psalm-suppress ImpureMethodCall */
         return $accessMode ?? AccessMode::WRITE();
     }
 

@@ -129,7 +129,7 @@ final class BasicFormatter implements FormatterInterface
 
     private function mapPath(Path $path): array
     {
-        $rels = $path->rels();
+        $relationships = $path->rels();
         $nodes = $path->nodes();
         $tbr = [];
         /**
@@ -138,9 +138,9 @@ final class BasicFormatter implements FormatterInterface
         foreach ($nodes as $i => $node) {
             /** @var mixed */
             $tbr[] = $node;
-            if (isset($rels[$i])) {
+            if (isset($relationships[$i])) {
                 /** @var mixed */
-                $tbr[] = $rels[$i];
+                $tbr[] = $relationships[$i];
             }
         }
 

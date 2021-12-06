@@ -216,7 +216,7 @@ final class BoltOGMTranslator
      */
     private function mapArray(array $value)
     {
-        if (isset($value[0])) {
+        if (array_key_exists(0, $value)) {
             /** @var array<OGMTypes> $vector */
             $vector = [];
             /** @var mixed $x */

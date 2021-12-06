@@ -69,7 +69,7 @@ final class ParameterHelper
      */
     public static function asParameter($value)
     {
-        return self::emptyDictionaryToStdClass($value) ??
+        return self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
             self::filledIterableToArray($value) ??
             self::stringAbleToString($value) ??
@@ -100,7 +100,7 @@ final class ParameterHelper
     private static function filterInvalidType($value)
     {
         if ($value !== null && !is_scalar($value)) {
-            throw new InvalidArgumentException('Parameters must be iterable, scalar, null or stringable');
+            throw new InvalidArgumentException('Requests must be iterable, scalar, null or string able');
         }
 
         return $value;
@@ -125,11 +125,19 @@ final class ParameterHelper
      * @param mixed $value
      *
      * @pure
+     *
+     * @psalm-suppress ImpureMethodCall
+     * @psalm-suppress ImpurePropertyAssignment
      */
-    private static function emptyDictionaryToStdClass($value): ?stdClass
+    private static function cypherMapToStdClass($value): ?stdClass
     {
-        if (($value instanceof CypherMap) && $value->count() === 0) {
-            return new stdClass();
+        if ($value instanceof CypherMap) {
+            $tbr = new stdClass();
+            foreach ($value as $key => $val) {
+                $tbr->$key = $val;
+            }
+
+            return $tbr;
         }
 
         return null;

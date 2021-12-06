@@ -41,6 +41,22 @@ services:
             - 9000
         env_file:
           - .env
+    testkit-backend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                - WITH_XDEBUG=true
+        working_dir: /opt/project
+        volumes:
+            - .:/opt/project
+        command: php /opt/project/testkit-backend/index.php
+        networks:
+          - neo4j
+        depends_on:
+          - neo4j
+        ports:
+          - "9876:9876"
     neo4j:
         networks:
             - neo4j

@@ -13,17 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use ArrayIterator;
-use IteratorAggregate;
+use Laudis\Neo4j\Types\AbstractCypherObject;
 
 /**
  * Contains counters for various operations that a query triggered.
  *
  * @psalm-immutable
- *
- * @implements IteratorAggregate<string, int|bool>
  */
-final class SummaryCounters implements IteratorAggregate
+final class SummaryCounters extends AbstractCypherObject
 {
     private int $nodesCreated;
 
@@ -236,9 +233,9 @@ final class SummaryCounters implements IteratorAggregate
         return $tbr;
     }
 
-    public function getIterator(): ArrayIterator
+    public function toArray(): array
     {
-        return new ArrayIterator([
+        return [
             'nodesCreated' => $this->nodesCreated,
             'nodesDeleted' => $this->nodesDeleted,
             'relationshipsCreated' => $this->relationshipsCreated,
@@ -253,6 +250,6 @@ final class SummaryCounters implements IteratorAggregate
             'containsUpdates' => $this->containsUpdates,
             'containsSystemUpdates' => $this->containsSystemUpdates,
             'systemUpdates' => $this->systemUpdates,
-        ]);
+        ];
     }
 }

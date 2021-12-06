@@ -64,6 +64,8 @@ final class BoltConnectionPool implements ConnectionPoolInterface
             if (!$connection->isOpen()) {
                 $connection->open();
 
+                $authenticate->authenticateBolt($connection->getImplementation(), $connectingTo, $userAgent);
+
                 return $connection;
             }
         }

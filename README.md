@@ -119,7 +119,7 @@ Auto committed queries are the most straightforward and most intuitive but have 
 ```php
 $client->run(
     'MERGE (user {email: $email})', //The query is a required parameter
-    ['email' => 'abc@hotmail.com'],  //Parameters can be optionally added
+    ['email' => 'abc@hotmail.com'],  //Requests can be optionally added
     'backup' //The default connection can be overridden
 );
 ```

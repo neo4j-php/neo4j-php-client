@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Laudis\Neo4j\Types\AbstractCypherObject;
+
 /**
  * The components of a Cypher query, containing the query text and parameter mapping.
  *
@@ -20,7 +22,7 @@ namespace Laudis\Neo4j\Databags;
  *
  * @psalm-immutable
  */
-final class Statement
+final class Statement extends AbstractCypherObject
 {
     private string $text;
     /** @var iterable<string, scalar|iterable|null> */
@@ -61,5 +63,13 @@ final class Statement
     public function getParameters(): iterable
     {
         return $this->parameters;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'text' => $this->text,
+            'parameters' => $this->parameters,
+        ];
     }
 }
