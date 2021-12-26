@@ -128,7 +128,7 @@ CYPHER
         $explosion = explode('+', $scheme, 2);
         $sslConfig = $explosion[1] ?? '';
 
-        if (str_starts_with('s', $sslConfig)) {
+        if (str_starts_with($sslConfig, 's')) {
             // We have to pass a different host when working with ssl on aura.
             // There is a strange behaviour where if we pass the uri host on a single
             // instance aura deployment, we need to pass the original uri for the
