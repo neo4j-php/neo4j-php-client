@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Authentication;
 
 use Bolt\Bolt;
+use Bolt\helpers\Auth;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -49,8 +50,12 @@ final class KerberosAuth implements AuthenticateInterface
 
     public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
     {
-        $bolt->setScheme('kerberos');
-        $bolt->init($userAgent, $this->token, $this->token);
+        /**
+         * @psalm-suppress DeprecatedMethod
+         */
+        $bearer = Auth::bearer($this->token);
+        $bearer['user_agent'] = $userAgent;
+        $bolt->init($bearer);
     }
 
     /**

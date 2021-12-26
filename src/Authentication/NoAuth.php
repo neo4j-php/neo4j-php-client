@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Authentication;
 
 use Bolt\Bolt;
+use Bolt\helpers\Auth;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -38,8 +39,12 @@ final class NoAuth implements AuthenticateInterface
 
     public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
     {
-        $bolt->setScheme('none');
-        $bolt->init($userAgent, '', '');
+        $auth = Auth::none();
+        $auth['user_agent'] = $userAgent;
+        /**
+         * @psalm-suppress DeprecatedMethod
+         */
+        $bolt->init($auth);
     }
 
     /**
