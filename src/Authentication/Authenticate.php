@@ -41,6 +41,16 @@ final class Authenticate
     }
 
     /**
+     * Authenticate using a kerberos token.
+     *
+     * @pure
+     */
+    public static function oidc(string $token): OpenIDConnectAuth
+    {
+        return new OpenIDConnectAuth($token);
+    }
+
+    /**
      * Don't authenticate at all.
      *
      * @pure
