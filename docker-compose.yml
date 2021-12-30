@@ -73,6 +73,8 @@ services:
           <<: *common
         volumes:
           - ./tests/resources:/import
+        env_file:
+          - .env
     core1:
         image: neo4j:4.4-enterprise
         healthcheck:
@@ -91,6 +93,8 @@ services:
           NEO4J_causal__clustering_raft__advertised__address: core1:7000
           NEO4J_dbms_connector_http_advertised__address: core1:7474
           NEO4J_dbms_connector_bolt_advertised__address: core1:7687
+        env_file:
+          - .env
 
     core2:
         image: neo4j:4.4-enterprise
@@ -110,6 +114,8 @@ services:
           NEO4J_dbms_connector_bolt_advertised__address: core2:7687
         volumes:
           - ./tests/resources:/import
+        env_file:
+          - .env
 
     core3:
         image: neo4j:4.4-enterprise
@@ -129,6 +135,8 @@ services:
           NEO4J_dbms_connector_bolt_advertised__address: core3:7687
         volumes:
           - ./tests/resources:/import
+        env_file:
+          - .env
 
     readreplica1:
         image: neo4j:4.4-enterprise
@@ -147,5 +155,7 @@ services:
           NEO4J_causal__clustering_raft__advertised__address: readreplica1:7000
           NEO4J_dbms_connector_http_advertised__address: readreplica1:7474
           NEO4J_dbms_connector_bolt_advertised__address: readreplica1:7687
+        env_file:
+          - .env
         volumes:
           - ./tests/resources:/import
