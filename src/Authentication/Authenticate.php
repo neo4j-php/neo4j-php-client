@@ -41,7 +41,7 @@ final class Authenticate
     }
 
     /**
-     * Authenticate using a kerberos token.
+     * Authenticate using a OpenID Connect token.
      *
      * @pure
      */
