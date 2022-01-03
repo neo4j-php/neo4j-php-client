@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        neo4j-version: ["3.5", "4.0", "4.1", "4.2", "4.3", "4.4"]
+        neo4j-version: ["3.5", "4.2", "4.3", "4.4"]
 
     services:
       neo4j:
