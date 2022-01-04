@@ -137,7 +137,7 @@ final class BoltConnection implements ConnectionInterface
     public function open(): void
     {
         if ($this->connection === null) {
-            $this->connection = $this->factory->build();
+            $this->connection = $this->factory->build()[0];
         }
     }
 

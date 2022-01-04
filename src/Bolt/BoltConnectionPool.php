@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use function array_flip;
 use Bolt\Bolt;
 use Bolt\protocol\V3;
 use Exception;
@@ -67,27 +66,12 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         }
 
         $factory = BoltFactory::fromVariables($connectingTo, null, null, $authenticate, $userAgent);
-        $bolt = $factory->build();
-
-        /**
-         * @var array{'name': 0, 'version': 1, 'edition': 2}
-         * @psalm-suppress all
-         */
-        $fields = array_flip($bolt->run(<<<'CYPHER'
-CALL dbms.components()
-YIELD name, versions, edition
-UNWIND versions AS version
-RETURN name, version, edition
-CYPHER
-        )['fields']);
-
-        /** @var array{0: array{0: string, 1: string, 2: string}} $results */
-        $results = $bolt->pullAll();
+        [$bolt, $response] = $factory->build();
 
         $connection = new BoltConnection(
-            $results[0][$fields['name']].'-'.$results[0][$fields['edition']].'/'.$results[0][$fields['version']],
+            $response['server'],
             $connectingTo,
-            $results[0][$fields['version']],
+            explode('/', $response['server'])[1] ?? '',
             ConnectionProtocol::determineBoltVersion($bolt),
             $config->getAccessMode(),
             new DatabaseInfo($config->getDatabase()),

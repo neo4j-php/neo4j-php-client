@@ -47,8 +47,10 @@ final class BoltFactory
 
     /**
      * @throws Exception
+     *
+     * @return array{0: V3, 1: array{server: string, connection_id: string, hints: list}}
      */
-    public function build(): V3
+    public function build(): array
     {
         $this->bolt->setProtocolVersions(4.4, 4.3, 4.2, 3);
         try {
@@ -62,9 +64,9 @@ final class BoltFactory
             throw new RuntimeException('Client only supports bolt version 3 and up.');
         }
 
-        $this->auth->authenticateBolt($build, $this->userAgent);
+        $response = $this->auth->authenticateBolt($build, $this->userAgent);
 
-        return $build;
+        return [$build, $response];
     }
 
     public static function fromVariables(
