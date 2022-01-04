@@ -18,9 +18,6 @@ use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use function microtime;
-use function preg_match;
-use const PREG_OFFSET_CAPTURE;
-use Throwable;
 
 final class TransactionHelper
 {
@@ -54,20 +51,5 @@ final class TransactionHelper
                 }
             }
         }
-    }
-
-    public static function extractCode(Throwable $throwable): ?string
-    {
-        $message = $throwable->getMessage();
-        $matches = [];
-        preg_match('/\(Neo\.([\w]+\.?)+\)/', $message, $matches, PREG_OFFSET_CAPTURE);
-        /** @var list<array{0: string, 1: int}> $matches */
-        if (isset($matches[0])) {
-            $code = $matches[0][0];
-
-            return str_replace(['(', ')'], '', $code);
-        }
-
-        return null;
     }
 }
