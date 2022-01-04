@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /*
  * This file is part of the Laudis Neo4j package.
  *
@@ -19,10 +17,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
-/**
- * Authenticates connections using a kerberos token.
- */
-final class KerberosAuth implements AuthenticateInterface
+final class OpenIDConnectAuth implements AuthenticateInterface
 {
     private string $token;
 
@@ -44,7 +39,7 @@ final class KerberosAuth implements AuthenticateInterface
          *
          * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
          */
-        return $request->withHeader('Authorization', 'Kerberos '.$this->token)
+        return $request->withHeader('Authorization', 'Bearer '.$this->token)
             ->withHeader('User-Agent', $userAgent);
     }
 
@@ -52,10 +47,9 @@ final class KerberosAuth implements AuthenticateInterface
     {
         /**
          * @psalm-suppress DeprecatedMethod
+         * @psalm-suppress ImpureMethodCall
          */
-        $bearer = Auth::bearer($this->token);
-        $bearer['user_agent'] = $userAgent;
-        $bolt->init($bearer);
+        $bolt->init(Auth::bearer($this->token));
     }
 
     /**
