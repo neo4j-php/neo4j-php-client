@@ -15,11 +15,6 @@ namespace Laudis\Neo4j\Enum;
 
 use Bolt\Bolt;
 use Bolt\protocol\V3;
-use Bolt\protocol\V4;
-use Bolt\protocol\V4_1;
-use Bolt\protocol\V4_2;
-use Bolt\protocol\V4_3;
-use Bolt\protocol\V4_4;
 use Laudis\TypedEnum\TypedEnum;
 
 /**
@@ -41,12 +36,12 @@ use Laudis\TypedEnum\TypedEnum;
  */
 final class ConnectionProtocol extends TypedEnum
 {
-    private const BOLT_V3 = 'bolt-v3';
-    private const BOLT_V40 = 'bolt-v40';
-    private const BOLT_V41 = 'bolt-v41';
-    private const BOLT_V42 = 'bolt-v42';
-    private const BOLT_V43 = 'bolt-v43';
-    private const BOLT_V44 = 'bolt-v44';
+    private const BOLT_V3 = '3';
+    private const BOLT_V40 = '4';
+    private const BOLT_V41 = '4.1';
+    private const BOLT_V42 = '4.2';
+    private const BOLT_V43 = '4.3';
+    private const BOLT_V44 = '4.4';
     private const HTTP = 'http';
 
     /**
@@ -56,23 +51,9 @@ final class ConnectionProtocol extends TypedEnum
      */
     public static function determineBoltVersion(V3 $bolt): self
     {
-        if ($bolt instanceof V4_4) {
-            return self::BOLT_V44();
-        }
-        if ($bolt instanceof V4_3) {
-            return self::BOLT_V43();
-        }
-        if ($bolt instanceof V4_2) {
-            return self::BOLT_V42();
-        }
-        if ($bolt instanceof V4_1) {
-            return self::BOLT_V41();
-        }
-        if ($bolt instanceof V4) {
-            return self::BOLT_V40();
-        }
+        $version = self::resolve($bolt->getVersion());
 
-        return self::BOLT_V3();
+        return $version[0] ?? self::BOLT_V44();
     }
 
     public function compare(ConnectionProtocol $protocol): int
