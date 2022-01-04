@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Bolt\error\MessageException;
+
 /**
  * Contains the code and message of an error in a neo4j database.
  *
@@ -27,6 +29,14 @@ final class Neo4jError
     {
         $this->code = $code;
         $this->message = $message;
+    }
+
+    /**
+     * @pure
+     */
+    public static function fromMessageException(MessageException $e): self
+    {
+        return new self($e->getServerCode(), $e->getServerMessage());
     }
 
     /**

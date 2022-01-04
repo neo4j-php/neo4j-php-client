@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Exception;
 
+use Bolt\error\MessageException;
 use Laudis\Neo4j\Databags\Neo4jError;
 use RuntimeException;
 use Throwable;
@@ -39,6 +40,14 @@ final class Neo4jException extends RuntimeException
         $message = sprintf(self::MESSAGE_TEMPLATE, $error->getCode(), $error->getMessage());
         parent::__construct($message, 0, $previous);
         $this->errors = $errors;
+    }
+
+    /**
+     * @pure
+     */
+    public static function fromMessageException(MessageException $e): self
+    {
+        return new self([Neo4jError::fromMessageException($e)], $e);
     }
 
     /**
