@@ -14,6 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Enum;
 
 use Bolt\Bolt;
+use Bolt\protocol\V3;
+use Bolt\protocol\V4;
+use Bolt\protocol\V4_1;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
+use Bolt\protocol\V4_4;
 use Laudis\TypedEnum\TypedEnum;
 
 /**
@@ -24,6 +30,7 @@ use Laudis\TypedEnum\TypedEnum;
  * @method static ConnectionProtocol BOLT_V41()
  * @method static ConnectionProtocol BOLT_V42()
  * @method static ConnectionProtocol BOLT_V43()
+ * @method static ConnectionProtocol BOLT_V44()
  * @method static ConnectionProtocol HTTP()
  *
  * @extends TypedEnum<string>
@@ -39,6 +46,7 @@ final class ConnectionProtocol extends TypedEnum
     private const BOLT_V41 = 'bolt-v41';
     private const BOLT_V42 = 'bolt-v42';
     private const BOLT_V43 = 'bolt-v43';
+    private const BOLT_V44 = 'bolt-v44';
     private const HTTP = 'http';
 
     /**
@@ -46,28 +54,25 @@ final class ConnectionProtocol extends TypedEnum
      *
      * @psalm-suppress ImpureMethodCall
      */
-    public static function determineBoltVersion(Bolt $bolt): self
+    public static function determineBoltVersion(V3 $bolt): self
     {
-        switch ($bolt->getProtocolVersion()) {
-            case 3:
-                $tbr = self::BOLT_V3();
-                break;
-            case 4.0:
-                $tbr = self::BOLT_V40();
-                break;
-            case 4.1:
-                $tbr = self::BOLT_V41();
-                break;
-            case 4.2:
-                $tbr = self::BOLT_V42();
-                break;
-            case 4.3:
-            default:
-                $tbr = self::BOLT_V43();
-                break;
+        if ($bolt instanceof V4_4) {
+            return self::BOLT_V44();
+        }
+        if ($bolt instanceof V4_3) {
+            return self::BOLT_V43();
+        }
+        if ($bolt instanceof V4_2) {
+            return self::BOLT_V42();
+        }
+        if ($bolt instanceof V4_1) {
+            return self::BOLT_V41();
+        }
+        if ($bolt instanceof V4) {
+            return self::BOLT_V40();
         }
 
-        return $tbr;
+        return self::BOLT_V3();
     }
 
     public function compare(ConnectionProtocol $protocol): int
