@@ -13,8 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use Bolt\Bolt;
-use function call_user_func;
+use Bolt\protocol\V3;
+use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
@@ -23,11 +23,11 @@ use Psr\Http\Message\UriInterface;
 use RuntimeException;
 
 /**
- * @implements ConnectionInterface<Bolt>
+ * @implements ConnectionInterface<V3>
  */
 final class BoltConnection implements ConnectionInterface
 {
-    private ?Bolt $bolt = null;
+    private ?V3 $connection;
     /** @psalm-readonly */
     private string $serverAgent;
     /** @psalm-readonly */
@@ -40,16 +40,11 @@ final class BoltConnection implements ConnectionInterface
     private AccessMode $accessMode;
     /** @psalm-readonly */
     private DatabaseInfo $databaseInfo;
-    /**
-     * @var callable(): Bolt
-     * @psalm-readonly
-     */
-    private $connector;
+    /** @psalm-readonly */
+    private BoltFactory $factory;
 
     /**
      * @psalm-mutation-free
-     *
-     * @param callable(): Bolt $connector
      */
     public function __construct(
         string $serverAgent,
@@ -58,7 +53,8 @@ final class BoltConnection implements ConnectionInterface
         ConnectionProtocol $protocol,
         AccessMode $accessMode,
         DatabaseInfo $databaseInfo,
-        $connector
+        BoltFactory $factory,
+        ?V3 $connection
     ) {
         $this->serverAgent = $serverAgent;
         $this->serverAddress = $serverAddress;
@@ -66,19 +62,20 @@ final class BoltConnection implements ConnectionInterface
         $this->protocol = $protocol;
         $this->accessMode = $accessMode;
         $this->databaseInfo = $databaseInfo;
-        $this->connector = $connector;
+        $this->factory = $factory;
+        $this->connection = $connection;
     }
 
     /**
      * @psalm-mutation-free
      */
-    public function getImplementation(): Bolt
+    public function getImplementation(): V3
     {
-        if ($this->bolt === null) {
+        if ($this->connection === null) {
             throw new RuntimeException('Connection is closed');
         }
 
-        return $this->bolt;
+        return $this->connection;
     }
 
     /**
@@ -134,18 +131,18 @@ final class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return $this->bolt !== null;
+        return $this->connection !== null;
     }
 
     public function open(): void
     {
-        if ($this->bolt === null) {
-            $this->bolt = call_user_func($this->connector);
+        if ($this->connection === null) {
+            $this->connection = $this->factory->build();
         }
     }
 
     public function close(): void
     {
-        $this->bolt = null;
+        $this->connection = null;
     }
 }

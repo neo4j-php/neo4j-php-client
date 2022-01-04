@@ -107,7 +107,7 @@ CYPHER
         );
     }
 
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool
     {
         $request = $this->requestFactory->resolve()->createRequest('GET', $uri);
         $client = $this->client->resolve();

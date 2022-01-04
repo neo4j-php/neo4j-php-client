@@ -15,31 +15,29 @@ namespace Laudis\Neo4j\Bolt;
 
 use function array_flip;
 use Bolt\Bolt;
-use Bolt\connection\StreamSocket;
+use Bolt\protocol\V3;
 use Exception;
-use function explode;
-use const FILTER_VALIDATE_IP;
-use function filter_var;
+use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
 use Throwable;
-use WeakReference;
 
 /**
  * Manages singular Bolt connections.
  *
- * @implements ConnectionPoolInterface<Bolt>
+ * @implements ConnectionPoolInterface<V3>
  */
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
-    /** @var array<string, list<ConnectionInterface<Bolt>>> */
+    /** @var array<string, list<ConnectionInterface<V3>>> */
     private static array $connectionCache = [];
 
     /**
@@ -64,23 +62,12 @@ final class BoltConnectionPool implements ConnectionPoolInterface
             if (!$connection->isOpen()) {
                 $connection->open();
 
-                $authenticate->authenticateBolt($connection->getImplementation(), $connectingTo, $userAgent);
-
                 return $connection;
             }
         }
 
-        $socket = new StreamSocket($connectingTo->getHost(), $connectingTo->getPort() ?? 7687, $socketTimeout);
-
-        $this->configureSsl($uri, $connectingTo, $socket, $table);
-
-        $bolt = new Bolt($socket);
-        $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
-
-        // We create a weak reference to optimise the socket usage. This way the connection can reuse the bolt variable
-        // the first time it tries to connect. Only when this function is finished and the returned connection is closed
-        // will the reference return null, prompting the need to reopen and recreate the bolt object on the same socket.
-        $originalBolt = WeakReference::create($bolt);
+        $factory = BoltFactory::fromVariables($connectingTo, null, null, $authenticate, $userAgent);
+        $bolt = $factory->build();
 
         /**
          * @var array{'name': 0, 'version': 1, 'edition': 2}
@@ -104,70 +91,21 @@ CYPHER
             ConnectionProtocol::determineBoltVersion($bolt),
             $config->getAccessMode(),
             new DatabaseInfo($config->getDatabase()),
-            static function () use ($socket, $authenticate, $connectingTo, $userAgent, $originalBolt) {
-                $bolt = $originalBolt->get();
-                if ($bolt === null) {
-                    $bolt = new Bolt($socket);
-                    $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
-                }
-
-                return $bolt;
-            }
+            $factory,
+            $bolt
         );
-
-        $connection->open();
 
         self::$connectionCache[$key][] = $connection;
 
         return $connection;
     }
 
-    private function configureSsl(UriInterface $uri, UriInterface $server, StreamSocket $socket, ?RoutingTable $table): void
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool
     {
-        $scheme = $uri->getScheme();
-        $explosion = explode('+', $scheme, 2);
-        $sslConfig = $explosion[1] ?? '';
-
-        if (str_starts_with($sslConfig, 's')) {
-            // We have to pass a different host when working with ssl on aura.
-            // There is a strange behaviour where if we pass the uri host on a single
-            // instance aura deployment, we need to pass the original uri for the
-            // ssl configuration to be valid.
-            if ($table && count($table->getWithRole()) > 1) {
-                $this->enableSsl($server->getHost(), $sslConfig, $socket);
-            } else {
-                $this->enableSsl($uri->getHost(), $sslConfig, $socket);
-            }
-        }
-    }
-
-    private function enableSsl(string $host, string $sslConfig, StreamSocket $sock): void
-    {
-        $options = [
-            'verify_peer' => true,
-            'peer_name' => $host,
-        ];
-        if (!filter_var($host, FILTER_VALIDATE_IP)) {
-            $options['SNI_enabled'] = true;
-        }
-        if ($sslConfig === 's') {
-            $sock->setSslContextOptions($options);
-        } elseif ($sslConfig === 'ssc') {
-            $options['allow_self_signed'] = true;
-            $sock->setSslContextOptions($options);
-        }
-    }
-
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?RoutingTable $table = null, ?UriInterface $server = null): bool
-    {
-        $connectingTo = $server ?? $uri;
-        $socket = new StreamSocket($uri->getHost(), $connectingTo->getPort() ?? 7687);
-
-        $this->configureSsl($uri, $connectingTo, $socket, $table);
+        $bolt = BoltFactory::fromVariables($uri, null, null, $authenticate, $userAgent ?? DriverConfiguration::DEFAULT_USER_AGENT);
 
         try {
-            $bolt = new Bolt($socket);
-            $authenticate->authenticateBolt($bolt, $connectingTo, 'ping');
+            $bolt->build();
         } catch (Throwable $e) {
             return false;
         }

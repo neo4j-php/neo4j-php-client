@@ -138,6 +138,6 @@ final class BoltDriver implements DriverInterface
 
     public function verifyConnectivity(): bool
     {
-        return $this->pool->canConnect($this->parsedUrl, $this->auth);
+        return $this->pool->canConnect($this->parsedUrl, $this->auth, $this->config->getUserAgent());
     }
 }

@@ -32,12 +32,5 @@ interface AuthenticateInterface
      *
      * @throws Exception
      */
-    public function authenticateBolt(V3 $bolt, UriInterface $uri, string $userAgent): void;
-
-    /**
-     * @psalm-mutation-free
-     *
-     * Extracts the Uri login information and returns an authentication strategy not requiring the url anymore.
-     */
-    public function extractFromUri(UriInterface $uri): self;
+    public function authenticateBolt(V3 $bolt, string $userAgent): void;
 }

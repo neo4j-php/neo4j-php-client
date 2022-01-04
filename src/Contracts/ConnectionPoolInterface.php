@@ -39,5 +39,5 @@ interface ConnectionPoolInterface
     /**
      * Returns true if the connection pool can make a connection to the server with the current Uri and authentication logic.
      */
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool;
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool;
 }

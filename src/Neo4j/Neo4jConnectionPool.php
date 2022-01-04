@@ -171,8 +171,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         return new RoutingTable($servers, $ttl);
     }
 
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool
     {
-        return $this->pool->canConnect($uri, $authenticate);
+        return $this->pool->canConnect($uri, $authenticate, $userAgent);
     }
 }
