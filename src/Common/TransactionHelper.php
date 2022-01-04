@@ -46,7 +46,7 @@ final class TransactionHelper
 
                 return $tbr;
             } catch (Neo4jException $e) {
-                if (microtime(true) > $limit || !str_contains($e->getMessage(), '(Neo.ClientError.Cluster.NotALeader)')) {
+                if (microtime(true) > $limit || !str_contains($e->getNeo4jCode(), 'Neo.ClientError.Cluster.NotALeader')) {
                     throw $e;
                 }
             }
