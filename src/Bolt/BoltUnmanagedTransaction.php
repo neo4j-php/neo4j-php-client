@@ -15,8 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\error\MessageException;
-use Exception;
-use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -79,9 +77,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         try {
             $this->getBolt()->commit();
             $this->finished = true;
-        } catch (Exception $e) {
-            $code = TransactionHelper::extractCode($e);
-            throw new Neo4jException([new Neo4jError($code ?? '', $e->getMessage())], $e);
+        } catch (MessageException $e) {
+            throw Neo4jException::fromMessageException($e);
         }
 
         return $tbr;
@@ -96,9 +93,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         try {
             $this->connection->getImplementation()->rollback();
             $this->finished = true;
-        } catch (Exception $e) {
-            $code = TransactionHelper::extractCode($e) ?? '';
-            throw new Neo4jException([new Neo4jError($code, $e->getMessage())], $e);
+        } catch (MessageException $e) {
+            throw Neo4jException::fromMessageException($e);
         }
     }
 
@@ -136,12 +132,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 /** @var array<array> $results */
                 $results = $this->getBolt()->pullAll();
                 $end = microtime(true);
-            } catch (Throwable $e) {
-                if ($e instanceof MessageException) {
-                    $code = TransactionHelper::extractCode($e) ?? '';
-                    throw new Neo4jException([new Neo4jError($code, $e->getMessage())], $e);
-                }
-                throw $e;
+            } catch (MessageException $e) {
+                throw Neo4jException::fromMessageException($e);
             }
             $tbr[] = $this->formatter->formatBoltResult(
                 $meta,

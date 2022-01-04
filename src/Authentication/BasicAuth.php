@@ -18,9 +18,7 @@ use Bolt\Bolt;
 use Bolt\error\MessageException;
 use Bolt\helpers\Auth;
 use Exception;
-use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -68,8 +66,7 @@ final class BasicAuth implements AuthenticateInterface
             $auth['user_agent'] = $userAgent;
             $bolt->init($auth);
         } catch (MessageException $e) {
-            $code = TransactionHelper::extractCode($e) ?? '';
-            throw new Neo4jException([new Neo4jError($code, $e->getMessage())]);
+            throw Neo4jException::fromMessageException($e);
         }
     }
 

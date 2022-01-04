@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
+use Bolt\error\MessageException;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -176,12 +177,8 @@ final class Session implements SessionInterface
             if (!$begin) {
                 throw new Neo4jException([new Neo4jError('', 'Cannot open new transaction')]);
             }
-        } catch (Exception $e) {
-            if ($e instanceof Neo4jException) {
-                throw $e;
-            }
-            $code = TransactionHelper::extractCode($e) ?? '';
-            throw new Neo4jException([new Neo4jError($code, $e->getMessage())], $e);
+        } catch (MessageException $e) {
+            throw Neo4jException::fromMessageException($e);
         }
 
         return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $bolt);
