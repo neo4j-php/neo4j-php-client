@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
+use Bolt\protocol\V3;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -42,7 +43,7 @@ final class BoltDriver implements DriverInterface
 {
     private UriInterface $parsedUrl;
     private AuthenticateInterface $auth;
-    /** @var ConnectionPoolInterface<Bolt> */
+    /** @var ConnectionPoolInterface<V3> */
     private ConnectionPoolInterface $pool;
     private DriverConfiguration $config;
     private FormatterInterface $formatter;
@@ -50,7 +51,7 @@ final class BoltDriver implements DriverInterface
 
     /**
      * @param FormatterInterface<T>         $formatter
-     * @param ConnectionPoolInterface<Bolt> $pool
+     * @param ConnectionPoolInterface<V3> $pool
      *
      * @psalm-mutation-free
      */
@@ -95,7 +96,7 @@ final class BoltDriver implements DriverInterface
         if ($formatter !== null) {
             return new self(
                 $uri,
-                $authenticate ?? Authenticate::fromUrl(),
+                $authenticate ?? Authenticate::fromUrl($uri),
                 new BoltConnectionPool(),
                 $configuration ?? DriverConfiguration::default(),
                 $formatter,
@@ -105,7 +106,7 @@ final class BoltDriver implements DriverInterface
 
         return new self(
             $uri,
-            $authenticate ?? Authenticate::fromUrl(),
+            $authenticate ?? Authenticate::fromUrl($uri),
             new BoltConnectionPool(),
             $configuration ?? DriverConfiguration::default(),
             OGMFormatter::create(),

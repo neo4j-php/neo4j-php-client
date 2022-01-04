@@ -39,7 +39,7 @@ use function time;
  *
  * @psalm-import-type BasicDriver from \Laudis\Neo4j\Contracts\DriverInterface
  *
- * @implements ConnectionPoolInterface<Bolt>
+ * @implements ConnectionPoolInterface<V3>
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
@@ -102,7 +102,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @param ConnectionInterface<V3> $driver
+     * @param ConnectionInterface<V3> $connection
      *
      * @throws Exception
      */
@@ -137,7 +137,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
         /** @var array{0: array{0: int, 1: list<array{addresses: list<string>, role:string}>}} */
-        $response = $bolt->pull(1);
+        $response = $bolt->pull(['n' => 1]);
         $response = $response[0];
         $servers = [];
         $ttl = time() + $response[0];

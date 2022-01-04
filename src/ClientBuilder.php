@@ -103,10 +103,12 @@ final class ClientBuilder
      */
     public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?float $socketTimeout = null): self
     {
-        $authentication ??= Authenticate::fromUrl();
+        $uri = Uri::create($url);
+
+        $authentication ??= Authenticate::fromUrl($uri);
         $socketTimeout ??= TransactionConfiguration::DEFAULT_TIMEOUT;
 
-        return $this->withParsedUrl($alias, Uri::create($url), $authentication, $socketTimeout);
+        return $this->withParsedUrl($alias, $uri, $authentication, $socketTimeout);
     }
 
     /**
@@ -171,7 +173,7 @@ final class ClientBuilder
             $parsedUrl = $parsedUrl->withScheme('bolt'.$postScheme);
         }
 
-        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl(), TransactionConfiguration::DEFAULT_TIMEOUT);
+        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl($parsedUrl), TransactionConfiguration::DEFAULT_TIMEOUT);
     }
 
     /**
@@ -205,7 +207,7 @@ final class ClientBuilder
             $this->defaultDriver
         );
 
-        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl(), TransactionConfiguration::DEFAULT_TIMEOUT);
+        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl($uri), TransactionConfiguration::DEFAULT_TIMEOUT);
     }
 
     /**

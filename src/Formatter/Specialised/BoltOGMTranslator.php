@@ -52,7 +52,7 @@ use UnexpectedValueException;
 final class BoltOGMTranslator
 {
     /**
-     * @var array<string, callable(mixed):OGMTypes>
+     * @var array<string, pure-callable(mixed):OGMTypes>
      */
     private array $rawToTypes;
 

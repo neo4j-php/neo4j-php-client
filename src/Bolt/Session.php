@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\error\MessageException;
+use Bolt\protocol\V3;
 use Exception;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -47,7 +48,7 @@ final class Session implements SessionInterface
     /**
      * @psalm-readonly
      *
-     * @var ConnectionPoolInterface<Bolt>
+     * @var ConnectionPoolInterface<V3>
      */
     private ConnectionPoolInterface $pool;
     /**
@@ -66,7 +67,7 @@ final class Session implements SessionInterface
 
     /**
      * @param FormatterInterface<ResultFormat> $formatter
-     * @param ConnectionPoolInterface<Bolt>    $pool
+     * @param ConnectionPoolInterface<V3>      $pool
      *
      * @psalm-mutation-free
      */
@@ -158,7 +159,7 @@ final class Session implements SessionInterface
     /**
      * @throws Exception
      *
-     * @return ConnectionInterface<Bolt>
+     * @return ConnectionInterface<V3>
      */
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): ConnectionInterface
     {
@@ -172,11 +173,7 @@ final class Session implements SessionInterface
         try {
             $bolt = $this->acquireConnection($config, $sessionConfig);
 
-            $begin = $bolt->getImplementation()->begin(['db' => $this->config->getDatabase()]);
-
-            if (!$begin) {
-                throw new Neo4jException([new Neo4jError('', 'Cannot open new transaction')]);
-            }
+            $bolt->getImplementation()->begin(['db' => $this->config->getDatabase()]);
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);
         }

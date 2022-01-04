@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\error\MessageException;
+use Bolt\protocol\V3;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -46,7 +47,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @psalm-readonly
      *
-     * @var ConnectionInterface<Bolt>
+     * @var ConnectionInterface<V3>
      */
     private ConnectionInterface $connection;
     /** @psalm-readonly */
@@ -54,8 +55,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private bool $finished = false;
 
     /**
-     * @param FormatterInterface<T>     $formatter
-     * @param ConnectionInterface<Bolt> $connection
+     * @param FormatterInterface<T>   $formatter
+     * @param ConnectionInterface<V3> $connection
      *
      * @psalm-mutation-free
      */
@@ -151,7 +152,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @psalm-immutable
      */
-    private function getBolt(): Bolt
+    private function getBolt(): V3
     {
         return $this->connection->getImplementation();
     }

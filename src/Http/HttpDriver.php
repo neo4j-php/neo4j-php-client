@@ -117,7 +117,7 @@ final class HttpDriver implements DriverInterface
                 $uri,
                 $configuration ?? DriverConfiguration::default(),
                 $formatter,
-                $authenticate ?? Authenticate::fromUrl()
+                $authenticate ?? Authenticate::fromUrl($uri)
             );
         }
 
@@ -125,7 +125,7 @@ final class HttpDriver implements DriverInterface
             $uri,
             $configuration ?? DriverConfiguration::default(),
             OGMFormatter::create(),
-            $authenticate ?? Authenticate::fromUrl()
+            $authenticate ?? Authenticate::fromUrl($uri)
         );
     }
 
