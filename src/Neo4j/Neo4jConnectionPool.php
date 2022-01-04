@@ -15,8 +15,12 @@ namespace Laudis\Neo4j\Neo4j;
 
 use function array_slice;
 use Bolt\Bolt;
+use Bolt\protocol\V3;
+use Bolt\protocol\V4;
+use Bolt\protocol\V4_3;
 use function count;
 use Exception;
+use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -24,7 +28,6 @@ use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
-use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
 use function random_int;
@@ -79,7 +82,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $server = $this->getNextServer($table, $config->getAccessMode());
 
-        $authenticate = $authenticate->extractFromUri($uri);
+        $authenticate = Authenticate::fromUrl($uri);
 
         return $this->pool->acquire($uri, $authenticate, $socketTimeout, $userAgent, $config, $table, $server);
     }
@@ -99,25 +102,25 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @param ConnectionInterface<Bolt> $driver
+     * @param ConnectionInterface<V3> $driver
      *
      * @throws Exception
      */
     private function routingTable(ConnectionInterface $connection): RoutingTable
     {
-        /** @var Bolt $bolt */
         $bolt = $connection->getImplementation();
-        $protocol = $connection->getProtocol();
-        if ($protocol->compare(ConnectionProtocol::BOLT_V43()) >= 0) {
+        if ($bolt instanceof V4_3) {
             return $this->useRouteMessage($bolt);
-        } elseif ($protocol->compare(ConnectionProtocol::BOLT_V40()) >= 0) {
+        }
+
+        if ($bolt instanceof V4) {
             return $this->useRoutingTable($bolt);
         }
 
         return $this->useClusterOverview($bolt);
     }
 
-    private function useRouteMessage(Bolt $bolt): RoutingTable
+    private function useRouteMessage(V4_3 $bolt): RoutingTable
     {
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $bolt->route();
@@ -130,11 +133,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    private function useRoutingTable(Bolt $bolt): RoutingTable
+    private function useRoutingTable(V4 $bolt): RoutingTable
     {
         $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
         /** @var array{0: array{0: int, 1: list<array{addresses: list<string>, role:string}>}} */
-        $response = $bolt->pullAll(1);
+        $response = $bolt->pull(1);
         $response = $response[0];
         $servers = [];
         $ttl = time() + $response[0];
@@ -148,7 +151,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    private function useClusterOverview(Bolt $bolt): RoutingTable
+    private function useClusterOverview(V3 $bolt): RoutingTable
     {
         $bolt->run('CALL dbms.cluster.overview()');
         /** @var list<array{0: string, 1: list<string>, 2: string, 4: list, 4:string}> */
