@@ -17,6 +17,7 @@ use function array_slice;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_3;
+use Bolt\protocol\V4_4;
 use function count;
 use Exception;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -74,7 +75,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $table = self::$routingCache[$key] ?? null;
         if ($table === null || $table->getTtl() < time()) {
             $connection = $this->pool->acquire($uri, $authenticate, $socketTimeout, $userAgent, $config);
-            $table = $this->routingTable($connection);
+            $table = $this->routingTable($connection, $config);
             self::$routingCache[$key] = $table;
             $connection->close();
         }
@@ -105,11 +106,16 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      *
      * @throws Exception
      */
-    private function routingTable(ConnectionInterface $connection): RoutingTable
+    private function routingTable(ConnectionInterface $connection, SessionConfiguration $config): RoutingTable
     {
         $bolt = $connection->getImplementation();
+
+        if ($bolt instanceof V4_4) {
+            return $this->useRouteMessageNew($bolt, $config);
+        }
+
         if ($bolt instanceof V4_3) {
-            return $this->useRouteMessage($bolt);
+            return $this->useRouteMessage($bolt, $config);
         }
 
         if ($bolt instanceof V4) {
@@ -119,10 +125,20 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         return $this->useClusterOverview($bolt);
     }
 
-    private function useRouteMessage(V4_3 $bolt): RoutingTable
+    private function useRouteMessage(V4_3 $bolt, SessionConfiguration $config): RoutingTable
     {
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
-        $route = $bolt->route();
+        $route = $bolt->route([], [], $config->getDatabase());
+        ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
+        $ttl += time();
+
+        return new RoutingTable($servers, $ttl);
+    }
+
+    private function useRouteMessageNew(V4_4 $bolt, SessionConfiguration $config): RoutingTable
+    {
+        /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
+        $route = $bolt->route([], [], ['db' => $config->getDatabase()]);
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();
 
