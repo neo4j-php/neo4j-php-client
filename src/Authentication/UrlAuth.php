@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\Bolt;
+use Bolt\protocol\V3;
 use function explode;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
@@ -47,7 +47,7 @@ final class UrlAuth implements AuthenticateInterface
         return Authenticate::disabled()->authenticateHttp($request, $uri, $userAgent);
     }
 
-    public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
+    public function authenticateBolt(V3 $bolt, UriInterface $uri, string $userAgent): void
     {
         $this->extractFromUri($uri)->authenticateBolt($bolt, $uri, $userAgent);
     }
