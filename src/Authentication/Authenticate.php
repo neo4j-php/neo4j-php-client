@@ -13,6 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
+use function explode;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Psr\Http\Message\UriInterface;
+use function substr_count;
+
 /**
  * Factory responsible for creating authentication logic.
  *
@@ -61,12 +66,25 @@ final class Authenticate
     }
 
     /**
-     * Authenticate using the information found in the url.
+     * Authenticate from information found in the url.
      *
      * @pure
      */
-    public static function fromUrl(): UrlAuth
+    public static function fromUrl(UriInterface $uri): AuthenticateInterface
     {
-        return new UrlAuth();
+        /**
+         * @psalm-suppress ImpureMethodCall Uri is a pure object:
+         *
+         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
+         */
+        $userInfo = $uri->getUserInfo();
+
+        if (substr_count($userInfo, ':') === 1) {
+            [$user, $pass] = explode(':', $userInfo);
+
+            return self::basic($user, $pass);
+        }
+
+        return self::disabled();
     }
 }
