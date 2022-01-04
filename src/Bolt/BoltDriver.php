@@ -50,7 +50,7 @@ final class BoltDriver implements DriverInterface
     private float $socketTimeout;
 
     /**
-     * @param FormatterInterface<T>         $formatter
+     * @param FormatterInterface<T>       $formatter
      * @param ConnectionPoolInterface<V3> $pool
      *
      * @psalm-mutation-free

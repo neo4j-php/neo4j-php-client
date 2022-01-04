@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Bolt\Bolt;
 use Bolt\protocol\V3;
 use Exception;
 use function is_string;
@@ -52,7 +51,7 @@ final class Neo4jDriver implements DriverInterface
     private float $socketTimeout;
 
     /**
-     * @param FormatterInterface<T>         $formatter
+     * @param FormatterInterface<T>       $formatter
      * @param ConnectionPoolInterface<V3> $pool
      *
      * @psalm-mutation-free

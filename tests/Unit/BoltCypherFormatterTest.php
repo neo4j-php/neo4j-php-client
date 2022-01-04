@@ -18,6 +18,8 @@ use Bolt\connection\IConnection;
 use Bolt\structures\Node;
 use Bolt\structures\Path;
 use Bolt\structures\UnboundRelationship;
+use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
@@ -95,7 +97,8 @@ final class BoltCypherFormatterTest extends TestCase
             ConnectionProtocol::BOLT_V43(),
             AccessMode::READ(),
             new DatabaseInfo(''),
-            static fn () => new Bolt($connection),
+            new BoltFactory(new Bolt($connection), Authenticate::disabled(), ''),
+            null
         );
     }
 }

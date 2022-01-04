@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use function array_slice;
-use Bolt\Bolt;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_3;
