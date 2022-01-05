@@ -13,9 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
-use Bolt\Bolt;
 use Bolt\protocol\V3;
+use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
+use function error_reporting;
+use const E_DEPRECATED;
+
+/**
+ * Turn of error reporting for class definition. PHP Users of 8.1 receive a deprectation warning otherwise but
+ * it is not fixable from the minimum version 7.4 as it required the "mixed" keyword.
+ */
+$oldReporting = error_reporting(error_reporting() & (~E_DEPRECATED));
 
 /**
  * Defines the protocol used in a connection.
@@ -34,7 +42,7 @@ use Laudis\TypedEnum\TypedEnum;
  *
  * @psalm-suppress MutableDependency
  */
-final class ConnectionProtocol extends TypedEnum
+final class ConnectionProtocol extends TypedEnum implements JsonSerializable
 {
     private const BOLT_V3 = '3';
     private const BOLT_V40 = '4';
@@ -74,4 +82,14 @@ final class ConnectionProtocol extends TypedEnum
 
         return $x - $y;
     }
+
+    public function jsonSerialize(): string
+    {
+        return $this->getValue();
+    }
 }
+
+/**
+ * Turn back on old error reporting after class definition.
+ */
+error_reporting($oldReporting);
