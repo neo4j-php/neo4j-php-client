@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
-use RuntimeException;
 use function array_merge;
 use function count;
 use function json_decode;
@@ -26,6 +25,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
 use stdClass;
 
 /**
@@ -45,9 +45,6 @@ final class HttpHelper
     public static function interpretResponse(ResponseInterface $response): array
     {
         $contents = $response->getBody()->getContents();
-        if ($response->getStatusCode() >= 400) {
-            throw new RuntimeException('HTTP Error: '.$response->getReasonPhrase());
-        }
 
         /** @var CypherResponseSet $body */
         $body = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
@@ -59,6 +56,10 @@ final class HttpHelper
 
         if (count($errors) !== 0) {
             throw new Neo4jException($errors);
+        }
+
+        if ($response->getStatusCode() >= 400) {
+            throw new RuntimeException('HTTP Error: '.$response->getReasonPhrase());
         }
 
         return $body;
