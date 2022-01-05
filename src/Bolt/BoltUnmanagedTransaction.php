@@ -19,7 +19,6 @@ use Bolt\protocol\V3;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
@@ -52,7 +51,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private ConnectionInterface $connection;
     /** @psalm-readonly */
     private string $database;
-    private bool $finished = false;
 
     /**
      * @param FormatterInterface<T>   $formatter
@@ -71,13 +69,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         $tbr = $this->runStatements($statements);
 
-        if ($this->finished) {
-            throw new Neo4jException([new Neo4jError('0', 'Transaction already finished')]);
-        }
-
         try {
             $this->getBolt()->commit();
-            $this->finished = true;
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);
         }
@@ -87,13 +80,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     public function rollback(): void
     {
-        if ($this->finished) {
-            throw new Neo4jException([new Neo4jError('0', 'Transaction already finished')]);
-        }
-
         try {
             $this->connection->getImplementation()->rollback();
-            $this->finished = true;
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);
         }

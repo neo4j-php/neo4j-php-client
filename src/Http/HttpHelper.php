@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use RuntimeException;
 use function array_merge;
 use function count;
 use function json_decode;
@@ -45,7 +46,7 @@ final class HttpHelper
     {
         $contents = $response->getBody()->getContents();
         if ($response->getStatusCode() >= 400) {
-            throw new Neo4jException([new Neo4jError((string) $response->getStatusCode(), $contents)]);
+            throw new RuntimeException('HTTP Error: '.$response->getReasonPhrase());
         }
 
         /** @var CypherResponseSet $body */
@@ -53,7 +54,7 @@ final class HttpHelper
 
         $errors = [];
         foreach (($body['errors'] ?? []) as $error) {
-            $errors[] = new Neo4jError($error['code'], $error['message']);
+            $errors[] = Neo4jError::fromMessageAndCode($error['code'], $error['message']);
         }
 
         if (count($errors) !== 0) {

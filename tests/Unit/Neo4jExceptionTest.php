@@ -27,7 +27,7 @@ final class Neo4jExceptionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->errors = [new Neo4jError('0', 'abc'), new Neo4jError('1', 'efg')];
+        $this->errors = [new Neo4jError('0', 'abc', '', '', ''), new Neo4jError('1', 'efg', '', '', '')];
         $this->previous = new Error();
         $this->exception = new Neo4jException($this->errors, $this->previous);
     }

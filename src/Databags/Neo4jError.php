@@ -14,21 +14,30 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Bolt\error\MessageException;
+use InvalidArgumentException;
 
 /**
  * Contains the code and message of an error in a neo4j database.
  *
  * @psalm-immutable
+ *
+ * @see https://neo4j.com/docs/status-codes/current/
  */
 final class Neo4jError
 {
     private string $code;
     private string $message;
+    private string $classification;
+    private string $category;
+    private string $title;
 
-    public function __construct(string $code, string $message)
+    public function __construct(string $code, string $message, string $classification, string $category, string $title)
     {
         $this->code = $code;
         $this->message = $message;
+        $this->classification = $classification;
+        $this->category = $category;
+        $this->title = $title;
     }
 
     /**
@@ -36,7 +45,22 @@ final class Neo4jError
      */
     public static function fromMessageException(MessageException $e): self
     {
-        return new self($e->getServerCode(), $e->getServerMessage());
+        return self::fromMessageAndCode($e->getServerCode(), $e->getServerMessage());
+    }
+
+    /**
+     * @pure
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function fromMessageAndCode(string $code, string $message): Neo4jError
+    {
+        $parts = explode('.', $code, 4);
+        if (count($parts) < 4) {
+            throw new InvalidArgumentException('Invalid message exception code');
+        }
+
+        return new self($code, $message, $parts[1], $parts[2], $parts[3]);
     }
 
     /**
@@ -53,5 +77,20 @@ final class Neo4jError
     public function getMessage(): string
     {
         return $this->message;
+    }
+
+    public function getClassification(): string
+    {
+        return $this->classification;
+    }
+
+    public function getCategory(): string
+    {
+        return $this->category;
+    }
+
+    public function getTitle(): string
+    {
+        return $this->title;
     }
 }

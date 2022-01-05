@@ -25,7 +25,7 @@ use Throwable;
  *
  * @psalm-suppress MutableDependency
  */
-final class Neo4jException extends RuntimeException
+class Neo4jException extends RuntimeException
 {
     private const MESSAGE_TEMPLATE = 'Neo4j errors detected. First one with code "%s" and message "%s"';
     /** @var non-empty-list<Neo4jError> */
@@ -61,5 +61,25 @@ final class Neo4jException extends RuntimeException
     public function getNeo4jCode(): string
     {
         return $this->errors[0]->getCode();
+    }
+
+    public function getNeo4jMessage(): string
+    {
+        return $this->errors[0]->getMessage();
+    }
+
+    public function getCategory(): string
+    {
+        return $this->errors[0]->getCategory();
+    }
+
+    public function getClassification(): string
+    {
+        return $this->errors[0]->getClassification();
+    }
+
+    public function getTitle(): string
+    {
+        return $this->errors[0]->getTitle();
     }
 }

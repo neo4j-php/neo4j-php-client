@@ -17,7 +17,6 @@ use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Exception\InvalidTransactionStateException;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use ReflectionClass;
@@ -240,13 +239,9 @@ CYPHER
         }
 
         $transaction = $this->getClient()->beginTransaction(null, $alias);
-        $exception = false;
-        try {
-            $transaction->commit([Statement::create('adkjbehqjk')]);
-        } catch (Neo4jException $e) {
-            $exception = true;
-        }
-        self::assertTrue($exception);
+
+        $this->expectException(Neo4jException::class);
+        $transaction->commit([Statement::create('adkjbehqjk')]);
     }
 
     /**
@@ -260,13 +255,9 @@ CYPHER
 
         $transaction = $this->getClient()->beginTransaction(null, $alias);
         $transaction->commit();
-        $exception = false;
-        try {
-            $transaction->commit();
-        } catch (InvalidTransactionStateException|Neo4jException $e) {
-            $exception = true;
-        }
-        self::assertTrue($exception);
+
+        $this->expectException(Neo4jException::class);
+        $transaction->commit();
     }
 
     /**
@@ -294,13 +285,9 @@ CYPHER
 
         $transaction = $this->getClient()->beginTransaction(null, $alias);
         $transaction->rollback();
-        $exception = false;
-        try {
-            $transaction->rollback();
-        } catch (InvalidTransactionStateException|Neo4jException $e) {
-            $exception = true;
-        }
-        self::assertTrue($exception);
+
+        $this->expectException(Neo4jException::class);
+        $transaction->rollback();
     }
 
     /**
