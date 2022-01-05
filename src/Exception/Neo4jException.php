@@ -25,7 +25,7 @@ use Throwable;
  *
  * @psalm-suppress MutableDependency
  */
-class Neo4jException extends RuntimeException
+final class Neo4jException extends RuntimeException
 {
     private const MESSAGE_TEMPLATE = 'Neo4j errors detected. First one with code "%s" and message "%s"';
     /** @var non-empty-list<Neo4jError> */

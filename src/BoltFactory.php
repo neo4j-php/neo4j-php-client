@@ -14,6 +14,7 @@ namespace Laudis\Neo4j;
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
 use Bolt\error\ConnectException;
+use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use function count;
 use Exception;
@@ -21,6 +22,7 @@ use function explode;
 use const FILTER_VALIDATE_IP;
 use function filter_var;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
@@ -52,19 +54,23 @@ final class BoltFactory
      */
     public function build(): array
     {
-        $this->bolt->setProtocolVersions(4.4, 4.3, 4.2, 3);
         try {
-            $build = $this->bolt->build();
-        } catch (ConnectException $exception) {
-            $this->bolt->setProtocolVersions(4.1, 4.0, 4, 3);
-            $build = $this->bolt->build();
-        }
+            $this->bolt->setProtocolVersions(4.4, 4.3, 4.2, 3);
+            try {
+                $build = $this->bolt->build();
+            } catch (ConnectException $exception) {
+                $this->bolt->setProtocolVersions(4.1, 4.0, 4, 3);
+                $build = $this->bolt->build();
+            }
 
-        if (!$build instanceof V3) {
-            throw new RuntimeException('Client only supports bolt version 3 and up.');
-        }
+            if (!$build instanceof V3) {
+                throw new RuntimeException('Client only supports bolt version 3 and up.');
+            }
 
-        $response = $this->auth->authenticateBolt($build, $this->userAgent);
+            $response = $this->auth->authenticateBolt($build, $this->userAgent);
+        } catch (MessageException $e) {
+            throw Neo4jException::fromMessageException($e);
+        }
 
         return [$build, $response];
     }
