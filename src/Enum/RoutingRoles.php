@@ -13,10 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
+use const E_DEPRECATED;
+use function error_reporting;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
-use function error_reporting;
-use const E_DEPRECATED;
 
 /**
  * Turn of error reporting for class definition. PHP Users of 8.1 receive a deprectation warning otherwise but
