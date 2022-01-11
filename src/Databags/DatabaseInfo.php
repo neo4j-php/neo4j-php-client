@@ -13,12 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Laudis\Neo4j\Types\AbstractCypherObject;
+
 /**
  * Stores relevant information of a database.
  *
  * @psalm-immutable
  */
-final class DatabaseInfo
+final class DatabaseInfo extends AbstractCypherObject
 {
     private string $name;
 
@@ -33,5 +35,10 @@ final class DatabaseInfo
     public function getName(): string
     {
         return $this->name;
+    }
+
+    public function toArray(): array
+    {
+        return ['name' => $this->name];
     }
 }

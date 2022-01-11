@@ -26,7 +26,7 @@ use Psr\Http\Message\UriInterface;
  */
 final class Driver implements DriverInterface
 {
-    /** @var DriverInterface DriverInterface<SummarizedResult<CypherMap>> */
+    /** @var DriverInterface<SummarizedResult<CypherMap>> */
     private DriverInterface $driver;
 
     /**

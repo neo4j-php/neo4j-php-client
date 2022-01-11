@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Laudis\Neo4j\Enum\QueryTypeEnum;
+use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
@@ -28,7 +29,7 @@ use Laudis\Neo4j\Types\CypherList;
  *
  * @psalm-immutable
  */
-final class ResultSummary
+final class ResultSummary extends AbstractCypherObject
 {
     private SummaryCounters $counters;
     private DatabaseInfo $databaseInfo;
@@ -149,5 +150,21 @@ final class ResultSummary
     public function getServerInfo(): ServerInfo
     {
         return $this->serverInfo;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'counters' => $this->counters,
+            'databaseInfo' => $this->databaseInfo,
+            'notifications' => $this->notifications,
+            'plan' => $this->plan,
+            'profiledPlan' => $this->profiledPlan,
+            'statement' => $this->statement,
+            'queryType' => $this->queryType,
+            'resultAvailableAfter' => $this->resultAvailableAfter,
+            'resultConsumedAfter' => $this->resultConsumedAfter,
+            'serverInfo' => $this->serverInfo,
+        ];
     }
 }
