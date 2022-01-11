@@ -66,5 +66,10 @@
             "Laudis\\Neo4j\\TestkitBackend\\": "testkit-backend/src"
         }
     },
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "config": {
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
+        }
+    }
 }
