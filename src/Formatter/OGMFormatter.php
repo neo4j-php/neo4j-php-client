@@ -130,16 +130,18 @@ final class OGMFormatter implements FormatterInterface
             $relationship = $data['graph']['relationships'];
             $metaIndex = 0;
             $relationshipIndex = 0;
+            $nodeIndex = 0;
 
             /** @var array<string, OGMTypes> $record */
             $record = [];
             foreach ($data['row'] as $i => $value) {
                 if (is_array($value)) {
-                    $translation = $this->arrayTranslator->translate($meta, $relationship, $metaIndex, $relationshipIndex, $nodes, $value);
+                    $translation = $this->arrayTranslator->translate($meta, $relationship, $metaIndex, $relationshipIndex, $nodeIndex, $nodes, $value);
 
                     $relationshipIndex += $translation[1];
                     $metaIndex += $translation[0];
-                    $record[$columns[$i]] = $translation[2];
+                    $nodeIndex += $translation[2];
+                    $record[$columns[$i]] = $translation[3];
                 } elseif (is_string($value)) {
                     [$metaIncrement, $translation] = $this->stringTranslator->translate($metaIndex, $meta, $value);
                     $metaIndex += $metaIncrement;

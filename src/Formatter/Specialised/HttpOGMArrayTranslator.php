@@ -99,9 +99,9 @@ final class HttpOGMArrayTranslator
      * @param MetaArray               $meta
      * @param list<NodeArray>         $nodes
      *
-     * @return array{0: int, 1: int, 2:Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point|Path}
+     * @return array{0: int, 1: int, 2: int, 3:Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point|Path}
      */
-    public function translate(array $meta, array $relationships, int $metaIndex, int $relationshipIndex, array $nodes, array $value): array
+    public function translate(array $meta, array $relationships, int $metaIndex, int $relationshipIndex, int $nodeIndex, array $nodes, array $value): array
     {
         $currentMeta = $meta[$metaIndex];
         $metaIncrease = 1;
@@ -127,10 +127,12 @@ final class HttpOGMArrayTranslator
                 $tbr = $this->translatePoint($value);
                 break;
             default:
-                if ($type === 'node' && isset($currentMeta['id'])) {
+                if ($type === 'node' && isset($currentMeta['id']) && $value === $nodes[$nodeIndex]['properties']) {
                     /** @var int $id */
                     $id = $currentMeta['id'];
-                    $tbr = $this->translateNode($nodes, $id);
+                    $node = $nodes[$nodeIndex];
+                    ++$nodeIndex;
+                    $tbr = new Node($id, new CypherList($node['labels']), $this->translateCypherMap($node['properties']));
                 } else {
                     /** @var array<array-key, array|scalar|null> $value */
                     $tbr = $this->translateContainer($value);
@@ -138,7 +140,7 @@ final class HttpOGMArrayTranslator
                 break;
         }
 
-        return [$metaIncrease, $relationshipIncrease, $tbr];
+        return [$metaIncrease, $relationshipIncrease, $nodeIndex, $tbr];
     }
 
     /**

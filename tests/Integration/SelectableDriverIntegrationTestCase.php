@@ -13,15 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use function array_values;
 use Exception;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use function sprintf;
 
 abstract class SelectableDriverIntegrationTestCase extends EnvironmentAwareIntegrationTest
 {
-    /** @var array<string,ClientInterface> */
+    /** @var array<string, ClientInterface> */
     protected static array $drivers = [];
 
     abstract protected static function formatter(): FormatterInterface;
@@ -34,26 +36,26 @@ abstract class SelectableDriverIntegrationTestCase extends EnvironmentAwareInteg
 
     protected static function createClient(): ClientInterface
     {
-        $connections = self::buildConnections();
-
-        foreach ($connections as $i => $connection) {
+        foreach (self::buildConnections() as $i => $connection) {
             $builder = ClientBuilder::create();
             $uri = Uri::create($connection);
             $alias = $uri->getScheme().'_'.$i;
             $builder = $builder->withDriver($alias, $connection);
-            $client = $builder->withFormatter(static::formatter())->build();
-            self::$drivers[$alias] = $client;
+
+            self::$drivers[$alias] = $builder->withFormatter(static::formatter())->build();
         }
 
-        return \array_values(self::$drivers)[0];
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+        return array_values(self::$drivers)[0];
     }
 
     protected function getClientForScheme(string $scheme): ClientInterface
     {
-        $firstAliasForScheme = current(array_filter(array_keys(self::$drivers), fn($alias) => str_starts_with($alias, $scheme)));
+        $firstAliasForScheme = current(array_filter(array_keys(self::$drivers), fn ($alias) => str_starts_with($alias, $scheme)));
         if (false === $firstAliasForScheme) {
-            throw new Exception(\sprintf("No client for scheme %s found", $scheme));
+            throw new Exception(sprintf('No client for scheme %s found', $scheme));
         }
+
         return self::$drivers[$firstAliasForScheme];
     }
 }

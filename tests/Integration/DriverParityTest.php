@@ -13,12 +13,16 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
 use Laudis\Neo4j\Types\CypherMap;
 
-class DriverParityTest extends SelectableDriverIntegrationTestCase
+/**
+ * @psalm-suppress all
+ */
+final class DriverParityTest extends SelectableDriverIntegrationTestCase
 {
     private const TESTABLE_SCHEMES = ['bolt', 'http'];
 
@@ -38,11 +42,10 @@ class DriverParityTest extends SelectableDriverIntegrationTestCase
 
     public function testCanHandleMapLiterals(): void
     {
-        $this->runParityTest(function($client) {
-
+        $this->runParityTest(function (ClientInterface $client) {
             $results = $client->run('MATCH (n:Person)-[r:ACTED_IN]->(m) RETURN n, {movie: m, roles: r.roles} AS actInfo LIMIT 5');
-    
-            foreach($results as $result) {
+
+            foreach ($results as $result) {
                 $actorInfo = $result->get('actInfo');
 
                 $this->assertInstanceOf(CypherMap::class, $actorInfo);
@@ -54,12 +57,11 @@ class DriverParityTest extends SelectableDriverIntegrationTestCase
 
     private function runParityTest(callable $test): void
     {
-        foreach(self::TESTABLE_SCHEMES as $scheme) {
+        foreach (self::TESTABLE_SCHEMES as $scheme) {
             $client = $this->getClientForScheme($scheme);
-            echo "Testing ".$scheme.' for '.$this->getName().PHP_EOL;
+            echo 'Testing '.$scheme.' for '.$this->getName().PHP_EOL;
             $test($client);
             echo $scheme.' passed'.PHP_EOL;
-
         }
     }
 }
