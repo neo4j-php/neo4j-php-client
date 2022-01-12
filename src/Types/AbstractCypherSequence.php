@@ -121,6 +121,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
         /** @var array<TKey, TValue> $tbr */
         $tbr = [];
         foreach ($this->sequence as $key => $value) {
+            /** @psalm-suppress ImpureFunctionCall */
             if ($callback($value, $key)) {
                 $tbr[$key] = $value;
             }
@@ -143,6 +144,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
         /** @var array<TKey, ReturnType> $tbr */
         $tbr = [];
         foreach ($this->sequence as $key => $value) {
+            /** @psalm-suppress ImpureFunctionCall */
             $tbr[$key] = $callback($value, $key);
         }
 
@@ -162,6 +164,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     final public function reduce(callable $callback, $initial = null)
     {
         foreach ($this->sequence as $key => $value) {
+            /** @psalm-suppress ImpureFunctionCall */
             $initial = $callback($initial, $value, $key);
         }
 
@@ -223,6 +226,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     public function each(callable $callable): self
     {
         foreach ($this->sequence as $key => $value) {
+            /** @psalm-suppress ImpureFunctionCall */
             $callable($value, $key);
         }
 

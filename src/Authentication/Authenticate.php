@@ -41,6 +41,16 @@ final class Authenticate
     }
 
     /**
+     * Authenticate using a OpenID Connect token.
+     *
+     * @pure
+     */
+    public static function oidc(string $token): OpenIDConnectAuth
+    {
+        return new OpenIDConnectAuth($token);
+    }
+
+    /**
      * Don't authenticate at all.
      *
      * @pure

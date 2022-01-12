@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Enum;
 
 use Bolt\Bolt;
+use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 
 /**
@@ -32,7 +33,7 @@ use Laudis\TypedEnum\TypedEnum;
  *
  * @psalm-suppress MutableDependency
  */
-final class ConnectionProtocol extends TypedEnum
+final class ConnectionProtocol extends TypedEnum implements JsonSerializable
 {
     private const BOLT_V3 = 'bolt-v3';
     private const BOLT_V40 = 'bolt-v40';
@@ -87,5 +88,10 @@ final class ConnectionProtocol extends TypedEnum
         }
 
         return $x - $y;
+    }
+
+    public function jsonSerialize(): string
+    {
+        return $this->getValue();
     }
 }

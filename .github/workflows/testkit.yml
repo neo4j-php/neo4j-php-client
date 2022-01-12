@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        neo4j-version: ["3.5", "4.0", "4.1", "4.2", "4.3"]
-        php-version: ["7.4", "8.0", "8.1"]
+        neo4j-version: ["3.5", "4.2", "4.3", "4.4"]
+        php-version: ["7.4", "8.1"]
 
     services:
       neo4j:

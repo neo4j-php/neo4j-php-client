@@ -253,6 +253,7 @@ final class BoltOGMTranslator
             throw new UnexpectedValueException('Cannot handle value of debug type: '.$type);
         }
 
+        /** @psalm-suppress ImpureFunctionCall */
         return call_user_func($this->rawToTypes[$type], $value);
     }
 }
