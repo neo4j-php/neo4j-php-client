@@ -203,7 +203,7 @@ foreach ($results as $result) {
     // Returns a Node
     $node = $result->get('node');
 
-    echo $node->getAttribute('id');
+    echo $node->getProperty('id');
     echo $result->get('id');
 }
 ```
