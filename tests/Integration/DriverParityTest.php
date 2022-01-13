@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
@@ -22,17 +21,16 @@ use Laudis\Neo4j\Types\CypherMap;
 /**
  * @psalm-suppress all
  */
-final class DriverParityTest extends SelectableDriverIntegrationTestCase
+final class DriverParityTest extends EnvironmentAwareIntegrationTest
 {
-    private const TESTABLE_SCHEMES = ['bolt', 'http'];
-
-    protected function setUp(): void
+    public static function setUpBeforeClass(): void
     {
-        parent::setUp();
-        $client = $this->getClient();
-
-        $client->run('MATCH (n) DETACH DELETE n');
-        $client->run(MoviesFixture::CQL);
+        parent::setUpBeforeClass();
+        foreach (self::connectionAliases() as $alias) {
+            $session = self::$client->getDriver($alias[0])->createSession();
+            $session->run('MATCH (x) DETACH DELETE x', []);
+            $session->run(MoviesFixture::CQL, []);
+        }
     }
 
     protected static function formatter(): FormatterInterface
@@ -40,28 +38,19 @@ final class DriverParityTest extends SelectableDriverIntegrationTestCase
         return SummarizedResultFormatter::create();
     }
 
-    public function testCanHandleMapLiterals(): void
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testCanHandleMapLiterals(string $alias): void
     {
-        $this->runParityTest(function (ClientInterface $client) {
-            $results = $client->run('MATCH (n:Person)-[r:ACTED_IN]->(m) RETURN n, {movie: m, roles: r.roles} AS actInfo LIMIT 5');
+        $results = $this->getClient()->run('MATCH (n:Person)-[r:ACTED_IN]->(m) RETURN n, {movie: m, roles: r.roles} AS actInfo LIMIT 5', [], $alias);
 
-            foreach ($results as $result) {
-                $actorInfo = $result->get('actInfo');
+        foreach ($results as $result) {
+            $actorInfo = $result->get('actInfo');
 
-                $this->assertInstanceOf(CypherMap::class, $actorInfo);
-                $this->assertTrue($actorInfo->hasKey('roles'));
-                $this->assertTrue($actorInfo->hasKey('movie'));
-            }
-        });
-    }
-
-    private function runParityTest(callable $test): void
-    {
-        foreach (self::TESTABLE_SCHEMES as $scheme) {
-            $client = $this->getClientForScheme($scheme);
-            echo 'Testing '.$scheme.' for '.$this->getName().PHP_EOL;
-            $test($client);
-            echo $scheme.' passed'.PHP_EOL;
+            $this->assertInstanceOf(CypherMap::class, $actorInfo);
+            $this->assertTrue($actorInfo->hasKey('roles'));
+            $this->assertTrue($actorInfo->hasKey('movie'));
         }
     }
 }
