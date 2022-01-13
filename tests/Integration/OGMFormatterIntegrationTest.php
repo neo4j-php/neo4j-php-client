@@ -37,7 +37,6 @@ use Laudis\Neo4j\Types\Time;
 use function range;
 use function sprintf;
 use function str_contains;
-use function str_starts_with;
 
 /**
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -513,12 +512,11 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
 
         self::assertCount(1, $result);
         $paths = $result->first()->get('paths');
-
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not correctly support path expressions in return statements');
-        }
         self::assertInstanceOf(CypherList::class, $paths);
         self::assertCount(2, $paths);
+        foreach ($paths as $path) {
+            self::assertInstanceOf(Path::class, $path);
+        }
     }
 
     /**

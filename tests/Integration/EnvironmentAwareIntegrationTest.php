@@ -66,10 +66,10 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     /**
      * @return non-empty-array<array-key, array{0: string}>
      */
-    public function connectionAliases(): iterable
+    public static function connectionAliases(): iterable
     {
         Dotenv::createImmutable(__DIR__.'/../../')->safeLoad();
-        $connections = $this->getConnections();
+        $connections = static::getConnections();
 
         $tbr = [];
         foreach ($connections as $i => $connection) {
@@ -97,7 +97,7 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     /**
      * @return list<string>
      */
-    protected function getConnections(): array
+    protected static function getConnections(): array
     {
         return self::buildConnections();
     }
