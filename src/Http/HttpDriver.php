@@ -35,33 +35,6 @@ use function uniqid;
  *
  * @implements DriverInterface<T>
  *
- * @psalm-type DiscoveryResult = array{
- *      bolt_routing:string,
- *      transaction: string,
- *      bolt_direct: string,
- *      neo4j_version: string,
- *      neo4j_edition: string,
- *      db/cluster?: string,
- *      dbms/cluster?: string,
- *      data?: string
- * }
- * @psalm-type DiscoveryResultLegacy = array{
- *     extensions: array,
- *     node: string,
- *     relationship: string,
- *     node_index: string,
- *     relationship_index: string,
- *     extensions_info: string,
- *     relationship_types: string,
- *     batch: string,
- *     cypher: string,
- *     indexed: string,
- *     constraints: string,
- *     transaction: string,
- *     node_labels: string,
- *     neo4j_version: string
- * }
- *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
  */
 final class HttpDriver implements DriverInterface
@@ -153,15 +126,17 @@ final class HttpDriver implements DriverInterface
                 $response = $client->sendRequest($request);
 
                 $discovery = HttpHelper::interpretResponse($response);
+                /** @var string|null */
                 $version = $discovery->neo4j_version;
 
                 if ($version === null) {
-                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
-                    $request = $request->withUri(Uri::create($discovery->data));
-                    /** @var DiscoveryResultLegacy|DiscoveryResult */
+                    /** @var string */
+                    $uri = $discovery->data;
+                    $request = $request->withUri(Uri::create($uri));
                     $discovery = HttpHelper::interpretResponse($client->sendRequest($request));
                 }
 
+                /** @var string */
                 $tsx = $discovery->transaction;
 
                 return str_replace('{databaseName}', $database, $tsx);

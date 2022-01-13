@@ -46,11 +46,18 @@ final class HttpHelper
             throw new Neo4jException([new Neo4jError((string) $response->getStatusCode(), $contents)]);
         }
 
+        /** @var stdClass $body */
         $body = json_decode($contents, false, 512, JSON_THROW_ON_ERROR);
 
         $errors = [];
-        foreach (($body->errors ?? []) as $error) {
-            $errors[] = new Neo4jError($error->code, $error->message);
+        /** @var list<stdClass> $bodyErrors */
+        $bodyErrors = $body->errors ?? [];
+        foreach ($bodyErrors as $error) {
+            /** @var string */
+            $code = $error->code;
+            /** @var string */
+            $message = $error->message;
+            $errors[] = new Neo4jError($code, $message);
         }
 
         if (count($errors) !== 0) {

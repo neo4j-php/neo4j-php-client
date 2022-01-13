@@ -181,9 +181,9 @@ final class HttpSession implements SessionInterface
         $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->userAgent, $this->config);
         $response = $connection->getImplementation()->sendRequest($request);
 
-        $data = HttpHelper::interpretResponse($response);
-
-        $path = str_replace('/commit', '', parse_url($data->commit, PHP_URL_PATH));
+        /** @var string */
+        $url = HttpHelper::interpretResponse($response)->commit;
+        $path = str_replace('/commit', '', parse_url($url, PHP_URL_PATH));
         $uri = $request->getUri()->withPath($path);
         $request = $request->withUri($uri);
 
