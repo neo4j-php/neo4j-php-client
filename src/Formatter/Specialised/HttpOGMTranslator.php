@@ -168,7 +168,7 @@ final class HttpOGMTranslator
             $node = $meta->currentNode();
             if ($node && json_encode($value, JSON_THROW_ON_ERROR) === json_encode($node->properties, JSON_THROW_ON_ERROR)) {
                 $meta = $meta->incrementMeta();
-                $map = $this->translateProperties($node->properties);
+                $map = $this->translateProperties((array) $node->properties);
 
                 return [new Node((int) $node->id, new CypherList($node->labels), $map), $meta];
             }
@@ -203,13 +203,14 @@ final class HttpOGMTranslator
 
     /**
      * @psalm-suppress MixedArgument
+     * @psalm-suppress MixedArgumentTypeCoercion
      *
      * @return array{0: Relationship, 1: HttpMetaInfo}
      */
     private function relationship(stdClass $relationship, HttpMetaInfo $meta): array
     {
         $meta = $meta->incrementMeta();
-        $map = $this->translateProperties($relationship->properties);
+        $map = $this->translateProperties((array) $relationship->properties);
 
         $tbr = new Relationship(
             (int) $relationship->id,
