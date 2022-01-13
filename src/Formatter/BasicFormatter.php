@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use stdClass;
 use function array_slice;
 use Bolt\structures\Path;
 use function count;
@@ -28,15 +27,11 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use stdClass;
 use UnexpectedValueException;
 
 /**
  * Formats the result in basic CypherLists and CypherMaps. All cypher types are erased so that the map only contains scalar, null or array values.
- *
- * @psalm-import-type CypherError from \Laudis\Neo4j\Contracts\FormatterInterface
- * @psalm-import-type CypherRowResponse from \Laudis\Neo4j\Contracts\FormatterInterface
- * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
- * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
  *
  * @psalm-type BasicResults = CypherList<CypherMap<scalar|array|null>>
  *
@@ -80,6 +75,7 @@ final class BasicFormatter implements FormatterInterface
         /** @var list<CypherList<CypherMap<scalar|array|null>>> */
         $tbr = [];
 
+        /** @var stdClass $results */
         foreach ($body->results as $results) {
             $tbr[] = $this->buildResult($results);
         }
@@ -95,15 +91,19 @@ final class BasicFormatter implements FormatterInterface
         /** @var list<CypherMap<scalar|array|null>> */
         $tbr = [];
 
+        /** @var list<string> $columns */
         $columns = (array) $result->columns;
+        /** @var stdClass $dataRow */
         foreach ($result->data as $dataRow) {
-            $row = $dataRow->row;
             /** @var array<string, scalar|array|null> $map */
             $map = [];
-            $vector = $row;
+            /** @var list<stdClass|scalar|array|null> */
+            $vector = $dataRow->row;
             foreach ($columns as $index => $key) {
-                // Make sure it are all arrays now
-                $map[$key] = json_decode(json_encode($vector[$index], JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
+                // Removes the stdClasses from the json objects
+                /** @var scalar|array|null */
+                $decoded = json_decode(json_encode($vector[$index], JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
+                $map[$key] = $decoded;
             }
             $tbr[] = new CypherMap($map);
         }

@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use stdClass;
 use function in_array;
 use function is_int;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -28,6 +27,7 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use stdClass;
 use UnexpectedValueException;
 
 /**

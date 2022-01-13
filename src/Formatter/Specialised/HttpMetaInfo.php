@@ -15,17 +15,11 @@ use function is_array;
 use stdClass;
 
 /**
- * @psalm-type RelationshipArray = array{id: string, type: string, startNode: string, endNode: string, properties: array<string, scalar|null|array<array-key, scalar|null|array>>}
- * @psalm-type NodeArray = array{id: string, labels: list<string>, properties: array<string, scalar|null|array}
- * @psalm-type Meta = array{id?: int, type: string, deleted?: bool}
- * @psalm-type MetaArray = list<Meta|null|list<array{id: int, type: string, deleted: bool}>>
- * @psalm-type CypherResultDataRow = array{row: list<scalar|array|null>, meta: MetaArray, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}
- *
  * @psalm-immutable
  */
 final class HttpMetaInfo
 {
-    /** @var list<stdClass|list> */
+    /** @var list<stdClass|list<stdClass>> */
     private array $meta;
     /** @var list<stdClass> */
     private array $nodes;
@@ -58,11 +52,12 @@ final class HttpMetaInfo
         /** @var stdClass */
         $graph = $data->graph;
 
+        /** @psalm-suppress MixedArgument */
         return new self($data->meta, $graph->nodes, $graph->relationships);
     }
 
     /**
-     * @return stdClass|list|null
+     * @return stdClass|list<stdClass>|null
      */
     public function currentMeta()
     {
@@ -112,6 +107,7 @@ final class HttpMetaInfo
             return null;
         }
 
+        /** @var string */
         return $currentMeta->type;
     }
 
@@ -119,8 +115,11 @@ final class HttpMetaInfo
     {
         $tbr = clone $this;
 
-        $tbr->meta = (array) $this->currentMeta();
-        $tbr->currentMeta = 0;
+        $currentMeta = $this->currentMeta();
+        if (is_array($currentMeta)) {
+            $tbr->meta = $currentMeta;
+            $tbr->currentMeta = 0;
+        }
 
         return $tbr;
     }

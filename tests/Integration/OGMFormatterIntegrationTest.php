@@ -37,7 +37,6 @@ use Laudis\Neo4j\Types\Time;
 use function range;
 use function sprintf;
 use function str_contains;
-use function str_starts_with;
 
 /**
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter

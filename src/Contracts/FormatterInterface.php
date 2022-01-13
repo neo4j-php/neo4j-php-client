@@ -83,7 +83,6 @@ interface FormatterInterface
     /**
      * Formats the results of the HTTP protocol to the unified format.
      *
-     * @param stdClass            $body
      * @param iterable<Statement> $statements
      *
      * @throws JsonException
