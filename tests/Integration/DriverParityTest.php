@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
 use Laudis\Neo4j\Types\ArrayList;
@@ -64,7 +65,12 @@ final class DriverParityTest extends EnvironmentAwareIntegrationTest
     {
         $results = $this->getClient()->run(<<<'CYPHER'
         MATCH (n:Person)-[r:ACTED_IN]->(m), p = () - [] -> () - [] -> ()
-        RETURN n, p, {movie: m, roles: r.roles} AS actInfo, m
+        SET m.point = point({latitude:12, longitude: 56, height: 1000})
+        RETURN  n,
+                p,
+                {movie: m, roles: r.roles} AS actInfo,
+                m,
+                point({latitude:13, longitude: 56, height: 1000}) as point
         LIMIT 1
         CYPHER, [], $alias);
 
@@ -77,8 +83,13 @@ final class DriverParityTest extends EnvironmentAwareIntegrationTest
 
             self::assertInstanceOf(ArrayList::class, $actorInfo->get('roles'));
             self::assertInstanceOf(Node::class, $actorInfo->get('movie'));
+            // this can be a cyphermap in HTTP protocol
+            $point = $actorInfo->getAsNode('movie')->getProperty('point');
+            self::assertTrue($point instanceof PointInterface || $point instanceof CypherMap);
+            self::assertIsObject($actorInfo->getAsNode('movie')->getProperty('point'));
             self::assertInstanceOf(Path::class, $result->get('p'));
             self::assertInstanceOf(Node::class, $result->get('m'));
+            self::assertInstanceOf(PointInterface::class, $result->get('point'));
         }
     }
 }

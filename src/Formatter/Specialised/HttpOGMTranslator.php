@@ -105,6 +105,11 @@ final class HttpOGMTranslator
 
         if (is_array($value)) {
             if ($meta->getCurrentType() === 'path') {
+                /**
+                 * There are edge cases where multiple paths are wrapped in a list.
+                 *
+                 * @see OGMFormatterIntegrationTest::testPathMultiple for an example
+                 */
                 if (is_array($value[0])) {
                     $tbr = [];
                     foreach ($value as $path) {
@@ -147,9 +152,9 @@ final class HttpOGMTranslator
 
         if ($type === 'node') {
             $node = $meta->currentNode();
-            if ($node && (array) $value === (array) $node->properties) {
+            if ($node && json_encode($value, JSON_THROW_ON_ERROR) === json_encode($node->properties, JSON_THROW_ON_ERROR)) {
                 $meta = $meta->incrementMeta();
-                [$map, $meta] = $this->translateCypherMap((array) $node->properties, $meta);
+                $map = $this->translateProperties($node->properties);
 
                 return [new Node((int) $node->id, new CypherList($node->labels), $map), $meta];
             }
@@ -158,14 +163,29 @@ final class HttpOGMTranslator
         return $this->translateCypherMap((array) $value, $meta);
     }
 
+    private function translateProperties(stdClass $properties): CypherMap
+    {
+        $tbr = [];
+        foreach ((array) $properties as $key => $value) {
+            if ($value instanceof stdClass) {
+                $tbr[$key] = new CypherMap((array) $value);
+            } elseif (is_array($value)) {
+                $tbr[$key] = new CypherList($value);
+            } else {
+                $tbr[$key] = $value;
+            }
+        }
+
+        return new CypherMap($tbr);
+    }
+
     /**
      * @param RelationshipArray $relationship
      */
     private function relationship(stdClass $relationship, HttpMetaInfo $meta): array
     {
         $meta = $meta->incrementMeta();
-        /** @var array<string, OGMTypes> $map */
-        [$map, $meta] = $this->translateCypherMap((array) $relationship->properties, $meta);
+        $map = $this->translateProperties($relationship->properties);
 
         $tbr = new Relationship(
             (int) $relationship->id,
@@ -225,7 +245,7 @@ final class HttpOGMTranslator
      */
     private function translateNode(array $node): Node
     {
-        return new Node($node['id'], new CypherList($node['labels']), $this->translateCypherMap($node['properties']));
+        return new Node($node['id'], new CypherList($node['labels']), $this->translateProperties($node['properties']));
     }
 
     /**
