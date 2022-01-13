@@ -152,18 +152,17 @@ final class HttpDriver implements DriverInterface
 
                 $response = $client->sendRequest($request);
 
-                /** @var DiscoveryResultLegacy|DiscoveryResult */
                 $discovery = HttpHelper::interpretResponse($response);
-                $version = $discovery['neo4j_version'] ?? null;
+                $version = $discovery->neo4j_version;
 
                 if ($version === null) {
                     /** @psalm-suppress PossiblyUndefinedArrayOffset */
-                    $request = $request->withUri(Uri::create($discovery['data']));
+                    $request = $request->withUri(Uri::create($discovery->data));
                     /** @var DiscoveryResultLegacy|DiscoveryResult */
                     $discovery = HttpHelper::interpretResponse($client->sendRequest($request));
                 }
 
-                $tsx = $discovery['transaction'];
+                $tsx = $discovery->transaction;
 
                 return str_replace('{databaseName}', $database, $tsx);
             }),

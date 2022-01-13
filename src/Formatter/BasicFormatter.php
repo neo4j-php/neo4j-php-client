@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use stdClass;
 use function array_slice;
 use Bolt\structures\Path;
 use function count;
@@ -74,12 +75,12 @@ final class BasicFormatter implements FormatterInterface
         return new CypherList($tbr);
     }
 
-    public function formatHttpResult(ResponseInterface $response, array $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
+    public function formatHttpResult(ResponseInterface $response, stdClass $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
     {
         /** @var list<CypherList<CypherMap<scalar|array|null>>> */
         $tbr = [];
 
-        foreach ($body['results'] as $results) {
+        foreach ($body->results as $results) {
             $tbr[] = $this->buildResult($results);
         }
 
@@ -87,23 +88,22 @@ final class BasicFormatter implements FormatterInterface
     }
 
     /**
-     * @psalm-param CypherResponse $result
-     *
      * @return CypherList<CypherMap<scalar|array|null>>
      */
-    private function buildResult(array $result): CypherList
+    private function buildResult(stdClass $result): CypherList
     {
         /** @var list<CypherMap<scalar|array|null>> */
         $tbr = [];
 
-        $columns = $result['columns'];
-        foreach ($result['data'] as $dataRow) {
-            $row = $dataRow['row'];
+        $columns = (array) $result->columns;
+        foreach ($result->data as $dataRow) {
+            $row = $dataRow->row;
             /** @var array<string, scalar|array|null> $map */
             $map = [];
             $vector = $row;
             foreach ($columns as $index => $key) {
-                $map[$key] = $vector[$index];
+                // Make sure it are all arrays now
+                $map[$key] = json_decode(json_encode($vector[$index], JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
             }
             $tbr[] = new CypherMap($map);
         }
