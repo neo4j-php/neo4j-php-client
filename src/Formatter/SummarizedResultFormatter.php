@@ -71,6 +71,10 @@ final class SummarizedResultFormatter implements FormatterInterface
             throw new UnexpectedValueException('No stats found in the response set');
         }
 
+        /**
+         * @psalm-suppress MixedPropertyFetch
+         * @psalm-suppress MixedArgument
+         */
         $counters = new SummaryCounters(
             $response->stats->nodes_created ?? 0,
             $response->stats->nodes_deleted ?? 0,
@@ -183,7 +187,9 @@ final class SummarizedResultFormatter implements FormatterInterface
         $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);
         $i = 0;
         foreach ($statements as $statement) {
-            $result = $body->results[$i];
+            /** @var list<stdClass> $results */
+            $results = $body->results;
+            $result = $results[$i];
             $tbr[] = $this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i));
             ++$i;
         }

@@ -34,6 +34,7 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 use RuntimeException;
@@ -44,14 +45,6 @@ use function substr;
 
 /**
  * @psalm-immutable
- *
- * @psalm-type RelationshipArray = array{id: string, type: string, startNode: string, endNode: string, properties: array<string, scalar|null|array<array-key, scalar|null|array>>}
- * @psalm-type NodeArray = array{id: string, labels: list<string>, properties: array<string, scalar|null|array}
- * @psalm-type Meta = array{id?: int, type: string, deleted?: bool}
- * @psalm-type MetaArray = list<Meta|null|list<array{id: int, type: string, deleted: bool}>>
- *
- * @psalm-type CypherResultDataRow = list<array{row: list<scalar|array|null>, meta: MetaArray, graph: array{nodes: list<NodeArray>, relationships: list<RelationshipArray>}}>
- * @psalm-type CypherResult = array{columns: list<string>, data: CypherResultDataRow}
  *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -68,17 +61,28 @@ final class HttpOGMTranslator
         /** @var list<CypherMap<OGMTypes>> $tbr */
         $tbr = [];
 
+        /** @var list<string> $columns */
         $columns = $result->columns;
-        foreach ($result->data as $data) {
+        /** @var list<stdClass> $datas */
+        $datas = $result->data;
+        foreach ($datas as $data) {
             $meta = HttpMetaInfo::createFromData($data);
 
-            $row = array_combine($columns, (array) $data->row);
+            /** @var list<stdClass> $row */
+            $row = $data->row;
+            /** @var array<string, stdClass> $row */
+            $row = array_combine($columns, $row);
             $tbr[] = $this->translateCypherMap($row, $meta)[0];
         }
 
         return new CypherList($tbr);
     }
 
+    /**
+     * @param array<string, stdClass> $row
+     *
+     * @return array{0: CypherMap<OGMTypes>, 1: HttpMetaInfo}
+     */
     public function translateCypherMap(array $row, HttpMetaInfo $meta): array
     {
         /** @var array<string, OGMTypes> $record */
@@ -93,9 +97,13 @@ final class HttpOGMTranslator
     }
 
     /**
-     * @param mixed $value
+     * @param stdClass|array|scalar|null $value
      *
      * @return array{0: OGMTypes, 1: HttpMetaInfo}
+     *
+     * @psalm-suppress MixedArgumentTypeCoercion
+     * @psalm-suppress MixedArgument
+     * @psalm-suppress MixedAssignment
      */
     private function translateValue($value, HttpMetaInfo $meta): array
     {
@@ -110,7 +118,7 @@ final class HttpOGMTranslator
                  *
                  * @see OGMFormatterIntegrationTest::testPathMultiple for an example
                  */
-                if (is_array($value[0])) {
+                if (array_key_exists(0, $value) && is_array($value[0])) {
                     $tbr = [];
                     foreach ($value as $path) {
                         $tbr[] = $this->path($path, $meta->withNestedMeta());
@@ -120,7 +128,7 @@ final class HttpOGMTranslator
                     return [new CypherList($tbr), $meta];
                 }
 
-                $tbr = $this->path((array) $value, $meta->withNestedMeta());
+                $tbr = $this->path($value, $meta->withNestedMeta());
                 $meta = $meta->incrementMeta();
 
                 return [$tbr, $meta];
@@ -138,12 +146,18 @@ final class HttpOGMTranslator
 
     /**
      * @return array{0: Cartesian3DPoint|CartesianPoint|CypherList|CypherMap|Node|Relationship|WGS843DPoint|WGS84Point|Path, 1: HttpMetaInfo}
+     *
+     * @psalm-suppress MixedArgument
+     * @psalm-suppress MixedArgumentTypeCoercion
      */
-    private function translateObject(object $value, HttpMetaInfo $meta): array
+    private function translateObject(stdClass $value, HttpMetaInfo $meta): array
     {
         $type = $meta->getCurrentType();
         if ($type === 'relationship') {
-            return $this->relationship($meta->getCurrentRelationship(), $meta);
+            /** @var stdClass $relationship */
+            $relationship = $meta->getCurrentRelationship();
+
+            return $this->relationship($relationship, $meta);
         }
 
         if ($type === 'point') {
@@ -163,24 +177,34 @@ final class HttpOGMTranslator
         return $this->translateCypherMap((array) $value, $meta);
     }
 
-    private function translateProperties(stdClass $properties): CypherMap
+    /**
+     * @param array<string, array|stdClass|scalar|null> $properties
+     *
+     * @return CypherMap<OGMTypes>
+     */
+    private function translateProperties(array $properties): CypherMap
     {
         $tbr = [];
-        foreach ((array) $properties as $key => $value) {
+        foreach ($properties as $key => $value) {
             if ($value instanceof stdClass) {
-                $tbr[$key] = new CypherMap((array) $value);
+                /** @var array<string, array|stdClass|scalar|null> $castedValue */
+                $castedValue = (array) $value;
+                $tbr[$key] = $this->translateProperties($castedValue);
             } elseif (is_array($value)) {
-                $tbr[$key] = new CypherList($value);
+                /** @var array<string, array|stdClass|scalar|null> $value */
+                $tbr[$key] = new CypherList($this->translateProperties($value)->values());
             } else {
                 $tbr[$key] = $value;
             }
         }
-
+        /** @var CypherMap<OGMTypes> */
         return new CypherMap($tbr);
     }
 
     /**
-     * @param RelationshipArray $relationship
+     * @psalm-suppress MixedArgument
+     *
+     * @return array{0: Relationship, 1: HttpMetaInfo}
      */
     private function relationship(stdClass $relationship, HttpMetaInfo $meta): array
     {
@@ -216,24 +240,28 @@ final class HttpOGMTranslator
     }
 
     /**
-     * @param list<stdClass>          $meta
-     * @param list<NodeArray>         $nodes
-     * @param list<RelationshipArray> $relationship
+     * @param list<stdClass> $value
      */
     private function path(array $value, HttpMetaInfo $meta): Path
     {
+        /** @var list<Node> $nodes */
         $nodes = [];
         /** @var list<int> $ids */
         $ids = [];
+        /** @var list<UnboundRelationship> $rels */
         $rels = [];
 
         foreach ($value as $x) {
-            $ids[] = $meta->currentMeta()->id;
+            /** @var stdClass $currentMeta */
+            $currentMeta = $meta->currentMeta();
+            /** @var int $id */
+            $id = $currentMeta->id;
+            $ids[] = $id;
             [$x, $meta] = $this->translateObject($x, $meta);
             if ($x instanceof Node) {
                 $nodes[] = $x;
-            } else {
-                $rels[] = $x;
+            } elseif ($x instanceof Relationship) {
+                $rels[] = new UnboundRelationship($x->getId(), $x->getType(), $x->getProperties());
             }
         }
 
@@ -241,57 +269,55 @@ final class HttpOGMTranslator
     }
 
     /**
-     * @param NodeArray $nodes
-     */
-    private function translateNode(array $node): Node
-    {
-        return new Node($node['id'], new CypherList($node['labels']), $this->translateProperties($node['properties']));
-    }
-
-    /**
      * @return CartesianPoint|Cartesian3DPoint|WGS843DPoint|WGS84Point
      */
     private function translatePoint(stdClass $value): PointInterface
     {
-        /** array{type: 'point', coordinates: array{0: float, 1: float, 2?:float}, crs: array{srid: int, type: string, name: 'cartesian'|'cartesian-3d'|'wgs-84'|'wgs-84-3d', properties: array<string, string>}} */
-        $pointType = $value->crs->name;
-        if ($pointType === 'cartesian') {
+        /** @var stdClass $crs */
+        $crs = $value->crs;
+        /** @var "cartesian"|"cartesian-3d"|"wgs-84"|"wgs-84-3d" */
+        $name = $crs->name;
+        /** @var array{0: float, 1: float, 2:float} $coordinates */
+        $coordinates = $value->coordinates;
+        /** @var int $srid */
+        $srid = $crs->srid;
+        if ($name === 'cartesian') {
             return new CartesianPoint(
-                $value->coordinates[0],
-                $value->coordinates[1],
-                $value->crs->name,
-                $value->crs->srid
+                $coordinates[0],
+                $coordinates[1],
+                $name,
+                $srid
             );
         }
-        if ($pointType === 'cartesian-3d') {
+        if ($name === 'cartesian-3d') {
             return new Cartesian3DPoint(
-                $value->coordinates[0],
-                $value->coordinates[1],
-                $value->coordinates[2],
-                $value->crs->name,
-                $value->crs->srid
+                $coordinates[0],
+                $coordinates[1],
+                $coordinates[2],
+                $name,
+                $srid
             );
         }
-        if ($pointType === 'wgs-84') {
+        if ($name === 'wgs-84') {
             return new WGS84Point(
-                $value->coordinates[0],
-                $value->coordinates[1],
-                $value->coordinates[0],
-                $value->coordinates[1],
-                $value->crs->name,
-                $value->crs->srid
+                $coordinates[0],
+                $coordinates[1],
+                $coordinates[0],
+                $coordinates[1],
+                $name,
+                $srid
             );
         }
 
         return new WGS843DPoint(
-            $value->coordinates[0],
-            $value->coordinates[1],
-            $value->coordinates[2],
-            $value->coordinates[0],
-            $value->coordinates[1],
-            $value->coordinates[2],
-            $value->crs->name,
-            $value->crs->srid
+            $coordinates[0],
+            $coordinates[1],
+            $coordinates[2],
+            $coordinates[0],
+            $coordinates[1],
+            $coordinates[2],
+            $name,
+            $srid
         );
     }
 

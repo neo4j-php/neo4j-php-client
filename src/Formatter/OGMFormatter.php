@@ -87,8 +87,10 @@ final class OGMFormatter implements FormatterInterface
         /** @var list<CypherList<CypherMap<OGMTypes>>> $tbr */
         $tbr = [];
 
-        foreach ($body->results as $results) {
-            $tbr[] = $this->httpTranslator->translateResult($results);
+        /** @var list<stdClass> $results */
+        $results = $body->results;
+        foreach ($results as $result) {
+            $tbr[] = $this->httpTranslator->translateResult($result);
         }
 
         return new CypherList($tbr);
