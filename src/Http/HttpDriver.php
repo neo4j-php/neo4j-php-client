@@ -127,7 +127,7 @@ final class HttpDriver implements DriverInterface
 
                 $discovery = HttpHelper::interpretResponse($response);
                 /** @var string|null */
-                $version = $discovery->neo4j_version;
+                $version = $discovery->neo4j_version ?? null;
 
                 if ($version === null) {
                     /** @var string */
