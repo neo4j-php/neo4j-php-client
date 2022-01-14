@@ -11,6 +11,7 @@
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Dotenv\Dotenv;
 use function explode;
 use function is_string;
 use Laudis\Neo4j\Basic\Driver;
@@ -27,7 +28,12 @@ final class BasicDriverTest extends TestCase
         /** @var string|mixed $connections */
         $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
-            $connections = 'bolt://neo4j:test@neo4j,neo4j://neo4j:test@core1,http://neo4j:test@neo4j';
+            Dotenv::createImmutable(__DIR__ . '/../../')->load();
+            /** @var string|mixed $connections */
+            $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+            if (!is_string($connections)) {
+                $connections = 'bolt://neo4j:test@neo4j,neo4j://neo4j:test@core1,http://neo4j:test@neo4j';
+            }
         }
 
         $tbr = [];

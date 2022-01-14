@@ -88,7 +88,12 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     {
         $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
-            return ['bolt://neo4j:test@neo4j', 'neo4j://neo4j:test@core1', 'http://neo4j:test@neo4j'];
+            Dotenv::createImmutable(__DIR__ . '/../../')->load();
+            /** @var string|mixed $connections */
+            $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+            if (!is_string($connections)) {
+                return ['bolt://neo4j:test@neo4j', 'neo4j://neo4j:test@core1', 'http://neo4j:test@neo4j'];
+            }
         }
 
         return explode(',', $connections);
