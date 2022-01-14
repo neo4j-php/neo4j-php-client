@@ -103,7 +103,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         $connectingTo = $server ?? $uri;
         $socket = new StreamSocket($uri->getHost(), $connectingTo->getPort() ?? 7687);
 
-        $this->sslConfigurator->configure($uri, $connectingTo, $socket, $table, $this->driverConfig);
+        $this->setupSsl($uri, $connectingTo, $table, $socket);
 
         try {
             $bolt = new Bolt($socket);
@@ -126,7 +126,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     ): BoltConnection {
         $socket = new StreamSocket($connectingTo->getHost(), $connectingTo->getPort() ?? 7687, $socketTimeout);
 
-        $this->sslConfigurator->configure($uri, $connectingTo, $socket, $table, $this->driverConfig);
+        $this->setupSsl($uri, $connectingTo, $table, $socket);
 
         $bolt = new Bolt($socket);
         $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
@@ -173,5 +173,13 @@ CYPHER
         $connection->open();
 
         return $connection;
+    }
+
+    private function setupSsl(UriInterface $uri, UriInterface $connectingTo, ?RoutingTable $table, StreamSocket $socket): void
+    {
+        $config = $this->sslConfigurator->configure($uri, $connectingTo, $table, $this->driverConfig);
+        if ($config !== null) {
+            $socket->setSslContextOptions($config);
+        }
     }
 }

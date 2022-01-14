@@ -11,7 +11,6 @@
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\connection\StreamSocket;
 use function count;
 use function explode;
 use const FILTER_VALIDATE_IP;
@@ -23,7 +22,7 @@ use Psr\Http\Message\UriInterface;
 
 final class SslConfigurator
 {
-    public function configure(UriInterface $uri, UriInterface $server, StreamSocket $socket, ?RoutingTable $table, DriverConfiguration $config): void
+    public function configure(UriInterface $uri, UriInterface $server, ?RoutingTable $table, DriverConfiguration $config): ?array
     {
         $sslMode = $config->getSslConfiguration()->getMode();
         $sslConfig = '';
@@ -43,14 +42,16 @@ final class SslConfigurator
             // instance aura deployment, we need to pass the original uri for the
             // ssl configuration to be valid.
             if ($table && count($table->getWithRole()) > 1) {
-                $this->enableSsl($server->getHost(), $sslConfig, $socket, $config);
-            } else {
-                $this->enableSsl($uri->getHost(), $sslConfig, $socket, $config);
+                return $this->enableSsl($server->getHost(), $sslConfig, $config);
             }
+
+            return $this->enableSsl($uri->getHost(), $sslConfig, $config);
         }
+
+        return null;
     }
 
-    private function enableSsl(string $host, string $sslConfig, StreamSocket $sock, DriverConfiguration $config): void
+    private function enableSsl(string $host, string $sslConfig, DriverConfiguration $config): ?array
     {
         $options = [
             'verify_peer' => $config->getSslConfiguration()->isVerifyPeer(),
@@ -60,10 +61,15 @@ final class SslConfigurator
             $options['SNI_enabled'] = true;
         }
         if ($sslConfig === 's') {
-            $sock->setSslContextOptions($options);
-        } elseif ($sslConfig === 'ssc') {
-            $options['allow_self_signed'] = true;
-            $sock->setSslContextOptions($options);
+            return $options;
         }
+
+        if ($sslConfig === 'ssc') {
+            $options['allow_self_signed'] = true;
+
+            return $options;
+        }
+
+        return null;
     }
 }
