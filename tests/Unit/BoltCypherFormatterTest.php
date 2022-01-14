@@ -20,6 +20,7 @@ use Bolt\structures\Path;
 use Bolt\structures\UnboundRelationship;
 use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Formatter\BasicFormatter;
@@ -95,6 +96,7 @@ final class BoltCypherFormatterTest extends TestCase
             ConnectionProtocol::BOLT_V43(),
             AccessMode::READ(),
             new DatabaseInfo(''),
+            DriverConfiguration::default(),
             static fn () => new Bolt($connection),
         );
     }

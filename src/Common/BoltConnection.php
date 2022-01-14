@@ -17,6 +17,7 @@ use Bolt\Bolt;
 use function call_user_func;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Psr\Http\Message\UriInterface;
@@ -45,6 +46,8 @@ final class BoltConnection implements ConnectionInterface
      * @psalm-readonly
      */
     private $connector;
+    /** @psalm-readonly */
+    private DriverConfiguration $driverConfiguration;
 
     /**
      * @psalm-mutation-free
@@ -58,6 +61,7 @@ final class BoltConnection implements ConnectionInterface
         ConnectionProtocol $protocol,
         AccessMode $accessMode,
         DatabaseInfo $databaseInfo,
+        DriverConfiguration $config,
         $connector
     ) {
         $this->serverAgent = $serverAgent;
@@ -67,6 +71,7 @@ final class BoltConnection implements ConnectionInterface
         $this->accessMode = $accessMode;
         $this->databaseInfo = $databaseInfo;
         $this->connector = $connector;
+        $this->driverConfiguration = $config;
     }
 
     /**
@@ -147,5 +152,13 @@ final class BoltConnection implements ConnectionInterface
     public function close(): void
     {
         $this->bolt = null;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getDriverConfiguration(): DriverConfiguration
+    {
+        return $this->driverConfiguration;
     }
 }
