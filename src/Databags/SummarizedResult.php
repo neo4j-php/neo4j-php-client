@@ -57,6 +57,11 @@ final class SummarizedResult extends CypherList
         return $this->summary;
     }
 
+    public function getResult(): CypherList
+    {
+        return new CypherList($this);
+    }
+
     /**
      * @return array{summary: ResultSummary, result: mixed}
      */
