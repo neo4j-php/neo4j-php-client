@@ -97,7 +97,7 @@ final class BoltDriver implements DriverInterface
             return new self(
                 $uri,
                 $authenticate ?? Authenticate::fromUrl(),
-                new BoltConnectionPool($configuration),
+                new BoltConnectionPool($configuration, new SslConfigurator()),
                 $configuration,
                 $formatter,
                 $socketTimeout
@@ -107,7 +107,7 @@ final class BoltDriver implements DriverInterface
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl(),
-            new BoltConnectionPool($configuration),
+            new BoltConnectionPool($configuration, new SslConfigurator()),
             $configuration,
             OGMFormatter::create(),
             $socketTimeout

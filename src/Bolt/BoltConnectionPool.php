@@ -17,9 +17,6 @@ use function array_flip;
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
 use Exception;
-use function explode;
-use const FILTER_VALIDATE_IP;
-use function filter_var;
 use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -28,7 +25,6 @@ use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
-use Laudis\Neo4j\Enum\SslMode;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
 use Throwable;
@@ -44,13 +40,15 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     /** @var array<string, list<BoltConnection>> */
     private static array $connectionCache = [];
     private DriverConfiguration $driverConfig;
+    private SslConfigurator $sslConfigurator;
 
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(DriverConfiguration $driverConfig)
+    public function __construct(DriverConfiguration $driverConfig, SslConfigurator $sslConfigurator)
     {
         $this->driverConfig = $driverConfig;
+        $this->sslConfigurator = $sslConfigurator;
     }
 
     /**
@@ -100,56 +98,12 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         return $connection;
     }
 
-    private function configureSsl(UriInterface $uri, UriInterface $server, StreamSocket $socket, ?RoutingTable $table): void
-    {
-        $sslMode = $this->driverConfig->getSslConfiguration()->getMode();
-        $sslConfig = '';
-        if ($sslMode === SslMode::FROM_URL()) {
-            $scheme = $uri->getScheme();
-            $explosion = explode('+', $scheme, 2);
-            $sslConfig = $explosion[1] ?? '';
-        } elseif ($sslMode === SslMode::ENABLE()) {
-            $sslConfig = 's';
-        } elseif ($sslMode === SslMode::ENABLE_WITH_SELF_SIGNED()) {
-            $sslConfig = 'ssc';
-        }
-
-        if (str_starts_with($sslConfig, 's')) {
-            // We have to pass a different host when working with ssl on aura.
-            // There is a strange behaviour where if we pass the uri host on a single
-            // instance aura deployment, we need to pass the original uri for the
-            // ssl configuration to be valid.
-            if ($table && count($table->getWithRole()) > 1) {
-                $this->enableSsl($server->getHost(), $sslConfig, $socket);
-            } else {
-                $this->enableSsl($uri->getHost(), $sslConfig, $socket);
-            }
-        }
-    }
-
-    private function enableSsl(string $host, string $sslConfig, StreamSocket $sock): void
-    {
-        $options = [
-            'verify_peer' => $this->driverConfig->getSslConfiguration()->isVerifyPeer(),
-            'peer_name' => $host,
-        ];
-        if (!filter_var($host, FILTER_VALIDATE_IP)) {
-            $options['SNI_enabled'] = true;
-        }
-        if ($sslConfig === 's') {
-            $sock->setSslContextOptions($options);
-        } elseif ($sslConfig === 'ssc') {
-            $options['allow_self_signed'] = true;
-            $sock->setSslContextOptions($options);
-        }
-    }
-
     public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?RoutingTable $table = null, ?UriInterface $server = null): bool
     {
         $connectingTo = $server ?? $uri;
         $socket = new StreamSocket($uri->getHost(), $connectingTo->getPort() ?? 7687);
 
-        $this->configureSsl($uri, $connectingTo, $socket, $table);
+        $this->sslConfigurator->configure($uri, $connectingTo, $socket, $table, $this->driverConfig);
 
         try {
             $bolt = new Bolt($socket);
@@ -172,7 +126,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     ): BoltConnection {
         $socket = new StreamSocket($connectingTo->getHost(), $connectingTo->getPort() ?? 7687, $socketTimeout);
 
-        $this->configureSsl($uri, $connectingTo, $socket, $table);
+        $this->sslConfigurator->configure($uri, $connectingTo, $socket, $table, $this->driverConfig);
 
         $bolt = new Bolt($socket);
         $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
