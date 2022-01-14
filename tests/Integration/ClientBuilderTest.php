@@ -26,7 +26,7 @@ final class ClientBuilderTest extends TestCase
         /** @var string|mixed $connections */
         $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
-            Dotenv::createImmutable(__DIR__ . '/../../')->load();
+            Dotenv::createImmutable(__DIR__.'/../../')->load();
             /** @var string|mixed $connections */
             $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
             if (!is_string($connections)) {
@@ -45,11 +45,12 @@ final class ClientBuilderTest extends TestCase
 
     public function testBoltSetupWithScheme(): void
     {
-        if ($this->getBoltUri() === null) {
+        $uri = $this->getBoltUri();
+        if ($uri === null) {
             self::markTestSkipped('No bolt uri provided');
         }
 
-        $client = ClientBuilder::create()->addBoltConnection('bolt', $this->getBoltUri())->build();
+        $client = ClientBuilder::create()->addBoltConnection('bolt', $uri)->build();
         $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
@@ -57,11 +58,12 @@ final class ClientBuilderTest extends TestCase
 
     public function testBoltSetupWithoutPort(): void
     {
-        if ($this->getBoltUri() === null) {
+        $uri = $this->getBoltUri();
+        if ($uri === null) {
             self::markTestSkipped('No bolt uri provided');
         }
 
-        $client = ClientBuilder::create()->addBoltConnection('bolt', $this->getBoltUri())->build();
+        $client = ClientBuilder::create()->addBoltConnection('bolt', $uri)->build();
         $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
@@ -69,11 +71,12 @@ final class ClientBuilderTest extends TestCase
 
     public function testBoltSetupWrongScheme(): void
     {
-        if ($this->getBoltUri() === null) {
+        $uri = $this->getBoltUri();
+        if ($uri === null) {
             self::markTestSkipped('No bolt uri provided');
         }
 
-        $client = ClientBuilder::create()->addBoltConnection('bolt', $this->getBoltUri())->build();
+        $client = ClientBuilder::create()->addBoltConnection('bolt', $uri)->build();
         $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
