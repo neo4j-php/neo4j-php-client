@@ -39,19 +39,23 @@ final class HttpHelper
      * Checks the response and interprets it. Throws if an error is detected.
      *
      * @throws JsonException
-     *
-     * @return CypherResponseSet
      */
-    public static function interpretResponse(ResponseInterface $response): array
+    public static function interpretResponse(ResponseInterface $response): stdClass
     {
         $contents = $response->getBody()->getContents();
 
-        /** @var CypherResponseSet $body */
-        $body = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+        /** @var stdClass $body */
+        $body = json_decode($contents, false, 512, JSON_THROW_ON_ERROR);
 
         $errors = [];
-        foreach (($body['errors'] ?? []) as $error) {
-            $errors[] = Neo4jError::fromMessageAndCode($error['code'], $error['message']);
+        /** @var list<stdClass> $bodyErrors */
+        $bodyErrors = $body->errors ?? [];
+        foreach ($bodyErrors as $error) {
+            /** @var string */
+            $code = $error->code;
+            /** @var string */
+            $message = $error->message;
+            $errors[] = Neo4jError::fromMessageAndCode($code, $message);
         }
 
         if (count($errors) !== 0) {

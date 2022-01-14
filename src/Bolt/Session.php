@@ -164,7 +164,7 @@ final class Session implements SessionInterface
     {
         $timeout = max($this->socketTimeout, $config->getTimeout());
 
-        return $this->pool->acquire($this->uri, $this->auth, $timeout, $this->userAgent, $sessionConfig);
+        return $this->pool->acquire($this->uri, $this->auth, $timeout, $sessionConfig);
     }
 
     private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig): UnmanagedTransactionInterface

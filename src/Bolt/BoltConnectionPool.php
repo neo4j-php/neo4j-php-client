@@ -36,8 +36,17 @@ use Throwable;
  */
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
-    /** @var array<string, list<ConnectionInterface<V3>>> */
+    /** @var array<string, list<BoltConnection>> */
     private static array $connectionCache = [];
+    private DriverConfiguration $driverConfig;
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function __construct(DriverConfiguration $driverConfig)
+    {
+        $this->driverConfig = $driverConfig;
+    }
 
     /**
      * @throws Exception
@@ -46,7 +55,6 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         UriInterface $uri,
         AuthenticateInterface $authenticate,
         float $socketTimeout,
-        string $userAgent,
         SessionConfiguration $config,
         ?RoutingTable $table = null,
         ?UriInterface $server = null
@@ -57,36 +65,37 @@ final class BoltConnectionPool implements ConnectionPoolInterface
             self::$connectionCache[$key] = [];
         }
 
-        foreach (self::$connectionCache[$key] as $connection) {
+        foreach (self::$connectionCache[$key] as $i => $connection) {
             if (!$connection->isOpen()) {
+                $sslConfig = $connection->getDriverConfiguration()->getSslConfiguration();
+                $newSslConfig = $this->driverConfig->getSslConfiguration();
+                if ($sslConfig->getMode() !== $newSslConfig->getMode() ||
+                    $sslConfig->isVerifyPeer() === $newSslConfig->isVerifyPeer()
+                ) {
+                    $connection = $this->getConnection($connectingTo, $authenticate, $config);
+
+                    /** @psalm-suppress PropertyTypeCoercion */
+                    self::$connectionCache[$key][$i] = $connection;
+
+                    return $connection;
+                }
+
                 $connection->open();
 
                 return $connection;
             }
         }
 
-        $factory = BoltFactory::fromVariables($connectingTo, null, null, $authenticate, $userAgent);
-        [$bolt, $response] = $factory->build();
-
-        $connection = new BoltConnection(
-            $response['server'],
-            $connectingTo,
-            explode('/', $response['server'])[1] ?? '',
-            ConnectionProtocol::determineBoltVersion($bolt),
-            $config->getAccessMode(),
-            new DatabaseInfo($config->getDatabase()),
-            $factory,
-            $bolt
-        );
+        $connection = $this->getConnection($connectingTo, $authenticate, $config);
 
         self::$connectionCache[$key][] = $connection;
 
         return $connection;
     }
 
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
     {
-        $bolt = BoltFactory::fromVariables($uri, null, null, $authenticate, $userAgent ?? DriverConfiguration::DEFAULT_USER_AGENT);
+        $bolt = BoltFactory::fromVariables($uri, null, null, $authenticate, $this->driverConfig);
 
         try {
             $bolt->build();
@@ -95,5 +104,26 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         }
 
         return true;
+    }
+
+    /**
+     * @throws \ReflectionException
+     */
+    private function getConnection(UriInterface $connectingTo, AuthenticateInterface $authenticate, SessionConfiguration $config): BoltConnection
+    {
+        $factory = BoltFactory::fromVariables($connectingTo, null, null, $authenticate, $this->driverConfig);
+        [$bolt, $response] = $factory->build();
+
+        return new BoltConnection(
+            $response['server'],
+            $connectingTo,
+            explode('/', $response['server'])[1] ?? '',
+            ConnectionProtocol::determineBoltVersion($bolt),
+            $config->getAccessMode(),
+            new DatabaseInfo($config->getDatabase()),
+            $factory,
+            $bolt,
+            $this->driverConfig
+        );
     }
 }

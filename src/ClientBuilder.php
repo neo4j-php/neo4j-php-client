@@ -182,7 +182,7 @@ final class ClientBuilder
      * @return self<T>
      *
      * @deprecated
-     * @see ClientBuilder::withDriver()
+     * @see Driver::withDriver()
      *
      * @psalm-suppress DeprecatedClass
      */
@@ -216,7 +216,7 @@ final class ClientBuilder
      * @return self<T>
      *
      * @deprecated
-     * @see ClientBuilder::withDefaultDriver()
+     * @see Driver::withDefaultDriver()
      * @psalm-mutation-free
      */
     public function setDefaultConnection(string $alias): self

@@ -66,10 +66,10 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     /**
      * @return non-empty-array<array-key, array{0: string}>
      */
-    public function connectionAliases(): iterable
+    public static function connectionAliases(): iterable
     {
         Dotenv::createImmutable(__DIR__.'/../../')->safeLoad();
-        $connections = $this->getConnections();
+        $connections = static::getConnections();
 
         $tbr = [];
         foreach ($connections as $i => $connection) {
@@ -88,7 +88,12 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     {
         $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
-            return ['bolt://neo4j:test@neo4j', 'neo4j://neo4j:test@core1', 'http://neo4j:test@neo4j'];
+            Dotenv::createImmutable(__DIR__.'/../../')->load();
+            /** @var string|mixed $connections */
+            $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+            if (!is_string($connections)) {
+                return ['bolt://neo4j:test@neo4j', 'neo4j://neo4j:test@core1', 'http://neo4j:test@neo4j'];
+            }
         }
 
         return explode(',', $connections);
@@ -97,7 +102,7 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     /**
      * @return list<string>
      */
-    protected function getConnections(): array
+    protected static function getConnections(): array
     {
         return self::buildConnections();
     }

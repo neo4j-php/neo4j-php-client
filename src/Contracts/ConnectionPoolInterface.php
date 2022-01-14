@@ -32,12 +32,11 @@ interface ConnectionPoolInterface
         UriInterface $uri,
         AuthenticateInterface $authenticate,
         float $socketTimeout,
-        string $userAgent,
         SessionConfiguration $config
     ): ConnectionInterface;
 
     /**
      * Returns true if the connection pool can make a connection to the server with the current Uri and authentication logic.
      */
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool;
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool;
 }

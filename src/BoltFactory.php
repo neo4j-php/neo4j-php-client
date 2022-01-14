@@ -16,12 +16,10 @@ use Bolt\connection\StreamSocket;
 use Bolt\error\ConnectException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
-use function count;
 use Exception;
-use function explode;
-use const FILTER_VALIDATE_IP;
-use function filter_var;
+use Laudis\Neo4j\Bolt\SslConfigurator;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
@@ -80,49 +78,22 @@ final class BoltFactory
         ?UriInterface $server,
         ?RoutingTable $table,
         AuthenticateInterface $authenticate,
-        string $userAgent
+        DriverConfiguration $config
     ): self {
         $connectingTo = $server ?? $uri;
         $socket = new StreamSocket($uri->getHost(), $connectingTo->getPort() ?? 7687);
 
-        self::configureSsl($uri, $connectingTo, $socket, $table);
+        self::configureSsl($uri, $connectingTo, $socket, $table, $config);
 
-        return new self(new Bolt($socket), $authenticate, $userAgent);
+        return new self(new Bolt($socket), $authenticate, $config->getUserAgent());
     }
 
-    private static function configureSsl(UriInterface $uri, UriInterface $server, StreamSocket $socket, ?RoutingTable $table): void
+    private static function configureSsl(UriInterface $uri, UriInterface $server, StreamSocket $socket, ?RoutingTable $table, DriverConfiguration $config): void
     {
-        $scheme = $uri->getScheme();
-        $explosion = explode('+', $scheme, 2);
-        $sslConfig = $explosion[1] ?? '';
+        $options = (new SslConfigurator())->configure($uri, $server, $table, $config);
 
-        if (str_starts_with($sslConfig, 's')) {
-            // We have to pass a different host when working with ssl on aura.
-            // There is a strange behaviour where if we pass the uri host on a single
-            // instance aura deployment, we need to pass the original uri for the
-            // ssl configuration to be valid.
-            if ($table && count($table->getWithRole()) > 1) {
-                self::enableSsl($server->getHost(), $sslConfig, $socket);
-            } else {
-                self::enableSsl($uri->getHost(), $sslConfig, $socket);
-            }
-        }
-    }
-
-    private static function enableSsl(string $host, string $sslConfig, StreamSocket $sock): void
-    {
-        $options = [
-            'verify_peer' => true,
-            'peer_name' => $host,
-        ];
-        if (!filter_var($host, FILTER_VALIDATE_IP)) {
-            $options['SNI_enabled'] = true;
-        }
-        if ($sslConfig === 's') {
-            $sock->setSslContextOptions($options);
-        } elseif ($sslConfig === 'ssc') {
-            $options['allow_self_signed'] = true;
-            $sock->setSslContextOptions($options);
+        if ($options !== null) {
+            $socket->setSslContextOptions($options);
         }
     }
 }

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
@@ -22,7 +23,7 @@ use Laudis\Neo4j\Types\CypherList;
  *
  * @psalm-immutable
  */
-final class ProfiledPlan
+final class ProfiledPlan extends AbstractCypherObject
 {
     /** @var CypherList<ProfiledPlan> */
     private CypherList $children;
@@ -119,5 +120,19 @@ final class ProfiledPlan
     public function getTime(): int
     {
         return $this->time;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'children' => $this->children,
+            'dbHits' => $this->dbHits,
+            'hasPageCacheStats' => $this->hasPageCacheStats,
+            'pageCacheHitRatio' => $this->pageCacheHitRatio,
+            'pageCacheHits' => $this->pageCacheHits,
+            'pageCacheMisses' => $this->pageCacheMisses,
+            'records' => $this->records,
+            'time' => $this->time,
+        ];
     }
 }

@@ -27,15 +27,11 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use stdClass;
 use UnexpectedValueException;
 
 /**
  * Formats the result in basic CypherLists and CypherMaps. All cypher types are erased so that the map only contains scalar, null or array values.
- *
- * @psalm-import-type CypherError from \Laudis\Neo4j\Contracts\FormatterInterface
- * @psalm-import-type CypherRowResponse from \Laudis\Neo4j\Contracts\FormatterInterface
- * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
- * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
  *
  * @psalm-type BasicResults = CypherList<CypherMap<scalar|array|null>>
  *
@@ -74,12 +70,13 @@ final class BasicFormatter implements FormatterInterface
         return new CypherList($tbr);
     }
 
-    public function formatHttpResult(ResponseInterface $response, array $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
+    public function formatHttpResult(ResponseInterface $response, stdClass $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
     {
         /** @var list<CypherList<CypherMap<scalar|array|null>>> */
         $tbr = [];
 
-        foreach ($body['results'] as $results) {
+        /** @var stdClass $results */
+        foreach ($body->results as $results) {
             $tbr[] = $this->buildResult($results);
         }
 
@@ -87,23 +84,26 @@ final class BasicFormatter implements FormatterInterface
     }
 
     /**
-     * @psalm-param CypherResponse $result
-     *
      * @return CypherList<CypherMap<scalar|array|null>>
      */
-    private function buildResult(array $result): CypherList
+    private function buildResult(stdClass $result): CypherList
     {
         /** @var list<CypherMap<scalar|array|null>> */
         $tbr = [];
 
-        $columns = $result['columns'];
-        foreach ($result['data'] as $dataRow) {
-            $row = $dataRow['row'];
+        /** @var list<string> $columns */
+        $columns = (array) $result->columns;
+        /** @var stdClass $dataRow */
+        foreach ($result->data as $dataRow) {
             /** @var array<string, scalar|array|null> $map */
             $map = [];
-            $vector = $row;
+            /** @var list<stdClass|scalar|array|null> */
+            $vector = $dataRow->row;
             foreach ($columns as $index => $key) {
-                $map[$key] = $vector[$index];
+                // Removes the stdClasses from the json objects
+                /** @var scalar|array|null */
+                $decoded = json_decode(json_encode($vector[$index], JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
+                $map[$key] = $decoded;
             }
             $tbr[] = new CypherMap($map);
         }

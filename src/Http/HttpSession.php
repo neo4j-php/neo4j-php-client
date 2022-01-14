@@ -109,7 +109,7 @@ final class HttpSession implements SessionInterface
         $config ??= TransactionConfiguration::default();
 
         $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve());
-        $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->userAgent, $this->config);
+        $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->config);
         $content = HttpHelper::statementsToJson($this->formatter, $statements);
         $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->resolve()->createStream($content));
 
@@ -178,13 +178,12 @@ final class HttpSession implements SessionInterface
 
         $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve());
         $request->getBody()->write(HttpHelper::statementsToJson($this->formatter, $statements ?? []));
-        $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->userAgent, $this->config);
+        $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->config);
         $response = $connection->getImplementation()->sendRequest($request);
 
-        /** @var array{commit: string} $data */
-        $data = HttpHelper::interpretResponse($response);
-
-        $path = str_replace('/commit', '', parse_url($data['commit'], PHP_URL_PATH));
+        /** @var string */
+        $url = HttpHelper::interpretResponse($response)->commit;
+        $path = str_replace('/commit', '', parse_url($url, PHP_URL_PATH));
         $uri = $request->getUri()->withPath($path);
         $request = $request->withUri($uri);
 

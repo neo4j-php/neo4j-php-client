@@ -22,6 +22,8 @@ use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Formatter\BasicFormatter;
@@ -98,7 +100,8 @@ final class BoltCypherFormatterTest extends TestCase
             AccessMode::READ(),
             new DatabaseInfo(''),
             new BoltFactory(new Bolt($connection), Authenticate::disabled(), ''),
-            null
+            null,
+            DriverConfiguration::default()
         );
     }
 }

@@ -67,14 +67,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         UriInterface $uri,
         AuthenticateInterface $authenticate,
         float $socketTimeout,
-        string $userAgent,
         SessionConfiguration $config
     ): ConnectionInterface {
         $key = $uri->getHost().':'.($uri->getPort() ?? '7687');
 
         $table = self::$routingCache[$key] ?? null;
         if ($table === null || $table->getTtl() < time()) {
-            $connection = $this->pool->acquire($uri, $authenticate, $socketTimeout, $userAgent, $config);
+            $connection = $this->pool->acquire($uri, $authenticate, $socketTimeout, $config);
             $table = $this->routingTable($connection, $config);
             self::$routingCache[$key] = $table;
             $connection->close();
@@ -84,7 +83,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $authenticate = Authenticate::fromUrl($uri);
 
-        return $this->pool->acquire($uri, $authenticate, $socketTimeout, $userAgent, $config, $table, $server);
+        return $this->pool->acquire($uri, $authenticate, $socketTimeout, $config, $table, $server);
     }
 
     /**
@@ -189,8 +188,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         return new RoutingTable($servers, $ttl);
     }
 
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
     {
-        return $this->pool->canConnect($uri, $authenticate, $userAgent);
+        return $this->pool->canConnect($uri, $authenticate);
     }
 }

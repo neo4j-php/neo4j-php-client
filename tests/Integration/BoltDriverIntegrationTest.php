@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Bolt\error\ConnectException;
+use Dotenv\Dotenv;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
@@ -22,7 +23,7 @@ use Psr\Http\Message\UriInterface;
 
 final class BoltDriverIntegrationTest extends TestCase
 {
-    private UriInterface $uri;
+    private ?UriInterface $uri;
 
     protected function setUp(): void
     {
@@ -30,16 +31,26 @@ final class BoltDriverIntegrationTest extends TestCase
         $this->uri = $this->getBoltUri();
     }
 
-    private function getBoltUri(): UriInterface
+    private function getBoltUri(): ?UriInterface
     {
-        foreach (explode(',', (string) getenv('NEO4J_CONNECTIONS')) as $uri) {
+        /** @var string|mixed $connections */
+        $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+        if (!is_string($connections)) {
+            Dotenv::createImmutable(__DIR__.'/../../')->load();
+            /** @var string|mixed $connections */
+            $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+            if (!is_string($connections)) {
+                $connections = 'bolt://neo4j:test@neo4j,neo4j://neo4j:test@core1,http://neo4j:test@neo4j';
+            }
+        }
+        foreach (explode(',', $connections) as $uri) {
             $psrUri = Uri::create($uri);
             if ($psrUri->getScheme() === 'bolt') {
                 return $psrUri;
             }
         }
 
-        return Uri::create('bolt://neo4j:test@neo4j');
+        return null;
     }
 
     /**
@@ -47,6 +58,10 @@ final class BoltDriverIntegrationTest extends TestCase
      */
     public function testValidHostname(): void
     {
+        if ($this->uri === null) {
+            self::markTestSkipped('No bolt uri provided');
+        }
+
         $results = BoltDriver::create($this->uri->__toString())->createSession()->run(<<<'CYPHER'
 RETURN 1 AS x
 CYPHER);
@@ -58,6 +73,10 @@ CYPHER);
      */
     public function testValidUrl(): void
     {
+        if ($this->uri === null) {
+            self::markTestSkipped('No bolt uri provided');
+        }
+
         $ip = gethostbyname($this->uri->getHost());
         $results = BoltDriver::create($this->uri->withHost($ip)->__toString())->createSession()->run(<<<'CYPHER'
 RETURN 1 AS x

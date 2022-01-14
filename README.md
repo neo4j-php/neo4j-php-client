@@ -1,4 +1,4 @@
-# Laudis Neo4j PHP Client
+# Neo4j PHP Client and Driver
 
 [![Latest Stable Version](https://poser.pugx.org/laudis/neo4j-php-client/v)](//packagist.org/packages/laudis/neo4j-php-client)
 [![Total Downloads](https://poser.pugx.org/laudis/neo4j-php-client/downloads)](//packagist.org/packages/laudis/neo4j-php-client)
@@ -203,7 +203,7 @@ foreach ($results as $result) {
     // Returns a Node
     $node = $result->get('node');
 
-    echo $node->getAttribute('id');
+    echo $node->getProperty('id');
     echo $result->get('id');
 }
 ```

@@ -13,29 +13,44 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Dotenv\Dotenv;
 use function explode;
-use function getenv;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use PHPUnit\Framework\TestCase;
 
 final class ClientBuilderTest extends TestCase
 {
-    private function getBoltUri(): string
+    private function getBoltUri(): ?string
     {
-        foreach (explode(',', (string) getenv('NEO4J_CONNECTIONS')) as $uri) {
+        /** @var string|mixed $connections */
+        $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+        if (!is_string($connections)) {
+            Dotenv::createImmutable(__DIR__.'/../../')->load();
+            /** @var string|mixed $connections */
+            $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+            if (!is_string($connections)) {
+                $connections = '';
+            }
+        }
+        foreach (explode(',', $connections) as $uri) {
             $psrUri = Uri::create($uri);
             if ($psrUri->getScheme() === 'bolt') {
                 return $psrUri->__toString();
             }
         }
 
-        return 'bolt://neo4j:test@neo4j:7687';
+        return null;
     }
 
     public function testBoltSetupWithScheme(): void
     {
-        $client = ClientBuilder::create()->addBoltConnection('bolt', $this->getBoltUri())->build();
+        $uri = $this->getBoltUri();
+        if ($uri === null) {
+            self::markTestSkipped('No bolt uri provided');
+        }
+
+        $client = ClientBuilder::create()->addBoltConnection('bolt', $uri)->build();
         $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
@@ -43,7 +58,12 @@ final class ClientBuilderTest extends TestCase
 
     public function testBoltSetupWithoutPort(): void
     {
-        $client = ClientBuilder::create()->addBoltConnection('bolt', $this->getBoltUri())->build();
+        $uri = $this->getBoltUri();
+        if ($uri === null) {
+            self::markTestSkipped('No bolt uri provided');
+        }
+
+        $client = ClientBuilder::create()->addBoltConnection('bolt', $uri)->build();
         $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
@@ -51,7 +71,12 @@ final class ClientBuilderTest extends TestCase
 
     public function testBoltSetupWrongScheme(): void
     {
-        $client = ClientBuilder::create()->addBoltConnection('bolt', $this->getBoltUri())->build();
+        $uri = $this->getBoltUri();
+        if ($uri === null) {
+            self::markTestSkipped('No bolt uri provided');
+        }
+
+        $client = ClientBuilder::create()->addBoltConnection('bolt', $uri)->build();
         $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();

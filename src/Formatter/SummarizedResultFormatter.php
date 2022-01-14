@@ -27,6 +27,7 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use stdClass;
 use UnexpectedValueException;
 
 /**
@@ -60,32 +61,35 @@ final class SummarizedResultFormatter implements FormatterInterface
     }
 
     /**
-     * @param CypherResponse                  $response
      * @param CypherList<CypherMap<OGMTypes>> $results
      *
      * @return SummarizedResult<CypherMap<OGMTypes>>
      */
-    public function formatHttpStats(array $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
+    public function formatHttpStats(stdClass $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
     {
-        if (!isset($response['stats'])) {
+        if (!isset($response->stats)) {
             throw new UnexpectedValueException('No stats found in the response set');
         }
 
+        /**
+         * @psalm-suppress MixedPropertyFetch
+         * @psalm-suppress MixedArgument
+         */
         $counters = new SummaryCounters(
-            $response['stats']['nodes_created'] ?? 0,
-            $response['stats']['nodes_deleted'] ?? 0,
-            $response['stats']['relationships_created'] ?? 0,
-            $response['stats']['relationships_deleted'] ?? 0,
-            $response['stats']['properties_set'] ?? 0,
-            $response['stats']['labels_added'] ?? 0,
-            $response['stats']['labels_removed'] ?? 0,
-            $response['stats']['indexes_added'] ?? 0,
-            $response['stats']['indexes_removed'] ?? 0,
-            $response['stats']['constraints_added'] ?? 0,
-            $response['stats']['constraints_removed'] ?? 0,
-            $response['stats']['contains_updates'] ?? false,
-            $response['stats']['contains_system_updates'] ?? false,
-            $response['stats']['system_updates'] ?? 0,
+            $response->stats->nodes_created ?? 0,
+            $response->stats->nodes_deleted ?? 0,
+            $response->stats->relationships_created ?? 0,
+            $response->stats->relationships_deleted ?? 0,
+            $response->stats->properties_set ?? 0,
+            $response->stats->labels_added ?? 0,
+            $response->stats->labels_removed ?? 0,
+            $response->stats->indexes_added ?? 0,
+            $response->stats->indexes_removed ?? 0,
+            $response->stats->constraints_added ?? 0,
+            $response->stats->constraints_removed ?? 0,
+            $response->stats->contains_updates ?? false,
+            $response->stats->contains_system_updates ?? false,
+            $response->stats->system_updates ?? 0,
         );
 
         $summary = new ResultSummary(
@@ -175,7 +179,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         return new SummarizedResult($summary, $formattedResult->toArray());
     }
 
-    public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
+    public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
         /** @var list<SummarizedResult<CypherMap<OGMTypes>>> */
         $tbr = [];
@@ -183,7 +187,9 @@ final class SummarizedResultFormatter implements FormatterInterface
         $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);
         $i = 0;
         foreach ($statements as $statement) {
-            $result = $body['results'][$i];
+            /** @var list<stdClass> $results */
+            $results = $body->results;
+            $result = $results[$i];
             $tbr[] = $this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i));
             ++$i;
         }

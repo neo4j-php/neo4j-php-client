@@ -20,6 +20,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use stdClass;
 
 /**
  * A formatter (aka Hydrator) is reponsible for formatting the incoming results of the driver.
@@ -83,14 +84,13 @@ interface FormatterInterface
     /**
      * Formats the results of the HTTP protocol to the unified format.
      *
-     * @param CypherResponseSet   $body
      * @param iterable<Statement> $statements
      *
      * @throws JsonException
      *
      * @return CypherList<ResultFormat>
      */
-    public function formatHttpResult(ResponseInterface $response, array $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
+    public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
 
     /**
      * Decorates a request to make make sure it requests the correct format.
