@@ -14,14 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Authentication;
 
 use function base64_encode;
-use Bolt\Bolt;
-use Bolt\error\MessageException;
 use Bolt\helpers\Auth;
+use Bolt\protocol\V3;
 use Exception;
-use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Databags\Neo4jError;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -61,23 +57,9 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @throws Exception
      */
-    public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
+    public function authenticateBolt(V3 $bolt, string $userAgent): array
     {
-        try {
-            $auth = Auth::basic($this->username, $this->password);
-            $auth['user_agent'] = $userAgent;
-            $bolt->init($auth);
-        } catch (MessageException $e) {
-            $code = TransactionHelper::extractCode($e) ?? '';
-            throw new Neo4jException([new Neo4jError($code, $e->getMessage())]);
-        }
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function extractFromUri(UriInterface $uri): AuthenticateInterface
-    {
-        return $this;
+        /** @var array{server: string, connection_id: string, hints: list} */
+        return $bolt->hello(Auth::basic($this->username, $this->password, $userAgent));
     }
 }

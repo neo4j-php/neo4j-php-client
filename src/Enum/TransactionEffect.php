@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /*
  * This file is part of the Laudis Neo4j package.
  *
@@ -25,38 +23,25 @@ use Laudis\TypedEnum\TypedEnum;
 $oldReporting = error_reporting(error_reporting() & (~E_DEPRECATED));
 
 /**
- * The possible routing roles.
+ * Defines the access mode of a connection.
  *
- * @method static RoutingRoles LEADER()
- * @method static RoutingRoles FOLLOWER()
- * @method static RoutingRoles ROUTE()
+ * @method static self ROLLBACK()
+ * @method static self NONE()
  *
- * @extends TypedEnum<list<string>>
+ * @extends TypedEnum<string>
  *
  * @psalm-immutable
  *
  * @psalm-suppress MutableDependency
  */
-final class RoutingRoles extends TypedEnum implements JsonSerializable
+final class TransactionEffect extends TypedEnum implements JsonSerializable
 {
-    private const LEADER = ['WRITE', 'LEADER'];
-    private const FOLLOWER = ['READ', 'FOLLOWER'];
-    private const ROUTE = ['ROUTE'];
+    private const ROLLBACK = 'rollback';
+    private const WRITE = 'none';
 
-    /**
-     * @psalm-suppress ImpureMethodCall
-     */
-    public function jsonSerialize(): string
+    public function jsonSerialize()
     {
-        if ($this === self::LEADER()) {
-            return 'LEADER';
-        }
-
-        if ($this === self::FOLLOWER()) {
-            return 'FOLLOWER';
-        }
-
-        return 'ROUTE';
+        return $this->getValue();
     }
 }
 

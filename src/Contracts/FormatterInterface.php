@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Bolt\Bolt;
+use Bolt\protocol\V3;
 use JsonException;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
@@ -72,9 +73,9 @@ interface FormatterInterface
     /**
      * Formats the results of the bolt protocol to the unified format.
      *
-     * @param BoltMeta                  $meta
-     * @param array<array-key, array>   $results
-     * @param ConnectionInterface<Bolt> $connection
+     * @param BoltMeta                $meta
+     * @param array<array-key, array> $results
+     * @param ConnectionInterface<V3> $connection
      *
      * @return ResultFormat
      */

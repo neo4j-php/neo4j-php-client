@@ -65,7 +65,6 @@ final class HttpConnectionPool implements ConnectionPoolInterface
         UriInterface $uri,
         AuthenticateInterface $authenticate,
         float $socketTimeout,
-        string $userAgent,
         SessionConfiguration $config
     ): ConnectionInterface {
         $request = $this->requestFactory->resolve()->createRequest('POST', $uri);
@@ -107,7 +106,7 @@ CYPHER
         );
     }
 
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
+    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool
     {
         $request = $this->requestFactory->resolve()->createRequest('GET', $uri);
         $client = $this->client->resolve();

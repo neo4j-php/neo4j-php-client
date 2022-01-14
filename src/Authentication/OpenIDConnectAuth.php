@@ -11,8 +11,8 @@
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\Bolt;
 use Bolt\helpers\Auth;
+use Bolt\protocol\V3;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -43,20 +43,9 @@ final class OpenIDConnectAuth implements AuthenticateInterface
             ->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void
+    public function authenticateBolt(V3 $bolt, string $userAgent): array
     {
-        /**
-         * @psalm-suppress DeprecatedMethod
-         * @psalm-suppress ImpureMethodCall
-         */
-        $bolt->init(Auth::bearer($this->token));
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function extractFromUri(UriInterface $uri): AuthenticateInterface
-    {
-        return $this;
+        /** @var array{server: string, connection_id: string, hints: list} */
+        return $bolt->hello(Auth::bearer($this->token));
     }
 }

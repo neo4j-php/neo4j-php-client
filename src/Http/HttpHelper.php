@@ -25,6 +25,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
 use stdClass;
 
 /**
@@ -42,9 +43,6 @@ final class HttpHelper
     public static function interpretResponse(ResponseInterface $response): stdClass
     {
         $contents = $response->getBody()->getContents();
-        if ($response->getStatusCode() >= 400) {
-            throw new Neo4jException([new Neo4jError((string) $response->getStatusCode(), $contents)]);
-        }
 
         /** @var stdClass $body */
         $body = json_decode($contents, false, 512, JSON_THROW_ON_ERROR);
@@ -57,11 +55,15 @@ final class HttpHelper
             $code = $error->code;
             /** @var string */
             $message = $error->message;
-            $errors[] = new Neo4jError($code, $message);
+            $errors[] = Neo4jError::fromMessageAndCode($code, $message);
         }
 
         if (count($errors) !== 0) {
             throw new Neo4jException($errors);
+        }
+
+        if ($response->getStatusCode() >= 400) {
+            throw new RuntimeException('HTTP Error: '.$response->getReasonPhrase());
         }
 
         return $body;

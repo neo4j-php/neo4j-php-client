@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use ArrayIterator;
 use Laudis\Neo4j\Exception\InvalidTransactionStateException;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -45,8 +46,8 @@ final class TransactionCommit implements RequestHandlerInterface
 
         try {
             $tsx->commit();
-        } catch (InvalidTransactionStateException $e) {
-            return new DriverErrorResponse($request->getTxId(), '', $e->getMessage());
+        } catch (Neo4jException $e) {
+            return new DriverErrorResponse($request->getTxId(), $e->getCategory(), $e->getMessage());
         }
 
         return new TransactionResponse($request->getTxId());

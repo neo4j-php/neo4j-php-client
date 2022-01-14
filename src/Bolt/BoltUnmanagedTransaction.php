@@ -15,12 +15,10 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\error\MessageException;
-use Exception;
-use Laudis\Neo4j\Common\TransactionHelper;
+use Bolt\protocol\V3;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
@@ -48,16 +46,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @psalm-readonly
      *
-     * @var ConnectionInterface<Bolt>
+     * @var ConnectionInterface<V3>
      */
     private ConnectionInterface $connection;
     /** @psalm-readonly */
     private string $database;
-    private bool $finished = false;
 
     /**
-     * @param FormatterInterface<T>     $formatter
-     * @param ConnectionInterface<Bolt> $connection
+     * @param FormatterInterface<T>   $formatter
+     * @param ConnectionInterface<V3> $connection
      *
      * @psalm-mutation-free
      */
@@ -72,16 +69,10 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         $tbr = $this->runStatements($statements);
 
-        if ($this->finished) {
-            throw new Neo4jException([new Neo4jError('0', 'Transaction already finished')]);
-        }
-
         try {
             $this->getBolt()->commit();
-            $this->finished = true;
-        } catch (Exception $e) {
-            $code = TransactionHelper::extractCode($e);
-            throw new Neo4jException([new Neo4jError($code ?? '', $e->getMessage())], $e);
+        } catch (MessageException $e) {
+            throw Neo4jException::fromMessageException($e);
         }
 
         return $tbr;
@@ -89,16 +80,10 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     public function rollback(): void
     {
-        if ($this->finished) {
-            throw new Neo4jException([new Neo4jError('0', 'Transaction already finished')]);
-        }
-
         try {
             $this->connection->getImplementation()->rollback();
-            $this->finished = true;
-        } catch (Exception $e) {
-            $code = TransactionHelper::extractCode($e) ?? '';
-            throw new Neo4jException([new Neo4jError($code, $e->getMessage())], $e);
+        } catch (MessageException $e) {
+            throw Neo4jException::fromMessageException($e);
         }
     }
 
@@ -136,12 +121,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 /** @var array<array> $results */
                 $results = $this->getBolt()->pullAll();
                 $end = microtime(true);
-            } catch (Throwable $e) {
-                if ($e instanceof MessageException) {
-                    $code = TransactionHelper::extractCode($e) ?? '';
-                    throw new Neo4jException([new Neo4jError($code, $e->getMessage())], $e);
-                }
-                throw $e;
+            } catch (MessageException $e) {
+                throw Neo4jException::fromMessageException($e);
             }
             $tbr[] = $this->formatter->formatBoltResult(
                 $meta,
@@ -159,7 +140,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @psalm-immutable
      */
-    private function getBolt(): Bolt
+    private function getBolt(): V3
     {
         return $this->connection->getImplementation();
     }

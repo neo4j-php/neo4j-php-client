@@ -52,7 +52,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Copies the sequence.
      *
-     * @return static<TValue, TKey>
+     * @return static
      */
     final public function copy(): self
     {
@@ -85,7 +85,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param iterable<array-key, TValue> $values
      *
-     * @return static<TValue, TKey>
+     * @return static
      */
     abstract public function merge(iterable $values): self;
 
@@ -186,7 +186,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Creates a reversed sequence.
      *
-     * @return static<TValue, TKey>
+     * @return static
      */
     abstract public function reversed(): self;
 
@@ -194,7 +194,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * Slices a new sequence starting from the given offset with a certain length.
      * If the length is null it will slice the entire remainder starting from the offset.
      *
-     * @return static<TValue, TKey>
+     * @return static
      */
     abstract public function slice(int $offset, int $length = null): self;
 
@@ -203,7 +203,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param (callable(TValue, TValue):int)|null $comparator
      *
-     * @return static<TValue, TKey>
+     * @return static
      */
     abstract public function sorted(?callable $comparator = null): self;
 

@@ -13,13 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Bolt\Bolt;
+use Bolt\protocol\V3;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Bolt\Session;
-use Laudis\Neo4j\Bolt\SslConfigurator;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -45,15 +44,15 @@ final class Neo4jDriver implements DriverInterface
 {
     private UriInterface $parsedUrl;
     private AuthenticateInterface $auth;
-    /** @var ConnectionPoolInterface<Bolt> */
+    /** @var ConnectionPoolInterface<V3> */
     private ConnectionPoolInterface $pool;
     private DriverConfiguration $config;
     private FormatterInterface $formatter;
     private float $socketTimeout;
 
     /**
-     * @param FormatterInterface<T>         $formatter
-     * @param ConnectionPoolInterface<Bolt> $pool
+     * @param FormatterInterface<T>       $formatter
+     * @param ConnectionPoolInterface<V3> $pool
      *
      * @psalm-mutation-free
      */
@@ -98,8 +97,8 @@ final class Neo4jDriver implements DriverInterface
         if ($formatter !== null) {
             return new self(
                 $uri,
-                $authenticate ?? Authenticate::fromUrl(),
-                new Neo4jConnectionPool(new BoltConnectionPool($configuration, new SslConfigurator())),
+                $authenticate ?? Authenticate::fromUrl($uri),
+                new Neo4jConnectionPool(new BoltConnectionPool($configuration)),
                 $configuration,
                 $formatter,
                 $socketTimeout
@@ -108,8 +107,8 @@ final class Neo4jDriver implements DriverInterface
 
         return new self(
             $uri,
-            $authenticate ?? Authenticate::fromUrl(),
-            new Neo4jConnectionPool(new BoltConnectionPool($configuration, new SslConfigurator())),
+            $authenticate ?? Authenticate::fromUrl($uri),
+            new Neo4jConnectionPool(new BoltConnectionPool($configuration)),
             $configuration,
             OGMFormatter::create(),
             $socketTimeout

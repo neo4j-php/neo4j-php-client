@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Exception;
 
+use Bolt\error\MessageException;
 use Laudis\Neo4j\Databags\Neo4jError;
 use RuntimeException;
 use Throwable;
@@ -42,6 +43,14 @@ final class Neo4jException extends RuntimeException
     }
 
     /**
+     * @pure
+     */
+    public static function fromMessageException(MessageException $e): self
+    {
+        return new self([Neo4jError::fromMessageException($e)], $e);
+    }
+
+    /**
      * @return non-empty-list<Neo4jError>
      */
     public function getErrors(): array
@@ -52,5 +61,25 @@ final class Neo4jException extends RuntimeException
     public function getNeo4jCode(): string
     {
         return $this->errors[0]->getCode();
+    }
+
+    public function getNeo4jMessage(): string
+    {
+        return $this->errors[0]->getMessage();
+    }
+
+    public function getCategory(): string
+    {
+        return $this->errors[0]->getCategory();
+    }
+
+    public function getClassification(): string
+    {
+        return $this->errors[0]->getClassification();
+    }
+
+    public function getTitle(): string
+    {
+        return $this->errors[0]->getTitle();
     }
 }

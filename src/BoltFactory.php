@@ -1,0 +1,99 @@
+<?php
+
+/*
+ * This file is part of the Laudis Neo4j package.
+ *
+ * (c) Laudis technologies <http://laudis.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Laudis\Neo4j;
+
+use Bolt\Bolt;
+use Bolt\connection\StreamSocket;
+use Bolt\error\ConnectException;
+use Bolt\error\MessageException;
+use Bolt\protocol\V3;
+use Exception;
+use Laudis\Neo4j\Bolt\SslConfigurator;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Neo4j\RoutingTable;
+use Psr\Http\Message\UriInterface;
+use RuntimeException;
+
+/**
+ * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.
+ */
+final class BoltFactory
+{
+    /** @psalm-readonly */
+    private Bolt $bolt;
+    private AuthenticateInterface $auth;
+    private string $userAgent;
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function __construct(Bolt $bolt, AuthenticateInterface $auth, string $userAgent)
+    {
+        $this->bolt = $bolt;
+        $this->auth = $auth;
+        $this->userAgent = $userAgent;
+    }
+
+    /**
+     * @throws Exception
+     *
+     * @return array{0: V3, 1: array{server: string, connection_id: string, hints: list}}
+     */
+    public function build(): array
+    {
+        try {
+            $this->bolt->setProtocolVersions(4.4, 4.3, 4.2, 3);
+            try {
+                $build = $this->bolt->build();
+            } catch (ConnectException $exception) {
+                $this->bolt->setProtocolVersions(4.1, 4.0, 4, 3);
+                $build = $this->bolt->build();
+            }
+
+            if (!$build instanceof V3) {
+                throw new RuntimeException('Client only supports bolt version 3 and up.');
+            }
+
+            $response = $this->auth->authenticateBolt($build, $this->userAgent);
+        } catch (MessageException $e) {
+            throw Neo4jException::fromMessageException($e);
+        }
+
+        return [$build, $response];
+    }
+
+    public static function fromVariables(
+        UriInterface $uri,
+        ?UriInterface $server,
+        ?RoutingTable $table,
+        AuthenticateInterface $authenticate,
+        DriverConfiguration $config
+    ): self {
+        $connectingTo = $server ?? $uri;
+        $socket = new StreamSocket($uri->getHost(), $connectingTo->getPort() ?? 7687);
+
+        self::configureSsl($uri, $connectingTo, $socket, $table, $config);
+
+        return new self(new Bolt($socket), $authenticate, $config->getUserAgent());
+    }
+
+    private static function configureSsl(UriInterface $uri, UriInterface $server, StreamSocket $socket, ?RoutingTable $table, DriverConfiguration $config): void
+    {
+        $options = (new SslConfigurator())->configure($uri, $server, $table, $config);
+
+        if ($options !== null) {
+            $socket->setSslContextOptions($options);
+        }
+    }
+}

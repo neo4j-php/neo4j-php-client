@@ -13,8 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Bolt\Bolt;
-use Exception;
+use Bolt\protocol\V3;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -30,14 +29,7 @@ interface AuthenticateInterface
     /**
      * Authenticates a Bolt connection with the provided configuration Uri and userAgent.
      *
-     * @throws Exception
+     * @return array{server: string, connection_id: string, hints: list}
      */
-    public function authenticateBolt(Bolt $bolt, UriInterface $uri, string $userAgent): void;
-
-    /**
-     * @psalm-mutation-free
-     *
-     * Extracts the Uri login information and returns an authentication strategy not requiring the url anymore.
-     */
-    public function extractFromUri(UriInterface $uri): self;
+    public function authenticateBolt(V3 $bolt, string $userAgent): array;
 }

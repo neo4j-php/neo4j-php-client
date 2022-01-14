@@ -32,7 +32,6 @@ interface ConnectionPoolInterface
         UriInterface $uri,
         AuthenticateInterface $authenticate,
         float $socketTimeout,
-        string $userAgent,
         SessionConfiguration $config
     ): ConnectionInterface;
 
