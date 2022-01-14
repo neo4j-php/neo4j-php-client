@@ -57,7 +57,7 @@ final class SummarizedResult extends CypherList
         return $this->summary;
     }
 
-    public function getResult(): CypherList
+    public function getResults(): CypherList
     {
         return new CypherList($this);
     }
