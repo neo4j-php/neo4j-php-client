@@ -25,6 +25,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
@@ -39,8 +40,14 @@ use WeakReference;
  */
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
-    /** @var array<string, list<ConnectionInterface<Bolt>>> */
+    /** @var array<string, list<BoltConnection>> */
     private static array $connectionCache = [];
+    private DriverConfiguration $driverConfig;
+
+    public function __construct(DriverConfiguration $driverConfig)
+    {
+        $this->driverConfig = $driverConfig;
+    }
 
     /**
      * @throws Exception
@@ -60,8 +67,20 @@ final class BoltConnectionPool implements ConnectionPoolInterface
             self::$connectionCache[$key] = [];
         }
 
-        foreach (self::$connectionCache[$key] as $connection) {
+        foreach (self::$connectionCache[$key] as $i => $connection) {
             if (!$connection->isOpen()) {
+                $sslConfig = $connection->getDriverConfiguration()->getSslConfiguration();
+                $newSslConfig = $this->driverConfig->getSslConfiguration();
+                if ($sslConfig->getMode() !== $newSslConfig->getMode() ||
+                    $sslConfig->isVerifyPeer() === $newSslConfig->isVerifyPeer()
+                ) {
+                    $connection = $this->openConnection($connectingTo, $socketTimeout, $uri, $table, $authenticate, $userAgent, $config);
+
+                    /** @psalm-suppress PropertyTypeCoercion */
+                    self::$connectionCache[$key][$i] = $connection;
+
+                    return $connection;
+                }
                 $connection->open();
 
                 $authenticate->authenticateBolt($connection->getImplementation(), $connectingTo, $userAgent);
@@ -70,52 +89,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
             }
         }
 
-        $socket = new StreamSocket($connectingTo->getHost(), $connectingTo->getPort() ?? 7687, $socketTimeout);
-
-        $this->configureSsl($uri, $connectingTo, $socket, $table);
-
-        $bolt = new Bolt($socket);
-        $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
-
-        // We create a weak reference to optimise the socket usage. This way the connection can reuse the bolt variable
-        // the first time it tries to connect. Only when this function is finished and the returned connection is closed
-        // will the reference return null, prompting the need to reopen and recreate the bolt object on the same socket.
-        $originalBolt = WeakReference::create($bolt);
-
-        /**
-         * @var array{'name': 0, 'version': 1, 'edition': 2}
-         * @psalm-suppress all
-         */
-        $fields = array_flip($bolt->run(<<<'CYPHER'
-CALL dbms.components()
-YIELD name, versions, edition
-UNWIND versions AS version
-RETURN name, version, edition
-CYPHER
-        )['fields']);
-
-        /** @var array{0: array{0: string, 1: string, 2: string}} $results */
-        $results = $bolt->pullAll();
-
-        $connection = new BoltConnection(
-            $results[0][$fields['name']].'-'.$results[0][$fields['edition']].'/'.$results[0][$fields['version']],
-            $connectingTo,
-            $results[0][$fields['version']],
-            ConnectionProtocol::determineBoltVersion($bolt),
-            $config->getAccessMode(),
-            new DatabaseInfo($config->getDatabase()),
-            static function () use ($socket, $authenticate, $connectingTo, $userAgent, $originalBolt) {
-                $bolt = $originalBolt->get();
-                if ($bolt === null) {
-                    $bolt = new Bolt($socket);
-                    $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
-                }
-
-                return $bolt;
-            }
-        );
-
-        $connection->open();
+        $connection = $this->openConnection($connectingTo, $socketTimeout, $uri, $table, $authenticate, $userAgent, $config);
 
         self::$connectionCache[$key][] = $connection;
 
@@ -173,5 +147,65 @@ CYPHER
         }
 
         return true;
+    }
+
+    private function openConnection(
+        UriInterface $connectingTo,
+        float $socketTimeout,
+        UriInterface $uri,
+        ?RoutingTable $table,
+        AuthenticateInterface $authenticate,
+        string $userAgent,
+        SessionConfiguration $config
+    ): BoltConnection {
+        $socket = new StreamSocket($connectingTo->getHost(), $connectingTo->getPort() ?? 7687, $socketTimeout);
+
+        $this->configureSsl($uri, $connectingTo, $socket, $table);
+
+        $bolt = new Bolt($socket);
+        $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
+
+        // We create a weak reference to optimise the socket usage. This way the connection can reuse the bolt variable
+        // the first time it tries to connect. Only when this function is finished and the returned connection is closed
+        // will the reference return null, prompting the need to reopen and recreate the bolt object on the same socket.
+        $originalBolt = WeakReference::create($bolt);
+
+        /**
+         * @var array{'name': 0, 'version': 1, 'edition': 2}
+         * @psalm-suppress all
+         */
+        $fields = array_flip($bolt->run(<<<'CYPHER'
+CALL dbms.components()
+YIELD name, versions, edition
+UNWIND versions AS version
+RETURN name, version, edition
+CYPHER
+        )['fields']);
+
+        /** @var array{0: array{0: string, 1: string, 2: string}} $results */
+        $results = $bolt->pullAll();
+
+        $connection = new BoltConnection(
+            $results[0][$fields['name']].'-'.$results[0][$fields['edition']].'/'.$results[0][$fields['version']],
+            $connectingTo,
+            $results[0][$fields['version']],
+            ConnectionProtocol::determineBoltVersion($bolt),
+            $config->getAccessMode(),
+            new DatabaseInfo($config->getDatabase()),
+            $this->driverConfig,
+            static function () use ($socket, $authenticate, $connectingTo, $userAgent, $originalBolt) {
+                $bolt = $originalBolt->get();
+                if ($bolt === null) {
+                    $bolt = new Bolt($socket);
+                    $authenticate->authenticateBolt($bolt, $connectingTo, $userAgent);
+                }
+
+                return $bolt;
+            }
+        );
+
+        $connection->open();
+
+        return $connection;
     }
 }
