@@ -20,6 +20,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use function random_bytes;
 
@@ -58,5 +59,27 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
             return $tsx->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))]);
         }, $alias)->getSummary()->getCounters();
         self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $counters);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     *
+     * @throws Exception
+     */
+    public function testGetResults(string $alias): void
+    {
+        $results = $this->getClient()->run('RETURN 1 AS one', [], $alias)->getResults();
+
+        self::assertNotInstanceOf(SummarizedResult::class, $results);
+        self::assertInstanceOf(CypherList::class, $results);
+
+        $jsonSerialize = $results->jsonSerialize();
+        self::assertIsArray($jsonSerialize);
+        self::assertArrayNotHasKey('summary', $jsonSerialize);
+        self::assertArrayNotHasKey('result', $jsonSerialize);
+
+        $first = $results->first();
+        self::assertInstanceOf(CypherMap::class, $first);
+        self::assertEquals(1, $first->get('one'));
     }
 }
