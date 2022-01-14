@@ -91,13 +91,14 @@ final class BoltDriver implements DriverInterface
         }
 
         $socketTimeout ??= TransactionConfiguration::DEFAULT_TIMEOUT;
+        $configuration ??= DriverConfiguration::default();
 
         if ($formatter !== null) {
             return new self(
                 $uri,
                 $authenticate ?? Authenticate::fromUrl(),
-                new BoltConnectionPool(),
-                $configuration ?? DriverConfiguration::default(),
+                new BoltConnectionPool($configuration),
+                $configuration,
                 $formatter,
                 $socketTimeout
             );
@@ -106,8 +107,8 @@ final class BoltDriver implements DriverInterface
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl(),
-            new BoltConnectionPool(),
-            $configuration ?? DriverConfiguration::default(),
+            new BoltConnectionPool($configuration),
+            $configuration,
             OGMFormatter::create(),
             $socketTimeout
         );

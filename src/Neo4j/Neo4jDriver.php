@@ -92,13 +92,14 @@ final class Neo4jDriver implements DriverInterface
         }
 
         $socketTimeout ??= TransactionConfiguration::DEFAULT_TIMEOUT;
+        $configuration ??= DriverConfiguration::default();
 
         if ($formatter !== null) {
             return new self(
                 $uri,
                 $authenticate ?? Authenticate::fromUrl(),
-                new Neo4jConnectionPool(new BoltConnectionPool()),
-                $configuration ?? DriverConfiguration::default(),
+                new Neo4jConnectionPool(new BoltConnectionPool($configuration)),
+                $configuration,
                 $formatter,
                 $socketTimeout
             );
@@ -107,8 +108,8 @@ final class Neo4jDriver implements DriverInterface
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl(),
-            new Neo4jConnectionPool(new BoltConnectionPool()),
-            $configuration ?? DriverConfiguration::default(),
+            new Neo4jConnectionPool(new BoltConnectionPool($configuration)),
+            $configuration,
             OGMFormatter::create(),
             $socketTimeout
         );

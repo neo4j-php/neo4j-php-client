@@ -26,6 +26,7 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
  * @method static self ENABLE()
  * @method static self DISABLE()
  * @method static self FROM_URL()
+ * @method static self ENABLE_WITH_SELF_SIGNED()
  *
  * @extends TypedEnum<string>
  *
@@ -36,6 +37,7 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
 final class SslMode extends TypedEnum implements JsonSerializable
 {
     private const ENABLE = 'enable';
+    private const ENABLE_WITH_SELF_SIGNED = 'enable_with_self_signed';
     private const DISABLE = 'disable';
     private const FROM_URL = 'from_url';
 
