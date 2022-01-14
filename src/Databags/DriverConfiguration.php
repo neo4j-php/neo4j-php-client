@@ -28,30 +28,29 @@ final class DriverConfiguration
 {
     public const DEFAULT_USER_AGENT = 'neo4j-php-client/%s';
 
-    /** @var string|null */
-    private $userAgent;
+    private ?string $userAgent;
     /** @var pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
     private $httpPsrBindings;
+    private SslConfiguration $sslConfig;
 
     /**
-     * @param string|null                                                 $userAgent
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      */
-    public function __construct($userAgent, $httpPsrBindings)
+    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig)
     {
         $this->userAgent = $userAgent;
         $this->httpPsrBindings = $httpPsrBindings;
+        $this->sslConfig = $sslConfig;
     }
 
     /**
-     * @pure
-     *
-     * @param string|null                                                 $userAgent
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
+     *
+     * @pure
      */
-    public static function create($userAgent, $httpPsrBindings): self
+    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig): self
     {
-        return new self($userAgent, $httpPsrBindings);
+        return new self($userAgent, $httpPsrBindings, $sslConfig);
     }
 
     /**
@@ -62,10 +61,7 @@ final class DriverConfiguration
      */
     public static function default(): self
     {
-        return new self(
-            self::DEFAULT_USER_AGENT,
-            HttpPsrBindings::default()
-        );
+        return new self(self::DEFAULT_USER_AGENT, HttpPsrBindings::default(), SslConfiguration::default());
     }
 
     public function getUserAgent(): string
@@ -91,7 +87,10 @@ final class DriverConfiguration
      */
     public function withUserAgent($userAgent): self
     {
-        return new self($userAgent, $this->httpPsrBindings);
+        $tbr = clone $this;
+        $tbr->userAgent = $userAgent;
+
+        return $tbr;
     }
 
     /**
@@ -101,7 +100,23 @@ final class DriverConfiguration
      */
     public function withHttpPsrBindings($bindings): self
     {
-        return new self($this->userAgent, $bindings);
+        $tbr = clone $this;
+        $tbr->httpPsrBindings = $bindings;
+
+        return $tbr;
+    }
+
+    public function withSslConfiguration(SslConfiguration $config): self
+    {
+        $tbr = clone $this;
+        $tbr->sslConfig = $config;
+
+        return $tbr;
+    }
+
+    public function getSslConfiguration(): SslConfiguration
+    {
+        return $this->sslConfig;
     }
 
     public function getHttpPsrBindings(): HttpPsrBindings
