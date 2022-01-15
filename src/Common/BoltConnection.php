@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use Bolt\connection\IConnection;
 use Bolt\protocol\V3;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -28,7 +29,7 @@ use RuntimeException;
  */
 final class BoltConnection implements ConnectionInterface
 {
-    private ?V3 $connection;
+    private ?V3 $boltProtocol;
     /** @psalm-readonly */
     private string $serverAgent;
     /** @psalm-readonly */
@@ -45,6 +46,8 @@ final class BoltConnection implements ConnectionInterface
     private BoltFactory $factory;
     /** @psalm-readonly */
     private DriverConfiguration $driverConfiguration;
+    /** @psalm-readonly */
+    private IConnection $connection;
 
     /**
      * @psalm-mutation-free
@@ -57,8 +60,9 @@ final class BoltConnection implements ConnectionInterface
         AccessMode $accessMode,
         DatabaseInfo $databaseInfo,
         BoltFactory $factory,
-        ?V3 $connection,
-        DriverConfiguration $config
+        ?V3 $boltProtocol,
+        DriverConfiguration $config,
+        IConnection $connection
     ) {
         $this->serverAgent = $serverAgent;
         $this->serverAddress = $serverAddress;
@@ -67,8 +71,9 @@ final class BoltConnection implements ConnectionInterface
         $this->accessMode = $accessMode;
         $this->databaseInfo = $databaseInfo;
         $this->factory = $factory;
-        $this->connection = $connection;
+        $this->boltProtocol = $boltProtocol;
         $this->driverConfiguration = $config;
+        $this->connection = $connection;
     }
 
     /**
@@ -76,11 +81,11 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getImplementation(): V3
     {
-        if ($this->connection === null) {
+        if ($this->boltProtocol === null) {
             throw new RuntimeException('Connection is closed');
         }
 
-        return $this->connection;
+        return $this->boltProtocol;
     }
 
     /**
@@ -136,19 +141,32 @@ final class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return $this->connection !== null;
+        return $this->boltProtocol !== null;
     }
 
     public function open(): void
     {
-        if ($this->connection === null) {
-            $this->connection = $this->factory->build()[0];
+        if ($this->boltProtocol === null) {
+            $this->boltProtocol = $this->factory->build()[0];
         }
+    }
+
+    public function setTimeout(float $timeout): void
+    {
+        $this->connection->setTimeout($timeout);
     }
 
     public function close(): void
     {
-        $this->connection = null;
+        $this->boltProtocol = null;
+    }
+
+    public function reset(): void
+    {
+        if ($this->boltProtocol === null) {
+            $this->boltProtocol->reset();
+            $this->boltProtocol = $this->factory->build()[0];
+        }
     }
 
     /**

@@ -87,6 +87,16 @@ interface ConnectionInterface
     public function close(): void;
 
     /**
+     * Resets the connection.
+     */
+    public function reset(): void;
+
+    /**
+     * Sets the timeout of the connection in seconds.
+     */
+    public function setTimeout(float $timeout): void;
+
+    /**
      * Checks to see if the connection is open.
      *
      * @psalm-mutation-free
