@@ -21,6 +21,7 @@ use Exception;
 use Laudis\Neo4j\Bolt\SslConfigurator;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
@@ -92,7 +93,7 @@ final class BoltFactory
         DriverConfiguration $config
     ): self {
         $connectingTo = $server ?? $uri;
-        $socket = new StreamSocket($uri->getHost(), $connectingTo->getPort() ?? 7687);
+        $socket = new StreamSocket($uri->getHost(), $connectingTo->getPort() ?? 7687, TransactionConfiguration::DEFAULT_TIMEOUT);
 
         self::configureSsl($uri, $connectingTo, $socket, $table, $config);
 

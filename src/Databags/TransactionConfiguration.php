@@ -22,7 +22,7 @@ use function is_callable;
  */
 final class TransactionConfiguration
 {
-    public const DEFAULT_TIMEOUT = 100000.0;
+    public const DEFAULT_TIMEOUT = 60.0;
     public const DEFAULT_METADATA = '[]';
 
     /** @var pure-callable():(float|null)|float|null */
