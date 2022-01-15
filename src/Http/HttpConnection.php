@@ -142,4 +142,14 @@ final class HttpConnection implements ConnectionInterface
     {
         $this->isOpen = false;
     }
+
+    public function reset(): void
+    {
+        // Cannot reset a stateless protocol
+    }
+
+    public function setTimeout(float $timeout): void
+    {
+        // Impossible to actually set a timeout with PSR definition
+    }
 }
