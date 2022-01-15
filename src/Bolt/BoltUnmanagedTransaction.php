@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
+use Bolt\error\ConnectionTimeoutException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -73,6 +74,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->getBolt()->commit();
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);
+        } catch (ConnectionTimeoutException $e) {
+            $this->connection->reset();
+            throw $e;
         }
 
         return $tbr;
@@ -84,6 +88,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->connection->getImplementation()->rollback();
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);
+        } catch (ConnectionTimeoutException $e) {
+            $this->connection->reset();
+            throw $e;
         }
     }
 
@@ -113,17 +120,22 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         foreach ($statements as $statement) {
             $extra = ['db' => $this->database];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
+            $start = microtime(true);
+
             try {
-                $start = microtime(true);
                 /** @var BoltMeta $meta */
                 $meta = $this->getBolt()->run($statement->getText(), $parameters->toArray(), $extra);
                 $run = microtime(true);
                 /** @var array<array> $results */
                 $results = $this->getBolt()->pullAll();
-                $end = microtime(true);
             } catch (MessageException $e) {
                 throw Neo4jException::fromMessageException($e);
+            } catch (ConnectionTimeoutException $e) {
+                $this->connection->reset();
+                throw $e;
             }
+
+            $end = microtime(true);
             $tbr[] = $this->formatter->formatBoltResult(
                 $meta,
                 $results,
