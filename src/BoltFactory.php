@@ -12,6 +12,7 @@
 namespace Laudis\Neo4j;
 
 use Bolt\Bolt;
+use Bolt\connection\IConnection;
 use Bolt\connection\StreamSocket;
 use Bolt\error\ConnectException;
 use Bolt\error\MessageException;
@@ -32,17 +33,22 @@ final class BoltFactory
 {
     /** @psalm-readonly */
     private Bolt $bolt;
+    /** @psalm-readonly */
     private AuthenticateInterface $auth;
+    /** @psalm-readonly */
     private string $userAgent;
+    /** @psalm-readonly */
+    private IConnection $connection;
 
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(Bolt $bolt, AuthenticateInterface $auth, string $userAgent)
+    public function __construct(Bolt $bolt, AuthenticateInterface $auth, string $userAgent, IConnection $connection)
     {
         $this->bolt = $bolt;
         $this->auth = $auth;
         $this->userAgent = $userAgent;
+        $this->connection = $connection;
     }
 
     /**
@@ -73,6 +79,11 @@ final class BoltFactory
         return [$build, $response];
     }
 
+    public function getConnection(): IConnection
+    {
+        return $this->connection;
+    }
+
     public static function fromVariables(
         UriInterface $uri,
         ?UriInterface $server,
@@ -85,7 +96,7 @@ final class BoltFactory
 
         self::configureSsl($uri, $connectingTo, $socket, $table, $config);
 
-        return new self(new Bolt($socket), $authenticate, $config->getUserAgent());
+        return new self(new Bolt($socket), $authenticate, $config->getUserAgent(), $socket);
     }
 
     private static function configureSsl(UriInterface $uri, UriInterface $server, StreamSocket $socket, ?RoutingTable $table, DriverConfiguration $config): void

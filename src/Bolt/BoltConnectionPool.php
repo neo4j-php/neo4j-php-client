@@ -54,7 +54,6 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     public function acquire(
         UriInterface $uri,
         AuthenticateInterface $authenticate,
-        float $socketTimeout,
         SessionConfiguration $config,
         ?RoutingTable $table = null,
         ?UriInterface $server = null

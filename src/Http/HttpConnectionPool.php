@@ -64,7 +64,6 @@ final class HttpConnectionPool implements ConnectionPoolInterface
     public function acquire(
         UriInterface $uri,
         AuthenticateInterface $authenticate,
-        float $socketTimeout,
         SessionConfiguration $config
     ): ConnectionInterface {
         $request = $this->requestFactory->resolve()->createRequest('POST', $uri);

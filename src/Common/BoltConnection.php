@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use Bolt\connection\IConnection;
 use Bolt\protocol\V3;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -46,8 +45,6 @@ final class BoltConnection implements ConnectionInterface
     private BoltFactory $factory;
     /** @psalm-readonly */
     private DriverConfiguration $driverConfiguration;
-    /** @psalm-readonly */
-    private IConnection $connection;
 
     /**
      * @psalm-mutation-free
@@ -61,8 +58,7 @@ final class BoltConnection implements ConnectionInterface
         DatabaseInfo $databaseInfo,
         BoltFactory $factory,
         ?V3 $boltProtocol,
-        DriverConfiguration $config,
-        IConnection $connection
+        DriverConfiguration $config
     ) {
         $this->serverAgent = $serverAgent;
         $this->serverAddress = $serverAddress;
@@ -73,7 +69,6 @@ final class BoltConnection implements ConnectionInterface
         $this->factory = $factory;
         $this->boltProtocol = $boltProtocol;
         $this->driverConfiguration = $config;
-        $this->connection = $connection;
     }
 
     /**
@@ -153,7 +148,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function setTimeout(float $timeout): void
     {
-        $this->connection->setTimeout($timeout);
+        $this->factory->getConnection()->setTimeout($timeout);
     }
 
     public function close(): void
@@ -163,7 +158,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function reset(): void
     {
-        if ($this->boltProtocol === null) {
+        if ($this->boltProtocol !== null) {
             $this->boltProtocol->reset();
             $this->boltProtocol = $this->factory->build()[0];
         }

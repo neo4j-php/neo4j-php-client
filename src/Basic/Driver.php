@@ -56,10 +56,10 @@ final class Driver implements DriverInterface
      * @param string|UriInterface $uri
      * @pure
      */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null): self
+    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
         /** @var DriverInterface<SummarizedResult<CypherMap>> */
-        $driver = DriverFactory::create($uri, $configuration, $authenticate, $socketTimeout, SummarizedResultFormatter::create());
+        $driver = DriverFactory::create($uri, $configuration, $authenticate, SummarizedResultFormatter::create());
 
         return new self($driver);
     }

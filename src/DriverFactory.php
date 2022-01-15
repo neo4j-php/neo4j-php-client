@@ -41,14 +41,14 @@ final class DriverFactory
      * @param string|UriInterface   $uri
      *
      * @return (
-     *           func_num_args() is 5
+     *           func_num_args() is 4
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
      *
      * @pure
      */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): DriverInterface
+    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): DriverInterface
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
@@ -58,11 +58,11 @@ final class DriverFactory
         $scheme = $scheme === '' ? 'bolt' : $scheme;
 
         if (in_array($scheme, ['bolt', 'bolt+s', 'bolt+ssc'])) {
-            return self::createBoltDriver($uri, $configuration, $authenticate, $socketTimeout, $formatter);
+            return self::createBoltDriver($uri, $configuration, $authenticate, $formatter);
         }
 
         if (in_array($scheme, ['neo4j', 'neo4j+s', 'neo4j+ssc'])) {
-            return self::createNeo4jDriver($uri, $configuration, $authenticate, $socketTimeout, $formatter);
+            return self::createNeo4jDriver($uri, $configuration, $authenticate, $formatter);
         }
 
         return self::createHttpDriver($uri, $configuration, $authenticate, $formatter);
@@ -75,19 +75,19 @@ final class DriverFactory
      * @param string|UriInterface   $uri
      *
      * @return (
-     *           func_num_args() is 5
+     *           func_num_args() is 4
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
      * @pure
      */
-    private static function createBoltDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?float $socketTimeout, FormatterInterface $formatter = null): DriverInterface
+    private static function createBoltDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
     {
         if ($formatter !== null) {
-            return BoltDriver::create($uri, $configuration, $authenticate, $socketTimeout, $formatter);
+            return BoltDriver::create($uri, $configuration, $authenticate, $formatter);
         }
 
-        return BoltDriver::create($uri, $configuration, $authenticate, $socketTimeout);
+        return BoltDriver::create($uri, $configuration, $authenticate);
     }
 
     /**
@@ -97,7 +97,7 @@ final class DriverFactory
      * @param string|UriInterface   $uri
      *
      * @return (
-     *           func_num_args() is 5
+     *           func_num_args() is 4
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
@@ -105,13 +105,13 @@ final class DriverFactory
      *
      * @pure
      */
-    private static function createNeo4jDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?float $socketTimeout = null, FormatterInterface $formatter = null): DriverInterface
+    private static function createNeo4jDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
     {
         if ($formatter !== null) {
-            return Neo4jDriver::create($uri, $configuration, $authenticate, $socketTimeout, $formatter);
+            return Neo4jDriver::create($uri, $configuration, $authenticate, $formatter);
         }
 
-        return Neo4jDriver::create($uri, $configuration, $authenticate, $socketTimeout);
+        return Neo4jDriver::create($uri, $configuration, $authenticate);
     }
 
     /**

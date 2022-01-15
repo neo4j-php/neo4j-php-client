@@ -31,7 +31,6 @@ interface ConnectionPoolInterface
     public function acquire(
         UriInterface $uri,
         AuthenticateInterface $authenticate,
-        float $socketTimeout,
         SessionConfiguration $config
     ): ConnectionInterface;
 

@@ -49,7 +49,7 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
         $builder = ClientBuilder::create();
         foreach ($connections as $i => $connection) {
             $uri = Uri::create($connection);
-            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection, null, 1000000);
+            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection);
         }
 
         /** @psalm-suppress InvalidReturnStatement */

@@ -25,13 +25,11 @@ final class DriverSetup
 {
     private UriInterface $uri;
     private AuthenticateInterface $auth;
-    private float $socketTimeout;
 
-    public function __construct(UriInterface $uri, AuthenticateInterface $auth, float $socketTimeout)
+    public function __construct(UriInterface $uri, AuthenticateInterface $auth)
     {
         $this->uri = $uri;
         $this->auth = $auth;
-        $this->socketTimeout = $socketTimeout;
     }
 
     public function getAuth(): AuthenticateInterface
@@ -42,10 +40,5 @@ final class DriverSetup
     public function getUri(): UriInterface
     {
         return $this->uri;
-    }
-
-    public function getSocketTimeout(): float
-    {
-        return $this->socketTimeout;
     }
 }

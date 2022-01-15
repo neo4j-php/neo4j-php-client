@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\Bolt;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Exception;
@@ -56,13 +55,9 @@ final class Session implements SessionInterface
      * @var FormatterInterface<ResultFormat>
      */
     private FormatterInterface $formatter;
-    /** @psalm-readonly  */
-    private string $userAgent;
     private UriInterface $uri;
     /** @psalm-readonly  */
     private AuthenticateInterface $auth;
-    /** @psalm-readonly  */
-    private float $socketTimeout;
 
     /**
      * @param FormatterInterface<ResultFormat> $formatter
@@ -74,18 +69,14 @@ final class Session implements SessionInterface
         SessionConfiguration $config,
         ConnectionPoolInterface $pool,
         FormatterInterface $formatter,
-        string $userAgent,
         UriInterface $uri,
-        AuthenticateInterface $auth,
-        float $socketTimeout
+        AuthenticateInterface $auth
     ) {
         $this->config = $config;
         $this->pool = $pool;
         $this->formatter = $formatter;
-        $this->userAgent = $userAgent;
         $this->uri = $uri;
         $this->auth = $auth;
-        $this->socketTimeout = $socketTimeout;
     }
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
@@ -114,8 +105,7 @@ final class Session implements SessionInterface
 
         return TransactionHelper::retry(
             fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE())),
-            $tsxHandler,
-            $config
+            $tsxHandler
         );
     }
 
@@ -125,8 +115,7 @@ final class Session implements SessionInterface
 
         return TransactionHelper::retry(
             fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ())),
-            $tsxHandler,
-            $config
+            $tsxHandler
         );
     }
 
@@ -162,9 +151,10 @@ final class Session implements SessionInterface
      */
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): ConnectionInterface
     {
-        $timeout = max($this->socketTimeout, $config->getTimeout());
+        $connection = $this->pool->acquire($this->uri, $this->auth, $sessionConfig);
+        $connection->setTimeout($config->getTimeout());
 
-        return $this->pool->acquire($this->uri, $this->auth, $timeout, $sessionConfig);
+        return $connection;
     }
 
     private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig): UnmanagedTransactionInterface
