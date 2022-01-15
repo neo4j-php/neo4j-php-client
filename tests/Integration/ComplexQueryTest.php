@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Bolt\error\ConnectionTimeoutException;
 use Generator;
 use function getenv;
 use InvalidArgumentException;
@@ -20,8 +21,10 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
@@ -335,11 +338,14 @@ CYPHER
      */
     public function testLongQueryFunction(string $alias): void
     {
-        self::markTestSkipped('Async needs to be implemented before timeout is supported');
-//        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
-//            $tsx->run('CALL apoc.util.sleep(10000)');
-//        }, $alias, TransactionConfiguration::default()->withTimeout(100000));
-//        self::assertTrue(true);
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not support timeouts at the moment');
+        }
+
+        $this->expectNotToPerformAssertions();
+        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
+            $tsx->run('CALL apoc.util.sleep(20000)');
+        }, $alias, TransactionConfiguration::default()->withTimeout(100000));
     }
 
     /**
@@ -347,14 +353,14 @@ CYPHER
      */
     public function testLongQueryFunctionNegative(string $alias): void
     {
-        self::markTestSkipped('Async needs to be implemented before timeout is supported');
-//        if (str_starts_with($alias, 'http')) {
-//            self::markTestSkipped('Transaction timeout only work when async mode is implemented');
-//        }
-//        $this->expectException(ConnectException::class);
-//        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
-//            $tsx->run('CALL apoc.util.sleep(10000)');
-//        }, $alias, TransactionConfiguration::default()->withTimeout(1));
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not support timeouts at the moment');
+        }
+
+        $this->expectException(ConnectionTimeoutException::class);
+        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
+            $tsx->run('CALL apoc.util.sleep(10000)');
+        }, $alias, TransactionConfiguration::default()->withTimeout(1));
     }
 
     /**
@@ -362,21 +368,44 @@ CYPHER
      */
     public function testLongQueryUnmanaged(string $alias): void
     {
-        self::markTestSkipped('Async needs to be implemented before timeout is supported');
-//        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
-//        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
-//        self::assertTrue(true);
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not support timeouts at the moment');
+        }
+        $this->expectException(ConnectionTimeoutException::class);
+        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+        $tsx->run('CALL apoc.util.sleep(10000)');
     }
 
     /**
      * @dataProvider connectionAliases
      */
-    public function testLongQueryAuto(string $alias): void
+    public function testTimeout(string $alias): void
     {
-        self::markTestSkipped('Async needs to be implemented before timeout is supported');
-//        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(100000));
-//        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
-//        self::assertTrue(true);
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not support timeouts at the moment');
+        }
+
+        try {
+            $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+            $tsx->run('CALL apoc.util.sleep(10000)');
+        } catch (ConnectionTimeoutException $e) {
+            $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(20));
+            self::assertEquals(1, $tsx->run('RETURN 1 AS one')->first()->get('one'));
+        }
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testTimeoutRecovery(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not support timeouts at the moment');
+        }
+
+        $this->expectNotToPerformAssertions();
+        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1000));
+        $tsx->run('CALL apoc.util.sleep(20000)');
     }
 
     /**
