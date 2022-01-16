@@ -19,7 +19,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
 
 final class TransactionHelper
 {
-    private const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'TransientError', 'DatabaseError'];
+    public const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'TransientError', 'DatabaseError'];
 
     /**
      * @template U

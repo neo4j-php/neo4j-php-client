@@ -15,9 +15,9 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\error\ConnectionTimeoutException;
-use Bolt\error\IgnoredException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
+use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -54,6 +54,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /** @psalm-readonly */
     private string $database;
 
+    private bool $isRolledBack = false;
+    private bool $isCommitted = false;
+
     /**
      * @param FormatterInterface<T>   $formatter
      * @param ConnectionInterface<V3> $connection
@@ -73,11 +76,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         try {
             $this->getBolt()->commit();
+            $this->isCommitted = true;
         } catch (MessageException $e) {
-            throw Neo4jException::fromMessageException($e);
+            $this->handleMessageException($e);
         } catch (ConnectionTimeoutException $e) {
-            $this->connection->reset();
-            throw $e;
+            $this->handleConnectionTimeoutException($e);
         }
 
         return $tbr;
@@ -87,11 +90,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         try {
             $this->connection->getImplementation()->rollback();
+            $this->isRolledBack = true;
         } catch (MessageException $e) {
-            throw Neo4jException::fromMessageException($e);
+            $this->handleMessageException($e);
         } catch (ConnectionTimeoutException $e) {
-            $this->connection->reset();
-            throw $e;
+            $this->handleConnectionTimeoutException($e);
         }
     }
 
@@ -130,10 +133,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 /** @var array<array> $results */
                 $results = $this->getBolt()->pullAll();
             } catch (MessageException $e) {
-                throw Neo4jException::fromMessageException($e);
+                $this->handleMessageException($e);
             } catch (ConnectionTimeoutException $e) {
-                $this->connection->reset();
-                throw $e;
+                $this->handleConnectionTimeoutException($e);
             }
 
             $end = microtime(true);
@@ -161,5 +163,30 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function __destruct()
     {
         $this->connection->close();
+    }
+
+    /**
+     * @throws Neo4jException
+     *
+     * @return never
+     */
+    private function handleMessageException(MessageException $e): void
+    {
+        $exception = Neo4jException::fromMessageException($e);
+        if (in_array($exception->getClassification(), TransactionHelper::ROLLBACK_CLASSIFICATIONS)) {
+            $this->isRolledBack = true;
+        }
+        throw $exception;
+    }
+
+    /**
+     * @return never
+     * @throws ConnectionTimeoutException
+     */
+    private function handleConnectionTimeoutException(ConnectionTimeoutException $e): void
+    {
+        $this->connection->reset();
+
+        throw $e;
     }
 }
