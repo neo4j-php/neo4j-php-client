@@ -173,7 +173,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private function handleMessageException(MessageException $e): void
     {
         $exception = Neo4jException::fromMessageException($e);
-        if (in_array($exception->getClassification(), TransactionHelper::ROLLBACK_CLASSIFICATIONS)) {
+        if (!$this->isFinished() && in_array($exception->getClassification(), TransactionHelper::ROLLBACK_CLASSIFICATIONS)) {
             $this->isRolledBack = true;
         }
         throw $exception;

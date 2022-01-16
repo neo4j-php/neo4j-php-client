@@ -305,7 +305,6 @@ CYPHER
         self::assertFalse($tsx->isRolledBack());
         self::assertTrue($tsx->isCommitted());
 
-        $this->expectException(Neo4jException::class);
         $exception = false;
         try {
             $tsx->commit();
