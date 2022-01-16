@@ -167,12 +167,14 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     private function handleNeo4jException(Neo4jException $e): void
     {
-        $classifications = array_map(static fn (Neo4jError $e) => $e->getClassification(), $e->getErrors());
-        $classifications = array_unique($classifications);
+        if (!$this->isFinished()) {
+            $classifications = array_map(static fn (Neo4jError $e) => $e->getClassification(), $e->getErrors());
+            $classifications = array_unique($classifications);
 
-        $intersection = array_intersect($classifications, TransactionHelper::ROLLBACK_CLASSIFICATIONS);
-        if ($intersection !== []) {
-            $this->isRolledBack = true;
+            $intersection = array_intersect($classifications, TransactionHelper::ROLLBACK_CLASSIFICATIONS);
+            if ($intersection !== []) {
+                $this->isRolledBack = true;
+            }
         }
 
         throw $e;
