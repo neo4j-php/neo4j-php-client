@@ -13,17 +13,22 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
-use JsonException;
+use function array_intersect;
+use function array_unique;
+use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use function microtime;
-use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use stdClass;
 
 /**
  * @template T
@@ -71,25 +76,16 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $this->formatter = $formatter;
     }
 
-    /**
-     * @throws JsonException|ClientExceptionInterface
-     */
     public function run(string $statement, iterable $parameters = [])
     {
         return $this->runStatement(new Statement($statement, $parameters));
     }
 
-    /**
-     * @throws JsonException|ClientExceptionInterface
-     */
     public function runStatement(Statement $statement)
     {
         return $this->runStatements([$statement])->first();
     }
 
-    /**
-     * @throws JsonException
-     */
     public function runStatements(iterable $statements): CypherList
     {
         $request = $this->request->withMethod('POST');
@@ -100,18 +96,17 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $start = microtime(true);
         $response = $this->connection->getImplementation()->sendRequest($request);
         $total = microtime(true) - $start;
-        $data = HttpHelper::interpretResponse($response);
+
+        $data = $this->handleResponse($response);
 
         return $this->formatter->formatHttpResult($response, $data, $this->connection, $total, $total, $statements);
     }
 
-    /**
-     * @throws JsonException
-     */
     public function commit(iterable $statements = []): CypherList
     {
         $uri = $this->request->getUri();
         $request = $this->request->withUri($uri->withPath($uri->getPath().'/commit'))->withMethod('POST');
+
         $content = HttpHelper::statementsToJson($this->formatter, $statements);
         $request = $request->withBody($this->factory->createStream($content));
 
@@ -119,20 +114,21 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $response = $this->connection->getImplementation()->sendRequest($request);
         $total = microtime(true) - $start;
 
-        $data = HttpHelper::interpretResponse($response);
+        $data = $this->handleResponse($response);
+
+        $this->isCommitted = true;
 
         return $this->formatter->formatHttpResult($response, $data, $this->connection, $total, $total, $statements);
     }
 
-    /**
-     * @throws JsonException
-     */
     public function rollback(): void
     {
         $request = $this->request->withMethod('DELETE');
         $response = $this->connection->getImplementation()->sendRequest($request);
 
-        HttpHelper::interpretResponse($response);
+        $this->handleResponse($response);
+
+        $this->isRolledBack = true;
     }
 
     public function __destruct()
@@ -162,5 +158,37 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     public function isFinished(): bool
     {
         return $this->isRolledBack() || $this->isCommitted();
+    }
+
+    /**
+     * @throws Neo4jException
+     *
+     * @return never
+     */
+    private function handleNeo4jException(Neo4jException $e): void
+    {
+        $classifications = array_map(static fn (Neo4jError $e) => $e->getClassification(), $e->getErrors());
+        $classifications = array_unique($classifications);
+
+        $intersection = array_intersect($classifications, TransactionHelper::ROLLBACK_CLASSIFICATIONS);
+        if ($intersection !== []) {
+            $this->isRolledBack = true;
+        }
+
+        throw $e;
+    }
+
+    /**
+     * @throws Neo4jException
+     */
+    private function handleResponse(ResponseInterface $response): stdClass
+    {
+        try {
+            $data = HttpHelper::interpretResponse($response);
+        } catch (Neo4jException $e) {
+            $this->handleNeo4jException($e);
+        }
+
+        return $data;
     }
 }
