@@ -74,7 +74,8 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
         $tbr = [];
         foreach ($connections as $i => $connection) {
             $uri = Uri::create($connection);
-            $tbr[] = [$uri->getScheme().'_'.$i];
+            $alias = $uri->getScheme().'_'.$i;
+            $tbr[$alias] = [$alias];
         }
 
         /** @var non-empty-array<array-key, array{0: string}> */
