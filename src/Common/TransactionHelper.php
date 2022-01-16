@@ -41,7 +41,7 @@ final class TransactionHelper
 
                 return $tbr;
             } catch (Neo4jException $e) {
-                if ($transaction && in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS)) {
+                if ($transaction && !in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS)) {
                     $transaction->rollback();
                 }
 
