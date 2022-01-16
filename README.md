@@ -1,13 +1,17 @@
 # Neo4j PHP Client and Driver
 
-[![Latest Stable Version](https://poser.pugx.org/laudis/neo4j-php-client/v)](//packagist.org/packages/laudis/neo4j-php-client)
-[![Total Downloads](https://poser.pugx.org/laudis/neo4j-php-client/downloads)](//packagist.org/packages/laudis/neo4j-php-client)
-[![Monthly Downloads](https://poser.pugx.org/laudis/neo4j-php-client/d/monthly)](//packagist.org/packages/laudis/neo4j-php-client)
-[![Maintainability](https://api.codeclimate.com/v1/badges/275c2269aa54c2c43210/maintainability)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/275c2269aa54c2c43210/test_coverage)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/test_coverage)
-[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/laudis-technologies/neo4j-php-client/blob/main/LICENSE)
-[![Build](https://github.com/neo4j-php/neo4j-php-client/actions/workflows/full-test.yml/badge.svg)](https://github.com/neo4j-php/neo4j-php-client/actions)
+[![GitHub](https://img.shields.io/github/license/neo4j-php/neo4j-php-client)](https://github.com/laudis-technologies/neo4j-php-client/blob/main/LICENSE)
+[![Code Climate maintainability](https://img.shields.io/codeclimate/maintainability/laudis-technologies/neo4j-php-client)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/maintainability)
+[![Packagist PHP Version Support (custom server)](https://img.shields.io/packagist/php-v/laudis/neo4j-php-client)](https://packagist.org/packages/laudis/neo4j-php-client)
+
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/neo4j-php/neo4j-php-client/Full%20Test/main)
+[![Latest Stable Version](https://poser.pugx.org/laudis/neo4j-php-client/v)](https://packagist.org/packages/laudis/neo4j-php-client)
 [![Commits Since latest](https://img.shields.io/github/commits-since/neo4j-php/neo4j-php-client/latest)](https://github.com/neo4j-php/neo4j-php-client/commits/main)
+
+[![Packagist Downloads](https://img.shields.io/packagist/dt/laudis/neo4j-php-client)](//packagist.org/packages/laudis/neo4j-php-client)
+[![Packagist Downloads](https://img.shields.io/packagist/dm/laudis/neo4j-php-client)](//packagist.org/packages/laudis/neo4j-php-client)
+[![Discord](https://img.shields.io/discord/787399249741479977)](https://discord.com/channels/787399249741479977)
+
 
 ## Control to worlds' most powerful graph database
 - Pick and choose your drivers with easy configuration
