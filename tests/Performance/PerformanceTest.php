@@ -65,7 +65,7 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
      */
     public function testMultipleTransactions(): void
     {
-        $aliases = $this->connectionAliases();
+        $aliases = array_values(self::connectionAliases());
         $tsxs = [];
         for ($i = 0; $i < 1000; ++$i) {
             $alias = $aliases[$i % count($aliases)][0];
