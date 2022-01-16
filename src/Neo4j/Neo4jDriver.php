@@ -57,7 +57,7 @@ final class Neo4jDriver implements DriverInterface
         UriInterface $parsedUrl,
         AuthenticateInterface $auth,
         ConnectionPoolInterface $pool,
-        FormatterInterface $formatter,
+        FormatterInterface $formatter
     ) {
         $this->parsedUrl = $parsedUrl;
         $this->auth = $auth;
