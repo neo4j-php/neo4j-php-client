@@ -28,7 +28,7 @@ use RuntimeException;
  */
 final class BoltConnection implements ConnectionInterface
 {
-    private ?V3 $connection;
+    private ?V3 $boltProtocol;
     /** @psalm-readonly */
     private string $serverAgent;
     /** @psalm-readonly */
@@ -57,7 +57,7 @@ final class BoltConnection implements ConnectionInterface
         AccessMode $accessMode,
         DatabaseInfo $databaseInfo,
         BoltFactory $factory,
-        ?V3 $connection,
+        ?V3 $boltProtocol,
         DriverConfiguration $config
     ) {
         $this->serverAgent = $serverAgent;
@@ -67,7 +67,7 @@ final class BoltConnection implements ConnectionInterface
         $this->accessMode = $accessMode;
         $this->databaseInfo = $databaseInfo;
         $this->factory = $factory;
-        $this->connection = $connection;
+        $this->boltProtocol = $boltProtocol;
         $this->driverConfiguration = $config;
     }
 
@@ -76,11 +76,11 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getImplementation(): V3
     {
-        if ($this->connection === null) {
+        if ($this->boltProtocol === null) {
             throw new RuntimeException('Connection is closed');
         }
 
-        return $this->connection;
+        return $this->boltProtocol;
     }
 
     /**
@@ -136,19 +136,32 @@ final class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return $this->connection !== null;
+        return $this->boltProtocol !== null;
     }
 
     public function open(): void
     {
-        if ($this->connection === null) {
-            $this->connection = $this->factory->build()[0];
+        if ($this->boltProtocol === null) {
+            $this->boltProtocol = $this->factory->build()[0];
         }
+    }
+
+    public function setTimeout(float $timeout): void
+    {
+        $this->factory->getConnection()->setTimeout($timeout);
     }
 
     public function close(): void
     {
-        $this->connection = null;
+        $this->boltProtocol = null;
+    }
+
+    public function reset(): void
+    {
+        if ($this->boltProtocol !== null) {
+            $this->boltProtocol->reset();
+            $this->boltProtocol = $this->factory->build()[0];
+        }
     }
 
     /**

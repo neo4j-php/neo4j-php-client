@@ -101,14 +101,13 @@ final class ClientBuilder
      *
      * @return self<T>
      */
-    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?float $socketTimeout = null): self
+    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null): self
     {
         $uri = Uri::create($url);
 
         $authentication ??= Authenticate::fromUrl($uri);
-        $socketTimeout ??= TransactionConfiguration::DEFAULT_TIMEOUT;
 
-        return $this->withParsedUrl($alias, $uri, $authentication, $socketTimeout);
+        return $this->withParsedUrl($alias, $uri, $authentication);
     }
 
     /**
@@ -116,7 +115,7 @@ final class ClientBuilder
      *
      * @return self<T>
      */
-    private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication, float $socketTimeout): self
+    private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication): self
     {
         $scheme = $uri->getScheme();
 
@@ -124,7 +123,7 @@ final class ClientBuilder
             throw UnsupportedScheme::make($scheme, self::SUPPORTED_SCHEMES);
         }
 
-        $setup = new DriverSetup($uri, $authentication, $socketTimeout);
+        $setup = new DriverSetup($uri, $authentication);
         $configs = new CypherMap(array_merge($this->driverConfigurations->toArray(), [$alias => $setup]));
 
         return new self(
@@ -173,7 +172,7 @@ final class ClientBuilder
             $parsedUrl = $parsedUrl->withScheme('bolt'.$postScheme);
         }
 
-        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl($parsedUrl), TransactionConfiguration::DEFAULT_TIMEOUT);
+        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl($parsedUrl));
     }
 
     /**
@@ -207,7 +206,7 @@ final class ClientBuilder
             $this->defaultDriver
         );
 
-        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl($uri), TransactionConfiguration::DEFAULT_TIMEOUT);
+        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl($uri));
     }
 
     /**

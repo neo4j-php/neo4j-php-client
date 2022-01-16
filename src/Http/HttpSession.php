@@ -106,10 +106,8 @@ final class HttpSession implements SessionInterface
      */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
-        $config ??= TransactionConfiguration::default();
-
         $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve());
-        $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->config);
+        $connection = $this->pool->acquire($request->getUri(), $this->auth, $this->config);
         $content = HttpHelper::statementsToJson($this->formatter, $statements);
         $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->resolve()->createStream($content));
 
@@ -132,11 +130,7 @@ final class HttpSession implements SessionInterface
 
     public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
-        return TransactionHelper::retry(
-            fn () => $this->openTransaction(),
-            $tsxHandler,
-            $config ?? TransactionConfiguration::default()
-        );
+        return TransactionHelper::retry(fn () => $this->openTransaction(), $tsxHandler);
     }
 
     public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
@@ -174,11 +168,9 @@ final class HttpSession implements SessionInterface
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        $config ??= TransactionConfiguration::default();
-
         $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve());
         $request->getBody()->write(HttpHelper::statementsToJson($this->formatter, $statements ?? []));
-        $connection = $this->pool->acquire($request->getUri(), $this->auth, $config->getTimeout(), $this->config);
+        $connection = $this->pool->acquire($request->getUri(), $this->auth, $this->config);
         $response = $connection->getImplementation()->sendRequest($request);
 
         /** @var string */

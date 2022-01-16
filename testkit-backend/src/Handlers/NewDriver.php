@@ -46,7 +46,6 @@ final class NewDriver implements RequestHandlerInterface
         $pass = $request->getAuthToken()->getCredentials();
 
         $ua = $request->getUserAgent();
-        $timeout = $request->getConnectionTimeoutMs();
         $config = DriverConfiguration::default();
 
         if ($ua) {
@@ -55,7 +54,7 @@ final class NewDriver implements RequestHandlerInterface
 
         $formatter = SummarizedResultFormatter::create();
         $authenticate = Authenticate::basic($user, $pass);
-        $driver = DriverFactory::create($request->getUri(), $config, $authenticate, $timeout, $formatter);
+        $driver = DriverFactory::create($request->getUri(), $config, $authenticate, $formatter);
 
         $id = Uuid::v4();
         $this->repository->addDriver($id, $driver);

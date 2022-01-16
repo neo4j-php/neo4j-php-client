@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\Bolt;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Exception;
@@ -56,13 +55,10 @@ final class Session implements SessionInterface
      * @var FormatterInterface<ResultFormat>
      */
     private FormatterInterface $formatter;
-    /** @psalm-readonly  */
-    private string $userAgent;
+    /** @psalm-readonly */
     private UriInterface $uri;
     /** @psalm-readonly  */
     private AuthenticateInterface $auth;
-    /** @psalm-readonly  */
-    private float $socketTimeout;
 
     /**
      * @param FormatterInterface<ResultFormat> $formatter
@@ -74,59 +70,55 @@ final class Session implements SessionInterface
         SessionConfiguration $config,
         ConnectionPoolInterface $pool,
         FormatterInterface $formatter,
-        string $userAgent,
         UriInterface $uri,
-        AuthenticateInterface $auth,
-        float $socketTimeout
+        AuthenticateInterface $auth
     ) {
         $this->config = $config;
         $this->pool = $pool;
         $this->formatter = $formatter;
-        $this->userAgent = $userAgent;
         $this->uri = $uri;
         $this->auth = $auth;
-        $this->socketTimeout = $socketTimeout;
     }
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
-        return $this->beginInstantTransaction($this->config)->runStatements($statements);
+        $tsx = $this->beginInstantTransaction($this->config, $this->mergeTsxConfig($config));
+
+        return $tsx->runStatements($statements);
     }
 
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        return $this->beginTransaction($statements, $config);
+        return $this->beginTransaction($statements, $this->mergeTsxConfig($config));
     }
 
     public function runStatement(Statement $statement, ?TransactionConfiguration $config = null)
     {
-        return $this->runStatements([$statement])->first();
+        return $this->runStatements([$statement], $config)->first();
     }
 
     public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null)
     {
-        return $this->runStatement(new Statement($statement, $parameters));
+        return $this->runStatement(new Statement($statement, $parameters), $config);
     }
 
     public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
-        $config ??= TransactionConfiguration::default();
+        $config = $this->mergeTsxConfig($config);
 
         return TransactionHelper::retry(
             fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE())),
-            $tsxHandler,
-            $config
+            $tsxHandler
         );
     }
 
     public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
-        $config ??= TransactionConfiguration::default();
+        $config = $this->mergeTsxConfig($config);
 
         return TransactionHelper::retry(
             fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ())),
-            $tsxHandler,
-            $config
+            $tsxHandler
         );
     }
 
@@ -137,7 +129,7 @@ final class Session implements SessionInterface
 
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        $config ??= TransactionConfiguration::default();
+        $config = $this->mergeTsxConfig($config);
         $tsx = $this->startTransaction($config, $this->config);
 
         $tsx->runStatements($statements ?? []);
@@ -148,9 +140,11 @@ final class Session implements SessionInterface
     /**
      * @return UnmanagedTransactionInterface<ResultFormat>
      */
-    private function beginInstantTransaction(SessionConfiguration $config): TransactionInterface
-    {
-        $connection = $this->acquireConnection(TransactionConfiguration::default(), $config);
+    private function beginInstantTransaction(
+        SessionConfiguration $config,
+        TransactionConfiguration $tsxConfig
+    ): TransactionInterface {
+        $connection = $this->acquireConnection($tsxConfig, $config);
 
         return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection);
     }
@@ -162,21 +156,27 @@ final class Session implements SessionInterface
      */
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): ConnectionInterface
     {
-        $timeout = max($this->socketTimeout, $config->getTimeout());
+        $connection = $this->pool->acquire($this->uri, $this->auth, $sessionConfig);
+        $connection->setTimeout($config->getTimeout());
 
-        return $this->pool->acquire($this->uri, $this->auth, $timeout, $sessionConfig);
+        return $connection;
     }
 
     private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig): UnmanagedTransactionInterface
     {
         try {
-            $bolt = $this->acquireConnection($config, $sessionConfig);
+            $connection = $this->acquireConnection($config, $sessionConfig);
 
-            $bolt->getImplementation()->begin(['db' => $this->config->getDatabase()]);
+            $connection->getImplementation()->begin(['db' => $this->config->getDatabase()]);
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);
         }
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $bolt);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection);
+    }
+
+    private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration
+    {
+        return TransactionConfiguration::default()->merge($config);
     }
 }

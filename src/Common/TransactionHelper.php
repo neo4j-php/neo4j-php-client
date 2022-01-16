@@ -15,9 +15,7 @@ namespace Laudis\Neo4j\Common;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
-use function microtime;
 
 final class TransactionHelper
 {
@@ -30,14 +28,8 @@ final class TransactionHelper
      *
      * @return U
      */
-    public static function retry(callable $tsxFactory, callable $tsxHandler, TransactionConfiguration $config)
+    public static function retry(callable $tsxFactory, callable $tsxHandler)
     {
-        $timeout = $config->getTimeout();
-        if ($timeout) {
-            $limit = microtime(true) + $timeout;
-        } else {
-            $limit = PHP_FLOAT_MAX;
-        }
         while (true) {
             try {
                 $transaction = $tsxFactory();
@@ -46,7 +38,7 @@ final class TransactionHelper
 
                 return $tbr;
             } catch (Neo4jException $e) {
-                if (microtime(true) > $limit || !str_contains($e->getNeo4jCode(), 'Neo.ClientError.Cluster.NotALeader')) {
+                if (!str_contains($e->getNeo4jCode(), 'Neo.ClientError.Cluster.NotALeader')) {
                     throw $e;
                 }
             }

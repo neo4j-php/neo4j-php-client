@@ -154,15 +154,14 @@ final class Client implements ClientInterface
     private function createDrivers(CypherMap $driverSetups, FormatterInterface $formatter, DriverConfiguration $configuration): array
     {
         if (count($driverSetups) === 0) {
-            $drivers = ['default' => DriverFactory::create(self::DEFAULT_DRIVER_CONFIG, null, null, null, $formatter)];
+            $drivers = ['default' => DriverFactory::create(self::DEFAULT_DRIVER_CONFIG, null, null, $formatter)];
         } else {
             $drivers = [];
             foreach ($driverSetups as $alias => $setup) {
                 $uri = $setup->getUri();
-                $timeout = $setup->getSocketTimeout();
                 $auth = $setup->getAuth();
 
-                $drivers[$alias] = DriverFactory::create($uri, $configuration, $auth, $timeout, $formatter);
+                $drivers[$alias] = DriverFactory::create($uri, $configuration, $auth, $formatter);
             }
         }
 

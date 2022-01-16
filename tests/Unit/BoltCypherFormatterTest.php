@@ -98,7 +98,7 @@ final class BoltCypherFormatterTest extends TestCase
             ConnectionProtocol::BOLT_V43(),
             AccessMode::READ(),
             new DatabaseInfo(''),
-            new BoltFactory(new Bolt($connection), Authenticate::disabled(), ''),
+            new BoltFactory(new Bolt($connection), Authenticate::disabled(), '', $connection),
             null,
             DriverConfiguration::default()
         );

@@ -26,7 +26,6 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
 
@@ -45,9 +44,7 @@ final class BoltDriver implements DriverInterface
     private AuthenticateInterface $auth;
     /** @var ConnectionPoolInterface<V3> */
     private ConnectionPoolInterface $pool;
-    private DriverConfiguration $config;
     private FormatterInterface $formatter;
-    private float $socketTimeout;
 
     /**
      * @param FormatterInterface<T>       $formatter
@@ -59,16 +56,12 @@ final class BoltDriver implements DriverInterface
         UriInterface $parsedUrl,
         AuthenticateInterface $auth,
         ConnectionPoolInterface $pool,
-        DriverConfiguration $config,
-        FormatterInterface $formatter,
-        float $socketTimeout
+        FormatterInterface $formatter
     ) {
         $this->parsedUrl = $parsedUrl;
         $this->auth = $auth;
         $this->pool = $pool;
-        $this->config = $config;
         $this->formatter = $formatter;
-        $this->socketTimeout = $socketTimeout;
     }
 
     /**
@@ -85,13 +78,12 @@ final class BoltDriver implements DriverInterface
      *
      * @pure
      */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?float $socketTimeout = null, FormatterInterface $formatter = null): self
+    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
         }
 
-        $socketTimeout ??= TransactionConfiguration::DEFAULT_TIMEOUT;
         $configuration ??= DriverConfiguration::default();
 
         if ($formatter !== null) {
@@ -99,9 +91,7 @@ final class BoltDriver implements DriverInterface
                 $uri,
                 $authenticate ?? Authenticate::fromUrl($uri),
                 new BoltConnectionPool($configuration),
-                $configuration,
-                $formatter,
-                $socketTimeout
+                $formatter
             );
         }
 
@@ -109,9 +99,7 @@ final class BoltDriver implements DriverInterface
             $uri,
             $authenticate ?? Authenticate::fromUrl($uri),
             new BoltConnectionPool($configuration),
-            $configuration,
             OGMFormatter::create(),
-            $socketTimeout
         );
     }
 
@@ -131,10 +119,8 @@ final class BoltDriver implements DriverInterface
             $sessionConfig,
             $this->pool,
             $this->formatter,
-            $this->config->getUserAgent(),
             $this->parsedUrl,
-            $this->auth,
-            $this->socketTimeout
+            $this->auth
         );
     }
 

@@ -66,14 +66,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     public function acquire(
         UriInterface $uri,
         AuthenticateInterface $authenticate,
-        float $socketTimeout,
         SessionConfiguration $config
     ): ConnectionInterface {
         $key = $uri->getHost().':'.($uri->getPort() ?? '7687');
 
         $table = self::$routingCache[$key] ?? null;
         if ($table === null || $table->getTtl() < time()) {
-            $connection = $this->pool->acquire($uri, $authenticate, $socketTimeout, $config);
+            $connection = $this->pool->acquire($uri, $authenticate, $config);
             $table = $this->routingTable($connection, $config);
             self::$routingCache[$key] = $table;
             $connection->close();
@@ -83,7 +82,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $authenticate = Authenticate::fromUrl($uri);
 
-        return $this->pool->acquire($uri, $authenticate, $socketTimeout, $config, $table, $server);
+        return $this->pool->acquire($uri, $authenticate, $config, $table, $server);
     }
 
     /**
