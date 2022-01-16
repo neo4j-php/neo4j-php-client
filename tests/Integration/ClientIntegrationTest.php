@@ -151,6 +151,22 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
     /**
      * @dataProvider connectionAliases
      */
+    public function testInvalidRunRetry(string $alias): void
+    {
+        $exception = false;
+        try {
+            $this->getClient()->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b'], $alias);
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+
+        $this->getClient()->run('RETURN 1 AS one');
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
     public function testValidStatement(string $alias): void
     {
         $response = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
