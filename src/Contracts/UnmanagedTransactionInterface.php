@@ -40,4 +40,19 @@ interface UnmanagedTransactionInterface extends TransactionInterface
      * Rolls back the transaction.
      */
     public function rollback(): void;
+
+    /**
+     * Returns whether the transaction has been rolled back.
+     */
+    public function isRolledBack(): bool;
+
+    /**
+     * Returns whether the transaction has been committed.
+     */
+    public function isCommitted(): void;
+
+    /**
+     * Returns whether the transaction is safe to use.
+     */
+    public function isFinished(): void;
 }
