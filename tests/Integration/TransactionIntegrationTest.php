@@ -43,7 +43,13 @@ final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
-        $response = $this->getClient()->beginTransaction(null, $alias)->run(<<<'CYPHER'
+        $tsx = $this->getClient()->beginTransaction(null, $alias);
+
+        self::assertFalse($tsx->isFinished());
+        self::assertFalse($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
+
+        $response = $tsx->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
@@ -59,6 +65,10 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
         self::assertEquals('a', $map->get('test'));
         self::assertEquals(['c' => 'd'], $map->get('map'));
         self::assertEquals([1, 2, 3], $map->get('list'));
+
+        self::assertFalse($tsx->isFinished());
+        self::assertFalse($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
     }
 
     /**
@@ -70,15 +80,23 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
-        $transaction = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getClient()->beginTransaction(null, $alias);
+
+        self::assertFalse($tsx->isFinished());
+        self::assertFalse($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
+
         $exception = false;
         try {
-            $transaction->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
+            $tsx->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
         } catch (Neo4jException $e) {
             $exception = true;
             self::assertEquals('Neo.ClientError.Statement.SyntaxError', $e->getNeo4jCode());
         }
         self::assertTrue($exception);
+        self::assertTrue($tsx->isFinished());
+        self::assertTrue($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
     }
 
     /**
@@ -175,11 +193,16 @@ CYPHER,
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
-        $transaction = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getClient()->beginTransaction(null, $alias);
+
+        self::assertFalse($tsx->isFinished());
+        self::assertFalse($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
+
         $exception = false;
         try {
             $params = ['test' => 'a', 'otherTest' => 'b'];
-            $transaction->runStatements([
+            $tsx->runStatements([
                 Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 CYPHER,
@@ -196,6 +219,10 @@ CYPHER,
             $exception = true;
         }
         self::assertTrue($exception);
+
+        self::assertTrue($tsx->isFinished());
+        self::assertTrue($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
     }
 
     /**
@@ -207,8 +234,18 @@ CYPHER,
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
-        $result = $this->getClient()->beginTransaction(null, $alias)->commit();
+        $tsx = $this->getClient()->beginTransaction(null, $alias);
+
+        self::assertFalse($tsx->isFinished());
+        self::assertFalse($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
+
+        $result = $tsx->commit();
         self::assertEquals(0, $result->count());
+
+        self::assertTrue($tsx->isFinished());
+        self::assertFalse($tsx->isRolledBack());
+        self::assertTrue($tsx->isCommitted());
     }
 
     /**
@@ -238,10 +275,18 @@ CYPHER
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
-        $transaction = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getClient()->beginTransaction(null, $alias);
 
-        $this->expectException(Neo4jException::class);
-        $transaction->commit([Statement::create('adkjbehqjk')]);
+        $exception = false;
+        try {
+            $tsx->commit([Statement::create('adkjbehqjk')]);
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+        self::assertTrue($tsx->isFinished());
+        self::assertTrue($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
     }
 
     /**
@@ -253,11 +298,25 @@ CYPHER
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
-        $transaction = $this->getClient()->beginTransaction(null, $alias);
-        $transaction->commit();
+        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx->commit();
+
+        self::assertTrue($tsx->isFinished());
+        self::assertFalse($tsx->isRolledBack());
+        self::assertTrue($tsx->isCommitted());
 
         $this->expectException(Neo4jException::class);
-        $transaction->commit();
+        $exception = false;
+        try {
+            $tsx->commit();
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+
+        self::assertTrue($tsx->isFinished());
+        self::assertFalse($tsx->isRolledBack());
+        self::assertTrue($tsx->isCommitted());
     }
 
     /**
@@ -269,9 +328,12 @@ CYPHER
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
-        $transaction = $this->getClient()->beginTransaction(null, $alias);
-        $transaction->rollback();
-        self::assertTrue(true);
+        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx->rollback();
+
+        self::assertTrue($tsx->isFinished());
+        self::assertTrue($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
     }
 
     /**
@@ -286,8 +348,21 @@ CYPHER
         $transaction = $this->getClient()->beginTransaction(null, $alias);
         $transaction->rollback();
 
-        $this->expectException(Neo4jException::class);
-        $transaction->rollback();
+        self::assertTrue($tsx->isFinished());
+        self::assertTrue($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
+
+        $exception = false;
+        try {
+            $transaction->rollback();
+        } catch (Neo4jException $e) {
+            $exception = true;
+        }
+        self::assertTrue($exception);
+
+        self::assertTrue($tsx->isFinished());
+        self::assertTrue($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
     }
 
     /**
