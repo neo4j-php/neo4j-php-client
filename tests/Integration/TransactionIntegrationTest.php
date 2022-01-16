@@ -344,8 +344,8 @@ CYPHER
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
-        $transaction = $this->getClient()->beginTransaction(null, $alias);
-        $transaction->rollback();
+        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx->rollback();
 
         self::assertTrue($tsx->isFinished());
         self::assertTrue($tsx->isRolledBack());
@@ -353,7 +353,7 @@ CYPHER
 
         $exception = false;
         try {
-            $transaction->rollback();
+            $tsx->rollback();
         } catch (Neo4jException $e) {
             $exception = true;
         }
