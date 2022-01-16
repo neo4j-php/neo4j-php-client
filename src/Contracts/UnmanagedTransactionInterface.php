@@ -43,16 +43,22 @@ interface UnmanagedTransactionInterface extends TransactionInterface
 
     /**
      * Returns whether the transaction has been rolled back.
+     *
+     * @psalm-mutation-free
      */
     public function isRolledBack(): bool;
 
     /**
      * Returns whether the transaction has been committed.
+     *
+     * @psalm-mutation-free
      */
     public function isCommitted(): bool;
 
     /**
      * Returns whether the transaction is safe to use.
+     *
+     * @psalm-mutation-free
      */
     public function isFinished(): bool;
 }

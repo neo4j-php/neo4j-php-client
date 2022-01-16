@@ -191,16 +191,25 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         throw $e;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isRolledBack(): bool
     {
         return $this->isRolledBack;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isCommitted(): bool
     {
         return $this->isCommitted;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isFinished(): bool
     {
         return $this->isRolledBack() || $this->isCommitted();
