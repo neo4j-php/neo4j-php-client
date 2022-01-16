@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\Bolt;
 use Bolt\error\ConnectionTimeoutException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
@@ -55,6 +54,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private string $database;
 
     private bool $isRolledBack = false;
+
     private bool $isCommitted = false;
 
     /**
@@ -180,13 +180,29 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @return never
      * @throws ConnectionTimeoutException
+     *
+     * @return never
      */
     private function handleConnectionTimeoutException(ConnectionTimeoutException $e): void
     {
         $this->connection->reset();
 
         throw $e;
+    }
+
+    public function isRolledBack(): bool
+    {
+        return $this->isRolledBack;
+    }
+
+    public function isCommitted(): bool
+    {
+        return $this->isCommitted;
+    }
+
+    public function isFinished(): bool
+    {
+        return $this->isRolledBack() || $this->isCommitted();
     }
 }

@@ -67,4 +67,19 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
     {
         $this->tsx->rollback();
     }
+
+    public function isCommitted(): bool
+    {
+        return $this->tsx->isCommitted();
+    }
+
+    public function isRolledBack(): bool
+    {
+        return $this->tsx->isRolledBack();
+    }
+
+    public function isFinished(): bool
+    {
+        return $this->tsx->isRolledBack();
+    }
 }

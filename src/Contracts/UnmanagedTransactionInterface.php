@@ -49,10 +49,10 @@ interface UnmanagedTransactionInterface extends TransactionInterface
     /**
      * Returns whether the transaction has been committed.
      */
-    public function isCommitted(): void;
+    public function isCommitted(): bool;
 
     /**
      * Returns whether the transaction is safe to use.
      */
-    public function isFinished(): void;
+    public function isFinished(): bool;
 }

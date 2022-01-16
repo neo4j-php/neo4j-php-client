@@ -49,6 +49,10 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     private FormatterInterface $formatter;
 
+    private bool $isCommitted = false;
+
+    private bool $isRolledBack = false;
+
     /**
      * @psalm-mutation-free
      *
@@ -134,5 +138,20 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     public function __destruct()
     {
         $this->connection->close();
+    }
+
+    public function isRolledBack(): bool
+    {
+        return $this->isRolledBack;
+    }
+
+    public function isCommitted(): bool
+    {
+        return $this->isCommitted;
+    }
+
+    public function isFinished(): bool
+    {
+        return $this->isRolledBack() || $this->isCommitted();
     }
 }
