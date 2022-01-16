@@ -19,6 +19,8 @@ use Laudis\Neo4j\Exception\Neo4jException;
 
 final class TransactionHelper
 {
+    private const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'TransientError', 'DatabaseError'];
+
     /**
      * @template U
      * @template T
@@ -31,6 +33,7 @@ final class TransactionHelper
     public static function retry(callable $tsxFactory, callable $tsxHandler)
     {
         while (true) {
+            $transaction = null;
             try {
                 $transaction = $tsxFactory();
                 $tbr = $tsxHandler($transaction);
@@ -38,7 +41,11 @@ final class TransactionHelper
 
                 return $tbr;
             } catch (Neo4jException $e) {
-                if (!str_contains($e->getNeo4jCode(), 'Neo.ClientError.Cluster.NotALeader')) {
+                if ($transaction && in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS)) {
+                    $transaction->rollback();
+                }
+
+                if ($e->getClassification() !== 'TransientError') {
                     throw $e;
                 }
             }
