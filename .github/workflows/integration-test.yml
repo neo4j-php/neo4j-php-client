@@ -45,6 +45,5 @@ jobs:
         with:
           configuration: phpunit.xml.dist
           php_version: 7.4
-          php_extensions: bcmath
           bootstrap: vendor/autoload.php
           args: --testsuite "Integration"

@@ -31,6 +31,5 @@ jobs:
         with:
           configuration: phpunit.xml.dist
           php_version: ${{ matrix.php-version }}
-          php_extensions: bcmath
           bootstrap: vendor/autoload.php
           args: --testsuite "Unit"
