@@ -27,8 +27,9 @@ jobs:
           - 7687:7687
           - 7474:7474
         options: >-
-          --health-cmd "wget http://localhost:7474 || exit 1"
-          --health-start-period "30s"
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-start-period "60s"
+          --health-interval "30s"
           --health-timeout "15s"
           --health-retries "5"
 
