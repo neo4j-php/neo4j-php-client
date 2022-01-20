@@ -49,7 +49,7 @@ jobs:
       core1:
         image: neo4j:4.4-enterprise
         options: >-
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-cmd "wget -q --method=HEAD http://localhost:7475 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
@@ -75,7 +75,7 @@ jobs:
       core2:
         image: neo4j:4.4-enterprise
         options: >-
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-cmd "wget -q --method=HEAD http://localhost:7476 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
@@ -101,7 +101,7 @@ jobs:
       core3:
         image: neo4j:4.4-enterprise
         options: >-
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-cmd "wget -q --method=HEAD http://localhost:7477 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
@@ -127,7 +127,7 @@ jobs:
       readreplica1:
         image: neo4j:4.4-enterprise
         options: >-
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-cmd "wget -q --method=HEAD http://localhost:7478 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
