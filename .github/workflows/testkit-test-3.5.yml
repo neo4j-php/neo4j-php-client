@@ -70,11 +70,6 @@ jobs:
           cd testkit
           python -m pip install -r requirements.txt
 
-      - name: Sleep for 60s
-        uses: juliangruber/sleep-action@v1
-        with:
-          time: 60s
-
       - name: Run TestKit
         env:
           TEST_NEO4J_HOST: localhost
@@ -84,5 +79,5 @@ jobs:
         run: |
           php testkit-backend/index.php &
           cd testkit
-          sleep 2
+          sleep 180
           python3 -m unittest -v "tests.neo4j.test_authentication.TestAuthenticationBasic"
