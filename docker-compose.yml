@@ -62,7 +62,7 @@ services:
             - neo4j
         image: neo4j:4.4-enterprise
         healthcheck:
-            test: "wget http://localhost:7474 || exit 1"
+            test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
             timeout: 10s
             retries: 5
@@ -78,7 +78,7 @@ services:
     core1:
         image: neo4j:4.4-enterprise
         healthcheck:
-            test: "wget http://localhost:7474 || exit 1"
+            test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
             timeout: 10s
             retries: 5
@@ -99,7 +99,7 @@ services:
     core2:
         image: neo4j:4.4-enterprise
         healthcheck:
-            test: "wget http://localhost:7474 || exit 1"
+            test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
             timeout: 10s
             retries: 5
@@ -120,7 +120,7 @@ services:
     core3:
         image: neo4j:4.4-enterprise
         healthcheck:
-            test: "wget http://localhost:7474 || exit 1"
+            test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
             timeout: 10s
             retries: 5
@@ -141,7 +141,7 @@ services:
     readreplica1:
         image: neo4j:4.4-enterprise
         healthcheck:
-            test: "wget http://localhost:7474 || exit 1"
+            test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
             timeout: 10s
             retries: 5

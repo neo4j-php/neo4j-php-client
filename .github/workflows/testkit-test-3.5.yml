@@ -13,24 +13,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        neo4j-version: ["4.2", "4.3", "4.4"]
         php-version: ["7.4", "8.1"]
 
     services:
       neo4j:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:3.5
         env:
           NEO4J_AUTH: neo4j/test
           NEO4JLABS_PLUGINS: '["apoc"]'
         ports:
           - 7687:7687
           - 7474:7474
-        options: >-
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
-          --health-start-period "60s"
-          --health-interval "30s"
-          --health-timeout "15s"
-          --health-retries "5"
 
     steps:
       - name: Checkout driver
@@ -76,6 +69,11 @@ jobs:
           python -m pip install --upgrade pip
           cd testkit
           python -m pip install -r requirements.txt
+
+      - name: Sleep for 60s
+        uses: juliangruber/sleep-action@v1
+        with:
+          time: 60s
 
       - name: Run TestKit
         env:
