@@ -35,8 +35,8 @@ jobs:
         image: neo4j:4.3
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
-          --health-start-period "30"
-          --health-timeout "15"
+          --health-start-period "30s"
+          --health-timeout "15s"
           --health-retries "5"
         ports:
           - 7687:7687
