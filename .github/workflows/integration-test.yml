@@ -28,6 +28,9 @@ jobs:
           - 7474:7474
         options: >-
           --health-cmd "wget http://localhost:7474 || exit 1"
+          --health-start-period "30"
+          --health-timeout "15"
+          --health-retries "5"
 
     steps:
       - uses: actions/checkout@v2
