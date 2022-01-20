@@ -78,8 +78,7 @@ final class HttpConnectionPool implements ConnectionPoolInterface
                     'statement' => <<<'CYPHER'
 CALL dbms.components()
 YIELD name, versions, edition
-UNWIND versions AS version
-RETURN name, version, edition
+RETURN name, versions, edition
 CYPHER
                 ],
             ],
@@ -91,14 +90,16 @@ CYPHER
 
         $response = $this->client->resolve()->sendRequest($request);
         $data = HttpHelper::interpretResponse($response);
-        /** @var array{0: array{name: string, version: string, edition: string}} $results */
+        /** @var array{0: array{name: string, versions: list<string>, edition: string}} $results */
         $results = (new BasicFormatter())->formatHttpResult($response, $data, null)->first();
+
+        $version = $results[0]['versions'][0] ?? '';
 
         return new HttpConnection(
             $this->client->resolve(),
-            $results[0]['name'].'-'.$results[0]['edition'].'/'.$results[0]['version'],
+            $results[0]['name'].'-'.$results[0]['edition'].'/'.($version),
             $uri,
-            $results[0]['version'],
+            $version,
             ConnectionProtocol::HTTP(),
             $config->getAccessMode(),
             new DatabaseInfo($config->getDatabase())
