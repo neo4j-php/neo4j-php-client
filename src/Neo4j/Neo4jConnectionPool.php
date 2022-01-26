@@ -82,6 +82,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $authenticate = Authenticate::fromUrl($uri);
 
+        if ($server->getScheme() === '') {
+            $server = $server->withScheme($uri->getScheme());
+        }
+
         return $this->pool->acquire($uri, $authenticate, $config, $table, $server);
     }
 
