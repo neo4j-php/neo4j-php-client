@@ -94,7 +94,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
 
     public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
     {
-        $bolt = BoltFactory::fromVariables($uri, null, null, $authenticate, $this->driverConfig);
+        $bolt = BoltFactory::fromVariables($uri, $authenticate, $this->driverConfig);
 
         try {
             $bolt->build();
@@ -108,9 +108,12 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     /**
      * @throws \ReflectionException
      */
-    private function getConnection(UriInterface $connectingTo, AuthenticateInterface $authenticate, SessionConfiguration $config): BoltConnection
-    {
-        $factory = BoltFactory::fromVariables($connectingTo, null, null, $authenticate, $this->driverConfig);
+    private function getConnection(
+        UriInterface $connectingTo,
+        AuthenticateInterface $authenticate,
+        SessionConfiguration $config
+    ): BoltConnection {
+        $factory = BoltFactory::fromVariables($connectingTo, $authenticate, $this->driverConfig);
         [$bolt, $response] = $factory->build();
 
         return new BoltConnection(

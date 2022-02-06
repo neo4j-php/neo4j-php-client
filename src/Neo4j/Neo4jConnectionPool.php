@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use function array_slice;
+use function array_unique;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_3;
@@ -78,7 +79,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $connection->close();
         }
 
-        $server = $this->getNextServer($table, $config->getAccessMode());
+        $server = $this->getNextServer($table, $config->getAccessMode()) ?? $uri;
 
         $authenticate = Authenticate::fromUrl($uri);
 
@@ -92,8 +93,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    private function getNextServer(RoutingTable $table, AccessMode $mode): Uri
+    private function getNextServer(RoutingTable $table, AccessMode $mode): ?Uri
     {
+        $servers = array_unique($table->getWithRole());
+        if (count($servers) === 1) {
+            return null;
+        }
+
         if (AccessMode::WRITE() === $mode) {
             $servers = $table->getWithRole(RoutingRoles::LEADER());
         } else {

@@ -11,18 +11,16 @@
 
 namespace Laudis\Neo4j\Bolt;
 
-use function count;
 use function explode;
 use const FILTER_VALIDATE_IP;
 use function filter_var;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
-use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
 
 final class SslConfigurator
 {
-    public function configure(UriInterface $uri, UriInterface $server, ?RoutingTable $table, DriverConfiguration $config): ?array
+    public function configure(UriInterface $uri, DriverConfiguration $config): ?array
     {
         $sslMode = $config->getSslConfiguration()->getMode();
         $sslConfig = '';
@@ -37,14 +35,6 @@ final class SslConfigurator
         }
 
         if (str_starts_with($sslConfig, 's')) {
-            // We have to pass a different host when working with ssl on aura.
-            // There is a strange behaviour where if we pass the uri host on a single
-            // instance aura deployment, we need to pass the original uri for the
-            // ssl configuration to be valid.
-            if ($table && count($table->getWithRole()) > 1) {
-                return $this->enableSsl($server->getHost(), $sslConfig, $config);
-            }
-
             return $this->enableSsl($uri->getHost(), $sslConfig, $config);
         }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Laudis Neo4j package.
  *
@@ -40,7 +42,7 @@ final class SslConfiguratorTest extends TestCase
             );
 
         $uri = Uri::create('');
-        $array = $this->configurator->configure($uri, $uri, null, $config);
+        $array = $this->configurator->configure($uri, $config);
 
         self::assertNotNull($array);
         self::assertArrayHasKey('verify_peer', $array);
@@ -58,7 +60,7 @@ final class SslConfiguratorTest extends TestCase
             );
 
         $uri = Uri::create('');
-        $array = $this->configurator->configure($uri, $uri, null, $config);
+        $array = $this->configurator->configure($uri, $config);
 
         self::assertNotNull($array);
         self::assertArrayHasKey('verify_peer', $array);
@@ -76,7 +78,7 @@ final class SslConfiguratorTest extends TestCase
             );
 
         $uri = Uri::create('');
-        $array = $this->configurator->configure($uri, $uri, null, $config);
+        $array = $this->configurator->configure($uri, $config);
 
         self::assertNotNull($array);
         self::assertArrayHasKey('allow_self_signed', $array);
@@ -93,7 +95,7 @@ final class SslConfiguratorTest extends TestCase
             );
 
         $uri = Uri::create('neo4j://localhost');
-        $array = $this->configurator->configure($uri, $uri, null, $config);
+        $array = $this->configurator->configure($uri, $config);
 
         self::assertNull($array);
     }
@@ -107,7 +109,7 @@ final class SslConfiguratorTest extends TestCase
             );
 
         $uri = Uri::create('neo4j+s://localhost');
-        $array = $this->configurator->configure($uri, $uri, null, $config);
+        $array = $this->configurator->configure($uri, $config);
 
         self::assertNotNull($array);
         self::assertArrayHasKey('verify_peer', $array);

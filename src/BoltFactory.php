@@ -23,7 +23,6 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
 
@@ -87,22 +86,19 @@ final class BoltFactory
 
     public static function fromVariables(
         UriInterface $uri,
-        ?UriInterface $server,
-        ?RoutingTable $table,
         AuthenticateInterface $authenticate,
         DriverConfiguration $config
     ): self {
-        $connectingTo = $server ?? $uri;
-        $socket = new StreamSocket($uri->getHost(), $connectingTo->getPort() ?? 7687, TransactionConfiguration::DEFAULT_TIMEOUT);
+        $socket = new StreamSocket($uri->getHost(), $uri->getPort() ?? 7687, TransactionConfiguration::DEFAULT_TIMEOUT);
 
-        self::configureSsl($uri, $connectingTo, $socket, $table, $config);
+        self::configureSsl($uri, $socket, $config);
 
         return new self(new Bolt($socket), $authenticate, $config->getUserAgent(), $socket);
     }
 
-    private static function configureSsl(UriInterface $uri, UriInterface $server, StreamSocket $socket, ?RoutingTable $table, DriverConfiguration $config): void
+    private static function configureSsl(UriInterface $uri, StreamSocket $socket, DriverConfiguration $config): void
     {
-        $options = (new SslConfigurator())->configure($uri, $server, $table, $config);
+        $options = (new SslConfigurator())->configure($uri, $config);
 
         if ($options !== null) {
             $socket->setSslContextOptions($options);
