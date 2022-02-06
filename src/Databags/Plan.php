@@ -74,7 +74,7 @@ final class Plan extends AbstractCypherObject
     /**
      * Identifiers used by this part of the plan.
      *
-     * @return CypherList<String>
+     * @return CypherList<string>
      */
     public function getIdentifiers(): CypherList
     {

@@ -41,7 +41,7 @@ final class SessionConfiguration
     private $bookmarks;
 
     /**
-     * @param string|null                                                   $database
+     * @param string|null $database
      * @param pure-callable():(int|null)|int|null                           $fetchSize
      * @param pure-callable():(AccessMode|null)|AccessMode|null             $defaultAccessMode
      * @param pure-callable():(iterable<string>|null)|iterable<string>|null $bookmarks
@@ -61,7 +61,7 @@ final class SessionConfiguration
     /**
      * @pure
      *
-     * @param string|null                                              $database
+     * @param string|null $database
      * @param pure-callable():(int|null)|int|null                      $fetchSize
      * @param pure-callable():(AccessMode|null)|AccessMode|null        $defaultAccessMode
      * @param pure-callable():(iterable<string>|null)|iterable<string> $bookmarks
