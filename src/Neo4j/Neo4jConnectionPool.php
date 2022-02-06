@@ -21,7 +21,6 @@ use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use function count;
 use Exception;
-use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -80,8 +79,6 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
 
         $server = $this->getNextServer($table, $config->getAccessMode()) ?? $uri;
-
-        $authenticate = Authenticate::fromUrl($uri);
 
         if ($server->getScheme() === '') {
             $server = $server->withScheme($uri->getScheme());

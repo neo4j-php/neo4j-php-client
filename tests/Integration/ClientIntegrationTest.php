@@ -15,7 +15,10 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use function count;
 use InvalidArgumentException;
+use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
@@ -35,6 +38,21 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
     protected static function formatter(): FormatterInterface
     {
         return OGMFormatter::create();
+    }
+
+    public function testDifferentAuth(): void
+    {
+        foreach (self::buildConnections() as $connection) {
+            $uri = Uri::create($connection);
+
+            $auth = Authenticate::fromUrl($uri);
+            $uri = $uri->withUserInfo('');
+
+            $driver = Driver::create($uri, null, $auth);
+            self::assertTrue($driver->verifyConnectivity());
+
+            self::assertEquals(1, $driver->createSession()->run('RETURN 1 AS one')->first()->get('one'));
+        }
     }
 
     public function testEqualEffect(): void
