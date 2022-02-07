@@ -21,8 +21,6 @@ use Laudis\Neo4j\Types\CypherList;
  * @template TValue
  *
  * @extends CypherList<TValue>
- *
- * @psalm-immutable
  */
 final class SummarizedResult extends CypherList
 {
