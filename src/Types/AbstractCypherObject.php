@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Traversable;
 use function array_key_exists;
 use ArrayAccess;
 use ArrayIterator;
@@ -54,9 +55,9 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
     }
 
     /**
-     * @return ArrayIterator<TKey, TValue>
+     * @return Traversable<TKey, TValue>
      */
-    public function getIterator(): ArrayIterator
+    public function getIterator(): Traversable
     {
         return new ArrayIterator($this->toArray());
     }
@@ -64,7 +65,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
     /**
      * @param TKey $offset
      */
-    final public function offsetExists($offset): bool
+    public function offsetExists($offset): bool
     {
         return array_key_exists($offset, $this->toArray());
     }
@@ -74,7 +75,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      *
      * @return TValue
      */
-    final public function offsetGet($offset)
+    public function offsetGet($offset)
     {
         $serialized = $this->toArray();
         if (!array_key_exists($offset, $serialized)) {

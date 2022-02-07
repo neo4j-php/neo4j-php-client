@@ -182,7 +182,7 @@ class Map extends AbstractCypherSequence
             return $x->getKey() <=> $y->getKey();
         });
 
-        return $this->withIterable($pairs);
+        return $this->withArray($pairs);
     }
 
     /**
@@ -199,7 +199,7 @@ class Map extends AbstractCypherSequence
             $tbr[$pair->getKey()] = $pair->getValue();
         }
 
-        return $this->withIterable($tbr);
+        return $this->withArray($tbr);
     }
 
     /**
@@ -231,7 +231,7 @@ class Map extends AbstractCypherSequence
             }
         }
 
-        return $this->withIterable($tbr);
+        return $this->withArray($tbr);
     }
 
     /**
@@ -247,7 +247,7 @@ class Map extends AbstractCypherSequence
             $tbr[$key] = $value;
         }
 
-        return $this->withIterable($tbr);
+        return $this->withArray($tbr);
     }
 
     /**
@@ -266,7 +266,7 @@ class Map extends AbstractCypherSequence
             }
         }
 
-        return $this->withIterable($tbr);
+        return $this->withArray($tbr);
     }
 
     /**
@@ -286,7 +286,7 @@ class Map extends AbstractCypherSequence
             }
         }
 
-        return $this->withIterable($tbr);
+        return $this->withArray($tbr);
     }
 
     /**
@@ -305,7 +305,7 @@ class Map extends AbstractCypherSequence
             unset($tbr[(string) $key]);
         }
 
-        return $this->withIterable($tbr);
+        return $this->withArray($tbr);
     }
 
     /**
@@ -313,30 +313,7 @@ class Map extends AbstractCypherSequence
      */
     public function reversed(): Map
     {
-        return $this->withIterable(array_reverse($this->toArray(), true));
-    }
-
-    /**
-     * @return static<TValue>
-     */
-    public function slice(int $offset, int $length = null): Map
-    {
-        $i = 0;
-        $length ??= INF;
-        $tbr = [];
-        foreach ($this->sequence as $key => $value) {
-            if ($length === 0) {
-                return $this->withIterable($tbr);
-            }
-            if ($i === $offset) {
-                --$length;
-                $tbr[$key] = $value;
-            } else {
-                ++$i;
-            }
-        }
-
-        return $this->withIterable($tbr);
+        return $this->withArray(array_reverse($this->toArray(), true));
     }
 
     /**
@@ -354,7 +331,7 @@ class Map extends AbstractCypherSequence
             return $x->getValue() <=> $y->getValue();
         });
 
-        return $this->withIterable($pairs);
+        return $this->withArray($pairs);
     }
 
     /**
@@ -565,7 +542,7 @@ class Map extends AbstractCypherSequence
      *
      * @return static<Value>
      */
-    protected function withIterable(iterable $iterable): Map
+    protected function withArray(iterable $iterable): Map
     {
         /** @psalm-suppress UnsafeGenericInstantiation */
         return new static($iterable);

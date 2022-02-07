@@ -13,15 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use function array_key_exists;
-use function array_key_last;
-use function array_slice;
-use function is_int;
+use ArrayAccess;
+use Countable;
 use function is_iterable;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use OutOfBoundsException;
 use function sort;
+use Traversable;
 use function usort;
 
 /**
@@ -30,8 +29,6 @@ use function usort;
  * @template TValue
  *
  * @extends AbstractCypherSequence<TValue, int>
- *
- * @psalm-immutable
  */
 class ArrayList extends AbstractCypherSequence
 {
@@ -43,6 +40,11 @@ class ArrayList extends AbstractCypherSequence
         if ($iterable instanceof self) {
             /** @psalm-suppress InvalidPropertyAssignmentValue */
             $this->sequence = $iterable->sequence;
+        } elseif ($iterable instanceof ArrayAccess &&
+            $iterable instanceof Countable &&
+            $iterable instanceof Traversable
+        ) {
+            $this->sequence = $iterable;
         } else {
             $this->sequence = [];
             foreach ($iterable as $value) {
@@ -58,7 +60,7 @@ class ArrayList extends AbstractCypherSequence
      *
      * @return static<Value>
      */
-    protected function withIterable(iterable $iterable): ArrayList
+    protected function withArray(iterable $iterable): ArrayList
     {
         /** @psalm-suppress UnsafeInstantiation */
         return new static($iterable);
@@ -71,10 +73,11 @@ class ArrayList extends AbstractCypherSequence
      */
     public function first()
     {
-        if (!array_key_exists(0, $this->sequence)) {
+        if ($this->offsetExists(0)) {
             throw new OutOfBoundsException('Cannot grab first element of an empty list');
         }
 
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         return $this->sequence[0];
     }
 
@@ -85,12 +88,12 @@ class ArrayList extends AbstractCypherSequence
      */
     public function last()
     {
-        $key = array_key_last($this->sequence);
-        if (!is_int($key)) {
+        $count = $this->count();
+        if ($count === 0) {
             throw new OutOfBoundsException('Cannot grab last element of an empty list');
         }
 
-        return $this->sequence[$key];
+        return $this->sequence[$count - 1];
     }
 
     /**
@@ -100,12 +103,12 @@ class ArrayList extends AbstractCypherSequence
      */
     public function merge($values): ArrayList
     {
-        $tbr = $this->sequence;
+        $tbr = $this->toArray();
         foreach ($values as $value) {
             $tbr[] = $value;
         }
 
-        return $this->withIterable($tbr);
+        return $this->withArray($tbr);
     }
 
     /**
@@ -113,15 +116,7 @@ class ArrayList extends AbstractCypherSequence
      */
     public function reversed(): ArrayList
     {
-        return $this->withIterable(array_reverse($this->sequence));
-    }
-
-    /**
-     * @return static<TValue>
-     */
-    public function slice(int $offset, int $length = null): ArrayList
-    {
-        return $this->withIterable(array_slice($this->sequence, $offset, $length));
+        return $this->withArray(array_reverse($this->toArray()));
     }
 
     /**
@@ -131,7 +126,7 @@ class ArrayList extends AbstractCypherSequence
      */
     public function sorted(callable $comparator = null): ArrayList
     {
-        $tbr = $this->sequence;
+        $tbr = $this->toArray();
         if ($comparator === null) {
             sort($tbr);
         } else {
@@ -139,7 +134,7 @@ class ArrayList extends AbstractCypherSequence
             usort($tbr, $comparator);
         }
 
-        return $this->withIterable($tbr);
+        return $this->withArray($tbr);
     }
 
     /**
@@ -151,7 +146,7 @@ class ArrayList extends AbstractCypherSequence
      */
     public function get(int $key)
     {
-        if (!array_key_exists($key, $this->sequence)) {
+        if (!$this->offsetExists($key)) {
             throw new OutOfBoundsException(sprintf('Cannot get item in sequence at position: %s', $key));
         }
 
@@ -263,8 +258,6 @@ class ArrayList extends AbstractCypherSequence
      * @param iterable<Value> $iterable
      *
      * @return self<Value>
-     *
-     * @pure
      */
     public static function fromIterable(iterable $iterable): ArrayList
     {

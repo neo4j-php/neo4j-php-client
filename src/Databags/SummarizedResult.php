@@ -44,7 +44,7 @@ final class SummarizedResult extends CypherList
      *
      * @return static<Value>
      */
-    protected function withIterable(iterable $iterable): SummarizedResult
+    protected function withArray(iterable $iterable): SummarizedResult
     {
         return new self($this->summary, $iterable);
     }

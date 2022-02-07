@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /*
  * This file is part of the Laudis Neo4j package.
@@ -11,13 +12,13 @@
 
 namespace Laudis\Neo4j\Bolt;
 
-use Countable;
 use function array_merge;
 use function array_splice;
 use ArrayAccess;
 use BadMethodCallException;
 use Bolt\protocol\V4;
 use function count;
+use Countable;
 use IteratorAggregate;
 use Traversable;
 
@@ -43,6 +44,9 @@ final class BoltResult implements IteratorAggregate, ArrayAccess, Countable
         }
     }
 
+    /**
+     * @param int $offset
+     */
     public function offsetExists($offset): bool
     {
         $this->prefetchNeeded($offset);

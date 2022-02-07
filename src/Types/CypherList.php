@@ -22,8 +22,6 @@ use Laudis\Neo4j\TypeCaster;
  * @template TValue
  *
  * @extends ArrayList<TValue>
- *
- * @psalm-immutable
  */
 class CypherList extends ArrayList
 {
