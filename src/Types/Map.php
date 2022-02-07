@@ -14,26 +14,26 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
-use function array_key_first;
 use function array_key_last;
 use function array_keys;
 use function array_reverse;
-use function array_slice;
+use ArrayAccess;
+use Countable;
 use function func_num_args;
+use const INF;
 use InvalidArgumentException;
+use function is_array;
 use function is_int;
 use function is_iterable;
 use function is_object;
 use function is_string;
-use function ksort;
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use function method_exists;
 use OutOfBoundsException;
 use stdClass;
-use function uasort;
-use function uksort;
+use Traversable;
 
 /**
  * An immutable ordered map of items.
@@ -41,8 +41,6 @@ use function uksort;
  * @template TValue
  *
  * @extends AbstractCypherSequence<TValue, string>
- *
- * @psalm-immutable
  */
 class Map extends AbstractCypherSequence
 {
@@ -54,6 +52,11 @@ class Map extends AbstractCypherSequence
         if ($iterable instanceof self) {
             /** @psalm-suppress InvalidPropertyAssignmentValue */
             $this->sequence = $iterable->sequence;
+        } elseif ($iterable instanceof ArrayAccess &&
+            $iterable instanceof Countable &&
+            $iterable instanceof Traversable
+        ) {
+            $this->sequence = $iterable;
         } else {
             $this->sequence = [];
             /** @var mixed $key */
@@ -76,12 +79,10 @@ class Map extends AbstractCypherSequence
      */
     public function first(): Pair
     {
-        $key = array_key_first($this->sequence);
-        if (!is_string($key)) {
-            throw new OutOfBoundsException('Cannot grab first element of an empty map');
+        foreach ($this->sequence as $key => $value) {
+            return new Pair($key, $value);
         }
-
-        return new Pair($key, $this->sequence[$key]);
+        throw new OutOfBoundsException('Cannot grab first element of an empty map');
     }
 
     /**
@@ -91,12 +92,25 @@ class Map extends AbstractCypherSequence
      */
     public function last(): Pair
     {
-        $key = array_key_last($this->sequence);
-        if (!is_string($key)) {
+        if (is_array($this->sequence)) {
+            $key = array_key_last($this->sequence);
+            if (!is_string($key)) {
+                throw new OutOfBoundsException('Cannot grab last element of an empty map');
+            }
+
+            return new Pair($key, $this->sequence[$key]);
+        }
+
+        $pair = null;
+        foreach ($this->sequence as $key => $value) {
+            $pair = new Pair($key, $value);
+        }
+
+        if ($pair === null) {
             throw new OutOfBoundsException('Cannot grab last element of an empty map');
         }
 
-        return new Pair($key, $this->sequence[$key]);
+        return $pair;
     }
 
     /**
@@ -124,7 +138,16 @@ class Map extends AbstractCypherSequence
      */
     public function keys(): ArrayList
     {
-        return new ArrayList(array_keys($this->sequence));
+        if (is_array($this->sequence)) {
+            return new ArrayList(array_keys($this->sequence));
+        }
+
+        $tbr = [];
+        foreach ($this->sequence as $key => $value) {
+            $tbr[] = $key;
+        }
+
+        return new ArrayList($tbr);
     }
 
     /**
@@ -151,12 +174,29 @@ class Map extends AbstractCypherSequence
      */
     public function ksorted(callable $comparator = null): Map
     {
-        $tbr = $this->sequence;
-        if ($comparator === null) {
-            ksort($tbr);
-        } else {
-            /** @psalm-suppress ImpureFunctionCall */
-            uksort($tbr, $comparator);
+        $pairs = $this->pairs()->sorted(static function (Pair $x, Pair $y) use ($comparator) {
+            if ($comparator) {
+                return $comparator($x->getKey(), $y->getKey());
+            }
+
+            return $x->getKey() <=> $y->getKey();
+        });
+
+        return $this->withIterable($pairs);
+    }
+
+    /**
+     * @template Value
+     *
+     * @param iterable<mixed, Pair<string, Value>> $iterable
+     *
+     * @return static<Value>
+     */
+    protected function withPairs(iterable $pairs): self
+    {
+        $tbr = [];
+        foreach ($pairs as $pair) {
+            $tbr[$pair->getKey()] = $pair->getValue();
         }
 
         return $this->withIterable($tbr);
@@ -181,10 +221,10 @@ class Map extends AbstractCypherSequence
      */
     public function xor(iterable $map): Map
     {
-        $tbr = $this->sequence;
+        $tbr = $this->toArray();
 
         foreach ($map as $key => $value) {
-            if (array_key_exists($key, $this->sequence)) {
+            if ($this->offsetExists($key)) {
                 unset($tbr[(string) $key]);
             } else {
                 $tbr[(string) $key] = $value;
@@ -201,7 +241,7 @@ class Map extends AbstractCypherSequence
      */
     public function merge(iterable $values): Map
     {
-        $tbr = $this->sequence;
+        $tbr = $this->toArray();
 
         foreach ($values as $key => $value) {
             $tbr[$key] = $value;
@@ -219,7 +259,7 @@ class Map extends AbstractCypherSequence
      */
     public function union(iterable $map): Map
     {
-        $tbr = $this->sequence;
+        $tbr = $this->toArray();
         foreach ($map as $key => $value) {
             if (!array_key_exists($key, $tbr)) {
                 $tbr[(string) $key] = $value;
@@ -241,7 +281,7 @@ class Map extends AbstractCypherSequence
         $tbr = [];
         // @psalm-suppress UnusedForeachValue
         foreach ($map as $key => $value) {
-            if (array_key_exists($key, $this->sequence)) {
+            if ($this->offsetExists($key)) {
                 $tbr[$key] = $this->sequence[$key];
             }
         }
@@ -258,7 +298,7 @@ class Map extends AbstractCypherSequence
      */
     public function diff(iterable $map): Map
     {
-        $tbr = $this->sequence;
+        $tbr = $this->toArray();
 
         /** @psalm-suppress UnusedForeachValue */
         foreach ($map as $key => $value) {
@@ -273,7 +313,7 @@ class Map extends AbstractCypherSequence
      */
     public function reversed(): Map
     {
-        return $this->withIterable(array_reverse($this->sequence, true));
+        return $this->withIterable(array_reverse($this->toArray(), true));
     }
 
     /**
@@ -281,7 +321,22 @@ class Map extends AbstractCypherSequence
      */
     public function slice(int $offset, int $length = null): Map
     {
-        return $this->withIterable(array_slice($this->sequence, $offset, $length, true));
+        $i = 0;
+        $length ??= INF;
+        $tbr = [];
+        foreach ($this->sequence as $key => $value) {
+            if ($length === 0) {
+                return $this->withIterable($tbr);
+            }
+            if ($i === $offset) {
+                --$length;
+                $tbr[$key] = $value;
+            } else {
+                ++$i;
+            }
+        }
+
+        return $this->withIterable($tbr);
     }
 
     /**
@@ -291,15 +346,15 @@ class Map extends AbstractCypherSequence
      */
     public function sorted(?callable $comparator = null): Map
     {
-        $tbr = $this->sequence;
-        if ($comparator === null) {
-            asort($tbr);
-        } else {
-            /** @psalm-suppress ImpureFunctionCall */
-            uasort($tbr, $comparator);
-        }
+        $pairs = $this->pairs()->sorted(static function (Pair $x, Pair $y) use ($comparator) {
+            if ($comparator) {
+                return $comparator($x->getValue(), $y->getValue());
+            }
 
-        return $this->withIterable($tbr);
+            return $x->getValue() <=> $y->getValue();
+        });
+
+        return $this->withIterable($pairs);
     }
 
     /**
@@ -316,7 +371,7 @@ class Map extends AbstractCypherSequence
     public function get(string $key, $default = null)
     {
         if (func_num_args() === 1) {
-            if (!array_key_exists($key, $this->sequence)) {
+            if (!$this->offsetExists($key)) {
                 throw new OutOfBoundsException(sprintf('Cannot get item in sequence with key: %s', $key));
             }
 
@@ -465,7 +520,7 @@ class Map extends AbstractCypherSequence
         }
 
         if (!is_iterable($value)) {
-            throw new RuntimeTypeException($value, Map::class);
+            throw new RuntimeTypeException($value, __CLASS__);
         }
 
         return new Map($value);
@@ -497,8 +552,6 @@ class Map extends AbstractCypherSequence
      * @param iterable<Value> $iterable
      *
      * @return Map<Value>
-     *
-     * @pure
      */
     public static function fromIterable(iterable $iterable): Map
     {
