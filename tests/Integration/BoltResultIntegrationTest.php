@@ -16,9 +16,9 @@ use Bolt\connection\StreamSocket;
 use Bolt\helpers\Auth;
 use Bolt\protocol\V4;
 use Dotenv\Dotenv;
-use Laudis\Neo4j\Bolt\BoltResult;
 use function explode;
 use function is_string;
+use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Common\Uri;
 use PHPUnit\Framework\TestCase;
 
@@ -52,8 +52,7 @@ final class BoltResultIntegrationTest extends TestCase
         $uri = Uri::create($connection);
         $socket = new StreamSocket($uri->getHost(), $uri->getPort() ?? 7687);
         $socket->connect();
-        $bolt = new Bolt($socket);
-        $protocol = $bolt->build();
+        $protocol = (new Bolt($socket))->build();
         if (!$protocol instanceof V4) {
             self::markTestSkipped('Can only test bolt result on v4');
         }
@@ -64,9 +63,16 @@ final class BoltResultIntegrationTest extends TestCase
             $protocol->hello(Auth::none());
         }
         $protocol->run('UNWIND range(1, 100000) AS i RETURN i');
-        $boltResult = new BoltResult($protocol, 1000);
-        foreach ($boltResult as $i => $result) {
+        $i = 0;
+        $result = new BoltResult($protocol, 1000);
+
+        self::assertEquals(2001, $result[2000][0]);
+        foreach ($result as $i => $result) {
             self::assertEquals($i + 1, $result[0]);
         }
+
+        self::assertEquals(100000, $i + 1);
+
+        self::assertArrayNotHasKey(500000000, $result);
     }
 }

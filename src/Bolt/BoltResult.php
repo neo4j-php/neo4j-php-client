@@ -11,15 +11,21 @@
 
 namespace Laudis\Neo4j\Bolt;
 
+use function array_merge;
 use function array_splice;
+use ArrayAccess;
+use BadMethodCallException;
 use Bolt\protocol\V4;
+use function count;
 use IteratorAggregate;
 use Traversable;
 
-final class BoltResult implements IteratorAggregate
+final class BoltResult implements IteratorAggregate, ArrayAccess
 {
     private V4 $protocol;
     private int $fetchSize;
+    private array $rows = [];
+    private bool $done = false;
 
     public function __construct(V4 $protocol, int $fetchSize)
     {
@@ -30,15 +36,48 @@ final class BoltResult implements IteratorAggregate
     public function getIterator(): Traversable
     {
         $i = 0;
-        do {
-            $meta = $this->protocol->pull(['n' => $this->fetchSize]);
-            foreach (array_splice($meta, 0, count($meta) - 1) as $row) {
-                yield $i => $row;
-                ++$i;
-            }
-            $hasMore = $meta[0]['has_more'] ?? false;
+        while ($this->offsetExists($i)) {
+            yield $i => $this[$i];
+            ++$i;
+        }
+    }
 
-            yield $i => $meta[0];
-        } while ($hasMore);
+    public function offsetExists($offset): bool
+    {
+        $this->prefetchNeeded($offset);
+
+        return $offset < count($this->rows);
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetGet($offset)
+    {
+        $this->prefetchNeeded($offset);
+
+        return $this->rows[$offset];
+    }
+
+    public function offsetSet($offset, $value): void
+    {
+        throw new BadMethodCallException('Bolt results are immutable.');
+    }
+
+    public function offsetUnset($offset): void
+    {
+        throw new BadMethodCallException('Bolt results are immutable.');
+    }
+
+    /**
+     * @throws \Exception
+     */
+    private function prefetchNeeded(int $offset): void
+    {
+        while (!$this->done && $offset >= count($this->rows)) {
+            $meta = $this->protocol->pull(['n' => $this->fetchSize]);
+            $rows = array_splice($meta, 0, count($meta) - 1);
+            $this->rows = array_merge($this->rows, $rows);
+
+            $this->done = !($meta[0]['has_more'] ?? false);
+        }
     }
 }
