@@ -317,29 +317,6 @@ class Map extends AbstractCypherSequence
     }
 
     /**
-     * @return static<TValue>
-     */
-    public function slice(int $offset, int $length = null): Map
-    {
-        $i = 0;
-        $length ??= INF;
-        $tbr = [];
-        foreach ($this->sequence as $key => $value) {
-            if ($length === 0) {
-                return $this->withIterable($tbr);
-            }
-            if ($i === $offset) {
-                --$length;
-                $tbr[$key] = $value;
-            } else {
-                ++$i;
-            }
-        }
-
-        return $this->withIterable($tbr);
-    }
-
-    /**
      * @param (callable(TValue, TValue):int)|null $comparator
      *
      * @return static<TValue>

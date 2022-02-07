@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
-use function array_search;
 use function count;
 use Countable;
 use function implode;
@@ -22,6 +21,7 @@ use function is_array;
 use function is_object;
 use function iterator_to_array;
 use function property_exists;
+use const INF;
 
 /**
  * Abstract immutable sequence with basic functional methods.
@@ -33,7 +33,7 @@ use function property_exists;
  */
 abstract class AbstractCypherSequence extends AbstractCypherObject implements Countable
 {
-    /** @var array<TKey, TValue>|(\ArrayAccess<TKey, TValue>&\Countable&\Traversable<TKey, TValue>) */
+    /** @var (\ArrayAccess<TKey, TValue>&\Countable&\Traversable<TKey, TValue>)|array<TKey, TValue> */
     protected $sequence = [];
 
     /**
@@ -211,7 +211,25 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @return static
      */
-    abstract public function slice(int $offset, int $length = null): self;
+    public function slice(int $offset, int $length = null): self
+    {
+        $i = 0;
+        $length ??= INF;
+        $tbr = [];
+        foreach ($this->sequence as $key => $value) {
+            if ($length === 0) {
+                return $this->withIterable($tbr);
+            }
+            if ($i === $offset) {
+                --$length;
+                $tbr[$key] = $value;
+            } else {
+                ++$i;
+            }
+        }
+
+        return $this->withIterable($tbr);
+    }
 
     /**
      * Creates a sorted sequence. If the compoarator is null it will use natural ordering.

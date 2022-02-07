@@ -23,8 +23,6 @@ use Laudis\Neo4j\TypeCaster;
  * @template TValue
  *
  * @extends Map<TValue>
- *
- * @psalm-immutable
  */
 final class CypherMap extends Map
 {
@@ -43,7 +41,7 @@ final class CypherMap extends Map
         }
         $tbr = TypeCaster::toCypherMap($value);
         if ($tbr === null) {
-            throw new RuntimeTypeException($value, CypherMap::class);
+            throw new RuntimeTypeException($value, __CLASS__);
         }
 
         return $tbr;
@@ -232,8 +230,6 @@ final class CypherMap extends Map
      * @param iterable<Value> $iterable
      *
      * @return self<Value>
-     *
-     * @pure
      */
     public static function fromIterable(iterable $iterable): CypherMap
     {

@@ -11,13 +11,13 @@
 
 namespace Laudis\Neo4j\Bolt;
 
-use Countable;
 use function array_merge;
 use function array_splice;
 use ArrayAccess;
 use BadMethodCallException;
 use Bolt\protocol\V4;
 use function count;
+use Countable;
 use IteratorAggregate;
 use Traversable;
 
