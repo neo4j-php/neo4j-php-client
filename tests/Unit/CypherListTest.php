@@ -378,4 +378,19 @@ final class CypherListTest extends TestCase
 
         self::assertEquals(CypherList::fromIterable(['a', 'b', 'c']), $map);
     }
+
+    public function testKeyBy(): void
+    {
+        $object = new stdClass();
+        $object->x = 'stdClassX';
+        $object->y = 'wrong';
+        $list = CypherList::fromIterable([
+            1,
+            $object,
+            ['x' => 'arrayX', 'y' => 'wrong'],
+            'wrong',
+        ])->keyBy('x');
+
+        self::assertEquals(CypherList::fromIterable(['stdClassX', 'arrayX']), $list);
+    }
 }

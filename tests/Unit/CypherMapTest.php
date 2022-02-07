@@ -21,6 +21,7 @@ use const JSON_THROW_ON_ERROR;
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\Types\ArrayList;
+use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
@@ -483,5 +484,20 @@ final class CypherMapTest extends TestCase
             });
 
         self::assertEquals(CypherMap::fromIterable(['a' => 'b', 'c' => 'd']), $map);
+    }
+
+    public function testKeyBy(): void
+    {
+        $object = new stdClass();
+        $object->x = 'stdClassX';
+        $object->y = 'wrong';
+        $list = CypherMap::fromIterable([
+            'w' => 1,
+            'x' => $object,
+            'y' => ['x' => 'arrayX', 'y' => 'wrong'],
+            'z' => 'wrong',
+        ])->keyBy('x');
+
+        self::assertEquals(CypherList::fromIterable(['stdClassX', 'arrayX']), $list);
     }
 }

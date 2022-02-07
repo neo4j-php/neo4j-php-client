@@ -133,4 +133,9 @@ class CypherList extends ArrayList
     {
         return new self($iterable);
     }
+
+    public function keyBy(string $key): ArrayList
+    {
+        return self::fromIterable(parent::keyBy($key));
+    }
 }

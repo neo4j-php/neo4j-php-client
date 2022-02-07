@@ -19,6 +19,9 @@ use function count;
 use Countable;
 use function implode;
 use function in_array;
+use function is_array;
+use function is_object;
+use function property_exists;
 
 /**
  * Abstract immutable sequence with basic functional methods.
@@ -206,6 +209,25 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * @return static
      */
     abstract public function sorted(?callable $comparator = null): self;
+
+    /**
+     * Creates a list from the arrays and objects in the sequence whose values corresponding with the provided key.
+     */
+    public function keyBy(string $key): ArrayList
+    {
+        $tbr = [];
+        foreach ($this->sequence as $value) {
+            if (is_array($value) && array_key_exists($key, $value)) {
+                /** @var mixed */
+                $tbr[] = $value[$key];
+            } elseif (is_object($value) && property_exists($value, $key)) {
+                /** @var mixed */
+                $tbr[] = $value->$key;
+            }
+        }
+
+        return ArrayList::fromIterable($tbr);
+    }
 
     /**
      * Joins the values within the sequence together with the provided glue. If the glue is null, it will be an empty string.
