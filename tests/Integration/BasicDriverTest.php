@@ -65,4 +65,18 @@ final class BasicDriverTest extends TestCase
 
         self::assertEquals(0, $id);
     }
+
+    public function testMap(string $connection): void
+    {
+        $result = Driver::create($connection)->createSession()->run(<<<'CYPHER'
+        MATCH (id:GraphNode)
+        WHERE id.end >= $start AND id.start <= $end
+        RETURN id.content AS content
+        CYPHER, ['start' => 0, 'end' => 86400]);
+
+        self::assertCount(4, $result);
+        self::assertEqualsCanonicalizing([
+            'graphContent', 'aContent', 'cContent', '',
+        ], $result->map(static fn (CypherMap $map) => $map->getAsString('content'))->toArray());
+    }
 }

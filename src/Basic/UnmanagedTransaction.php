@@ -33,11 +33,21 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
         $this->tsx = $tsx;
     }
 
+    /**
+     * @param iterable<string, scalar|iterable|null> $parameters
+     *
+     * @return SummarizedResult<CypherMap>
+     */
     public function run(string $statement, iterable $parameters = []): SummarizedResult
     {
         return $this->tsx->run($statement, $parameters);
     }
 
+    /**
+     * @param iterable<Statement> $statements
+     *
+     * @return SummarizedResult<CypherMap>
+     */
     public function runStatement(Statement $statement): SummarizedResult
     {
         return $this->tsx->runStatement($statement);

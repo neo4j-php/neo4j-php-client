@@ -34,16 +34,31 @@ final class Session implements SessionInterface
         $this->session = $session;
     }
 
+    /**
+     * @param iterable<Statement> $statements
+     *
+     * @return CypherList<SummarizedResult<CypherMap>>
+     */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
         return $this->session->runStatements($statements, $config);
     }
 
+    /**
+     * @param iterable<Statement> $statements
+     *
+     * @return SummarizedResult<CypherMap>
+     */
     public function runStatement(Statement $statement, ?TransactionConfiguration $config = null): SummarizedResult
     {
         return $this->session->runStatement($statement, $config);
     }
 
+    /**
+     * @param iterable<string, scalar|iterable|null> $parameters
+     *
+     * @return SummarizedResult<CypherMap>
+     */
     public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null): SummarizedResult
     {
         return $this->session->run($statement, $parameters, $config);
