@@ -33,8 +33,6 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
 /**
  * Abstract immutable container with basic functionality to integrate easily into the driver ecosystem.
  *
- * @psalm-immutable
- *
  * @template TKey of array-key
  * @template TValue
  *

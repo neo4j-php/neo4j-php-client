@@ -18,9 +18,9 @@ use function array_search;
 use function count;
 use Countable;
 use function implode;
-use function in_array;
 use function is_array;
 use function is_object;
+use function iterator_to_array;
 use function property_exists;
 
 /**
@@ -30,13 +30,11 @@ use function property_exists;
  * @template TKey of array-key
  *
  * @extends AbstractCypherObject<TKey, TValue>
- *
- * @psalm-immutable
  */
 abstract class AbstractCypherSequence extends AbstractCypherObject implements Countable
 {
-    /** @var array<TKey, TValue> */
-    protected array $sequence = [];
+    /** @var array<TKey, TValue>|(\ArrayAccess<TKey, TValue>&\Countable&\Traversable<TKey, TValue>) */
+    protected $sequence = [];
 
     /**
      * @template Value
@@ -66,7 +64,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     }
 
     /**
-     * Returns whether or not the sequence is empty.
+     * Returns whether the sequence is empty.
      */
     final public function isEmpty(): bool
     {
@@ -80,7 +78,11 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function toArray(): array
     {
-        return $this->sequence;
+        if (is_array($this->sequence)) {
+            return $this->sequence;
+        }
+
+        return iterator_to_array($this->sequence, true);
     }
 
     /**
@@ -99,7 +101,11 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function hasKey($key): bool
     {
-        return array_key_exists($key, $this->sequence);
+        if (is_array($this->sequence)) {
+            return array_key_exists($key, $this->sequence);
+        }
+
+        return $this->sequence->offsetExists($key);
     }
 
     /**
@@ -109,7 +115,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function hasValue($value): bool
     {
-        return in_array($value, $this->sequence, true);
+        return $this->find($value) !== false;
     }
 
     /**
@@ -183,7 +189,13 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function find($value)
     {
-        return array_search($value, $this->sequence, true);
+        foreach ($this->sequence as $i => $x) {
+            if ($value === $x) {
+                return $i;
+            }
+        }
+
+        return false;
     }
 
     /**

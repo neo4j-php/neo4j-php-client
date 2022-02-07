@@ -11,6 +11,7 @@
 
 namespace Laudis\Neo4j\Bolt;
 
+use Countable;
 use function array_merge;
 use function array_splice;
 use ArrayAccess;
@@ -20,7 +21,7 @@ use function count;
 use IteratorAggregate;
 use Traversable;
 
-final class BoltResult implements IteratorAggregate, ArrayAccess
+final class BoltResult implements IteratorAggregate, ArrayAccess, Countable
 {
     private V4 $protocol;
     private int $fetchSize;
@@ -79,5 +80,26 @@ final class BoltResult implements IteratorAggregate, ArrayAccess
 
             $this->done = !($meta[0]['has_more'] ?? false);
         }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    private function pullAllIfNeeded(): void
+    {
+        if (!$this->done) {
+            $meta = $this->protocol->pull(['n' => -1]);
+            $rows = array_splice($meta, 0, count($meta) - 1);
+            $this->rows = array_merge($this->rows, $rows);
+
+            $this->done = true;
+        }
+    }
+
+    public function count(): int
+    {
+        $this->pullAllIfNeeded();
+
+        return count($this->rows);
     }
 }

@@ -74,5 +74,7 @@ final class BoltResultIntegrationTest extends TestCase
         self::assertEquals(100000, $i + 1);
 
         self::assertArrayNotHasKey(500000000, $result);
+
+        self::assertCount(100000, $result);
     }
 }
