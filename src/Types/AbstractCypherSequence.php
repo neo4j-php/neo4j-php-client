@@ -111,7 +111,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param iterable<mixed, NewValue> $values
      *
-     * @return static<TValue|NewValue, array-key>
+     * @return self<TValue|NewValue, array-key>
      */
     abstract public function merge(iterable $values): self;
 
@@ -227,7 +227,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Creates a reversed sequence.
      *
-     * @return static<TValue, TKey>
+     * @return self<TValue, TKey>
      */
     public function reversed(): self
     {
@@ -240,7 +240,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * Slices a new sequence starting from the given offset with a certain length.
      * If the length is null it will slice the entire remainder starting from the offset.
      *
-     * @return static
+     * @return self<TValue, TKey>
      */
     public function slice(int $offset, int $length = null): self
     {
@@ -266,11 +266,11 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param (callable(TValue, TValue):int)|null $comparator
      *
-     * @return static
+     * @return self<TValue, TKey>
      */
     public function sorted(?callable $comparator = null): self
     {
-        return $this->withOperation(static function () use ($comparator) {
+        return $this->withOperation(function () use ($comparator) {
             $iterable = $this->toArray();
 
             if ($comparator) {

@@ -15,16 +15,10 @@ namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
 use function array_key_last;
-use function array_keys;
-use function array_reverse;
-use ArrayAccess;
-use Countable;
 use function func_num_args;
-use const INF;
-use InvalidArgumentException;
-use function is_array;
-use function is_int;
+use Generator;
 use function is_iterable;
+use function is_numeric;
 use function is_object;
 use function is_string;
 use Laudis\Neo4j\Databags\Pair;
@@ -32,8 +26,8 @@ use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use function method_exists;
 use OutOfBoundsException;
+use function sprintf;
 use stdClass;
-use Traversable;
 
 /**
  * An immutable ordered map of items.
@@ -45,13 +39,32 @@ use Traversable;
 class Map extends AbstractCypherSequence
 {
     /**
+     * @param iterable<mixed, TValue> $iterable
+     */
+    public function __construct(iterable $iterable = [])
+    {
+        $this->generator = static function () use ($iterable): Generator {
+            $i = 0;
+            /** @var mixed $key */
+            foreach ($iterable as $key => $value) {
+                if (is_string($key) || is_numeric($key) || is_object($key) && method_exists($key, '__toString')) {
+                    $key = $i;
+                }
+
+                yield (string) $key => $value;
+                ++$i;
+            }
+        };
+    }
+
+    /**
      * Returns the first pair in the map.
      *
      * @return Pair<string, TValue>
      */
     public function first(): Pair
     {
-        foreach ($this->sequence as $key => $value) {
+        foreach ($this as $key => $value) {
             return new Pair($key, $value);
         }
         throw new OutOfBoundsException('Cannot grab first element of an empty map');
@@ -64,25 +77,14 @@ class Map extends AbstractCypherSequence
      */
     public function last(): Pair
     {
-        if (is_array($this->sequence)) {
-            $key = array_key_last($this->sequence);
-            if (!is_string($key)) {
-                throw new OutOfBoundsException('Cannot grab last element of an empty map');
-            }
-
-            return new Pair($key, $this->sequence[$key]);
-        }
-
-        $pair = null;
-        foreach ($this->sequence as $key => $value) {
-            $pair = new Pair($key, $value);
-        }
-
-        if ($pair === null) {
+        $array = $this->toArray();
+        if (count($array) === 0) {
             throw new OutOfBoundsException('Cannot grab last element of an empty map');
         }
 
-        return $pair;
+        $key = array_key_last($array);
+
+        return new Pair($key, $array[$key]);
     }
 
     /**
@@ -92,12 +94,12 @@ class Map extends AbstractCypherSequence
      */
     public function skip(int $position): Pair
     {
-        $keys = $this->keys();
-
-        if ($keys->count() > $position) {
-            $key = $keys[$position];
-
-            return new Pair($key, $this->sequence[$key]);
+        $i = 0;
+        foreach ($this as $key => $value) {
+            if ($i === $position) {
+                return new Pair($key, $value);
+            }
+            ++$i;
         }
 
         throw new OutOfBoundsException(sprintf('Cannot skip to a pair at position: %s', $position));
@@ -107,19 +109,16 @@ class Map extends AbstractCypherSequence
      * Returns the keys in the map in order.
      *
      * @return ArrayList<string>
+     *
+     * @psalm-suppress UnusedForeachValue
      */
     public function keys(): ArrayList
     {
-        if (is_array($this->sequence)) {
-            return new ArrayList(array_keys($this->sequence));
-        }
-
-        $tbr = [];
-        foreach ($this->sequence as $key => $value) {
-            $tbr[] = $key;
-        }
-
-        return new ArrayList($tbr);
+        return ArrayList::fromIterable((function () {
+            foreach ($this as $key => $value) {
+                yield $key;
+            }
+        })());
     }
 
     /**
@@ -129,12 +128,11 @@ class Map extends AbstractCypherSequence
      */
     public function pairs(): ArrayList
     {
-        $tbr = [];
-        foreach ($this->sequence as $key => $value) {
-            $tbr[] = new Pair($key, $value);
-        }
-
-        return new ArrayList($tbr);
+        return ArrayList::fromIterable((function () {
+            foreach ($this as $key => $value) {
+                yield new Pair($key, $value);
+            }
+        })());
     }
 
     /**
@@ -142,36 +140,23 @@ class Map extends AbstractCypherSequence
      *
      * @param (callable(string, string):int)|null $comparator
      *
-     * @return static<TValue>
+     * @return self<TValue>
      */
     public function ksorted(callable $comparator = null): Map
     {
-        $pairs = $this->pairs()->sorted(static function (Pair $x, Pair $y) use ($comparator) {
-            if ($comparator) {
-                return $comparator($x->getKey(), $y->getKey());
+        return $this->withOperation(function () use ($comparator) {
+            $pairs = $this->pairs()->sorted(static function (Pair $x, Pair $y) use ($comparator) {
+                if ($comparator) {
+                    return $comparator($x->getKey(), $y->getKey());
+                }
+
+                return $x->getKey() <=> $y->getKey();
+            });
+
+            foreach ($pairs as $pair) {
+                yield $pair->getKey() => $pair->getValue();
             }
-
-            return $x->getKey() <=> $y->getKey();
         });
-
-        return $this->withArray($pairs);
-    }
-
-    /**
-     * @template Value
-     *
-     * @param iterable<mixed, Pair<string, Value>> $iterable
-     *
-     * @return static<Value>
-     */
-    protected function withPairs(iterable $pairs): self
-    {
-        $tbr = [];
-        foreach ($pairs as $pair) {
-            $tbr[$pair->getKey()] = $pair->getValue();
-        }
-
-        return $this->withArray($tbr);
     }
 
     /**
@@ -181,7 +166,9 @@ class Map extends AbstractCypherSequence
      */
     public function values(): ArrayList
     {
-        return new ArrayList($this->sequence);
+        return ArrayList::fromIterable((function () {
+            yield from $this;
+        })());
     }
 
     /**
@@ -189,56 +176,62 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<array-key, TValue> $map
      *
-     * @return static<TValue>
+     * @return self<TValue>
      */
     public function xor(iterable $map): Map
     {
-        $tbr = $this->toArray();
-
-        foreach ($map as $key => $value) {
-            if ($this->offsetExists($key)) {
-                unset($tbr[(string) $key]);
-            } else {
-                $tbr[(string) $key] = $value;
+        return $this->withOperation(function () use ($map) {
+            $map = Map::fromIterable($map);
+            foreach ($this as $key => $value) {
+                if (!$map->hasKey($key)) {
+                    yield $key => $value;
+                }
             }
-        }
-
-        return $this->withArray($tbr);
+        });
     }
 
     /**
-     * @param iterable<array-key, TValue> $values
+     * @template NewValue
      *
-     * @return static<TValue>
+     * @param iterable<mixed, NewValue> $values
+     *
+     * @return self<TValue|NewValue>
      */
     public function merge(iterable $values): Map
     {
-        $tbr = $this->toArray();
+        return $this->withOperation(function () use ($values) {
+            $tbr = $this->toArray();
+            $values = Map::fromIterable($values);
 
-        foreach ($values as $key => $value) {
-            $tbr[$key] = $value;
-        }
+            foreach ($values as $key => $value) {
+                $tbr[$key] = $value;
+            }
 
-        return $this->withArray($tbr);
+            yield from $tbr;
+        });
     }
 
     /**
      * Creates a union of this and the provided map. The items in the original map take precedence.
      *
-     * @param iterable<array-key, TValue> $map
+     * @param iterable<mixed, TValue> $map
      *
-     * @return static<TValue>
+     * @return self<TValue>
      */
     public function union(iterable $map): Map
     {
-        $tbr = $this->toArray();
-        foreach ($map as $key => $value) {
-            if (!array_key_exists($key, $tbr)) {
-                $tbr[(string) $key] = $value;
-            }
-        }
+        return $this->withOperation(function () use ($map) {
+            $map = Map::fromIterable($map)->toArray();
+            $x = $this->toArray();
 
-        return $this->withArray($tbr);
+            yield from $x;
+
+            foreach ($map as $key => $value) {
+                if (!array_key_exists($key, $x)) {
+                    yield $key => $value;
+                }
+            }
+        });
     }
 
     /**
@@ -246,19 +239,18 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<array-key, TValue> $map
      *
-     * @return static<TValue>
+     * @return self<TValue>
      */
     public function intersect(iterable $map): Map
     {
-        $tbr = [];
-        // @psalm-suppress UnusedForeachValue
-        foreach ($map as $key => $value) {
-            if ($this->offsetExists($key)) {
-                $tbr[$key] = $this->sequence[$key];
+        return $this->withOperation(function () use ($map) {
+            $map = Map::fromIterable($map)->toArray();
+            foreach ($this as $key => $value) {
+                if (array_key_exists($key, $map)) {
+                    yield $key => $value;
+                }
             }
-        }
-
-        return $this->withArray($tbr);
+        });
     }
 
     /**
@@ -266,44 +258,18 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<array-key, TValue> $map
      *
-     * @return static<TValue>
+     * @return self<TValue>
      */
     public function diff(iterable $map): Map
     {
-        $tbr = $this->toArray();
-
-        /** @psalm-suppress UnusedForeachValue */
-        foreach ($map as $key => $value) {
-            unset($tbr[(string) $key]);
-        }
-
-        return $this->withArray($tbr);
-    }
-
-    /**
-     * @return static<TValue>
-     */
-    public function reversed(): Map
-    {
-        return $this->withArray(array_reverse($this->toArray(), true));
-    }
-
-    /**
-     * @param (callable(TValue, TValue):int)|null $comparator
-     *
-     * @return static<TValue>
-     */
-    public function sorted(?callable $comparator = null): Map
-    {
-        $pairs = $this->pairs()->sorted(static function (Pair $x, Pair $y) use ($comparator) {
-            if ($comparator) {
-                return $comparator($x->getValue(), $y->getValue());
+        return $this->withOperation(function () use ($map) {
+            $map = Map::fromIterable($map)->toArray();
+            foreach ($this as $key => $value) {
+                if (!array_key_exists($key, $map)) {
+                    yield $key => $value;
+                }
             }
-
-            return $x->getValue() <=> $y->getValue();
         });
-
-        return $this->withArray($pairs);
     }
 
     /**
@@ -319,15 +285,15 @@ class Map extends AbstractCypherSequence
      */
     public function get(string $key, $default = null)
     {
-        if (func_num_args() === 1) {
-            if (!$this->offsetExists($key)) {
+        if (!$this->offsetExists($key)) {
+            if (func_num_args() === 1) {
                 throw new OutOfBoundsException(sprintf('Cannot get item in sequence with key: %s', $key));
             }
 
-            return $this->sequence[$key];
+            return $default;
         }
 
-        return $this->sequence[$key] ?? $default;
+        return $this->offsetGet($key);
     }
 
     public function jsonSerialize()
@@ -510,13 +476,12 @@ class Map extends AbstractCypherSequence
     /**
      * @template Value
      *
-     * @param iterable<mixed, Value> $iterable
+     * @param callable():Generator<mixed, Value> $operation
      *
-     * @return static<Value>
+     * @return self<Value>
      */
-    protected function withArray(iterable $iterable): Map
+    protected function withOperation($operation): Map
     {
-        /** @psalm-suppress UnsafeGenericInstantiation */
-        return new static($iterable);
+        return new self($operation());
     }
 }

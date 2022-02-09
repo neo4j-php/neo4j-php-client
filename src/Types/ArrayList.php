@@ -78,7 +78,7 @@ class ArrayList extends AbstractCypherSequence
      *
      * @param iterable<mixed, NewValue> $values
      *
-     * @return static<TValue|NewValue>
+     * @return self<TValue|NewValue>
      */
     public function merge($values): ArrayList
     {
@@ -223,7 +223,7 @@ class ArrayList extends AbstractCypherSequence
      *
      * @param iterable<mixed, Value> $iterable
      *
-     * @return static<Value>
+     * @return self<Value>
      */
     protected function withIterable(iterable $iterable): ArrayList
     {
