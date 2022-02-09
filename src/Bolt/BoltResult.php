@@ -13,98 +13,117 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use function array_merge;
 use function array_splice;
-use ArrayAccess;
 use BadMethodCallException;
+use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use function count;
-use Countable;
-use IteratorAggregate;
-use Traversable;
+use Exception;
+use Iterator;
 
-final class BoltResult implements IteratorAggregate, ArrayAccess, Countable
+/**
+ * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
+ *
+ * @implements Iterator<int, list>
+ */
+final class BoltResult implements Iterator
 {
-    private V4 $protocol;
+    private V3 $protocol;
     private int $fetchSize;
+    /** @var list<list> */
     private array $rows = [];
-    private bool $done = false;
+    private int $current = 0;
+    private ?array $meta = null;
 
-    public function __construct(V4 $protocol, int $fetchSize)
+    public function __construct(V3 $protocol, int $fetchSize)
     {
         $this->protocol = $protocol;
         $this->fetchSize = $fetchSize;
     }
 
-    public function getIterator(): Traversable
+    private function isDone(): bool
     {
-        $i = 0;
-        while ($this->offsetExists($i)) {
-            yield $i => $this[$i];
-            ++$i;
-        }
+        return $this->meta !== null && $this->cacheKey() >= count($this->rows);
     }
 
     /**
-     * @param int $offset
+     * @throws Exception
      */
-    public function offsetExists($offset): bool
+    private function prefetchNeeded(): void
     {
-        $this->prefetchNeeded($offset);
-
-        return $offset < count($this->rows);
-    }
-
-    #[\ReturnTypeWillChange]
-    public function offsetGet($offset)
-    {
-        $this->prefetchNeeded($offset);
-
-        return $this->rows[$offset];
-    }
-
-    public function offsetSet($offset, $value): void
-    {
-        throw new BadMethodCallException('Bolt results are immutable.');
-    }
-
-    public function offsetUnset($offset): void
-    {
-        throw new BadMethodCallException('Bolt results are immutable.');
-    }
-
-    /**
-     * @throws \Exception
-     */
-    private function prefetchNeeded(int $offset): void
-    {
-        while (!$this->done && $offset >= count($this->rows)) {
-            $meta = $this->protocol->pull(['n' => $this->fetchSize]);
-            $rows = array_splice($meta, 0, count($meta) - 1);
-            $this->rows = array_merge($this->rows, $rows);
-
-            $this->done = !($meta[0]['has_more'] ?? false);
+        if (!$this->isDone() && $this->cacheKey() === 0) {
+            $this->fetchResults();
         }
     }
 
-    /**
-     * @throws \Exception
-     */
-    private function pullAllIfNeeded(): void
+    public function current(): array
     {
-        if (!$this->done) {
-            $meta = $this->protocol->pull(['n' => -1]);
-            $rows = array_splice($meta, 0, count($meta) - 1);
-            $this->rows = array_merge($this->rows, $rows);
-
-            $this->done = true;
-        }
+        return $this->rows[$this->cacheKey()];
     }
 
-    public function count(): int
+    public function next(): void
     {
-        $this->pullAllIfNeeded();
+        ++$this->current;
+        $this->prefetchNeeded();
+    }
 
-        return count($this->rows);
+    public function key()
+    {
+        return $this->current;
+    }
+
+    public function valid(): bool
+    {
+        return array_key_exists($this->cacheKey(), $this->rows);
+    }
+
+    public function rewind(): void
+    {
+        throw new BadMethodCallException('Cannot rewind a bolt result');
+    }
+
+    private function cacheKey(): int
+    {
+        return $this->current % $this->fetchSize;
+    }
+
+    /**
+     * @return BoltCypherStats
+     */
+    public function consume(): array
+    {
+        while ($this->isDone()) {
+            $this->fetchResults();
+        }
+
+        /** @var BoltCypherStats */
+        return $this->meta;
+    }
+
+    /**
+     * @return non-empty-list<list>
+     */
+    private function pull(): array
+    {
+        if (!$this->protocol instanceof V4) {
+            /** @var non-empty-list<list> */
+            return $this->protocol->pullAll();
+        }
+
+        /** @var non-empty-list<list> */
+        return $this->protocol->pull(['n' => $this->fetchSize]);
+    }
+
+    private function fetchResults(): void
+    {
+        $meta = $this->pull();
+
+        /** @var list<array> $rows */
+        $rows = array_splice($meta, 0, count($meta) - 1);
+        $this->rows = $rows;
+
+        if ($meta[0]['has_more'] ?? false) {
+            $this->meta = $meta[0];
+        }
     }
 }

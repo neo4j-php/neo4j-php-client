@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Contracts;
 use Bolt\Bolt;
 use Bolt\protocol\V3;
 use JsonException;
+use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
@@ -65,8 +66,6 @@ use stdClass;
  * @psalm-type BoltMeta = array{t_first: int, fields: list<string>}
  *
  * @template ResultFormat
- *
- * @psalm-immutable
  */
 interface FormatterInterface
 {
@@ -74,12 +73,11 @@ interface FormatterInterface
      * Formats the results of the bolt protocol to the unified format.
      *
      * @param BoltMeta                $meta
-     * @param array<array-key, array> $results
      * @param ConnectionInterface<V3> $connection
      *
      * @return ResultFormat
      */
-    public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement);
+    public function formatBoltResult(array $meta, BoltResult $result, ConnectionInterface $connection, float $runStart, float $resultAvailableAfter, Statement $statement);
 
     /**
      * Formats the results of the HTTP protocol to the unified format.
@@ -89,6 +87,8 @@ interface FormatterInterface
      * @throws JsonException
      *
      * @return CypherList<ResultFormat>
+     *
+     * @psalm-mutation-free
      */
     public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
 
@@ -96,6 +96,8 @@ interface FormatterInterface
      * Decorates a request to make make sure it requests the correct format.
      *
      * @see https://neo4j.com/docs/http-api/current/actions/result-format/
+     *
+     * @psalm-mutation-free
      */
     public function decorateRequest(RequestInterface $request): RequestInterface;
 
@@ -105,6 +107,8 @@ interface FormatterInterface
      * @see https://neo4j.com/docs/http-api/current/actions/result-format/
      *
      * @return array{resultDataContents?: list<'GRAPH'|'ROW'|'REST'>, includeStats?:bool}
+     *
+     * @psalm-mutation-free
      */
     public function statementConfigOverride(): array;
 }

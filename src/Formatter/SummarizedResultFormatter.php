@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Formatter;
 
 use function in_array;
 use function is_int;
+use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\ResultSummary;
@@ -29,6 +30,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
 use UnexpectedValueException;
+use function microtime;
 
 /**
  * Decorates the result of the provided format with an extensive summary.
@@ -40,8 +42,6 @@ use UnexpectedValueException;
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
  *
  * @implements FormatterInterface<SummarizedResult<CypherMap<OGMTypes>>>
- *
- * @psalm-immutable
  */
 final class SummarizedResultFormatter implements FormatterInterface
 {
@@ -55,6 +55,9 @@ final class SummarizedResultFormatter implements FormatterInterface
         return new self(OGMFormatter::create());
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(OGMFormatter $formatter)
     {
         $this->formatter = $formatter;
@@ -64,6 +67,8 @@ final class SummarizedResultFormatter implements FormatterInterface
      * @param CypherList<CypherMap<OGMTypes>> $results
      *
      * @return SummarizedResult<CypherMap<OGMTypes>>
+     *
+     * @psalm-mutation-free
      */
     public function formatHttpStats(stdClass $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
     {
@@ -114,6 +119,8 @@ final class SummarizedResultFormatter implements FormatterInterface
 
     /**
      * @param array{stats?: BoltCypherStats} $response
+     *
+     * @psalm-mutation-free
      */
     public function formatBoltStats(array $response): SummaryCounters
     {
@@ -147,38 +154,40 @@ final class SummarizedResultFormatter implements FormatterInterface
         );
     }
 
-    public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement): SummarizedResult
+    public function formatBoltResult(array $meta, BoltResult $result, ConnectionInterface $connection, float $runStart, float $resultAvailableAfter, Statement $statement): SummarizedResult
     {
-        $last = array_key_last($results);
-        if (!isset($results[$last])) {
-            throw new UnexpectedValueException('Empty bolt result set');
-        }
+        $resultConsumedAfter = null;
+        $summary = static function () use ($result, $connection, $statement, $runStart, $resultAvailableAfter, &$resultConsumedAfter) {
 
-        /** @var array{stats?: BoltCypherStats} */
-        $response = $results[$last];
+            $counters = $this->formatBoltStats($result->consume());
+            $resultConsumedAfter ??= $runStart - microtime(true);
 
-        $counters = $this->formatBoltStats($response);
-        $summary = new ResultSummary(
-            $counters,
-            $connection->getDatabaseInfo(),
-            new CypherList(),
-            null,
-            null,
-            $statement,
-            QueryTypeEnum::fromCounters($counters),
-            $resultAvailableAfter,
-            $resultConsumedAfter,
-            new ServerInfo(
-                $connection->getServerAddress(),
-                $connection->getProtocol(),
-                $connection->getServerAgent()
-            )
-        );
-        $formattedResult = $this->formatter->formatBoltResult($meta, $results, $connection, $resultAvailableAfter, $resultConsumedAfter, $statement);
+            return new ResultSummary(
+                $counters,
+                $connection->getDatabaseInfo(),
+                new CypherList(),
+                null,
+                null,
+                $statement,
+                QueryTypeEnum::fromCounters($counters),
+                $resultAvailableAfter,
+                $resultConsumedAfter,
+                new ServerInfo(
+                    $connection->getServerAddress(),
+                    $connection->getProtocol(),
+                    $connection->getServerAgent()
+                )
+            );
+        };
 
-        return new SummarizedResult($summary, $formattedResult->toArray());
+        $formattedResult = $this->formatter->formatBoltResult($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement, $resultConsumedAfter);
+
+        return new SummarizedResult($summary, $formattedResult);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
         /** @var list<SummarizedResult<CypherMap<OGMTypes>>> */
@@ -197,11 +206,17 @@ final class SummarizedResultFormatter implements FormatterInterface
         return new CypherList($tbr);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function decorateRequest(RequestInterface $request): RequestInterface
     {
         return $this->formatter->decorateRequest($request);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function statementConfigOverride(): array
     {
         return array_merge($this->formatter->statementConfigOverride(), [

@@ -20,6 +20,7 @@ use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
@@ -56,6 +57,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private bool $isRolledBack = false;
 
     private bool $isCommitted = false;
+    private SessionConfiguration $config;
 
     /**
      * @param FormatterInterface<T>   $formatter
@@ -63,11 +65,12 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      *
      * @psalm-mutation-free
      */
-    public function __construct(string $database, FormatterInterface $formatter, ConnectionInterface $connection)
+    public function __construct(string $database, FormatterInterface $formatter, ConnectionInterface $connection, SessionConfiguration $config)
     {
         $this->formatter = $formatter;
         $this->connection = $connection;
         $this->database = $database;
+        $this->config = $config;
     }
 
     public function commit(iterable $statements = []): CypherList
@@ -130,21 +133,18 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 /** @var BoltMeta $meta */
                 $meta = $this->getBolt()->run($statement->getText(), $parameters->toArray(), $extra);
                 $run = microtime(true);
-                /** @var array<array> $results */
-                $results = $this->getBolt()->pullAll();
             } catch (MessageException $e) {
                 $this->handleMessageException($e);
             } catch (ConnectionTimeoutException $e) {
                 $this->handleConnectionTimeoutException($e);
             }
 
-            $end = microtime(true);
             $tbr[] = $this->formatter->formatBoltResult(
                 $meta,
-                $results,
+                new BoltResult($this->getBolt(), $this->config->getFetchSize()),
                 $this->connection,
-                $run - $start,
-                $end - $start,
+                $start,
+                $start - $run,
                 $statement
             );
         }
