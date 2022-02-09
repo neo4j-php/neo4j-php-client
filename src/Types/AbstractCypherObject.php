@@ -39,6 +39,8 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
  *
  * @implements ArrayAccess<TKey, TValue>
  * @implements IteratorAggregate<TKey, TValue>
+ *
+ * @psalm-immutable
  */
 abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, IteratorAggregate
 {

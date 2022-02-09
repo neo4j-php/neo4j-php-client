@@ -29,9 +29,11 @@ final class SummarizedResult extends CypherList
     private ResultSummary $summary;
 
     /**
-     * @param iterable<mixed, TValue> $iterable
+     * @param iterable<mixed, TValue>|callable():Generator<mixed, TValue> $iterable
+     *
+     * @psalm-mutation-free
      */
-    public function __construct(ResultSummary $summary, iterable $iterable = [])
+    public function __construct(ResultSummary $summary, $iterable = [])
     {
         parent::__construct($iterable);
         $this->summary = $summary;
@@ -43,10 +45,12 @@ final class SummarizedResult extends CypherList
      * @param callable():Generator<mixed, Value> $operation
      *
      * @return static<Value>
+     *
+     * @psalm-mutation-free
      */
     protected function withOperation($operation): ArrayList
     {
-        return new self($this->summary, $operation());
+        return new self($this->summary, $operation);
     }
 
     /**

@@ -15,7 +15,10 @@ namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
 use function array_reverse;
+use ArrayAccess;
+use BadMethodCallException;
 use function call_user_func;
+use function count;
 use Countable;
 use Generator;
 use function implode;
@@ -23,7 +26,10 @@ use const INF;
 use function is_array;
 use function is_object;
 use function iterator_to_array;
+use IteratorAggregate;
+use JsonSerializable;
 use function property_exists;
+use function sprintf;
 use function usort;
 
 /**
@@ -32,9 +38,10 @@ use function usort;
  * @template TValue
  * @template TKey of array-key
  *
- * @extends AbstractCypherObject<TKey, TValue>
+ * @implements ArrayAccess<TKey, TValue>
+ * @implements IteratorAggregate<TKey, TValue>
  */
-abstract class AbstractCypherSequence extends AbstractCypherObject implements Countable
+abstract class AbstractCypherSequence implements Countable, JsonSerializable, ArrayAccess, IteratorAggregate
 {
     /**
      * @var array<TKey, TValue>
@@ -46,17 +53,14 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     protected $generator;
 
-    final public function count(): int
-    {
-        return count($this->toArray());
-    }
-
     /**
      * @template Value
      *
      * @param callable():(Generator<mixed, Value>) $operation
      *
      * @return static<Value, TKey>
+     *
+     * @psalm-mutation-free
      */
     abstract protected function withOperation($operation): self;
 
@@ -64,6 +68,8 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * Copies the sequence.
      *
      * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
     final public function copy(): self
     {
@@ -93,18 +99,6 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     }
 
     /**
-     * Returns the sequence as an array.
-     *
-     * @return array<TKey, TValue>
-     */
-    final public function toArray(): array
-    {
-        $this->cache ??= iterator_to_array($this, true);
-
-        return $this->cache;
-    }
-
-    /**
      * Creates a new sequence by merging this one with the provided iterable. When the iterable is not a list, the provided values will override the existing items in case of a key collision.
      *
      * @template NewValue
@@ -112,6 +106,8 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * @param iterable<mixed, NewValue> $values
      *
      * @return static<TValue|NewValue, array-key>
+     *
+     * @psalm-mutation-free
      */
     abstract public function merge(iterable $values): self;
 
@@ -123,22 +119,6 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     final public function hasKey($key): bool
     {
         return $this->offsetExists($key);
-    }
-
-    /**
-     * @param TKey $offset
-     *
-     * @psalm-suppress UnusedForeachValue
-     */
-    public function offsetExists($offset): bool
-    {
-        foreach ($this as $key => $value) {
-            if ($key === $offset) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -157,6 +137,8 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * @param callable(TValue, TKey):bool $callback
      *
      * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
     final public function filter(callable $callback): self
     {
@@ -177,6 +159,8 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * @param callable(TValue, TKey):ReturnType $callback
      *
      * @return static<ReturnType, TKey>
+     *
+     * @psalm-mutation-free
      */
     final public function map(callable $callback): self
     {
@@ -228,6 +212,8 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * Creates a reversed sequence.
      *
      * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
     public function reversed(): self
     {
@@ -241,6 +227,8 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * If the length is null it will slice the entire remainder starting from the offset.
      *
      * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
     public function slice(int $offset, int $length = null): self
     {
@@ -267,6 +255,8 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * @param (callable(TValue, TValue):int)|null $comparator
      *
      * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
     public function sorted(?callable $comparator = null): self
     {
@@ -287,10 +277,12 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * Creates a list from the arrays and objects in the sequence whose values corresponding with the provided key.
      *
      * @return ArrayList<mixed>
+     *
+     * @psalm-mutation-free
      */
     public function keyBy(string $key): ArrayList
     {
-        return ArrayList::fromIterable((function () use ($key) {
+        return new ArrayList(function () use ($key) {
             foreach ($this as $value) {
                 if (is_array($value) && array_key_exists($key, $value)) {
                     yield $value[$key];
@@ -298,7 +290,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
                     yield $value->$key;
                 }
             }
-        })());
+        });
     }
 
     /**
@@ -329,5 +321,64 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     public function __debugInfo(): array
     {
         return iterator_to_array($this, true);
+    }
+
+    public function offsetGet($offset)
+    {
+        foreach ($this as $key => $value) {
+            if ($key === $offset) {
+                return $value;
+            }
+        }
+
+        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
+    }
+
+    public function offsetSet($offset, $value)
+    {
+        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
+    }
+
+    public function offsetUnset($offset)
+    {
+        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
+    }
+
+    /**
+     * @param TKey $offset
+     *
+     * @psalm-suppress UnusedForeachValue
+     */
+    public function offsetExists($offset): bool
+    {
+        foreach ($this as $key => $value) {
+            if ($key === $offset) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
+    }
+
+    /**
+     * Returns the sequence as an array.
+     *
+     * @return array<TKey, TValue>
+     */
+    final public function toArray(): array
+    {
+        $this->cache ??= iterator_to_array($this, true);
+
+        return $this->cache;
+    }
+
+    final public function count(): int
+    {
+        return count($this->toArray());
     }
 }

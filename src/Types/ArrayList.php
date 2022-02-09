@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Types;
 
 use AppendIterator;
 use Generator;
+use function is_callable;
 use function is_iterable;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
@@ -30,12 +31,15 @@ use OutOfBoundsException;
 class ArrayList extends AbstractCypherSequence
 {
     /**
-     * @param iterable<mixed, TValue> $iterable
+     * @param iterable<mixed, TValue>|callable():\Generator<mixed, TValue> $iterable
+     *
+     * @psalm-mutation-free
      */
-    public function __construct(iterable $iterable = [])
+    public function __construct($iterable = [])
     {
         $this->generator = static function () use ($iterable): Generator {
             $i = 0;
+            $iterable = is_callable($iterable) ? $iterable() : $iterable;
             foreach ($iterable as $value) {
                 yield $i => $value;
                 ++$i;
@@ -79,11 +83,12 @@ class ArrayList extends AbstractCypherSequence
      * @param iterable<mixed, NewValue> $values
      *
      * @return static<TValue|NewValue>
+     *
+     * @psalm-mutation-free
      */
     public function merge($values): ArrayList
     {
         return $this->withOperation(function () use ($values): Generator {
-            /** @var AppendIterator<mixed, TValue|NewValue> $iterator */
             $iterator = new AppendIterator();
 
             $iterator->append($this);
@@ -212,9 +217,12 @@ class ArrayList extends AbstractCypherSequence
      * @param iterable<mixed, Value> $iterable
      *
      * @return static<Value>
+     *
+     * @pure
      */
     public static function fromIterable(iterable $iterable): ArrayList
     {
+        /** @psalm-suppress UnsafeInstantiation */
         return new static($iterable);
     }
 
@@ -224,9 +232,12 @@ class ArrayList extends AbstractCypherSequence
      * @param callable():(Generator<mixed, Value>) $operation
      *
      * @return static<Value>
+     *
+     * @psalm-mutation-free
      */
     protected function withOperation($operation): self
     {
-        return new static($operation());
+        /** @psalm-suppress UnsafeInstantiation */
+        return new static($operation);
     }
 }
