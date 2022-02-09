@@ -45,34 +45,6 @@ use Traversable;
 class Map extends AbstractCypherSequence
 {
     /**
-     * @param iterable<mixed, TValue> $iterable
-     */
-    final public function __construct(iterable $iterable = [])
-    {
-        if ($iterable instanceof self) {
-            /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $this->sequence = $iterable->sequence;
-        } elseif ($iterable instanceof ArrayAccess &&
-            $iterable instanceof Countable &&
-            $iterable instanceof Traversable
-        ) {
-            $this->sequence = $iterable;
-        } else {
-            $this->sequence = [];
-            /** @var mixed $key */
-            foreach ($iterable as $key => $value) {
-                if ($key === null || is_int($key) || (is_object($key) && method_exists($key, '__toString'))) {
-                    $this->sequence[(string) $key] = $value;
-                } elseif (is_string($key)) {
-                    $this->sequence[$key] = $value;
-                } else {
-                    throw new InvalidArgumentException('Iterable must have a stringable keys');
-                }
-            }
-        }
-    }
-
-    /**
      * Returns the first pair in the map.
      *
      * @return Pair<string, TValue>

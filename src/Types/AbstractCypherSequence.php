@@ -15,17 +15,16 @@ namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
 use function array_reverse;
-use function array_slice;
 use function call_user_func;
-use function count;
 use Countable;
 use Generator;
 use function implode;
-use function is_a;
 use const INF;
 use function is_array;
 use function is_object;
+use function iterator_to_array;
 use function property_exists;
+use function usort;
 
 /**
  * Abstract immutable sequence with basic functional methods.
@@ -41,33 +40,29 @@ use function property_exists;
 abstract class AbstractCypherSequence extends AbstractCypherObject implements Countable
 {
     /**
-     * @var (\ArrayAccess<OriginalKey, OriginalValue>&\Countable&\Traversable<OriginalKey, OriginalValue>)|array<OriginalKey, OriginalValue>
+     * @var iterable<OriginalKey, OriginalValue>
      */
-    protected $sequence = [];
+    protected iterable $sequence = [];
+    /**
+     * @var array<TKey, TValue>
+     */
+    protected ?array $transformation = null;
 
     /**
-     * @var callable(OriginalValue, OriginalKey):array{0: TKey, 1: TValue}
+     * @var callable(iterable<OriginalKey, OriginalValue>):(Generator<TKey, TValue>)
      */
-    private $typeTransformation;
-
-    /** @var list<
-     *     array{type: 'filter', fn: callable(TValue, TKey): bool},
-     *     array{type: 'copy'},
-     *     array{type: 'sort', fn:(callable(TValue, TValue):int)|null}
-     * >
-     */
-    private $transformations = [];
+    protected $typeTransformation;
 
     final public function count(): int
     {
-        return count($this->sequence);
+        return count($this->toArray());
     }
 
     /**
      * @template Value
      * @template Key of array-key
      *
-     * @param callable(TValue, TKey): array{0: Key, 1: Value} $operation
+     * @param callable(iterable<TKey, TValue>):(Generator<Key, Value>) $operation
      *
      * @return static<Value, Key, TValue, TKey>
      */
@@ -80,31 +75,29 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function copy(): self
     {
-        return $this->withOperation(static function ($value, $key) {
-            return [$key, $value];
+        return $this->withOperation(static function ($iterable) {
+            yield from $iterable;
         });
     }
 
     public function getIterator(): Generator
     {
-        foreach ($this->sequence as $key => $value) {
-            [$transformedKey, $transformedValue] = call_user_func($this->typeTransformation, $value, $key);
-
-            foreach ($this->transformations as $transformation) {
-                if ($transformation['type'] === 'filter' && !$transformation['fn']($transformedValue)) {
-                    continue 2;
-                }
-            }
-            yield $transformedKey => $transformedValue;
-        }
+        yield from call_user_func($this->typeTransformation, $this->sequence);
     }
 
     /**
      * Returns whether the sequence is empty.
+     *
+     * @psalm-suppress UnusedForeachValue
      */
     final public function isEmpty(): bool
     {
-        return count($this->sequence) === 0;
+        /** @noinspection PhpLoopNeverIteratesInspection */
+        foreach (call_user_func($this->typeTransformation, $this->sequence) as $ignored) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -114,18 +107,15 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function toArray(): array
     {
-        $tbr = [];
-        foreach ($this as $key => $value) {
-            $tbr[$key] = $value;
-        }
+        $this->transformation ??= iterator_to_array(call_user_func($this->typeTransformation, $this->sequence), true);
 
-        return $tbr;
+        return $this->transformation;
     }
 
     /**
      * Creates a new sequence by merging this one with the provided iterable. When the iterable is not a list, the provided values will override the existing items in case of a key collision.
      *
-     * @param iterable<array-key, TValue> $values
+     * @param iterable<TKey, TValue> $values
      *
      * @return static
      */
@@ -143,14 +133,18 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
 
     /**
      * @param TKey $offset
+     *
+     * @psalm-suppress UnusedForeachValue
      */
     public function offsetExists($offset): bool
     {
-        if (is_array($this->sequence)) {
-            return array_key_exists($offset, $this->sequence);
+        foreach ($this as $key => $value) {
+            if ($key === $offset) {
+                return true;
+            }
         }
 
-        return $this->sequence->offsetExists($offset);
+        return false;
     }
 
     /**
@@ -168,13 +162,17 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param callable(TValue, TKey):bool $callback
      *
-     * @return static<TValue, TKey, OriginalValue, OriginalKey>
+     * @return static<TValue, TKey, TValue, TKey>
      */
     final public function filter(callable $callback): self
     {
-        $this->transformations[] = ['type' => 'filter', 'fn' => $callback];
-
-        return $this;
+        return $this->withOperation(function () use ($callback) {
+            foreach ($this as $key => $value) {
+                if ($callback($value, $key)) {
+                    yield $key => $value;
+                }
+            }
+        });
     }
 
     /**
@@ -188,8 +186,10 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function map(callable $callback): self
     {
-        return $this->withOperation(static function ($value, $key) use ($callback) {
-            return [$key, $callback($value, $key)];
+        return $this->withOperation(function () use ($callback) {
+            foreach ($this as $key => $value) {
+                yield $key => $callback($value, $key);
+            }
         });
     }
 
@@ -237,24 +237,11 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     public function reversed(): self
     {
-        return $this->withArray(array_reverse($this->toArray()));
-    }
+        return $this->withOperation(static function ($iterable) {
+            $iterable = is_array($iterable) ? $iterable : iterator_to_array($iterable, true);
 
-    /**
-     * @template Key of array-key
-     * @template Value
-     *
-     * @param array<Key, Value> $array
-     *
-     * @return static<Value, Key, Value, Key>
-     */
-    protected function withArray(array $array): self
-    {
-        $tbr = $this->withOperation(static fn ($x, $y) => [$y, $x]);
-
-        $tbr->sequence = $array;
-
-        return $tbr;
+            yield from array_reverse($iterable);
+        });
     }
 
     /**
@@ -265,19 +252,20 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     public function slice(int $offset, int $length = null): self
     {
-        if (is_array($this->sequence)) {
-            return $this->withArray(array_slice($this->sequence, $offset, $length, true));
-        }
-
-        $count = -1;
-        $length ??= INF;
-        return $this->filter(static function () use ($offset, $length, &$count) {
-            ++$count;
-            if ($count >= $offset) {
-                return ($count + $offset) < $length;
+        return $this->withOperation(function () use ($offset, $length) {
+            $count = 0;
+            $length ??= INF;
+            foreach ($this as $key => $value) {
+                if ($count < $offset) {
+                    continue;
+                } else {
+                    yield $key => $value;
+                }
+                if ($count === ($offset + $length)) {
+                    break;
+                }
+                ++$count;
             }
-
-            return false;
         });
     }
 
@@ -290,7 +278,17 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     public function sorted(?callable $comparator = null): self
     {
-        if (is_array())
+        return $this->withOperation(static function ($iterable) use ($comparator) {
+            $iterable = is_array($iterable) ? $iterable : iterator_to_array($iterable, true);
+
+            if ($comparator) {
+                usort($iterable, $comparator);
+            } else {
+                sort($iterable);
+            }
+
+            yield from $iterable;
+        });
     }
 
     /**
@@ -298,18 +296,17 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     public function keyBy(string $key): ArrayList
     {
-        $tbr = [];
-        foreach ($this->sequence as $value) {
-            if (is_array($value) && array_key_exists($key, $value)) {
-                /** @var mixed */
-                $tbr[] = $value[$key];
-            } elseif (is_object($value) && property_exists($value, $key)) {
-                /** @var mixed */
-                $tbr[] = $value->$key;
-            }
-        }
+        $tbr = ArrayList::fromIterable($this);
 
-        return ArrayList::fromIterable($tbr);
+        return $tbr->withOperation(static function () use ($key) {
+            foreach ($this as $value) {
+                if (is_array($value) && array_key_exists($key, $value)) {
+                    yield $value[$key];
+                } elseif (is_object($value) && property_exists($value, $key)) {
+                    yield $value->$key;
+                }
+            }
+        });
     }
 
     /**
@@ -318,7 +315,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     public function join(?string $glue = null): string
     {
         /** @psalm-suppress MixedArgumentTypeCoercion */
-        return implode($glue ?? '', $this->sequence);
+        return implode($glue ?? '', $this->toArray());
     }
 
     /**
@@ -326,12 +323,11 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param callable(TValue, TKey):void $callable
      *
-     * @return static<TValue, TKey>
+     * @return static<TValue, TKey, OriginalValue, OriginalKey>
      */
     public function each(callable $callable): self
     {
-        foreach ($this->sequence as $key => $value) {
-            /** @psalm-suppress ImpureFunctionCall */
+        foreach ($this as $key => $value) {
             $callable($value, $key);
         }
 
