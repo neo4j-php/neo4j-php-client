@@ -44,7 +44,7 @@ class ArrayList extends AbstractCypherSequence
     public function __construct(iterable $iterable = [], $transformation = null)
     {
         $this->sequence = $iterable;
-        $this->typeTransformation = static function () use ($iterable) {
+        $this->generator = static function () use ($iterable) {
             yield from $iterable;
         };
     }
