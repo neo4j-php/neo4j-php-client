@@ -56,7 +56,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param callable():(Generator<mixed, Value>) $operation
      *
-     * @return self<Value, TKey>
+     * @return static<Value, TKey>
      */
     abstract protected function withOperation($operation): self;
 
@@ -67,7 +67,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function copy(): self
     {
-        return $this->withOperation(static function () {
+        return $this->withOperation(function () {
             yield from $this;
         });
     }
@@ -86,10 +86,10 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     {
         /** @noinspection PhpLoopNeverIteratesInspection */
         foreach ($this as $ignored) {
-            return true;
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -111,7 +111,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param iterable<mixed, NewValue> $values
      *
-     * @return self<TValue|NewValue, array-key>
+     * @return static<TValue|NewValue, array-key>
      */
     abstract public function merge(iterable $values): self;
 
@@ -227,11 +227,11 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Creates a reversed sequence.
      *
-     * @return self<TValue, TKey>
+     * @return static<TValue, TKey>
      */
     public function reversed(): self
     {
-        return $this->withOperation(static function () {
+        return $this->withOperation(function () {
             yield from array_reverse($this->toArray());
         });
     }
@@ -240,7 +240,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * Slices a new sequence starting from the given offset with a certain length.
      * If the length is null it will slice the entire remainder starting from the offset.
      *
-     * @return self<TValue, TKey>
+     * @return static<TValue, TKey>
      */
     public function slice(int $offset, int $length = null): self
     {
@@ -266,7 +266,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      *
      * @param (callable(TValue, TValue):int)|null $comparator
      *
-     * @return self<TValue, TKey>
+     * @return static<TValue, TKey>
      */
     public function sorted(?callable $comparator = null): self
     {
@@ -285,10 +285,12 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
 
     /**
      * Creates a list from the arrays and objects in the sequence whose values corresponding with the provided key.
+     *
+     * @return ArrayList<mixed>
      */
     public function keyBy(string $key): ArrayList
     {
-        return ArrayList::fromIterable((static function () use ($key) {
+        return ArrayList::fromIterable((function () use ($key) {
             foreach ($this as $value) {
                 if (is_array($value) && array_key_exists($key, $value)) {
                     yield $value[$key];
@@ -322,5 +324,10 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
         }
 
         return $this;
+    }
+
+    public function __debugInfo(): array
+    {
+        return iterator_to_array($this, true);
     }
 }

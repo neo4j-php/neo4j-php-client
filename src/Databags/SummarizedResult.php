@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Generator;
+use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
@@ -21,8 +23,6 @@ use Laudis\Neo4j\Types\CypherList;
  * @template TValue
  *
  * @extends CypherList<TValue>
- *
- * @psalm-immutable
  */
 final class SummarizedResult extends CypherList
 {
@@ -40,13 +40,13 @@ final class SummarizedResult extends CypherList
     /**
      * @template Value
      *
-     * @param iterable<mixed, Value> $iterable
+     * @param callable():Generator<mixed, Value> $operation
      *
      * @return static<Value>
      */
-    protected function withArray(iterable $iterable): SummarizedResult
+    protected function withOperation($operation): ArrayList
     {
-        return new self($this->summary, $iterable);
+        return new self($this->summary, $operation());
     }
 
     /**

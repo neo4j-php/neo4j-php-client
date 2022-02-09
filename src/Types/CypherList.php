@@ -117,16 +117,4 @@ class CypherList extends ArrayList
     {
         return $this->getAsObject($key, WGS843DPoint::class);
     }
-
-    /**
-     * @template Value
-     *
-     * @param iterable<Value> $iterable
-     *
-     * @return self<Value>
-     */
-    public static function fromIterable(iterable $iterable): CypherList
-    {
-        return new self($iterable);
-    }
 }

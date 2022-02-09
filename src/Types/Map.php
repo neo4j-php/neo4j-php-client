@@ -48,10 +48,10 @@ class Map extends AbstractCypherSequence
             /** @var mixed $key */
             foreach ($iterable as $key => $value) {
                 if (is_string($key) || is_numeric($key) || is_object($key) && method_exists($key, '__toString')) {
-                    $key = $i;
+                    yield (string) $key => $value;
+                } else {
+                    yield (string) $i => $value;
                 }
-
-                yield (string) $key => $value;
                 ++$i;
             }
         };
@@ -140,7 +140,7 @@ class Map extends AbstractCypherSequence
      *
      * @param (callable(string, string):int)|null $comparator
      *
-     * @return self<TValue>
+     * @return static<TValue>
      */
     public function ksorted(callable $comparator = null): Map
     {
@@ -176,7 +176,7 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<array-key, TValue> $map
      *
-     * @return self<TValue>
+     * @return static<TValue>
      */
     public function xor(iterable $map): Map
     {
@@ -195,7 +195,7 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<mixed, NewValue> $values
      *
-     * @return self<TValue|NewValue>
+     * @return static<TValue|NewValue>
      */
     public function merge(iterable $values): Map
     {
@@ -216,7 +216,7 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<mixed, TValue> $map
      *
-     * @return self<TValue>
+     * @return static<TValue>
      */
     public function union(iterable $map): Map
     {
@@ -239,7 +239,7 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<array-key, TValue> $map
      *
-     * @return self<TValue>
+     * @return static<TValue>
      */
     public function intersect(iterable $map): Map
     {
@@ -258,7 +258,7 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<array-key, TValue> $map
      *
-     * @return self<TValue>
+     * @return static<TValue>
      */
     public function diff(iterable $map): Map
     {
@@ -478,10 +478,11 @@ class Map extends AbstractCypherSequence
      *
      * @param callable():Generator<mixed, Value> $operation
      *
-     * @return self<Value>
+     * @return static<Value>
      */
     protected function withOperation($operation): Map
     {
-        return new self($operation());
+        /** @psalm-suppress UnsafeInstantiation */
+        return new static($operation());
     }
 }

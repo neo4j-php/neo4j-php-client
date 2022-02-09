@@ -78,12 +78,12 @@ class ArrayList extends AbstractCypherSequence
      *
      * @param iterable<mixed, NewValue> $values
      *
-     * @return self<TValue|NewValue>
+     * @return static<TValue|NewValue>
      */
     public function merge($values): ArrayList
     {
-        return $this->withOperation(static function () use ($values): Generator {
-            /** @var Iterator<mixed, TValue|NewValue> $iterator */
+        return $this->withOperation(function () use ($values): Generator {
+            /** @var AppendIterator<mixed, TValue|NewValue> $iterator */
             $iterator = new AppendIterator();
 
             $iterator->append($this);
@@ -211,23 +211,10 @@ class ArrayList extends AbstractCypherSequence
      *
      * @param iterable<mixed, Value> $iterable
      *
-     * @return self<Value>
+     * @return static<Value>
      */
     public static function fromIterable(iterable $iterable): ArrayList
     {
-        return new self($iterable);
-    }
-
-    /**
-     * @template Value
-     *
-     * @param iterable<mixed, Value> $iterable
-     *
-     * @return self<Value>
-     */
-    protected function withIterable(iterable $iterable): ArrayList
-    {
-        /** @psalm-suppress UnsafeInstantiation */
         return new static($iterable);
     }
 
@@ -236,10 +223,10 @@ class ArrayList extends AbstractCypherSequence
      *
      * @param callable():(Generator<mixed, Value>) $operation
      *
-     * @return self<Value>
+     * @return static<Value>
      */
     protected function withOperation($operation): self
     {
-        return new self($operation());
+        return new static($operation());
     }
 }

@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Traversable;
 use function array_key_exists;
 use ArrayAccess;
 use ArrayIterator;
@@ -24,6 +23,7 @@ use IteratorAggregate;
 use JsonSerializable;
 use OutOfBoundsException;
 use function sprintf;
+use Traversable;
 
 /**
  * Turn of error reporting for class definition. PHP Users of 8.1 receive a deprectation warning otherwise but
