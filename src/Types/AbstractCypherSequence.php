@@ -53,11 +53,10 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
 
     /**
      * @template Value
-     * @template Key of array-key
      *
-     * @param callable():(Generator<Key, Value>) $operation
+     * @param callable():(Generator<mixed, Value>) $operation
      *
-     * @return static<Value, Key>
+     * @return self<Value, TKey>
      */
     abstract protected function withOperation($operation): self;
 
@@ -108,9 +107,11 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Creates a new sequence by merging this one with the provided iterable. When the iterable is not a list, the provided values will override the existing items in case of a key collision.
      *
-     * @param iterable<TKey, TValue> $values
+     * @template NewValue
      *
-     * @return static
+     * @param iterable<mixed, NewValue> $values
+     *
+     * @return static<TValue|NewValue, array-key>
      */
     abstract public function merge(iterable $values): self;
 

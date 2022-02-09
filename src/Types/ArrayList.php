@@ -14,8 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use AppendIterator;
-use ArrayIterator;
-use function is_array;
+use Generator;
 use function is_iterable;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
@@ -25,27 +24,22 @@ use OutOfBoundsException;
  * An immutable ordered sequence of items.
  *
  * @template TValue
- * @template OriginalValue
- * @template OriginalKey of array-key
  *
- * @extends AbstractCypherSequence<TValue, int, OriginalValue, OriginalKey>
+ * @extends AbstractCypherSequence<TValue, int>
  */
 class ArrayList extends AbstractCypherSequence
 {
     /**
-     * @param iterable<OriginalKey, OriginalValue> $iterable
-     * @param callable(iterable<OriginalKey, OriginalValue>):(\Generator<int, TValue>) $transformation
-     *
-     * @psalm-return (func_num_args() is 1 ? self<OriginalValue, OriginalValue, int> : self<TValue, OriginalValue, OriginalKey>)
-     *
-     * @psalm-suppress InvalidPropertyAssignmentValue
-     * @psalm-suppress MissingClosureReturnType
+     * @param iterable<mixed, TValue> $iterable
      */
-    public function __construct(iterable $iterable = [], $transformation = null)
+    public function __construct(iterable $iterable = [])
     {
-        $this->sequence = $iterable;
-        $this->generator = static function () use ($iterable) {
-            yield from $iterable;
+        $this->generator = static function () use ($iterable): Generator {
+            $i = 0;
+            foreach ($iterable as $value) {
+                yield $i => $value;
+                ++$i;
+            }
         };
     }
 
@@ -82,16 +76,18 @@ class ArrayList extends AbstractCypherSequence
     /**
      * @template NewValue
      *
-     * @param iterable<NewValue> $values
+     * @param iterable<mixed, NewValue> $values
      *
-     * @return static<TValue&NewValue, TValue&NewValue, int>
+     * @return static<TValue|NewValue>
      */
     public function merge($values): ArrayList
     {
-        return new self($this, static function () use ($values) {
+        return $this->withOperation(static function () use ($values): Generator {
+            /** @var Iterator<mixed, TValue|NewValue> $iterator */
             $iterator = new AppendIterator();
+
             $iterator->append($this);
-            $iterator->append(is_array($values) ? new ArrayIterator($values) : $values);
+            $iterator->append(new self($values));
 
             yield from $iterator;
         });
@@ -213,17 +209,37 @@ class ArrayList extends AbstractCypherSequence
     /**
      * @template Value
      *
-     * @param iterable<array-key, Value> $iterable
+     * @param iterable<mixed, Value> $iterable
      *
-     * @return self<Value, Value, array-key>
+     * @return self<Value>
      */
     public static function fromIterable(iterable $iterable): ArrayList
     {
         return new self($iterable);
     }
 
-    protected function withOperation($operation): ArrayList
+    /**
+     * @template Value
+     *
+     * @param iterable<mixed, Value> $iterable
+     *
+     * @return static<Value>
+     */
+    protected function withIterable(iterable $iterable): ArrayList
     {
-        return new self($this, $operation);
+        /** @psalm-suppress UnsafeInstantiation */
+        return new static($iterable);
+    }
+
+    /**
+     * @template Value
+     *
+     * @param callable():(Generator<mixed, Value>) $operation
+     *
+     * @return self<Value>
+     */
+    protected function withOperation($operation): self
+    {
+        return new self($operation());
     }
 }
