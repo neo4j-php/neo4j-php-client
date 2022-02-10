@@ -440,4 +440,12 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
 
         return $this->generator;
     }
+
+    public function withCacheLimit(int $cacheLimit): self
+    {
+        $tbr = $this->copy();
+        $tbr->cacheLimit = $cacheLimit;
+
+        return $tbr;
+    }
 }
