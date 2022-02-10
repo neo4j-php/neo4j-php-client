@@ -24,10 +24,12 @@ use Generator;
 use function implode;
 use const INF;
 use function is_array;
+use function is_callable;
 use function is_object;
+use Iterator;
 use function iterator_to_array;
-use IteratorAggregate;
 use JsonSerializable;
+use const PHP_INT_MAX;
 use function property_exists;
 use function sprintf;
 use function usort;
@@ -39,17 +41,20 @@ use function usort;
  * @template TKey of array-key
  *
  * @implements ArrayAccess<TKey, TValue>
- * @implements IteratorAggregate<TKey, TValue>
+ * @implements Iterator<TKey, TValue>
  */
-abstract class AbstractCypherSequence implements Countable, JsonSerializable, ArrayAccess, IteratorAggregate
+abstract class AbstractCypherSequence implements Countable, JsonSerializable, ArrayAccess, Iterator
 {
-    /**
-     * @var array<TKey, TValue>
-     */
-    protected ?array $cache = null;
+    /** @var list<TKey> */
+    protected array $keyCache = [];
+    /** @var array<TKey, TValue> */
+    protected array $cache = [];
+    private int $cacheLimit = PHP_INT_MAX;
+    protected int $currentPosition = 0;
+    private int $generatorPosition = 0;
 
     /**
-     * @var callable():(Generator<TKey, TValue>)
+     * @var (callable():(Generator<TKey, TValue>))|Generator<TKey, TValue>
      */
     protected $generator;
 
@@ -76,11 +81,6 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return $this->withOperation(function () {
             yield from $this;
         });
-    }
-
-    public function getIterator(): Generator
-    {
-        yield from call_user_func($this->generator);
     }
 
     /**
@@ -325,13 +325,15 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
 
     public function offsetGet($offset)
     {
-        foreach ($this as $key => $value) {
-            if ($key === $offset) {
-                return $value;
-            }
+        while (!array_key_exists($offset, $this->cache) && !$this->valid()) {
+            $this->next();
         }
 
-        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
+        if (array_key_exists($offset, $this->cache)) {
+            throw new BadMethodCallException(sprintf('Cannot get item at position: "%s" for sequence %s', $offset, static::class));
+        }
+
+        return $this->cache[$offset];
     }
 
     public function offsetSet($offset, $value)
@@ -351,13 +353,11 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      */
     public function offsetExists($offset): bool
     {
-        foreach ($this as $key => $value) {
-            if ($key === $offset) {
-                return true;
-            }
+        while (!array_key_exists($offset, $this->cache) && !$this->valid()) {
+            $this->next();
         }
 
-        return false;
+        return array_key_exists($offset, $this->cache);
     }
 
     public function jsonSerialize(): array
@@ -372,7 +372,9 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      */
     final public function toArray(): array
     {
-        $this->cache ??= iterator_to_array($this, true);
+        while (!$this->valid()) {
+            $this->next();
+        }
 
         return $this->cache;
     }
@@ -380,5 +382,62 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     final public function count(): int
     {
         return count($this->toArray());
+    }
+
+    public function current()
+    {
+        if ($this->cache === []) {
+            $generator = $this->getGenerator();
+            $this->cache[$generator->key()] = $generator->current();
+            $this->keyCache[] = $generator->key();
+        }
+
+        return $this->cache[$this->cacheKey()];
+    }
+
+    public function valid(): bool
+    {
+        return $this->currentPosition < $this->generatorPosition || $this->getGenerator()->valid();
+    }
+
+    public function rewind(): void
+    {
+        $this->currentPosition = max(
+            $this->currentPosition - $this->cacheLimit,
+            0
+        );
+    }
+
+    public function next(): void
+    {
+        $generator = $this->getGenerator();
+        if ($this->currentPosition === $this->generatorPosition && $generator->valid()) {
+            $generator->next();
+
+            $this->keyCache[] = $generator->key();
+            $this->cache[$generator->key()] = $generator->current();
+            ++$this->generatorPosition;
+        }
+        ++$this->currentPosition;
+    }
+
+    /**
+     * @return TKey
+     */
+    protected function cacheKey()
+    {
+        return $this->keyCache[$this->currentPosition % $this->cacheLimit];
+    }
+
+    /**
+     * @return Iterator<TKey, TValue>
+     */
+    public function getGenerator(): Iterator
+    {
+        if (is_callable($this->generator)) {
+            $this->generator = call_user_func($this->generator);
+        }
+
+        return $this->generator;
     }
 }
