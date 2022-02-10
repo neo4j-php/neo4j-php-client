@@ -229,7 +229,7 @@ class ArrayList extends AbstractCypherSequence
     /**
      * @template Value
      *
-     * @param callable():(Generator<mixed, Value>) $operation
+     * @param callable():(\Generator<mixed, Value>) $operation
      *
      * @return static<Value>
      *

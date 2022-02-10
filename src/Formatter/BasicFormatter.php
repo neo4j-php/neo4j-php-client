@@ -63,6 +63,9 @@ final class BasicFormatter implements FormatterInterface
         });
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function formatHttpResult(ResponseInterface $response, stdClass $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
     {
         /** @var list<CypherList<CypherMap<scalar|array|null>>> */
@@ -78,6 +81,7 @@ final class BasicFormatter implements FormatterInterface
 
     /**
      * @return CypherList<CypherMap<scalar|array|null>>
+     * @psalm-mutation-free
      */
     private function buildResult(stdClass $result): CypherList
     {
@@ -195,11 +199,17 @@ final class BasicFormatter implements FormatterInterface
         return $value;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function decorateRequest(RequestInterface $request): RequestInterface
     {
         return $request;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function statementConfigOverride(): array
     {
         return [

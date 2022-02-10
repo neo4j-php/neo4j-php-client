@@ -17,6 +17,7 @@ use function array_splice;
 use BadMethodCallException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
+use function call_user_func;
 use function count;
 use Exception;
 use Iterator;
@@ -34,6 +35,8 @@ final class BoltResult implements Iterator
     private array $rows = [];
     private int $current = 0;
     private ?array $meta = null;
+    /** @var callable(array):void|null */
+    private $finishedCallback;
 
     public function __construct(V3 $protocol, int $fetchSize)
     {
@@ -56,15 +59,32 @@ final class BoltResult implements Iterator
         }
     }
 
+    /**
+     * @return list
+     */
     public function current(): array
     {
         return $this->rows[$this->cacheKey()];
+    }
+
+    /**
+     * @param callable(array):void $finishedCallback
+     */
+    public function setFinishedCallback(callable $finishedCallback): void
+    {
+        $this->finishedCallback = $finishedCallback;
     }
 
     public function next(): void
     {
         ++$this->current;
         $this->prefetchNeeded();
+        if ($this->isDone() &&
+            $this->finishedCallback &&
+            $this->current % $this->fetchSize === 0
+        ) {
+            call_user_func($this->finishedCallback, $this->meta ?? []);
+        }
     }
 
     public function key()
@@ -118,10 +138,11 @@ final class BoltResult implements Iterator
     {
         $meta = $this->pull();
 
-        /** @var list<array> $rows */
+        /** @var list<list> $rows */
         $rows = array_splice($meta, 0, count($meta) - 1);
         $this->rows = $rows;
 
+        /** @var array{0: array} $meta */
         if ($meta[0]['has_more'] ?? false) {
             $this->meta = $meta[0];
         }

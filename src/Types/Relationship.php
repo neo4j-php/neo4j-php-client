@@ -117,10 +117,12 @@ final class Relationship extends AbstractPropertyObject
      */
     public function getProperty(string $key)
     {
+        /** @psalm-suppress ImpureMethodCall */
         if (!$this->properties->hasKey($key)) {
             throw new PropertyDoesNotExistException(sprintf('Property "%s" does not exist on relationship', $key));
         }
 
+        /** @psalm-suppress ImpureMethodCall */
         return $this->properties->get($key);
     }
 }

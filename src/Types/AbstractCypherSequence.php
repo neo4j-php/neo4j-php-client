@@ -54,14 +54,14 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     private int $generatorPosition = 0;
 
     /**
-     * @var (callable():(Generator<TKey, TValue>))|Generator<TKey, TValue>
+     * @var (callable():(\Generator<TKey, TValue>))|\Generator<TKey, TValue>
      */
     protected $generator;
 
     /**
      * @template Value
      *
-     * @param callable():(Generator<mixed, Value>) $operation
+     * @param callable():(\Generator<mixed, Value>) $operation
      *
      * @return static<Value, TKey>
      *
@@ -83,7 +83,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         });
     }
 
-    /**
+    /**mixed
      * Returns whether the sequence is empty.
      *
      * @psalm-suppress UnusedForeachValue
@@ -384,6 +384,9 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return count($this->toArray());
     }
 
+    /**
+     * @return TValue
+     */
     public function current()
     {
         $this->setupCache();
@@ -423,6 +426,9 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         }
     }
 
+    /**
+     * @return TKey
+     */
     public function key()
     {
         return $this->cacheKey();

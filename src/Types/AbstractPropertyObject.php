@@ -33,6 +33,7 @@ abstract class AbstractPropertyObject extends AbstractCypherObject implements Ha
 {
     public function __get($name)
     {
+        /** @psalm-suppress ImpureMethodCall */
         return $this->getProperties()->get($name);
     }
 
@@ -43,6 +44,7 @@ abstract class AbstractPropertyObject extends AbstractCypherObject implements Ha
 
     public function __isset($name): bool
     {
+        /** @psalm-suppress ImpureMethodCall */
         return $this->getProperties()->offsetExists($name);
     }
 }

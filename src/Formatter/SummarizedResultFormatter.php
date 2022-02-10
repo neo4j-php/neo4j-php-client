@@ -26,11 +26,11 @@ use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Enum\QueryTypeEnum;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use function microtime;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
 use UnexpectedValueException;
-use function microtime;
 
 /**
  * Decorates the result of the provided format with an extensive summary.
@@ -114,7 +114,8 @@ final class SummarizedResultFormatter implements FormatterInterface
             )
         );
 
-        return new SummarizedResult($summary, $results->toArray());
+        /** @var SummarizedResult<CypherMap<OGMTypes>> */
+        return new SummarizedResult($summary, $results);
     }
 
     /**
@@ -156,20 +157,20 @@ final class SummarizedResultFormatter implements FormatterInterface
 
     public function formatBoltResult(array $meta, BoltResult $result, ConnectionInterface $connection, float $runStart, float $resultAvailableAfter, Statement $statement): SummarizedResult
     {
-        $resultConsumedAfter = null;
-        $summary = static function () use ($result, $connection, $statement, $runStart, $resultAvailableAfter, &$resultConsumedAfter) {
-
-            $counters = $this->formatBoltStats($result->consume());
-            $resultConsumedAfter ??= $runStart - microtime(true);
-
-            return new ResultSummary(
-                $counters,
+        /** @var ResultSummary|null $summary */
+        $summary = null;
+        $result->setFinishedCallback(function (array $counters) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
+            /** @var BoltCypherStats $counters */
+            $stats = $this->formatBoltStats($counters);
+            $resultConsumedAfter = $runStart - microtime(true);
+            $summary = new ResultSummary(
+                $stats,
                 $connection->getDatabaseInfo(),
                 new CypherList(),
                 null,
                 null,
                 $statement,
-                QueryTypeEnum::fromCounters($counters),
+                QueryTypeEnum::fromCounters($stats),
                 $resultAvailableAfter,
                 $resultConsumedAfter,
                 new ServerInfo(
@@ -178,15 +179,22 @@ final class SummarizedResultFormatter implements FormatterInterface
                     $connection->getServerAgent()
                 )
             );
-        };
+        });
 
-        $formattedResult = $this->formatter->formatBoltResult($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement, $resultConsumedAfter);
+        $formattedResult = $this->formatter->formatBoltResult($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement);
 
+        /**
+         * @psalm-suppress MixedArgument
+         *
+         * @var SummarizedResult<CypherMap<OGMTypes>>
+         */
         return new SummarizedResult($summary, $formattedResult);
     }
 
     /**
      * @psalm-mutation-free
+     *
+     * @psalm-suppress ImpureMethodCall
      */
     public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {

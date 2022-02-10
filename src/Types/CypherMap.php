@@ -236,6 +236,9 @@ final class CypherMap extends Map
         return new self($iterable);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function keyBy(string $key): CypherList
     {
         return CypherList::fromIterable(parent::keyBy($key));

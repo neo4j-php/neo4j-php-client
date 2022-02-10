@@ -17,6 +17,7 @@ use function array_key_exists;
 use function array_key_last;
 use function func_num_args;
 use Generator;
+use function is_callable;
 use function is_iterable;
 use function is_numeric;
 use function is_object;
@@ -39,12 +40,15 @@ use stdClass;
 class Map extends AbstractCypherSequence
 {
     /**
-     * @param iterable<mixed, TValue> $iterable
+     * @param iterable<mixed, TValue>|callable():\Generator<mixed, TValue> $iterable
+     *
+     * @psalm-mutation-free
      */
-    public function __construct(iterable $iterable = [])
+    public function __construct($iterable = [])
     {
         $this->generator = static function () use ($iterable): Generator {
             $i = 0;
+            $iterable = is_callable($iterable) ? $iterable() : $iterable;
             /** @var mixed $key */
             foreach ($iterable as $key => $value) {
                 if (is_string($key) || is_numeric($key) || is_object($key) && method_exists($key, '__toString')) {
@@ -196,6 +200,8 @@ class Map extends AbstractCypherSequence
      * @param iterable<mixed, NewValue> $values
      *
      * @return static<TValue|NewValue>
+     *
+     * @psalm-mutation-free
      */
     public function merge(iterable $values): Map
     {
@@ -479,10 +485,12 @@ class Map extends AbstractCypherSequence
      * @param callable():Generator<mixed, Value> $operation
      *
      * @return static<Value>
+     *
+     * @psalm-mutation-free
      */
     protected function withOperation($operation): Map
     {
         /** @psalm-suppress UnsafeInstantiation */
-        return new static($operation());
+        return new static($operation);
     }
 }
