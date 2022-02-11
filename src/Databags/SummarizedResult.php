@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Generator;
+use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
@@ -24,27 +26,32 @@ use Laudis\Neo4j\Types\CypherList;
  */
 final class SummarizedResult extends CypherList
 {
-    private ResultSummary $summary;
+    private ?ResultSummary $summary;
 
     /**
-     * @param iterable<mixed, TValue> $iterable
+     * @param iterable<mixed, TValue>|callable():\Generator<mixed, TValue> $iterable
+     *
+     * @psalm-mutation-free
      */
-    public function __construct(ResultSummary $summary, iterable $iterable = [])
+    public function __construct(?ResultSummary &$summary, $iterable = [])
     {
         parent::__construct($iterable);
-        $this->summary = $summary;
+        $this->summary = &$summary;
     }
 
     /**
      * @template Value
      *
-     * @param iterable<mixed, Value> $iterable
+     * @param callable():Generator<mixed, Value> $operation
      *
      * @return static<Value>
+     *
+     * @psalm-mutation-free
      */
-    protected function withIterable(iterable $iterable): SummarizedResult
+    protected function withOperation($operation): ArrayList
     {
-        return new self($this->summary, $iterable);
+        /** @psalm-suppress ImpurePropertyAssignment */
+        return new self($this->summary, $operation);
     }
 
     /**
@@ -52,6 +59,11 @@ final class SummarizedResult extends CypherList
      */
     public function getSummary(): ResultSummary
     {
+        while ($this->summary === null && $this->valid()) {
+            $this->next();
+        }
+
+        /** @var ResultSummary */
         return $this->summary;
     }
 
@@ -61,7 +73,7 @@ final class SummarizedResult extends CypherList
     }
 
     /**
-     * @return array{summary: ResultSummary, result: mixed}
+     * @return array{summary: ResultSummary|null, result: mixed}
      */
     public function jsonSerialize(): array
     {

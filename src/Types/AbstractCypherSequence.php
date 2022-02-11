@@ -14,14 +14,25 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
+use function array_reverse;
+use ArrayAccess;
+use BadMethodCallException;
+use function call_user_func;
 use function count;
 use Countable;
 use function implode;
-use function is_array;
-use function is_object;
-use function iterator_to_array;
-use function property_exists;
 use const INF;
+use function is_array;
+use function is_callable;
+use function is_object;
+use Iterator;
+use function iterator_to_array;
+use JsonSerializable;
+use OutOfBoundsException;
+use const PHP_INT_MAX;
+use function property_exists;
+use function sprintf;
+use function usort;
 
 /**
  * Abstract immutable sequence with basic functional methods.
@@ -29,68 +40,74 @@ use const INF;
  * @template TValue
  * @template TKey of array-key
  *
- * @extends AbstractCypherObject<TKey, TValue>
+ * @implements ArrayAccess<TKey, TValue>
+ * @implements Iterator<TKey, TValue>
  */
-abstract class AbstractCypherSequence extends AbstractCypherObject implements Countable
+abstract class AbstractCypherSequence implements Countable, JsonSerializable, ArrayAccess, Iterator
 {
-    /** @var (\ArrayAccess<TKey, TValue>&\Countable&\Traversable<TKey, TValue>)|array<TKey, TValue> */
-    protected $sequence = [];
+    /** @var list<TKey> */
+    protected array $keyCache = [];
+    /** @var array<TKey, TValue> */
+    protected array $cache = [];
+    private int $cacheLimit = PHP_INT_MAX;
+    protected int $currentPosition = 0;
+    private int $generatorPosition = 0;
+
+    /**
+     * @var (callable():(\Generator<TKey, TValue>))|\Generator<TKey, TValue>
+     */
+    protected $generator;
 
     /**
      * @template Value
      *
-     * @param iterable<Value> $iterable
+     * @param callable():(\Generator<mixed, Value>) $operation
      *
-     * @return static<Value, array-key>
+     * @return static<Value, TKey>
+     *
+     * @psalm-mutation-free
      */
-    abstract protected function withIterable(iterable $iterable): AbstractCypherSequence;
-
-    final public function count(): int
-    {
-        return count($this->sequence);
-    }
+    abstract protected function withOperation($operation): self;
 
     /**
      * Copies the sequence.
      *
-     * @return static
+     * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
     final public function copy(): self
     {
-        // Make sure the sequence is actually copied by reassigning it.
-        $map = $this->sequence;
-
-        return $this->withIterable($map);
+        return $this->withOperation(function () {
+            yield from $this;
+        });
     }
 
-    /**
+    /**mixed
      * Returns whether the sequence is empty.
+     *
+     * @psalm-suppress UnusedForeachValue
      */
     final public function isEmpty(): bool
     {
-        return count($this->sequence) === 0;
-    }
-
-    /**
-     * Returns the sequence as an array.
-     *
-     * @return array<TKey, TValue>
-     */
-    final public function toArray(): array
-    {
-        if (is_array($this->sequence)) {
-            return $this->sequence;
+        /** @noinspection PhpLoopNeverIteratesInspection */
+        foreach ($this as $ignored) {
+            return false;
         }
 
-        return iterator_to_array($this->sequence, true);
+        return true;
     }
 
     /**
-     * Creates a new sequence by merging this one with the provided iterable. The provided values will override the existing items in case of a key collision.
+     * Creates a new sequence by merging this one with the provided iterable. When the iterable is not a list, the provided values will override the existing items in case of a key collision.
      *
-     * @param iterable<array-key, TValue> $values
+     * @template NewValue
      *
-     * @return static
+     * @param iterable<mixed, NewValue> $values
+     *
+     * @return static<TValue|NewValue, array-key>
+     *
+     * @psalm-mutation-free
      */
     abstract public function merge(iterable $values): self;
 
@@ -101,11 +118,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function hasKey($key): bool
     {
-        if (is_array($this->sequence)) {
-            return array_key_exists($key, $this->sequence);
-        }
-
-        return $this->sequence->offsetExists($key);
+        return $this->offsetExists($key);
     }
 
     /**
@@ -124,19 +137,18 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * @param callable(TValue, TKey):bool $callback
      *
      * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
     final public function filter(callable $callback): self
     {
-        /** @var array<TKey, TValue> $tbr */
-        $tbr = [];
-        foreach ($this->sequence as $key => $value) {
-            /** @psalm-suppress ImpureFunctionCall */
-            if ($callback($value, $key)) {
-                $tbr[$key] = $value;
+        return $this->withOperation(function () use ($callback) {
+            foreach ($this as $key => $value) {
+                if ($callback($value, $key)) {
+                    yield $key => $value;
+                }
             }
-        }
-
-        return $this->withIterable($tbr);
+        });
     }
 
     /**
@@ -147,17 +159,16 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      * @param callable(TValue, TKey):ReturnType $callback
      *
      * @return static<ReturnType, TKey>
+     *
+     * @psalm-mutation-free
      */
     final public function map(callable $callback): self
     {
-        /** @var array<TKey, ReturnType> $tbr */
-        $tbr = [];
-        foreach ($this->sequence as $key => $value) {
-            /** @psalm-suppress ImpureFunctionCall */
-            $tbr[$key] = $callback($value, $key);
-        }
-
-        return $this->withIterable($tbr);
+        return $this->withOperation(function () use ($callback) {
+            foreach ($this as $key => $value) {
+                yield $key => $callback($value, $key);
+            }
+        });
     }
 
     /**
@@ -172,8 +183,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function reduce(callable $callback, $initial = null)
     {
-        foreach ($this->sequence as $key => $value) {
-            /** @psalm-suppress ImpureFunctionCall */
+        foreach ($this as $key => $value) {
             $initial = $callback($initial, $value, $key);
         }
 
@@ -189,7 +199,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     final public function find($value)
     {
-        foreach ($this->sequence as $i => $x) {
+        foreach ($this as $i => $x) {
             if ($value === $x) {
                 return $i;
             }
@@ -201,62 +211,86 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     /**
      * Creates a reversed sequence.
      *
-     * @return static
+     * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
-    abstract public function reversed(): self;
+    public function reversed(): self
+    {
+        return $this->withOperation(function () {
+            yield from array_reverse($this->toArray());
+        });
+    }
 
     /**
      * Slices a new sequence starting from the given offset with a certain length.
      * If the length is null it will slice the entire remainder starting from the offset.
      *
-     * @return static
+     * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
     public function slice(int $offset, int $length = null): self
     {
-        $i = 0;
-        $length ??= INF;
-        $tbr = [];
-        foreach ($this->sequence as $key => $value) {
-            if ($length === 0) {
-                return $this->withIterable($tbr);
+        return $this->withOperation(function () use ($offset, $length) {
+            $count = 0;
+            $length ??= INF;
+            foreach ($this as $key => $value) {
+                if ($count < $offset) {
+                    continue;
+                } else {
+                    yield $key => $value;
+                }
+                if ($count === ($offset + $length)) {
+                    break;
+                }
+                ++$count;
             }
-            if ($i === $offset) {
-                --$length;
-                $tbr[$key] = $value;
-            } else {
-                ++$i;
-            }
-        }
-
-        return $this->withIterable($tbr);
+        });
     }
 
     /**
-     * Creates a sorted sequence. If the compoarator is null it will use natural ordering.
+     * Creates a sorted sequence. If the comparator is null it will use natural ordering.
      *
      * @param (callable(TValue, TValue):int)|null $comparator
      *
-     * @return static
+     * @return static<TValue, TKey>
+     *
+     * @psalm-mutation-free
      */
-    abstract public function sorted(?callable $comparator = null): self;
+    public function sorted(?callable $comparator = null): self
+    {
+        return $this->withOperation(function () use ($comparator) {
+            $iterable = $this->toArray();
+
+            if ($comparator) {
+                usort($iterable, $comparator);
+            } else {
+                sort($iterable);
+            }
+
+            yield from $iterable;
+        });
+    }
 
     /**
      * Creates a list from the arrays and objects in the sequence whose values corresponding with the provided key.
+     *
+     * @return ArrayList<mixed>
+     *
+     * @psalm-mutation-free
      */
     public function keyBy(string $key): ArrayList
     {
-        $tbr = [];
-        foreach ($this->sequence as $value) {
-            if (is_array($value) && array_key_exists($key, $value)) {
-                /** @var mixed */
-                $tbr[] = $value[$key];
-            } elseif (is_object($value) && property_exists($value, $key)) {
-                /** @var mixed */
-                $tbr[] = $value->$key;
+        return new ArrayList(function () use ($key) {
+            foreach ($this as $value) {
+                if (is_array($value) && array_key_exists($key, $value)) {
+                    yield $value[$key];
+                } elseif (is_object($value) && property_exists($value, $key)) {
+                    yield $value->$key;
+                }
             }
-        }
-
-        return ArrayList::fromIterable($tbr);
+        });
     }
 
     /**
@@ -265,7 +299,7 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
     public function join(?string $glue = null): string
     {
         /** @psalm-suppress MixedArgumentTypeCoercion */
-        return implode($glue ?? '', $this->sequence);
+        return implode($glue ?? '', $this->toArray());
     }
 
     /**
@@ -277,11 +311,163 @@ abstract class AbstractCypherSequence extends AbstractCypherObject implements Co
      */
     public function each(callable $callable): self
     {
-        foreach ($this->sequence as $key => $value) {
-            /** @psalm-suppress ImpureFunctionCall */
+        foreach ($this as $key => $value) {
             $callable($value, $key);
         }
 
         return $this;
+    }
+
+    public function __debugInfo(): array
+    {
+        return iterator_to_array($this, true);
+    }
+
+    public function offsetGet($offset)
+    {
+        while (!array_key_exists($offset, $this->cache) && $this->valid()) {
+            $this->next();
+        }
+
+        if (!array_key_exists($offset, $this->cache)) {
+            throw new OutOfBoundsException(sprintf('Offset: "%s" does not exists in object of instance: %s', $offset, static::class));
+        }
+
+        return $this->cache[$offset];
+    }
+
+    public function offsetSet($offset, $value)
+    {
+        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
+    }
+
+    public function offsetUnset($offset)
+    {
+        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
+    }
+
+    /**
+     * @param TKey $offset
+     *
+     * @psalm-suppress UnusedForeachValue
+     */
+    public function offsetExists($offset): bool
+    {
+        while (!array_key_exists($offset, $this->cache) && $this->valid()) {
+            $this->next();
+        }
+
+        return array_key_exists($offset, $this->cache);
+    }
+
+    public function jsonSerialize()
+    {
+        return $this->toArray();
+    }
+
+    /**
+     * Returns the sequence as an array.
+     *
+     * @return array<TKey, TValue>
+     */
+    final public function toArray(): array
+    {
+        while ($this->valid()) {
+            $this->next();
+        }
+
+        return $this->cache;
+    }
+
+    final public function count(): int
+    {
+        return count($this->toArray());
+    }
+
+    /**
+     * @return TValue
+     */
+    public function current()
+    {
+        $this->setupCache();
+
+        return $this->cache[$this->cacheKey()];
+    }
+
+    public function valid(): bool
+    {
+        return $this->currentPosition < $this->generatorPosition || $this->getGenerator()->valid();
+    }
+
+    public function rewind(): void
+    {
+        $this->currentPosition = max(
+            $this->currentPosition - $this->cacheLimit,
+            0
+        );
+    }
+
+    public function next(): void
+    {
+        $generator = $this->getGenerator();
+        if ($this->cache === []) {
+            $this->setupCache();
+        } elseif ($this->currentPosition === $this->generatorPosition && $generator->valid()) {
+            $generator->next();
+
+            if ($generator->valid()) {
+                $this->keyCache[] = $generator->key();
+                $this->cache[$generator->key()] = $generator->current();
+            }
+            ++$this->generatorPosition;
+            ++$this->currentPosition;
+        } else {
+            ++$this->currentPosition;
+        }
+    }
+
+    /**
+     * @return TKey
+     */
+    public function key()
+    {
+        return $this->cacheKey();
+    }
+
+    /**
+     * @return TKey
+     */
+    protected function cacheKey()
+    {
+        return $this->keyCache[$this->currentPosition % $this->cacheLimit];
+    }
+
+    /**
+     * @return Iterator<TKey, TValue>
+     */
+    public function getGenerator(): Iterator
+    {
+        if (is_callable($this->generator)) {
+            $this->generator = call_user_func($this->generator);
+        }
+
+        return $this->generator;
+    }
+
+    public function withCacheLimit(int $cacheLimit): self
+    {
+        $tbr = $this->copy();
+        $tbr->cacheLimit = $cacheLimit;
+
+        return $tbr;
+    }
+
+    private function setupCache(): void
+    {
+        $generator = $this->getGenerator();
+        if ($this->cache === [] && $generator->valid()) {
+            $this->cache[$generator->key()] = $generator->current();
+            $this->keyCache[] = $generator->key();
+        }
     }
 }

@@ -17,6 +17,7 @@ use ArrayIterator;
 use BadMethodCallException;
 use function hexdec;
 use function json_encode;
+use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherList;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
@@ -232,14 +233,14 @@ final class CypherListTest extends TestCase
     public function testGetInvalid(): void
     {
         $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Cannot get item in sequence at position: 3');
+        $this->expectExceptionMessage('Offset: "3" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
         $this->list->get(3);
     }
 
     public function testGetNegative(): void
     {
         $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Cannot get item in sequence at position: -1');
+        $this->expectExceptionMessage('Offset: "-1" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
         $this->list->get(-1);
     }
 
@@ -391,6 +392,6 @@ final class CypherListTest extends TestCase
             'wrong',
         ])->keyBy('x');
 
-        self::assertEquals(CypherList::fromIterable(['stdClassX', 'arrayX']), $list);
+        self::assertEquals(ArrayList::fromIterable(['stdClassX', 'arrayX']), $list);
     }
 }

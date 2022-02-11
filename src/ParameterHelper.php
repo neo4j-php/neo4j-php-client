@@ -108,8 +108,6 @@ final class ParameterHelper
 
     /**
      * @param mixed $value
-     *
-     * @pure
      */
     private static function emptySequenceToArray($value): ?array
     {

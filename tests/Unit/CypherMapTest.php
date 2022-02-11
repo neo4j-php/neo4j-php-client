@@ -14,7 +14,6 @@ namespace Laudis\Neo4j\Tests\Unit;
 use ArrayIterator;
 use BadMethodCallException;
 use Generator;
-use InvalidArgumentException;
 use IteratorAggregate;
 use function json_encode;
 use const JSON_THROW_ON_ERROR;
@@ -419,15 +418,14 @@ final class CypherMapTest extends TestCase
 
     public function testInvalidConstruct(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Iterable must have a stringable keys');
-
-        new CypherMap(new class() implements IteratorAggregate {
+        $map = new CypherMap(new class() implements IteratorAggregate {
             public function getIterator(): Generator
             {
                 yield new stdClass() => 'x';
             }
         });
+
+        self::assertEquals(CypherMap::fromIterable(['0' => 'x']), $map);
     }
 
     public function testSortedDefault(): void

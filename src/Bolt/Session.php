@@ -146,7 +146,7 @@ final class Session implements SessionInterface
     ): TransactionInterface {
         $connection = $this->acquireConnection($tsxConfig, $config);
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config);
     }
 
     /**
@@ -172,7 +172,7 @@ final class Session implements SessionInterface
             throw Neo4jException::fromMessageException($e);
         }
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config);
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration
