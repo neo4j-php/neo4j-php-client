@@ -58,6 +58,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     private bool $isCommitted = false;
     private SessionConfiguration $config;
+    private int $qid = -1;
 
     /**
      * @param FormatterInterface<T>   $formatter
@@ -141,12 +142,12 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
             $tbr[] = $this->formatter->formatBoltResult(
                 $meta,
-                new BoltResult($this->getBolt(), $this->config->getFetchSize()),
+                new BoltResult($this->connection, $this->config->getFetchSize(), $meta['qid'] ?? -1),
                 $this->connection,
                 $start,
                 $start - $run,
                 $statement
-            );
+            )->withCacheLimit($this->config->getFetchSize());
         }
 
         return new CypherList($tbr);
@@ -158,11 +159,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private function getBolt(): V3
     {
         return $this->connection->getImplementation();
-    }
-
-    public function __destruct()
-    {
-        $this->connection->close();
     }
 
     /**

@@ -21,6 +21,7 @@ use function call_user_func;
 use function count;
 use Generator;
 use Iterator;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 
 /**
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
@@ -29,18 +30,24 @@ use Iterator;
  */
 final class BoltResult implements Iterator
 {
-    private V3 $protocol;
+    /** @var ConnectionInterface<V3> */
+    private ConnectionInterface $connection;
     private int $fetchSize;
     /** @var list<list> */
     private array $rows = [];
     private ?array $meta = null;
     /** @var callable(array):void|null */
     private $finishedCallback;
+    private int $qid;
 
-    public function __construct(V3 $protocol, int $fetchSize)
+    /**
+     * @param ConnectionInterface<V3> $connection
+     */
+    public function __construct(ConnectionInterface $connection, int $fetchSize, int $qid)
     {
-        $this->protocol = $protocol;
+        $this->connection = $connection;
         $this->fetchSize = $fetchSize;
+        $this->qid = $qid;
     }
 
     private ?Generator $it = null;
@@ -71,17 +78,18 @@ final class BoltResult implements Iterator
     public function iterator(): Generator
     {
         $i = 0;
-        do {
+        while ($this->meta === null) {
             $this->fetchResults();
             foreach ($this->rows as $row) {
                 yield $i => $row;
                 ++$i;
             }
-        } while ($this->meta === null);
+        }
 
         if ($this->finishedCallback) {
             call_user_func($this->finishedCallback, $this->meta);
         }
+        $this->getImplementation()->goodbye();
     }
 
     public function consume(): array
@@ -98,13 +106,13 @@ final class BoltResult implements Iterator
      */
     private function pull(): array
     {
-        if (!$this->protocol instanceof V4) {
+        if (!$this->getImplementation() instanceof V4) {
             /** @var non-empty-list<list> */
-            return $this->protocol->pullAll();
+            return $this->getImplementation()->pullAll(['qid' => $this->qid]);
         }
 
         /** @var non-empty-list<list> */
-        return $this->protocol->pull(['n' => $this->fetchSize]);
+        return $this->getImplementation()->pull(['n' => $this->fetchSize, 'qid' => $this->qid]);
     }
 
     private function fetchResults(): void
@@ -143,5 +151,14 @@ final class BoltResult implements Iterator
 
     public function rewind(): void
     {
+        // Rewind is impossible
+    }
+
+    /**
+     * @return V3
+     */
+    private function getImplementation(): V3
+    {
+        return $this->connection->getImplementation();
     }
 }

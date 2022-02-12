@@ -234,18 +234,18 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     public function slice(int $offset, int $length = null): self
     {
         return $this->withOperation(function () use ($offset, $length) {
-            $count = 0;
+            $count = -1;
             $length ??= INF;
             foreach ($this as $key => $value) {
+                ++$count;
                 if ($count < $offset) {
                     continue;
-                } else {
-                    yield $key => $value;
                 }
+
+                yield $key => $value;
                 if ($count === ($offset + $length)) {
                     break;
                 }
-                ++$count;
             }
         });
     }

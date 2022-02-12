@@ -153,7 +153,10 @@ final class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
-        $this->boltProtocol = null;
+        if ($this->boltProtocol === null) {
+            $this->boltProtocol->goodbye();
+            $this->boltProtocol = null;
+        }
     }
 
     public function reset(): void
@@ -170,5 +173,10 @@ final class BoltConnection implements ConnectionInterface
     public function getDriverConfiguration(): DriverConfiguration
     {
         return $this->driverConfiguration;
+    }
+
+    public function __destruct()
+    {
+        $this->close();
     }
 }

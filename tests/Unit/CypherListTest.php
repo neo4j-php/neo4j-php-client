@@ -13,14 +13,18 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use Generator;
+use function array_sum;
 use ArrayIterator;
 use BadMethodCallException;
 use function hexdec;
 use function json_encode;
+use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherList;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
+use function range;
 use stdClass;
 
 final class CypherListTest extends TestCase
@@ -393,5 +397,69 @@ final class CypherListTest extends TestCase
         ])->keyBy('x');
 
         self::assertEquals(ArrayList::fromIterable(['stdClassX', 'arrayX']), $list);
+    }
+
+    public function testCombined(): void
+    {
+        $i = 0;
+        $list = CypherList::fromIterable([0, 1, 2, 3])->map(static function ($x) use (&$i) {
+            ++$i;
+
+            return $x;
+        });
+
+        self::assertEquals(0, $i);
+
+        $pairs = $list->map(static fn ($x, $index): Pair => new Pair($index, $x));
+        self::assertEquals(0, $i);
+
+        self::assertCount(4, $pairs);
+        self::assertEquals(4, $i);
+
+        self::assertCount(4, $list);
+        self::assertEquals(4, $i);
+    }
+
+    public function testSlice(): void
+    {
+        $sumBefore = 0;
+        $sumAfter = 0;
+        $range = CypherList::fromIterable($this->infiniteIterator())
+            ->map(static function ($x) use (&$sumBefore) {
+                $sumBefore += $x;
+
+                return $x;
+            })
+            ->slice(5, 3)
+            ->map(static function ($x) use (&$sumAfter) {
+                $sumAfter += $x;
+
+                return $x;
+            });
+
+        $start = $range->get(0);
+
+        self::assertEquals(5, $start);
+
+        self::assertEquals(array_sum(range(0, 5)), $sumBefore);
+        self::assertEquals(5, $sumAfter);
+
+        $end = $range->get(2);
+
+        self::assertEquals(7, $end);
+        self::assertEquals(array_sum(range(0, 7)), $sumBefore);
+        self::assertEquals(array_sum(range(5, 7)), $sumAfter);
+    }
+
+    /**
+     * @return Generator<int, int>
+     */
+    private function infiniteIterator(): Generator
+    {
+        $i = 0;
+        while (true) {
+            yield $i;
+            ++$i;
+        }
     }
 }

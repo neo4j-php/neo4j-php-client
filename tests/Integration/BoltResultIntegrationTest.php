@@ -13,13 +13,19 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
-use Bolt\helpers\Auth;
 use Bolt\protocol\V4;
 use Dotenv\Dotenv;
 use function explode;
 use function is_string;
+use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltResult;
+use Laudis\Neo4j\BoltFactory;
+use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use PHPUnit\Framework\TestCase;
 
 final class BoltResultIntegrationTest extends TestCase
@@ -51,20 +57,22 @@ final class BoltResultIntegrationTest extends TestCase
     {
         $uri = Uri::create($connection);
         $socket = new StreamSocket($uri->getHost(), $uri->getPort() ?? 7687);
-        $socket->connect();
-        $protocol = (new Bolt($socket))->build();
-        if (!$protocol instanceof V4) {
-            self::markTestSkipped('Can only test bolt result on v4');
-        }
-        $user = explode(':', $uri->getUserInfo());
-        if (count($user) >= 2) {
-            $protocol->hello(Auth::basic($user[0], $user[1]));
-        } else {
-            $protocol->hello(Auth::none());
-        }
-        $protocol->run('UNWIND range(1, 100000) AS i RETURN i');
+
         $i = 0;
-        $result = new BoltResult($protocol, 1000);
+        $connection = new BoltConnection(
+            '',
+            $uri,
+            '',
+            ConnectionProtocol::BOLT_V3(),
+            AccessMode::READ(),
+            new DatabaseInfo(''),
+            new BoltFactory(new Bolt($socket), Authenticate::fromUrl($uri), '', $socket),
+            null,
+            DriverConfiguration::default()
+        );
+        $connection->open();
+        $connection->getImplementation()->run('UNWIND range(1, 100000) AS i RETURN i');
+        $result = new BoltResult($connection, 1000, -1);
         foreach ($result as $i => $x) {
             self::assertEquals($i + 1, $x[0] ?? 0);
         }
