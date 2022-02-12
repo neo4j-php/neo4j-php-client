@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Generator;
+use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherList;
 
@@ -37,6 +38,11 @@ final class SummarizedResult extends CypherList
     {
         parent::__construct($iterable);
         $this->summary = &$summary;
+    }
+
+    protected function withOperation($operation): AbstractCypherSequence
+    {
+        return new self($operation);
     }
 
     /**

@@ -13,7 +13,6 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
-use Bolt\protocol\V4;
 use Dotenv\Dotenv;
 use function explode;
 use function is_string;

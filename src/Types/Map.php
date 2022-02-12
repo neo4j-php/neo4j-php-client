@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Types;
 use function array_key_exists;
 use function array_key_last;
 use ArrayIterator;
+use function count;
 use function func_num_args;
 use Generator;
 use function is_array;
@@ -54,6 +55,7 @@ class Map extends AbstractCypherSequence
                 $this->cache[(string) $key] = $value;
             }
             $this->generator = new ArrayIterator([]);
+            $this->generatorPosition = count($this->keyCache);
         } else {
             $this->generator = static function () use ($iterable): Generator {
                 $i = 0;
@@ -69,6 +71,11 @@ class Map extends AbstractCypherSequence
                 }
             };
         }
+    }
+
+    protected function withOperation($operation): Map
+    {
+        return new static($operation);
     }
 
     /**
@@ -198,6 +205,12 @@ class Map extends AbstractCypherSequence
             $map = Map::fromIterable($map);
             foreach ($this as $key => $value) {
                 if (!$map->hasKey($key)) {
+                    yield $key => $value;
+                }
+            }
+
+            foreach ($map as $key => $value) {
+                if (!$this->hasKey($key)) {
                     yield $key => $value;
                 }
             }

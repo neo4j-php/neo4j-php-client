@@ -52,7 +52,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     protected array $cache = [];
     private int $cacheLimit = PHP_INT_MAX;
     protected int $currentPosition = 0;
-    private int $generatorPosition = 0;
+    protected int $generatorPosition = 0;
 
     /**
      * @var (callable():(\Generator<TKey, TValue>))|\Generator<TKey, TValue>
@@ -68,13 +68,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      *
      * @psalm-mutation-free
      */
-    protected function withOperation($operation): self
-    {
-        $tbr = clone $this;
-        $tbr->generator = $operation;
-
-        return $tbr;
-    }
+    abstract protected function withOperation($operation): self;
 
     /**
      * Copies the sequence.
@@ -240,17 +234,19 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     public function slice(int $offset, int $length = null): self
     {
         return $this->withOperation(function () use ($offset, $length) {
-            $count = -1;
-            $length ??= INF;
-            foreach ($this as $key => $value) {
-                ++$count;
-                if ($count < $offset) {
-                    continue;
-                }
+            if ($length !== 0) {
+                $count = -1;
+                $length ??= INF;
+                foreach ($this as $key => $value) {
+                    ++$count;
+                    if ($count < $offset) {
+                        continue;
+                    }
 
-                yield $key => $value;
-                if ($count === ($offset + $length)) {
-                    break;
+                    yield $key => $value;
+                    if ($count === ($offset + $length - 1)) {
+                        break;
+                    }
                 }
             }
         });
@@ -271,9 +267,9 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
             $iterable = $this->toArray();
 
             if ($comparator) {
-                usort($iterable, $comparator);
+                uasort($iterable, $comparator);
             } else {
-                sort($iterable);
+                asort($iterable);
             }
 
             yield from $iterable;

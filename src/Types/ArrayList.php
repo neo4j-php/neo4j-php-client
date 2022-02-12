@@ -14,9 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use AppendIterator;
+use function array_values;
 use ArrayIterator;
 use Generator;
-use function array_values;
 use function is_array;
 use function is_callable;
 use function is_iterable;
@@ -41,9 +41,10 @@ class ArrayList extends AbstractCypherSequence
     public function __construct($iterable = [])
     {
         if (is_array($iterable)) {
-            $this->keyCache = range(0, count($iterable) - 1);
+            $this->keyCache = count($iterable) === 0 ? [] : range(0, count($iterable) - 1);
             $this->cache = array_values($iterable);
             $this->generator = new ArrayIterator([]);
+            $this->generatorPosition = count($this->keyCache);
         } else {
             $this->generator = static function () use ($iterable): Generator {
                 $i = 0;
@@ -54,6 +55,11 @@ class ArrayList extends AbstractCypherSequence
                 }
             };
         }
+    }
+
+    protected function withOperation($operation): AbstractCypherSequence
+    {
+        return new static($operation);
     }
 
     /**
