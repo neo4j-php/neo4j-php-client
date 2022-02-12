@@ -40,21 +40,6 @@ final class SummarizedResult extends CypherList
     }
 
     /**
-     * @template Value
-     *
-     * @param callable():Generator<mixed, Value> $operation
-     *
-     * @return static<Value>
-     *
-     * @psalm-mutation-free
-     */
-    protected function withOperation($operation): ArrayList
-    {
-        /** @psalm-suppress ImpurePropertyAssignment */
-        return new self($this->summary, $operation);
-    }
-
-    /**
      * Returns the result summary.
      */
     public function getSummary(): ResultSummary

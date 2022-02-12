@@ -478,19 +478,4 @@ class Map extends AbstractCypherSequence
     {
         return new self($iterable);
     }
-
-    /**
-     * @template Value
-     *
-     * @param callable():Generator<mixed, Value> $operation
-     *
-     * @return static<Value>
-     *
-     * @psalm-mutation-free
-     */
-    protected function withOperation($operation): Map
-    {
-        /** @psalm-suppress UnsafeInstantiation */
-        return new static($operation);
-    }
 }

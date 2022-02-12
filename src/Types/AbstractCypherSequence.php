@@ -68,7 +68,13 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      *
      * @psalm-mutation-free
      */
-    abstract protected function withOperation($operation): self;
+    protected function withOperation($operation): self
+    {
+        $tbr = clone $this;
+        $tbr->generator = $operation;
+
+        return $tbr;
+    }
 
     /**
      * Copies the sequence.

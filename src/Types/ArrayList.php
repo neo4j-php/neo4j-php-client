@@ -225,19 +225,4 @@ class ArrayList extends AbstractCypherSequence
         /** @psalm-suppress UnsafeInstantiation */
         return new static($iterable);
     }
-
-    /**
-     * @template Value
-     *
-     * @param callable():(\Generator<mixed, Value>) $operation
-     *
-     * @return static<Value>
-     *
-     * @psalm-mutation-free
-     */
-    protected function withOperation($operation): self
-    {
-        /** @psalm-suppress UnsafeInstantiation */
-        return new static($operation);
-    }
 }

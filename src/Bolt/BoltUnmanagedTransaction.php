@@ -18,7 +18,6 @@ use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\TransactionHelper;
-use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
