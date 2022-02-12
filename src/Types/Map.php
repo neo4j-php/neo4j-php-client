@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
 use function array_key_last;
+use ArrayIterator;
 use function func_num_args;
 use Generator;
 use function is_array;
@@ -52,20 +53,22 @@ class Map extends AbstractCypherSequence
                 $this->keyCache[] = (string) $key;
                 $this->cache[(string) $key] = $value;
             }
-        }
-        $this->generator = static function () use ($iterable): Generator {
-            $i = 0;
-            $iterable = is_callable($iterable) ? $iterable() : $iterable;
-            /** @var mixed $key */
-            foreach ($iterable as $key => $value) {
-                if (is_string($key) || is_numeric($key) || is_object($key) && method_exists($key, '__toString')) {
-                    yield (string) $key => $value;
-                } else {
-                    yield (string) $i => $value;
+            $this->generator = new ArrayIterator([]);
+        } else {
+            $this->generator = static function () use ($iterable): Generator {
+                $i = 0;
+                $iterable = is_callable($iterable) ? $iterable() : $iterable;
+                /** @var mixed $key */
+                foreach ($iterable as $key => $value) {
+                    if (is_string($key) || is_numeric($key) || is_object($key) && method_exists($key, '__toString')) {
+                        yield (string) $key => $value;
+                    } else {
+                        yield (string) $i => $value;
+                    }
+                    ++$i;
                 }
-                ++$i;
-            }
-        };
+            };
+        }
     }
 
     /**
