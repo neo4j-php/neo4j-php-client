@@ -13,13 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use function array_key_exists;
 use function array_splice;
-use BadMethodCallException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use function call_user_func;
 use function count;
-use Exception;
+use Generator;
 use Iterator;
 
 /**
@@ -33,7 +33,6 @@ final class BoltResult implements Iterator
     private int $fetchSize;
     /** @var list<list> */
     private array $rows = [];
-    private int $current = 0;
     private ?array $meta = null;
     /** @var callable(array):void|null */
     private $finishedCallback;
@@ -44,28 +43,7 @@ final class BoltResult implements Iterator
         $this->fetchSize = $fetchSize;
     }
 
-    private function isDone(): bool
-    {
-        return $this->meta !== null && $this->cacheKey() >= count($this->rows);
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function prefetchNeeded(): void
-    {
-        if (!$this->isDone() && $this->cacheKey() === 0) {
-            $this->fetchResults();
-        }
-    }
-
-    /**
-     * @return list
-     */
-    public function current(): array
-    {
-        return $this->rows[$this->cacheKey()];
-    }
+    private ?Generator $it = null;
 
     /**
      * @param callable(array):void $finishedCallback
@@ -75,49 +53,44 @@ final class BoltResult implements Iterator
         $this->finishedCallback = $finishedCallback;
     }
 
-    public function next(): void
+    /**
+     * @return Generator<int|array>
+     */
+    public function getIt(): Generator
     {
-        ++$this->current;
-        $this->prefetchNeeded();
-        if ($this->isDone() &&
-            $this->finishedCallback &&
-            $this->current % $this->fetchSize === 0
-        ) {
-            call_user_func($this->finishedCallback, $this->meta ?? []);
+        if ($this->it === null) {
+            $this->it = $this->iterator();
         }
-    }
 
-    public function key()
-    {
-        return $this->current;
-    }
-
-    public function valid(): bool
-    {
-        return array_key_exists($this->cacheKey(), $this->rows);
-    }
-
-    public function rewind(): void
-    {
-        throw new BadMethodCallException('Cannot rewind a bolt result');
-    }
-
-    private function cacheKey(): int
-    {
-        return $this->current % $this->fetchSize;
+        return $this->it;
     }
 
     /**
-     * @return BoltCypherStats
+     * @return Generator<int, array>
      */
+    public function iterator(): Generator
+    {
+        $i = 0;
+        do {
+            $this->fetchResults();
+            foreach ($this->rows as $row) {
+                yield $i => $row;
+                ++$i;
+            }
+        } while ($this->meta === null);
+
+        if ($this->finishedCallback) {
+            call_user_func($this->finishedCallback, $this->meta);
+        }
+    }
+
     public function consume(): array
     {
-        while ($this->isDone()) {
-            $this->fetchResults();
+        while ($this->valid()) {
+            $this->next();
         }
 
-        /** @var BoltCypherStats */
-        return $this->meta;
+        return $this->meta ?? [];
     }
 
     /**
@@ -143,8 +116,32 @@ final class BoltResult implements Iterator
         $this->rows = $rows;
 
         /** @var array{0: array} $meta */
-        if ($meta[0]['has_more'] ?? false) {
+        if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
             $this->meta = $meta[0];
         }
+    }
+
+    public function current(): array
+    {
+        return $this->getIt()->current();
+    }
+
+    public function next(): void
+    {
+        $this->getIt()->next();
+    }
+
+    public function key(): int
+    {
+        return $this->getIt()->key();
+    }
+
+    public function valid(): bool
+    {
+        return $this->getIt()->valid();
+    }
+
+    public function rewind(): void
+    {
     }
 }

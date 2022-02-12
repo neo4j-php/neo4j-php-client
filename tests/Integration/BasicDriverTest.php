@@ -59,7 +59,6 @@ final class BasicDriverTest extends TestCase
         $id = 1;
         $result = $session->run('MATCH (x) RETURN x');
         $result->each(static function (CypherMap $map) use (&$id) {
-            /** @psalm-suppress all */
             $id = $map->getAsNode('x')->getProperties()->getAsInt('id');
         });
 
