@@ -105,7 +105,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function run(string $statement, iterable $parameters = [])
     {
-        return $this->runStatement(new Statement($statement, $parameters));
+       return $this->runStatement(new Statement($statement, $parameters));
     }
 
     /**
@@ -113,7 +113,28 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function runStatement(Statement $statement)
     {
-        return $this->runStatements([$statement])->first();
+        $extra = ['db' => $this->database, 'tx_timeout' => (int) ($this->tsxConfig->getTimeout() * 1000)];
+        $parameters = ParameterHelper::formatParameters($statement->getParameters());
+        $start = microtime(true);
+
+        try {
+            /** @var BoltMeta $meta */
+            $meta = $this->getBolt()->run($statement->getText(), $parameters->toArray(), $extra);
+            $run = microtime(true);
+        } catch (MessageException $e) {
+            $this->handleMessageException($e);
+        } catch (ConnectionTimeoutException $e) {
+            $this->handleConnectionTimeoutException($e);
+        }
+
+        return $this->formatter->formatBoltResult(
+            $meta,
+            new BoltResult($this->connection, $this->config->getFetchSize(), $meta['qid'] ?? -1),
+            $this->connection,
+            $start,
+            $start - $run,
+            $statement
+        )->withCacheLimit($this->config->getFetchSize());
     }
 
     /**
@@ -124,28 +145,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         /** @var list<T> $tbr */
         $tbr = [];
         foreach ($statements as $statement) {
-            $extra = ['db' => $this->database, 'tx_timeout' => (int) ($this->tsxConfig->getTimeout() * 1000)];
-            $parameters = ParameterHelper::formatParameters($statement->getParameters());
-            $start = microtime(true);
-
-            try {
-                /** @var BoltMeta $meta */
-                $meta = $this->getBolt()->run($statement->getText(), $parameters->toArray(), $extra);
-                $run = microtime(true);
-            } catch (MessageException $e) {
-                $this->handleMessageException($e);
-            } catch (ConnectionTimeoutException $e) {
-                $this->handleConnectionTimeoutException($e);
-            }
-
-            $tbr[] = $this->formatter->formatBoltResult(
-                $meta,
-                new BoltResult($this->connection, $this->config->getFetchSize(), $meta['qid'] ?? -1),
-                $this->connection,
-                $start,
-                $start - $run,
-                $statement
-            )->withCacheLimit($this->config->getFetchSize());
+            $tbr[] = $this->runStatement($statement);
         }
 
         return new CypherList($tbr);

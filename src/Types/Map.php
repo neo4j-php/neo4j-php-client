@@ -17,6 +17,7 @@ use function array_key_exists;
 use function array_key_last;
 use function func_num_args;
 use Generator;
+use function is_array;
 use function is_callable;
 use function is_iterable;
 use function is_numeric;
@@ -46,6 +47,12 @@ class Map extends AbstractCypherSequence
      */
     public function __construct($iterable = [])
     {
+        if (is_array($iterable)) {
+            foreach ($iterable as $key => $value) {
+                $this->keyCache[] = (string) $key;
+                $this->cache[(string) $key] = $value;
+            }
+        }
         $this->generator = static function () use ($iterable): Generator {
             $i = 0;
             $iterable = is_callable($iterable) ? $iterable() : $iterable;

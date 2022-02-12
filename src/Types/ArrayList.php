@@ -15,6 +15,9 @@ namespace Laudis\Neo4j\Types;
 
 use AppendIterator;
 use Generator;
+use function array_keys;
+use function array_values;
+use function is_array;
 use function is_callable;
 use function is_iterable;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
@@ -37,6 +40,10 @@ class ArrayList extends AbstractCypherSequence
      */
     public function __construct($iterable = [])
     {
+        if (is_array($iterable)) {
+            $this->keyCache = range(0, count($iterable) - 1);
+            $this->cache = array_values($iterable);
+        }
         $this->generator = static function () use ($iterable): Generator {
             $i = 0;
             $iterable = is_callable($iterable) ? $iterable() : $iterable;
