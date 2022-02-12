@@ -31,6 +31,7 @@ use JsonSerializable;
 use OutOfBoundsException;
 use const PHP_INT_MAX;
 use function property_exists;
+use ReturnTypeWillChange;
 use function sprintf;
 use function usort;
 
@@ -323,6 +324,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return iterator_to_array($this, true);
     }
 
+    #[ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         while (!array_key_exists($offset, $this->cache) && $this->valid()) {
@@ -336,12 +338,12 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return $this->cache[$offset];
     }
 
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
 
-    public function offsetUnset($offset)
+    public function offsetUnset($offset): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
@@ -360,6 +362,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return array_key_exists($offset, $this->cache);
     }
 
+    #[ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return $this->toArray();
@@ -387,6 +390,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     /**
      * @return TValue
      */
+    #[ReturnTypeWillChange]
     public function current()
     {
         $this->setupCache();
@@ -429,6 +433,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     /**
      * @return TKey
      */
+    #[ReturnTypeWillChange]
     public function key()
     {
         return $this->cacheKey();

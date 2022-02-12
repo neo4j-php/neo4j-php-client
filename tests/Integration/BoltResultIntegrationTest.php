@@ -65,16 +65,11 @@ final class BoltResultIntegrationTest extends TestCase
         $protocol->run('UNWIND range(1, 100000) AS i RETURN i');
         $i = 0;
         $result = new BoltResult($protocol, 1000);
-
-        self::assertEquals(2001, $result[2000][0]);
-        foreach ($result as $i => $result) {
-            self::assertEquals($i + 1, $result[0]);
+        foreach ($result as $i => $x) {
+            self::assertEquals($i + 1, $x[0] ?? 0);
         }
 
         self::assertEquals(100000, $i + 1);
-
-        self::assertArrayNotHasKey(500000000, $result);
-
-        self::assertCount(100000, $result);
+        self::assertIsArray($result->consume());
     }
 }
