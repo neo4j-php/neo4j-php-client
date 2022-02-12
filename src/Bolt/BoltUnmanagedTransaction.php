@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Bolt;
 use Bolt\error\ConnectionTimeoutException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
+use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -45,12 +46,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      * @var FormatterInterface<T>
      */
     private FormatterInterface $formatter;
-    /**
-     * @psalm-readonly
-     *
-     * @var ConnectionInterface<V3>
-     */
-    private ConnectionInterface $connection;
+    /** @psalm-readonly */
+    private BoltConnection $connection;
     /** @psalm-readonly */
     private string $database;
 
@@ -58,25 +55,26 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     private bool $isCommitted = false;
     private SessionConfiguration $config;
-    private int $qid = -1;
 
     /**
-     * @param FormatterInterface<T>   $formatter
-     * @param ConnectionInterface<V3> $connection
+     * @param FormatterInterface<T> $formatter
      *
      * @psalm-mutation-free
      */
-    public function __construct(string $database, FormatterInterface $formatter, ConnectionInterface $connection, SessionConfiguration $config)
+    public function __construct(string $database, FormatterInterface $formatter, BoltConnection $connection, SessionConfiguration $config)
     {
         $this->formatter = $formatter;
         $this->connection = $connection;
         $this->database = $database;
         $this->config = $config;
+        $this->connection->incrementOwner();
     }
 
     public function commit(iterable $statements = []): CypherList
     {
-        $tbr = $this->runStatements($statements);
+        // Force the results to pull all the results.
+        // After a commit, the connection will be in the ready state, making it impossible to use PULL
+        $tbr = $this->runStatements($statements)->each(static fn (CypherList $list) => $list->count());
 
         try {
             $this->getBolt()->commit();
@@ -200,5 +198,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function isFinished(): bool
     {
         return $this->isRolledBack() || $this->isCommitted();
+    }
+
+    public function __destruct()
+    {
+        $this->connection->decrementOwner();
+        $this->connection->close();
     }
 }

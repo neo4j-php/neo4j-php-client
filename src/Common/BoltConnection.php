@@ -45,6 +45,7 @@ final class BoltConnection implements ConnectionInterface
     private BoltFactory $factory;
     /** @psalm-readonly */
     private DriverConfiguration $driverConfiguration;
+    private $ownerCount = 0;
 
     /**
      * @psalm-mutation-free
@@ -153,8 +154,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
-        if ($this->boltProtocol === null) {
-            $this->boltProtocol->goodbye();
+        if ($this->ownerCount === 0 && $this->boltProtocol !== null) {
             $this->boltProtocol = null;
         }
     }
@@ -177,6 +177,17 @@ final class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
+        $this->ownerCount = 0;
         $this->close();
+    }
+
+    public function incrementOwner(): void
+    {
+        ++$this->ownerCount;
+    }
+
+    public function decrementOwner(): void
+    {
+        --$this->ownerCount;
     }
 }

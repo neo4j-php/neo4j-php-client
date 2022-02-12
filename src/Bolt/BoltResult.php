@@ -15,13 +15,12 @@ namespace Laudis\Neo4j\Bolt;
 
 use function array_key_exists;
 use function array_splice;
-use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use function call_user_func;
 use function count;
 use Generator;
 use Iterator;
-use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Common\BoltConnection;
 
 /**
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
@@ -30,8 +29,7 @@ use Laudis\Neo4j\Contracts\ConnectionInterface;
  */
 final class BoltResult implements Iterator
 {
-    /** @var ConnectionInterface<V3> */
-    private ConnectionInterface $connection;
+    private BoltConnection $connection;
     private int $fetchSize;
     /** @var list<list> */
     private array $rows = [];
@@ -40,14 +38,12 @@ final class BoltResult implements Iterator
     private $finishedCallback;
     private int $qid;
 
-    /**
-     * @param ConnectionInterface<V3> $connection
-     */
-    public function __construct(ConnectionInterface $connection, int $fetchSize, int $qid)
+    public function __construct(BoltConnection $connection, int $fetchSize, int $qid)
     {
         $this->connection = $connection;
         $this->fetchSize = $fetchSize;
         $this->qid = $qid;
+        $this->connection->incrementOwner();
     }
 
     private ?Generator $it = null;
@@ -89,7 +85,6 @@ final class BoltResult implements Iterator
         if ($this->finishedCallback) {
             call_user_func($this->finishedCallback, $this->meta);
         }
-        $this->getImplementation()->goodbye();
     }
 
     public function consume(): array
@@ -106,13 +101,14 @@ final class BoltResult implements Iterator
      */
     private function pull(): array
     {
-        if (!$this->getImplementation() instanceof V4) {
+        $protocol = $this->connection->getImplementation();
+        if (!$protocol instanceof V4) {
             /** @var non-empty-list<list> */
-            return $this->getImplementation()->pullAll(['qid' => $this->qid]);
+            return $protocol->pullAll(['qid' => $this->qid]);
         }
 
         /** @var non-empty-list<list> */
-        return $this->getImplementation()->pull(['n' => $this->fetchSize, 'qid' => $this->qid]);
+        return $protocol->pull(['n' => $this->fetchSize, 'qid' => $this->qid]);
     }
 
     private function fetchResults(): void
@@ -126,6 +122,8 @@ final class BoltResult implements Iterator
         /** @var array{0: array} $meta */
         if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
             $this->meta = $meta[0];
+            $this->connection->decrementOwner();
+            $this->connection->close();
         }
     }
 
@@ -154,11 +152,11 @@ final class BoltResult implements Iterator
         // Rewind is impossible
     }
 
-    /**
-     * @return V3
-     */
-    private function getImplementation(): V3
+    public function __destruct()
     {
-        return $this->connection->getImplementation();
+        if ($this->meta === null) {
+            $this->connection->decrementOwner();
+            $this->connection->close();
+        }
     }
 }
