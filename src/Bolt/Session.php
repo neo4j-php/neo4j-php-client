@@ -146,7 +146,7 @@ final class Session implements SessionInterface
     ): TransactionInterface {
         $connection = $this->acquireConnection($tsxConfig, $config);
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $tsxConfig);
     }
 
     /**
@@ -167,12 +167,12 @@ final class Session implements SessionInterface
         try {
             $connection = $this->acquireConnection($config, $sessionConfig);
 
-            $connection->getImplementation()->begin(['db' => $this->config->getDatabase()]);
+            $connection->getImplementation()->begin(['db' => $this->config->getDatabase(), 'tx_timeout' => (int) ($config->getTimeout() * 1000)]);
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);
         }
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $config);
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration

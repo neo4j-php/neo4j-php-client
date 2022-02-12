@@ -22,6 +22,7 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherList;
@@ -54,19 +55,19 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     private bool $isCommitted = false;
     private SessionConfiguration $config;
+    private TransactionConfiguration $tsxConfig;
 
     /**
      * @param FormatterInterface<T> $formatter
-     *
-     * @psalm-mutation-free
      */
-    public function __construct(string $database, FormatterInterface $formatter, BoltConnection $connection, SessionConfiguration $config)
+    public function __construct(string $database, FormatterInterface $formatter, BoltConnection $connection, SessionConfiguration $config, TransactionConfiguration $tsxConfig)
     {
         $this->formatter = $formatter;
         $this->connection = $connection;
         $this->database = $database;
         $this->config = $config;
         $this->connection->incrementOwner();
+        $this->tsxConfig = $tsxConfig;
     }
 
     public function commit(iterable $statements = []): CypherList
@@ -123,7 +124,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         /** @var list<T> $tbr */
         $tbr = [];
         foreach ($statements as $statement) {
-            $extra = ['db' => $this->database];
+            $extra = ['db' => $this->database, 'tx_timeout' => (int) ($this->tsxConfig->getTimeout() * 1000)];
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             $start = microtime(true);
 
