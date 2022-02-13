@@ -42,7 +42,7 @@ final class SummarizedResult extends CypherList
 
     protected function withOperation($operation): AbstractCypherSequence
     {
-        return new self($operation);
+        return new self($this->summary, $operation);
     }
 
     /**

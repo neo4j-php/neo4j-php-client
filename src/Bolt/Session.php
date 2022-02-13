@@ -82,9 +82,14 @@ final class Session implements SessionInterface
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
-        $tsx = $this->beginInstantTransaction($this->config, $this->mergeTsxConfig($config));
+        $tbr = [];
 
-        return $tsx->runStatements($statements);
+        $config = $this->mergeTsxConfig($config);
+        foreach ($statements as $statement) {
+            $tbr[] = $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+        }
+
+        return new CypherList($tbr);
     }
 
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface

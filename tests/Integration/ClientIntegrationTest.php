@@ -147,8 +147,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
         self::assertEquals(['test' => 'a'], $map->getAsNode('x')->getProperties()->toArray());
         self::assertEquals(['test' => 'b'], $map->getAsNode('y')->getProperties()->toArray());
         self::assertEquals('a', $map->get('test'));
-        self::assertEquals(new CypherMap(['c' => 'd']), $map->get('map'));
-        self::assertEquals(new CypherList([1, 2, 3]), $map->get('list'));
+        self::assertEquals(['c' => 'd'], $map->get('map')->toArray());
+        self::assertEquals([1, 2, 3], $map->get('list')->toArray());
     }
 
     /**
@@ -204,8 +204,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
         self::assertEquals(['test' => 'a'], $map->getAsNode('x')->getProperties()->toArray());
         self::assertEquals(['test' => 'b'], $map->getAsNode('y')->getProperties()->toArray());
         self::assertEquals('a', $map->get('test'));
-        self::assertEquals(new CypherMap(['c' => 'd']), $map->get('map'));
-        self::assertEquals(new CypherList([1, 2, 3]), $map->get('list'));
+        self::assertEquals(['c' => 'd'], $map->get('map')->toArray());
+        self::assertEquals([1, 2, 3], $map->get('list')->toArray());
     }
 
     /**

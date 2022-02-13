@@ -105,7 +105,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function run(string $statement, iterable $parameters = [])
     {
-       return $this->runStatement(new Statement($statement, $parameters));
+        return $this->runStatement(new Statement($statement, $parameters));
     }
 
     /**

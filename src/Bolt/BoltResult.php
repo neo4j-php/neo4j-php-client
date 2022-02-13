@@ -154,6 +154,12 @@ final class BoltResult implements Iterator
 
     public function __destruct()
     {
+        if ($this->connection->isOpen()) {
+            $v3 = $this->connection->getImplementation();
+            if ($v3 instanceof V4 && $this->qid === -1) {
+                $v3->discard(['qid' => $this->qid]);
+            }
+        }
         if ($this->meta === null) {
             $this->connection->decrementOwner();
             $this->connection->close();
