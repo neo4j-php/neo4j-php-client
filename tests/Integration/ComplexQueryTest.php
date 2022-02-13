@@ -83,7 +83,7 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
             ]);
         }, $alias);
         self::assertEquals(1, $result->count());
-        self::assertEquals(new CypherList([1, 2, 3]), $result->first()->get('x'));
+        self::assertEquals([1, 2, 3], $result->first()->get('x')->toArray());
     }
 
     /**
@@ -254,8 +254,8 @@ CYPHER, ['x' => ['x' => 'x'], 'y' => [1, 2, 3]]);
         self::assertEquals(1, $results->count());
         $result = $results->first();
         self::assertEquals(2, $result->count());
-        self::assertEquals(new CypherMap(['x' => 'x']), $result->getAsNode('x')->getProperties());
-        self::assertEquals(new CypherMap(['list' => new CypherList([1, 2, 3])]), $result->getAsNode('y')->getProperties());
+        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties());
+        self::assertEquals(['list' => [1, 2, 3]], $result->getAsNode('y')->getProperties()->toArray(true));
     }
 
     /**

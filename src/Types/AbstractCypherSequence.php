@@ -33,7 +33,6 @@ use const PHP_INT_MAX;
 use function property_exists;
 use ReturnTypeWillChange;
 use function sprintf;
-use function usort;
 
 /**
  * Abstract immutable sequence with basic functional methods.
@@ -375,13 +374,26 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      *
      * @return array<TKey, TValue>
      */
-    final public function toArray(): array
+    final public function toArray(bool $recursive = false): array
     {
         while ($this->valid()) {
             $this->next();
         }
 
-        return $this->cache;
+        if ($recursive === false) {
+            return $this->cache;
+        }
+
+        $tbr = [];
+        foreach ($this->cache as $key => $item) {
+            if ($item instanceof self) {
+                $tbr[$key] = $item->toArray(true);
+            } else {
+                $tbr[$key] = $item;
+            }
+        }
+
+        return $tbr;
     }
 
     final public function count(): int
