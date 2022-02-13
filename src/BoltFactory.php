@@ -73,9 +73,6 @@ final class BoltFactory
 
             $response = $this->auth->authenticateBolt($build, $this->userAgent);
         } catch (MessageException $e) {
-            if (isset($build)) {
-                $build->reset();
-            }
             throw Neo4jException::fromMessageException($e);
         }
 
