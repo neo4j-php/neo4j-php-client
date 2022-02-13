@@ -13,8 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use function array_slice;
-use function count;
+use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
@@ -38,14 +37,15 @@ use stdClass;
  * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
  *
  * @implements FormatterInterface<CypherList<CypherMap<OGMTypes>>>
- *
- * @psalm-immutable
  */
 final class OGMFormatter implements FormatterInterface
 {
     private BoltOGMTranslator $boltTranslator;
     private HttpOGMTranslator $httpTranslator;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(BoltOGMTranslator $boltTranslator, HttpOGMTranslator $httpTranslator)
     {
         $this->boltTranslator = $boltTranslator;
@@ -67,21 +67,18 @@ final class OGMFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<OGMTypes>>
      */
-    public function formatBoltResult(array $meta, array $results, ConnectionInterface $connection, float $resultAvailableAfter, float $resultConsumedAfter, Statement $statement): CypherList
+    public function formatBoltResult(array $meta, BoltResult $result, ConnectionInterface $connection, float $runStart, float $resultAvailableAfter, Statement $statement): CypherList
     {
-        /** @var list<list<mixed>> $results */
-        $results = array_slice($results, 0, count($results) - 1);
-
-        /** @var list<CypherMap<OGMTypes>> $tbr */
-        $tbr = [];
-
-        foreach ($results as $result) {
-            $tbr[] = $this->formatRow($meta, $result);
-        }
-
-        return new CypherList($tbr);
+        return (new CypherList(function () use ($result, $meta) {
+            foreach ($result as $row) {
+                yield $this->formatRow($meta, $row);
+            }
+        }))->withCacheLimit($result->getFetchSize());
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
         /** @var list<CypherList<CypherMap<OGMTypes>>> $tbr */
@@ -101,6 +98,8 @@ final class OGMFormatter implements FormatterInterface
      * @param list<mixed> $result
      *
      * @return CypherMap<OGMTypes>
+     *
+     * @psalm-mutation-free
      */
     private function formatRow(array $meta, array $result): CypherMap
     {
@@ -113,11 +112,17 @@ final class OGMFormatter implements FormatterInterface
         return new CypherMap($map);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function decorateRequest(RequestInterface $request): RequestInterface
     {
         return $request;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function statementConfigOverride(): array
     {
         return [

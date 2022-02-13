@@ -13,15 +13,23 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use function array_sum;
 use ArrayIterator;
 use BadMethodCallException;
+use Generator;
 use function hexdec;
 use function json_encode;
+use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Types\CypherList;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
+use function range;
 use stdClass;
 
+/**
+ * @psalm-suppress MixedOperand
+ * @psalm-suppress MixedAssignment
+ */
 final class CypherListTest extends TestCase
 {
     /** @var CypherList<string> */
@@ -39,7 +47,7 @@ final class CypherListTest extends TestCase
         $fromIterable = CypherList::fromIterable($this->list);
 
         self::assertNotSame($this->list, $fromIterable);
-        self::assertEquals($this->list, $fromIterable);
+        self::assertEquals($this->list->toArray(), $fromIterable->toArray());
     }
 
     public function testFromIterableArray(): void
@@ -55,7 +63,7 @@ final class CypherListTest extends TestCase
         $fromIterable = CypherList::fromIterable(new ArrayIterator(['A', 'B', 'C']));
 
         self::assertNotSame($this->list, $fromIterable);
-        self::assertEquals($this->list, $fromIterable);
+        self::assertEquals($this->list->toArray(), $fromIterable->toArray());
     }
 
     public function testCount(): void
@@ -73,7 +81,7 @@ final class CypherListTest extends TestCase
         $copy = $this->list->copy();
 
         self::assertNotSame($this->list, $copy);
-        self::assertEquals($this->list, $copy);
+        self::assertEquals($this->list->toArray(), $copy->toArray());
     }
 
     public function testCopyDepth(): void
@@ -82,7 +90,7 @@ final class CypherListTest extends TestCase
         $copy = $list->copy();
 
         self::assertNotSame($list, $copy);
-        self::assertEquals($list, $copy);
+        self::assertEquals($list->toArray(), $copy->toArray());
         self::assertSame($list[0], $copy[0]);
     }
 
@@ -103,7 +111,7 @@ final class CypherListTest extends TestCase
 
     public function testMerge(): void
     {
-        self::assertEquals(new CypherList(['A', 'B', 'C', 'A', 'B', 'C']), $this->list->merge($this->list));
+        self::assertEquals((new CypherList(['A', 'B', 'C', 'A', 'B', 'C']))->toArray(), $this->list->merge($this->list)->toArray());
     }
 
     public function testHasKey(): void
@@ -117,31 +125,31 @@ final class CypherListTest extends TestCase
 
     public function testFilterPermissive(): void
     {
-        $filter = $this->list->filter(static fn () => true);
+        $filter = $this->list->filter(static fn () => true)->toArray();
 
-        self::assertEquals($this->list, $filter);
+        self::assertEquals($this->list->toArray(), $filter);
         self::assertNotSame($this->list, $filter);
     }
 
     public function testFilterBlock(): void
     {
-        $filter = $this->list->filter(static fn () => false);
+        $filter = $this->list->filter(static fn () => false)->toArray();
 
-        self::assertEquals(new CypherList(), $filter);
+        self::assertEquals([], $filter);
     }
 
     public function testFilterSelective(): void
     {
-        $filter = $this->list->filter(static fn (string $x, int $i) => $x === 'B' || $i === 2);
+        $filter = $this->list->filter(static fn (string $x, int $i) => $x === 'B' || $i === 2)->toArray();
 
-        self::assertEquals(new CypherList(['B', 'C']), $filter);
+        self::assertEquals(['B', 'C'], $filter);
     }
 
     public function testMap(): void
     {
-        $filter = $this->list->map(static fn (string $x, int $i) => $i.':'.$x);
+        $filter = $this->list->map(static fn (string $x, int $i) => $i.':'.$x)->toArray();
 
-        self::assertEquals(new CypherList(['0:A', '1:B', '2:C']), $filter);
+        self::assertEquals(['0:A', '1:B', '2:C'], $filter);
     }
 
     public function testReduce(): void
@@ -163,39 +171,39 @@ final class CypherListTest extends TestCase
 
     public function testReversed(): void
     {
-        self::assertEquals(new CypherList(['C', 'B', 'A']), $this->list->reversed());
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $this->list);
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $this->list->reversed()->reversed());
+        self::assertEquals(['C', 'B', 'A'], $this->list->reversed()->toArray());
+        self::assertEquals(['A', 'B', 'C'], $this->list->toArray());
+        self::assertEquals(['A', 'B', 'C'], $this->list->reversed()->reversed()->toArray());
     }
 
     public function testSliceSingle(): void
     {
         $sliced = $this->list->slice(1, 1);
-        self::assertEquals(new CypherList(['B']), $sliced);
+        self::assertEquals(['B'], $sliced->toArray());
     }
 
     public function testSliceDouble(): void
     {
         $sliced = $this->list->slice(1, 2);
-        self::assertEquals(new CypherList(['B', 'C']), $sliced);
+        self::assertEquals(['B', 'C'], $sliced->toArray());
     }
 
     public function testSliceAll(): void
     {
         $sliced = $this->list->slice(0, 3);
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $sliced);
+        self::assertEquals(['A', 'B', 'C'], $sliced->toArray());
     }
 
     public function testSliceTooMuch(): void
     {
         $sliced = $this->list->slice(0, 5);
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $sliced);
+        self::assertEquals(['A', 'B', 'C'], $sliced->toArray());
     }
 
     public function testSliceEmpty(): void
     {
         $sliced = $this->list->slice(0, 0);
-        self::assertEquals(new CypherList(), $sliced);
+        self::assertEquals([], $sliced->toArray());
     }
 
     public function testGetValid(): void
@@ -232,14 +240,14 @@ final class CypherListTest extends TestCase
     public function testGetInvalid(): void
     {
         $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Cannot get item in sequence at position: 3');
+        $this->expectExceptionMessage('Offset: "3" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
         $this->list->get(3);
     }
 
     public function testGetNegative(): void
     {
         $this->expectException(OutOfBoundsException::class);
-        $this->expectExceptionMessage('Cannot get item in sequence at position: -1');
+        $this->expectExceptionMessage('Offset: "-1" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
         $this->list->get(-1);
     }
 
@@ -340,16 +348,16 @@ final class CypherListTest extends TestCase
 
     public function testSortedDefault(): void
     {
-        self::assertEquals($this->list, $this->list->sorted());
-        self::assertEquals($this->list, $this->list->reversed()->sorted());
+        self::assertEquals($this->list->toArray(), $this->list->sorted()->toArray());
+        self::assertEquals($this->list->toArray(), $this->list->reversed()->sorted()->toArray());
     }
 
     public function testSortedCustom(): void
     {
         $sorted = $this->list->sorted(static fn (string $x, string $y): int => -1 * ($x <=> $y));
 
-        self::assertEquals(new CypherList(['C', 'B', 'A']), $sorted);
-        self::assertEquals(new CypherList(['A', 'B', 'C']), $this->list);
+        self::assertEquals(['C', 'B', 'A'], $sorted->toArray());
+        self::assertEquals(['A', 'B', 'C'], $this->list->toArray());
     }
 
     public function testEach(): void
@@ -374,8 +382,91 @@ final class CypherListTest extends TestCase
             })
             ->map(static function (stdClass $class) {
                 return (string) $class->value;
+            })
+            ->toArray();
+
+        self::assertEquals(['a', 'b', 'c'], $map);
+    }
+
+    public function testKeyBy(): void
+    {
+        $object = new stdClass();
+        $object->x = 'stdClassX';
+        $object->y = 'wrong';
+        $list = CypherList::fromIterable([
+            1,
+            $object,
+            ['x' => 'arrayX', 'y' => 'wrong'],
+            'wrong',
+        ])->keyBy('x');
+
+        self::assertEquals(['stdClassX', 'arrayX'], $list->toArray());
+    }
+
+    public function testCombined(): void
+    {
+        $i = 0;
+        $list = CypherList::fromIterable([0, 1, 2, 3])->map(static function ($x) use (&$i) {
+            ++$i;
+
+            return $x;
+        });
+
+        /** @var int $i */
+        self::assertEquals(0, $i);
+
+        $pairs = $list->map(static fn ($x, $index): Pair => new Pair($index, $x));
+        self::assertEquals(0, $i);
+
+        self::assertCount(4, $pairs);
+        self::assertEquals(4, $i);
+
+        self::assertCount(4, $list);
+        self::assertEquals(4, $i);
+    }
+
+    public function testSlice(): void
+    {
+        $sumBefore = 0;
+        $sumAfter = 0;
+        $range = CypherList::fromIterable($this->infiniteIterator())
+            ->map(static function ($x) use (&$sumBefore) {
+                $sumBefore += $x;
+
+                return $x;
+            })
+            ->slice(5, 3)
+            ->map(static function ($x) use (&$sumAfter) {
+                $sumAfter += $x;
+
+                return $x;
             });
 
-        self::assertEquals(CypherList::fromIterable(['a', 'b', 'c']), $map);
+        /** @var int $sumBefore */
+        /** @var int $sumAfter */
+        $start = $range->get(0);
+
+        self::assertEquals(5, $start);
+
+        self::assertEquals(array_sum(range(0, 5)), $sumBefore);
+        self::assertEquals(5, $sumAfter);
+
+        $end = $range->get(2);
+
+        self::assertEquals(7, $end);
+        self::assertEquals(array_sum(range(0, 7)), $sumBefore);
+        self::assertEquals(array_sum(range(5, 7)), $sumAfter);
+    }
+
+    /**
+     * @return Generator<int, int>
+     */
+    private function infiniteIterator(): Generator
+    {
+        $i = 0;
+        while (true) {
+            yield $i;
+            ++$i;
+        }
     }
 }

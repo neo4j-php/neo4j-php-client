@@ -13,16 +13,16 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use function array_key_exists;
-use function array_key_last;
-use function array_slice;
-use function is_int;
+use AppendIterator;
+use function array_values;
+use ArrayIterator;
+use Generator;
+use function is_array;
+use function is_callable;
 use function is_iterable;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use OutOfBoundsException;
-use function sort;
-use function usort;
 
 /**
  * An immutable ordered sequence of items.
@@ -30,38 +30,48 @@ use function usort;
  * @template TValue
  *
  * @extends AbstractCypherSequence<TValue, int>
- *
- * @psalm-immutable
  */
 class ArrayList extends AbstractCypherSequence
 {
     /**
-     * @param iterable<mixed, TValue> $iterable
+     * @param iterable<mixed, TValue>|callable():\Generator<mixed, TValue> $iterable
+     *
+     * @psalm-mutation-free
      */
-    public function __construct(iterable $iterable = [])
+    public function __construct($iterable = [])
     {
-        if ($iterable instanceof self) {
-            /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $this->sequence = $iterable->sequence;
+        if (is_array($iterable)) {
+            /** @var array<array-key, TValue> $iterable */
+            $this->keyCache = count($iterable) === 0 ? [] : range(0, count($iterable) - 1);
+            $this->cache = array_values($iterable);
+            $this->generator = new ArrayIterator([]);
+            $this->generatorPosition = count($this->keyCache);
         } else {
-            $this->sequence = [];
-            foreach ($iterable as $value) {
-                $this->sequence[] = $value;
-            }
+            $this->generator = static function () use ($iterable): Generator {
+                $i = 0;
+                /** @var Generator<mixed, TValue> $it */
+                $it = is_callable($iterable) ? $iterable() : $iterable;
+                foreach ($it as $value) {
+                    yield $i => $value;
+                    ++$i;
+                }
+            };
         }
     }
 
     /**
      * @template Value
      *
-     * @param iterable<mixed, Value> $iterable
+     * @param callable():(\Generator<mixed, Value>) $operation
      *
      * @return static<Value>
+     *
+     * @psalm-mutation-free
      */
-    protected function withIterable(iterable $iterable): ArrayList
+    protected function withOperation($operation): AbstractCypherSequence
     {
         /** @psalm-suppress UnsafeInstantiation */
-        return new static($iterable);
+        return new static($operation);
     }
 
     /**
@@ -71,11 +81,11 @@ class ArrayList extends AbstractCypherSequence
      */
     public function first()
     {
-        if (!array_key_exists(0, $this->sequence)) {
-            throw new OutOfBoundsException('Cannot grab first element of an empty list');
+        foreach ($this as $value) {
+            return $value;
         }
 
-        return $this->sequence[0];
+        throw new OutOfBoundsException('Cannot grab first element of an empty list');
     }
 
     /**
@@ -85,61 +95,34 @@ class ArrayList extends AbstractCypherSequence
      */
     public function last()
     {
-        $key = array_key_last($this->sequence);
-        if (!is_int($key)) {
+        if ($this->isEmpty()) {
             throw new OutOfBoundsException('Cannot grab last element of an empty list');
         }
 
-        return $this->sequence[$key];
+        $array = $this->toArray();
+
+        return $array[count($array) - 1];
     }
 
     /**
-     * @param iterable<TValue> $values
+     * @template NewValue
      *
-     * @return static<TValue>
+     * @param iterable<mixed, NewValue> $values
+     *
+     * @return static<TValue|NewValue>
+     *
+     * @psalm-mutation-free
      */
     public function merge($values): ArrayList
     {
-        $tbr = $this->sequence;
-        foreach ($values as $value) {
-            $tbr[] = $value;
-        }
+        return $this->withOperation(function () use ($values): Generator {
+            $iterator = new AppendIterator();
 
-        return $this->withIterable($tbr);
-    }
+            $iterator->append($this);
+            $iterator->append(new self($values));
 
-    /**
-     * @return static<TValue>
-     */
-    public function reversed(): ArrayList
-    {
-        return $this->withIterable(array_reverse($this->sequence));
-    }
-
-    /**
-     * @return static<TValue>
-     */
-    public function slice(int $offset, int $length = null): ArrayList
-    {
-        return $this->withIterable(array_slice($this->sequence, $offset, $length));
-    }
-
-    /**
-     * @param (callable(TValue, TValue):int)|null $comparator
-     *
-     * @return static<TValue>
-     */
-    public function sorted(callable $comparator = null): ArrayList
-    {
-        $tbr = $this->sequence;
-        if ($comparator === null) {
-            sort($tbr);
-        } else {
-            /** @psalm-suppress ImpureFunctionCall */
-            usort($tbr, $comparator);
-        }
-
-        return $this->withIterable($tbr);
+            yield from $iterator;
+        });
     }
 
     /**
@@ -151,11 +134,7 @@ class ArrayList extends AbstractCypherSequence
      */
     public function get(int $key)
     {
-        if (!array_key_exists($key, $this->sequence)) {
-            throw new OutOfBoundsException(sprintf('Cannot get item in sequence at position: %s', $key));
-        }
-
-        return $this->sequence[$key];
+        return $this->offsetGet($key);
     }
 
     public function getAsString(int $key): string
@@ -241,6 +220,7 @@ class ArrayList extends AbstractCypherSequence
             throw new RuntimeTypeException($value, Map::class);
         }
 
+        /** @psalm-suppress MixedArgumentTypeCoercion */
         return new Map($value);
     }
 
@@ -251,23 +231,25 @@ class ArrayList extends AbstractCypherSequence
     {
         $value = $this->get($key);
         if (!is_iterable($value)) {
-            throw new RuntimeTypeException($value, ArrayList::class);
+            throw new RuntimeTypeException($value, __CLASS__);
         }
 
+        /** @psalm-suppress MixedArgumentTypeCoercion */
         return new ArrayList($value);
     }
 
     /**
      * @template Value
      *
-     * @param iterable<Value> $iterable
+     * @param iterable<mixed, Value> $iterable
      *
-     * @return self<Value>
+     * @return static<Value>
      *
      * @pure
      */
     public static function fromIterable(iterable $iterable): ArrayList
     {
-        return new self($iterable);
+        /** @psalm-suppress UnsafeInstantiation */
+        return new static($iterable);
     }
 }

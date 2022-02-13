@@ -13,13 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use function array_slice;
 use Bolt\structures\Path;
-use function count;
 use function get_class;
 use function gettype;
 use function is_array;
 use function is_object;
+use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
@@ -36,8 +35,6 @@ use UnexpectedValueException;
  * @psalm-type BasicResults = CypherList<CypherMap<scalar|array|null>>
  *
  * @implements FormatterInterface<BasicResults>
- *
- * @psalm-immutable
  */
 final class BasicFormatter implements FormatterInterface
 {
@@ -57,19 +54,18 @@ final class BasicFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<array|scalar|null>>
      */
-    public function formatBoltResult(array $meta, array $results, ?ConnectionInterface $connection = null, ?float $resultAvailableAfter = null, ?float $resultConsumedAfter = null, ?Statement $statement = null): CypherList
+    public function formatBoltResult(array $meta, BoltResult $result, ?ConnectionInterface $connection = null, ?float $runStart = null, ?float $resultAvailableAfter = null, ?Statement $statement = null): CypherList
     {
-        $results = array_slice($results, 0, count($results) - 1);
-
-        /** @var list<CypherMap<scalar|array|null>> */
-        $tbr = [];
-        foreach ($results as $result) {
-            $tbr[] = $this->formatRow($meta, $result);
-        }
-
-        return new CypherList($tbr);
+        return (new CypherList(function () use ($meta, $result) {
+            foreach ($result as $row) {
+                yield $this->formatRow($meta, $row);
+            }
+        }))->withCacheLimit($result->getFetchSize());
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function formatHttpResult(ResponseInterface $response, stdClass $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
     {
         /** @var list<CypherList<CypherMap<scalar|array|null>>> */
@@ -85,6 +81,7 @@ final class BasicFormatter implements FormatterInterface
 
     /**
      * @return CypherList<CypherMap<scalar|array|null>>
+     * @psalm-mutation-free
      */
     private function buildResult(stdClass $result): CypherList
     {
@@ -202,11 +199,17 @@ final class BasicFormatter implements FormatterInterface
         return $value;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function decorateRequest(RequestInterface $request): RequestInterface
     {
         return $request;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function statementConfigOverride(): array
     {
         return [

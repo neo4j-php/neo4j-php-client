@@ -22,6 +22,7 @@ use Bolt\protocol\V4_4;
 use function count;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
+use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -67,7 +68,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         UriInterface $uri,
         AuthenticateInterface $authenticate,
         SessionConfiguration $config
-    ): ConnectionInterface {
+    ): BoltConnection {
         $key = $uri->getHost().':'.($uri->getPort() ?? '7687');
 
         $table = self::$routingCache[$key] ?? null;

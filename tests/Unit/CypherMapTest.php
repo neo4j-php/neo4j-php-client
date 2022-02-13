@@ -14,7 +14,6 @@ namespace Laudis\Neo4j\Tests\Unit;
 use ArrayIterator;
 use BadMethodCallException;
 use Generator;
-use InvalidArgumentException;
 use IteratorAggregate;
 use function json_encode;
 use const JSON_THROW_ON_ERROR;
@@ -43,7 +42,7 @@ final class CypherMapTest extends TestCase
         $fromIterable = CypherMap::fromIterable($this->map);
 
         self::assertNotSame($this->map, $fromIterable);
-        self::assertEquals($this->map, $fromIterable);
+        self::assertEquals($this->map->toArray(), $fromIterable->toArray());
     }
 
     public function testFromIterableArray(): void
@@ -51,7 +50,7 @@ final class CypherMapTest extends TestCase
         $fromIterable = CypherMap::fromIterable(['A' => 'x', 'B' => 'y', 'C' => 'z']);
 
         self::assertNotSame($this->map, $fromIterable);
-        self::assertEquals($this->map, $fromIterable);
+        self::assertEquals($this->map->toArray(), $fromIterable->toArray());
     }
 
     public function testFromIterable(): void
@@ -59,7 +58,7 @@ final class CypherMapTest extends TestCase
         $fromIterable = CypherMap::fromIterable(new ArrayIterator(['A' => 'x', 'B' => 'y', 'C' => 'z']));
 
         self::assertNotSame($this->map, $fromIterable);
-        self::assertEquals($this->map, $fromIterable);
+        self::assertEquals($this->map->toArray(), $fromIterable->toArray());
     }
 
     public function testCount(): void
@@ -77,7 +76,7 @@ final class CypherMapTest extends TestCase
         $copy = $this->map->copy();
 
         self::assertNotSame($this->map, $copy);
-        self::assertEquals($this->map, $copy);
+        self::assertEquals($this->map->toArray(), $copy->toArray());
     }
 
     public function testCopyDepth(): void
@@ -86,7 +85,7 @@ final class CypherMapTest extends TestCase
         $copy = $list->copy();
 
         self::assertNotSame($list, $copy);
-        self::assertEquals($list, $copy);
+        self::assertEquals($list->toArray(), $copy->toArray());
         self::assertSame($list['A'], $copy['A']);
     }
 
@@ -107,13 +106,13 @@ final class CypherMapTest extends TestCase
 
     public function testMerge(): void
     {
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map->merge($this->map));
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->merge($this->map)->toArray());
     }
 
     public function testMergeDifferent(): void
     {
         $merged = $this->map->merge(['B' => 'yy', 'C' => 'z', 'D' => 'e']);
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'yy', 'C' => 'z', 'D' => 'e']), $merged);
+        self::assertEquals(['A' => 'x', 'B' => 'yy', 'C' => 'z', 'D' => 'e'], $merged->toArray());
     }
 
     public function testHasKey(): void
@@ -129,7 +128,7 @@ final class CypherMapTest extends TestCase
     {
         $filter = $this->map->filter(static fn () => true);
 
-        self::assertEquals($this->map, $filter);
+        self::assertEquals($this->map->toArray(), $filter->toArray());
         self::assertNotSame($this->map, $filter);
     }
 
@@ -137,21 +136,21 @@ final class CypherMapTest extends TestCase
     {
         $filter = $this->map->filter(static fn () => false);
 
-        self::assertEquals(new CypherMap(), $filter);
+        self::assertEquals([], $filter->toArray());
     }
 
     public function testFilterSelective(): void
     {
         $filter = $this->map->filter(static fn (string $x, string $i) => !($i === 'B' || $x === 'z'));
 
-        self::assertEquals(new CypherMap(['A' => 'x']), $filter);
+        self::assertEquals(['A' => 'x'], $filter->toArray());
     }
 
     public function testMap(): void
     {
         $filter = $this->map->map(static fn (string $x, string $i) => $i.':'.$x);
 
-        self::assertEquals(new CypherMap(['A' => 'A:x', 'B' => 'B:y', 'C' => 'C:z']), $filter);
+        self::assertEquals(['A' => 'A:x', 'B' => 'B:y', 'C' => 'C:z'], $filter->toArray());
     }
 
     public function testReduce(): void
@@ -174,39 +173,39 @@ final class CypherMapTest extends TestCase
 
     public function testReversed(): void
     {
-        self::assertEquals(new CypherMap(['C' => 'z', 'B' => 'y', 'A' => 'x']), $this->map->reversed());
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map->reversed()->reversed());
+        self::assertEquals(['C' => 'z', 'B' => 'y', 'A' => 'x'], $this->map->reversed()->toArray());
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->toArray());
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->reversed()->reversed()->toArray());
     }
 
     public function testSliceSingle(): void
     {
         $sliced = $this->map->slice(1, 1);
-        self::assertEquals(new CypherMap(['B' => 'y']), $sliced);
+        self::assertEquals(['B' => 'y'], $sliced->toArray());
     }
 
     public function testSliceDouble(): void
     {
         $sliced = $this->map->slice(1, 2);
-        self::assertEquals(new CypherMap(['B' => 'y', 'C' => 'z']), $sliced);
+        self::assertEquals(['B' => 'y', 'C' => 'z'], $sliced->toArray());
     }
 
     public function testSliceAll(): void
     {
-        $sliced = $this->map->slice(0, 3);
-        self::assertEquals($this->map, $sliced);
+        $sliced = $this->map->slice(0, 3)->toArray();
+        self::assertEquals($this->map->toArray(), $sliced);
     }
 
     public function testSliceTooMuch(): void
     {
         $sliced = $this->map->slice(0, 5);
-        self::assertEquals($this->map, $sliced);
+        self::assertEquals($this->map->toArray(), $sliced->toArray());
     }
 
     public function testSliceEmpty(): void
     {
         $sliced = $this->map->slice(0, 0);
-        self::assertEquals(new CypherMap(), $sliced);
+        self::assertEquals([], $sliced->toArray());
     }
 
     public function testGetValid(): void
@@ -346,14 +345,14 @@ final class CypherMapTest extends TestCase
         $subtract = new CypherMap(['B' => 'x', 'Z' => 'z']);
         $result = $this->map->diff($subtract);
 
-        self::assertEquals(new CypherMap(['A' => 'x', 'C' => 'z']), $result);
-        self::assertEquals(new CypherMap(['B' => 'x', 'Z' => 'z']), $subtract);
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+        self::assertEquals(['A' => 'x', 'C' => 'z'], $result->toArray());
+        self::assertEquals(['B' => 'x', 'Z' => 'z'], $subtract->toArray());
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->toArray());
     }
 
     public function testDiffEmpty(): void
     {
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map->diff([]));
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->diff([])->toArray());
     }
 
     public function testIntersect(): void
@@ -361,9 +360,9 @@ final class CypherMapTest extends TestCase
         $intersect = new CypherMap(['B' => 'x', 'Z' => 'z']);
         $result = $this->map->intersect($intersect);
 
-        self::assertEquals(new CypherMap(['B' => 'y']), $result);
-        self::assertEquals(new CypherMap(['B' => 'x', 'Z' => 'z']), $intersect);
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+        self::assertEquals(['B' => 'y'], $result->toArray());
+        self::assertEquals(['B' => 'x', 'Z' => 'z'], $intersect->toArray());
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->toArray());
     }
 
     public function testUnion(): void
@@ -371,9 +370,9 @@ final class CypherMapTest extends TestCase
         $intersect = new CypherMap(['B' => 'x', 'Z' => 'z']);
         $result = $this->map->union($intersect);
 
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z', 'Z' => 'z']), $result);
-        self::assertEquals(new CypherMap(['B' => 'x', 'Z' => 'z']), $intersect);
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z', 'Z' => 'z'], $result->toArray());
+        self::assertEquals(['B' => 'x', 'Z' => 'z'], $intersect->toArray());
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->toArray());
     }
 
     public function testXor(): void
@@ -381,25 +380,25 @@ final class CypherMapTest extends TestCase
         $intersect = new CypherMap(['B' => 'x', 'Z' => 'z']);
         $result = $this->map->xor($intersect);
 
-        self::assertEquals(new CypherMap(['A' => 'x', 'C' => 'z', 'Z' => 'z']), $result);
-        self::assertEquals(new CypherMap(['B' => 'x', 'Z' => 'z']), $intersect);
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+        self::assertEquals(['A' => 'x', 'C' => 'z', 'Z' => 'z'], $result->toArray());
+        self::assertEquals(['B' => 'x', 'Z' => 'z'], $intersect->toArray());
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->toArray());
     }
 
     public function testValue(): void
     {
-        self::assertEquals(new ArrayList(['x', 'y', 'z']), $this->map->values());
+        self::assertEquals(['x', 'y', 'z'], $this->map->values()->toArray());
     }
 
     public function testKeys(): void
     {
-        self::assertEquals(new ArrayList(['A', 'B', 'C']), $this->map->keys());
+        self::assertEquals(['A', 'B', 'C'], $this->map->keys()->toArray());
     }
 
     public function testPairs(): void
     {
         $list = new ArrayList([new Pair('A', 'x'), new Pair('B', 'y'), new Pair('C', 'z')]);
-        self::assertEquals($list, $this->map->pairs());
+        self::assertEquals($list->toArray(), $this->map->pairs()->toArray());
     }
 
     public function testSkip(): void
@@ -418,43 +417,42 @@ final class CypherMapTest extends TestCase
 
     public function testInvalidConstruct(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Iterable must have a stringable keys');
-
-        new CypherMap(new class() implements IteratorAggregate {
+        $map = new CypherMap(new class() implements IteratorAggregate {
             public function getIterator(): Generator
             {
                 yield new stdClass() => 'x';
             }
         });
+
+        self::assertEquals(CypherMap::fromIterable(['0' => 'x'])->toArray(), $map->toArray());
     }
 
     public function testSortedDefault(): void
     {
-        self::assertEquals($this->map, $this->map->sorted());
-        self::assertEquals($this->map, $this->map->reversed()->sorted());
+        self::assertEquals($this->map->toArray(), $this->map->sorted()->toArray());
+        self::assertEquals($this->map->toArray(), $this->map->reversed()->sorted()->toArray());
     }
 
     public function testSortedCustom(): void
     {
         $sorted = $this->map->sorted(static fn (string $x, string $y): int => -1 * ($x <=> $y));
 
-        self::assertEquals(new CypherMap(['C' => 'z', 'B' => 'y', 'A' => 'x']), $sorted);
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+        self::assertEquals(['C' => 'z', 'B' => 'y', 'A' => 'x'], $sorted->toArray());
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->toArray());
     }
 
     public function testKSorted(): void
     {
-        self::assertEquals($this->map, $this->map->ksorted());
-        self::assertEquals($this->map, $this->map->reversed()->ksorted());
+        self::assertEquals($this->map->toArray(), $this->map->ksorted()->toArray());
+        self::assertEquals($this->map->toArray(), $this->map->reversed()->ksorted()->toArray());
     }
 
     public function testKSortedCustom(): void
     {
         $sorted = $this->map->ksorted(static fn (string $x, string $y) => -1 * ($x <=> $y));
 
-        self::assertEquals(new CypherMap(['C' => 'z', 'B' => 'y', 'A' => 'x']), $sorted);
-        self::assertEquals(new CypherMap(['A' => 'x', 'B' => 'y', 'C' => 'z']), $this->map);
+        self::assertEquals(['C' => 'z', 'B' => 'y', 'A' => 'x'], $sorted->toArray());
+        self::assertEquals(['A' => 'x', 'B' => 'y', 'C' => 'z'], $this->map->toArray());
     }
 
     public function testCasts(): void
@@ -483,5 +481,20 @@ final class CypherMapTest extends TestCase
             });
 
         self::assertEquals(CypherMap::fromIterable(['a' => 'b', 'c' => 'd']), $map);
+    }
+
+    public function testKeyBy(): void
+    {
+        $object = new stdClass();
+        $object->x = 'stdClassX';
+        $object->y = 'wrong';
+        $list = CypherMap::fromIterable([
+            'w' => 1,
+            'x' => $object,
+            'y' => ['x' => 'arrayX', 'y' => 'wrong'],
+            'z' => 'wrong',
+        ])->keyBy('x');
+
+        self::assertEquals(['stdClassX', 'arrayX'], $list->toArray());
     }
 }

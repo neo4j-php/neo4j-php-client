@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Bolt\error\ConnectionTimeoutException;
+use Bolt\error\MessageException;
 use Generator;
 use function getenv;
 use InvalidArgumentException;
@@ -28,7 +29,6 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
-use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
 use function str_starts_with;
@@ -83,7 +83,7 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
             ]);
         }, $alias);
         self::assertEquals(1, $result->count());
-        self::assertEquals(new CypherList([1, 2, 3]), $result->first()->get('x'));
+        self::assertEquals([1, 2, 3], $result->first()->getAsArrayList('x')->toArray());
     }
 
     /**
@@ -111,7 +111,7 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
             ]);
         }, $alias);
         self::assertEquals(1, $result->count());
-        self::assertEquals(new CypherMap(['a' => 'b', 'c' => 'd']), $result->first()->get('x'));
+        self::assertEquals(['a' => 'b', 'c' => 'd'], $result->first()->getAsMap('x')->toArray());
     }
 
     /**
@@ -254,8 +254,8 @@ CYPHER, ['x' => ['x' => 'x'], 'y' => [1, 2, 3]]);
         self::assertEquals(1, $results->count());
         $result = $results->first();
         self::assertEquals(2, $result->count());
-        self::assertEquals(new CypherMap(['x' => 'x']), $result->getAsNode('x')->getProperties());
-        self::assertEquals(new CypherMap(['list' => new CypherList([1, 2, 3])]), $result->getAsNode('y')->getProperties());
+        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals(['list' => [1, 2, 3]], $result->getAsNode('y')->getProperties()->toRecursiveArray());
     }
 
     /**
@@ -413,13 +413,12 @@ CYPHER
      */
     public function testLongQueryUnmanagedNegative(string $alias): void
     {
-        self::markTestSkipped('Async needs to be implemented before timeout is supported');
-//        if (str_starts_with($alias, 'http')) {
-//            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
-//        }
-//
-//        $this->expectException(ConnectException::class);
-//        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
-//        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
+        }
+
+        $this->expectException(MessageException::class);
+        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
     }
 }

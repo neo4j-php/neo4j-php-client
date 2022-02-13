@@ -59,24 +59,9 @@ final class BasicDriverTest extends TestCase
         $id = 1;
         $result = $session->run('MATCH (x) RETURN x');
         $result->each(static function (CypherMap $map) use (&$id) {
-            /** @psalm-suppress all */
             $id = $map->getAsNode('x')->getProperties()->getAsInt('id');
         });
 
         self::assertEquals(0, $id);
-    }
-
-    public function testMap(string $connection): void
-    {
-        $result = Driver::create($connection)->createSession()->run(<<<'CYPHER'
-        MATCH (id:GraphNode)
-        WHERE id.end >= $start AND id.start <= $end
-        RETURN id.content AS content
-        CYPHER, ['start' => 0, 'end' => 86400]);
-
-        self::assertCount(4, $result);
-        self::assertEqualsCanonicalizing([
-            'graphContent', 'aContent', 'cContent', '',
-        ], $result->map(static fn (CypherMap $map) => $map->getAsString('content'))->toArray());
     }
 }

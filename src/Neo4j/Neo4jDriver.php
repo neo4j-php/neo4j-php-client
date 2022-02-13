@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Bolt\protocol\V3;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -21,7 +20,6 @@ use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
@@ -43,20 +41,18 @@ final class Neo4jDriver implements DriverInterface
 {
     private UriInterface $parsedUrl;
     private AuthenticateInterface $auth;
-    /** @var ConnectionPoolInterface<V3> */
-    private ConnectionPoolInterface $pool;
+    private Neo4jConnectionPool $pool;
     private FormatterInterface $formatter;
 
     /**
-     * @param FormatterInterface<T>       $formatter
-     * @param ConnectionPoolInterface<V3> $pool
+     * @param FormatterInterface<T> $formatter
      *
      * @psalm-mutation-free
      */
     public function __construct(
         UriInterface $parsedUrl,
         AuthenticateInterface $auth,
-        ConnectionPoolInterface $pool,
+        Neo4jConnectionPool $pool,
         FormatterInterface $formatter
     ) {
         $this->parsedUrl = $parsedUrl;

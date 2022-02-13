@@ -47,9 +47,9 @@ final class ClientBuilder
     /**
      * @psalm-readonly
      *
-     * @var CypherMap<DriverSetup>
+     * @var array<string, DriverSetup>
      */
-    private CypherMap $driverConfigurations;
+    private array $driverConfigurations;
     /** @psalm-readonly */
     private DriverConfiguration $defaultDriverConfig;
     /** @psalm-readonly */
@@ -64,10 +64,10 @@ final class ClientBuilder
     /**
      * @psalm-mutation-free
      *
-     * @param CypherMap<DriverSetup> $driverConfigurations
-     * @param FormatterInterface<T>  $formatter
+     * @param array<string, DriverSetup> $driverConfigurations
+     * @param FormatterInterface<T>      $formatter
      */
-    public function __construct(DriverConfiguration $configuration, SessionConfiguration $sessionConfiguration, TransactionConfiguration $transactionConfiguration, FormatterInterface $formatter, CypherMap $driverConfigurations, ?string $defaultDriver)
+    public function __construct(DriverConfiguration $configuration, SessionConfiguration $sessionConfiguration, TransactionConfiguration $transactionConfiguration, FormatterInterface $formatter, array $driverConfigurations, ?string $defaultDriver)
     {
         $this->driverConfigurations = $driverConfigurations;
         $this->defaultDriverConfig = $configuration;
@@ -91,7 +91,7 @@ final class ClientBuilder
             SessionConfiguration::default(),
             TransactionConfiguration::default(),
             SummarizedResultFormatter::create(),
-            new CypherMap(),
+            [],
             null
         );
     }
@@ -124,7 +124,7 @@ final class ClientBuilder
         }
 
         $setup = new DriverSetup($uri, $authentication);
-        $configs = new CypherMap(array_merge($this->driverConfigurations->toArray(), [$alias => $setup]));
+        $configs = array_merge($this->driverConfigurations, [$alias => $setup]);
 
         return new self(
             $this->defaultDriverConfig,

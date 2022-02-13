@@ -19,7 +19,6 @@ use Exception;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -57,7 +56,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         SessionConfiguration $config,
         ?RoutingTable $table = null,
         ?UriInterface $server = null
-    ): ConnectionInterface {
+    ): BoltConnection {
         $connectingTo = $server ?? $uri;
         $key = $connectingTo->getHost().':'.($connectingTo->getPort() ?? '7687');
         if (!isset(self::$connectionCache[$key])) {

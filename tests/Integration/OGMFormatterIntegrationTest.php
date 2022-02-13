@@ -42,6 +42,8 @@ use function str_contains;
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
  *
  * @extends EnvironmentAwareIntegrationTest<OGMResults>
+ *
+ * @psalm-suppress MixedArrayAccess
  */
 final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
 {
@@ -489,12 +491,11 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
         self::assertCount(2, $path->getRelationships());
         self::assertCount(3, $path->getNodes());
 
-        self::assertEquals(new CypherMap(['x' => 'x']), $path->getNodes()->get(0)->getProperties());
-        self::assertEquals(new CypherMap(['y' => 'y']), $path->getNodes()->get(1)->getProperties());
-        self::assertEquals(new CypherMap(['z' => 'z']), $path->getNodes()->get(2)->getProperties());
-
-        self::assertEquals(new CypherMap(['attribute' => 'xy']), $path->getRelationships()->get(0)->getProperties());
-        self::assertEquals(new CypherMap(['attribute' => 'yz']), $path->getRelationships()->get(1)->getProperties());
+        self::assertEquals(['x' => 'x'], $path->getNodes()->get(0)->getProperties()->toArray());
+        self::assertEquals(['y' => 'y'], $path->getNodes()->get(1)->getProperties()->toArray());
+        self::assertEquals(['z' => 'z'], $path->getNodes()->get(2)->getProperties()->toArray());
+        self::assertEquals(['attribute' => 'xy'], $path->getRelationships()->get(0)->getProperties()->toArray());
+        self::assertEquals(['attribute' => 'yz'], $path->getRelationships()->get(1)->getProperties()->toArray());
     }
 
     /**

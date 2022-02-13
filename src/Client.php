@@ -27,7 +27,6 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
-use Laudis\Neo4j\Types\CypherMap;
 
 /**
  * A collection of drivers with methods to run queries though them.
@@ -49,10 +48,10 @@ final class Client implements ClientInterface
     /**
      * @psalm-mutation-free
      *
-     * @param CypherMap<DriverSetup>           $driverSetups
+     * @param array<string, DriverSetup>       $driverSetups
      * @param FormatterInterface<ResultFormat> $formatter
      */
-    public function __construct(CypherMap $driverSetups, DriverConfiguration $defaultDriverConfiguration, SessionConfiguration $defaultSessionConfiguration, TransactionConfiguration $defaultTransactionConfiguration, FormatterInterface $formatter, ?string $default)
+    public function __construct(array $driverSetups, DriverConfiguration $defaultDriverConfiguration, SessionConfiguration $defaultSessionConfiguration, TransactionConfiguration $defaultTransactionConfiguration, FormatterInterface $formatter, ?string $default)
     {
         $this->default = $default;
         $this->drivers = $this->createDrivers($driverSetups, $formatter, $defaultDriverConfiguration);
@@ -146,12 +145,12 @@ final class Client implements ClientInterface
     /**
      * @psalm-mutation-free
      *
-     * @param CypherMap<DriverSetup>           $driverSetups
+     * @param array<string, DriverSetup>       $driverSetups
      * @param FormatterInterface<ResultFormat> $formatter
      *
      * @return non-empty-array<string, DriverInterface<ResultFormat>>
      */
-    private function createDrivers(CypherMap $driverSetups, FormatterInterface $formatter, DriverConfiguration $configuration): array
+    private function createDrivers(array $driverSetups, FormatterInterface $formatter, DriverConfiguration $configuration): array
     {
         if (count($driverSetups) === 0) {
             $drivers = ['default' => DriverFactory::create(self::DEFAULT_DRIVER_CONFIG, null, null, $formatter)];

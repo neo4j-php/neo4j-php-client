@@ -16,13 +16,16 @@ namespace Laudis\Neo4j\Bolt;
 use Bolt\error\ConnectionTimeoutException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
+use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\TransactionHelper;
-use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
+use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
 use function microtime;
 use Throwable;
@@ -44,35 +47,39 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      * @var FormatterInterface<T>
      */
     private FormatterInterface $formatter;
-    /**
-     * @psalm-readonly
-     *
-     * @var ConnectionInterface<V3>
-     */
-    private ConnectionInterface $connection;
+    /** @psalm-readonly */
+    private BoltConnection $connection;
     /** @psalm-readonly */
     private string $database;
 
     private bool $isRolledBack = false;
 
     private bool $isCommitted = false;
+    private SessionConfiguration $config;
+    private TransactionConfiguration $tsxConfig;
 
     /**
-     * @param FormatterInterface<T>   $formatter
-     * @param ConnectionInterface<V3> $connection
-     *
-     * @psalm-mutation-free
+     * @param FormatterInterface<T> $formatter
      */
-    public function __construct(string $database, FormatterInterface $formatter, ConnectionInterface $connection)
+    public function __construct(string $database, FormatterInterface $formatter, BoltConnection $connection, SessionConfiguration $config, TransactionConfiguration $tsxConfig)
     {
         $this->formatter = $formatter;
         $this->connection = $connection;
         $this->database = $database;
+        $this->config = $config;
+        $this->connection->incrementOwner();
+        $this->tsxConfig = $tsxConfig;
     }
 
     public function commit(iterable $statements = []): CypherList
     {
-        $tbr = $this->runStatements($statements);
+        // Force the results to pull all the results.
+        // After a commit, the connection will be in the ready state, making it impossible to use PULL
+        $tbr = $this->runStatements($statements)->each(static function ($list) {
+            if ($list instanceof AbstractCypherSequence) {
+                $list->preload();
+            }
+        });
 
         try {
             $this->getBolt()->commit();
@@ -111,7 +118,28 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function runStatement(Statement $statement)
     {
-        return $this->runStatements([$statement])->first();
+        $extra = ['db' => $this->database, 'tx_timeout' => (int) ($this->tsxConfig->getTimeout() * 1000)];
+        $parameters = ParameterHelper::formatParameters($statement->getParameters());
+        $start = microtime(true);
+
+        try {
+            /** @var BoltMeta $meta */
+            $meta = $this->getBolt()->run($statement->getText(), $parameters->toArray(), $extra);
+            $run = microtime(true);
+        } catch (MessageException $e) {
+            $this->handleMessageException($e);
+        } catch (ConnectionTimeoutException $e) {
+            $this->handleConnectionTimeoutException($e);
+        }
+
+        return $this->formatter->formatBoltResult(
+            $meta,
+            new BoltResult($this->connection, $this->config->getFetchSize(), $meta['qid'] ?? -1),
+            $this->connection,
+            $start,
+            $start - $run,
+            $statement
+        );
     }
 
     /**
@@ -122,31 +150,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         /** @var list<T> $tbr */
         $tbr = [];
         foreach ($statements as $statement) {
-            $extra = ['db' => $this->database];
-            $parameters = ParameterHelper::formatParameters($statement->getParameters());
-            $start = microtime(true);
-
-            try {
-                /** @var BoltMeta $meta */
-                $meta = $this->getBolt()->run($statement->getText(), $parameters->toArray(), $extra);
-                $run = microtime(true);
-                /** @var array<array> $results */
-                $results = $this->getBolt()->pullAll();
-            } catch (MessageException $e) {
-                $this->handleMessageException($e);
-            } catch (ConnectionTimeoutException $e) {
-                $this->handleConnectionTimeoutException($e);
-            }
-
-            $end = microtime(true);
-            $tbr[] = $this->formatter->formatBoltResult(
-                $meta,
-                $results,
-                $this->connection,
-                $run - $start,
-                $end - $start,
-                $statement
-            );
+            $tbr[] = $this->runStatement($statement);
         }
 
         return new CypherList($tbr);
@@ -160,11 +164,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         return $this->connection->getImplementation();
     }
 
-    public function __destruct()
-    {
-        $this->connection->close();
-    }
-
     /**
      * @throws Neo4jException
      *
@@ -173,6 +172,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private function handleMessageException(MessageException $e): void
     {
         $exception = Neo4jException::fromMessageException($e);
+        if (!($exception->getClassification() === 'ClientError' && $exception->getCategory() === 'Request')) {
+            $this->connection->reset();
+        }
         if (!$this->isFinished() && in_array($exception->getClassification(), TransactionHelper::ROLLBACK_CLASSIFICATIONS)) {
             $this->isRolledBack = true;
         }
@@ -204,5 +206,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function isFinished(): bool
     {
         return $this->isRolledBack() || $this->isCommitted();
+    }
+
+    public function __destruct()
+    {
+        $this->connection->decrementOwner();
+        $this->connection->close();
     }
 }

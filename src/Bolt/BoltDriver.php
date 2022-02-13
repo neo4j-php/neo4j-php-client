@@ -14,13 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
-use Bolt\protocol\V3;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
@@ -42,20 +40,18 @@ final class BoltDriver implements DriverInterface
 {
     private UriInterface $parsedUrl;
     private AuthenticateInterface $auth;
-    /** @var ConnectionPoolInterface<V3> */
-    private ConnectionPoolInterface $pool;
+    private BoltConnectionPool $pool;
     private FormatterInterface $formatter;
 
     /**
-     * @param FormatterInterface<T>       $formatter
-     * @param ConnectionPoolInterface<V3> $pool
+     * @param FormatterInterface<T> $formatter
      *
      * @psalm-mutation-free
      */
     public function __construct(
         UriInterface $parsedUrl,
         AuthenticateInterface $auth,
-        ConnectionPoolInterface $pool,
+        BoltConnectionPool $pool,
         FormatterInterface $formatter
     ) {
         $this->parsedUrl = $parsedUrl;

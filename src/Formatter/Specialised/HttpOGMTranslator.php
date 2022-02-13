@@ -48,6 +48,8 @@ use function substr;
  *
  * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ *
+ * @psalm-suppress ImpureMethodCall
  */
 final class HttpOGMTranslator
 {

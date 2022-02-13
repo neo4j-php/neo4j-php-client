@@ -14,11 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\error\MessageException;
-use Bolt\protocol\V3;
 use Exception;
+use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
@@ -29,6 +28,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 
@@ -46,7 +46,7 @@ final class Session implements SessionInterface
     /**
      * @psalm-readonly
      *
-     * @var ConnectionPoolInterface<V3>
+     * @var BoltConnectionPool|Neo4jConnectionPool
      */
     private ConnectionPoolInterface $pool;
     /**
@@ -61,8 +61,8 @@ final class Session implements SessionInterface
     private AuthenticateInterface $auth;
 
     /**
-     * @param FormatterInterface<ResultFormat> $formatter
-     * @param ConnectionPoolInterface<V3>      $pool
+     * @param FormatterInterface<ResultFormat>       $formatter
+     * @param BoltConnectionPool|Neo4jConnectionPool $pool
      *
      * @psalm-mutation-free
      */
@@ -82,9 +82,14 @@ final class Session implements SessionInterface
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
-        $tsx = $this->beginInstantTransaction($this->config, $this->mergeTsxConfig($config));
+        $tbr = [];
 
-        return $tsx->runStatements($statements);
+        $config = $this->mergeTsxConfig($config);
+        foreach ($statements as $statement) {
+            $tbr[] = $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+        }
+
+        return new CypherList($tbr);
     }
 
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
@@ -146,15 +151,13 @@ final class Session implements SessionInterface
     ): TransactionInterface {
         $connection = $this->acquireConnection($tsxConfig, $config);
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $tsxConfig);
     }
 
     /**
      * @throws Exception
-     *
-     * @return ConnectionInterface<V3>
      */
-    private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): ConnectionInterface
+    private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
         $connection = $this->pool->acquire($this->uri, $this->auth, $sessionConfig);
         $connection->setTimeout($config->getTimeout());
@@ -167,12 +170,15 @@ final class Session implements SessionInterface
         try {
             $connection = $this->acquireConnection($config, $sessionConfig);
 
-            $connection->getImplementation()->begin(['db' => $this->config->getDatabase()]);
+            $connection->getImplementation()->begin(['db' => $this->config->getDatabase(), 'tx_timeout' => (int) ($config->getTimeout() * 1000)]);
         } catch (MessageException $e) {
+            if (isset($connection)) {
+                $connection->reset();
+            }
             throw Neo4jException::fromMessageException($e);
         }
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $config);
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration

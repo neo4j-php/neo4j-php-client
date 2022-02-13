@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use function is_iterable;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -25,7 +26,7 @@ final class TransactionHelper
      * @template U
      * @template T
      *
-     * @param callable(TransactionInterface<T>):U $tsxHandler
+     * @param callable(TransactionInterface<T>):U         $tsxHandler
      * @param callable():UnmanagedTransactionInterface<T> $tsxFactory
      *
      * @return U
@@ -37,6 +38,7 @@ final class TransactionHelper
             try {
                 $transaction = $tsxFactory();
                 $tbr = $tsxHandler($transaction);
+                self::triggerLazyResult($tbr);
                 $transaction->commit();
 
                 return $tbr;
@@ -48,6 +50,19 @@ final class TransactionHelper
                 if ($e->getClassification() !== 'TransientError') {
                     throw $e;
                 }
+            }
+        }
+    }
+
+    /**
+     * @param mixed $tbr
+     */
+    private static function triggerLazyResult($tbr): void
+    {
+        if (is_iterable($tbr)) {
+            /** @var mixed $x */
+            foreach ($tbr as $x) {
+                self::triggerLazyResult($x);
             }
         }
     }

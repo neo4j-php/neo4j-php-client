@@ -23,6 +23,7 @@ use IteratorAggregate;
 use JsonSerializable;
 use OutOfBoundsException;
 use function sprintf;
+use Traversable;
 
 /**
  * Turn of error reporting for class definition. PHP Users of 8.1 receive a deprectation warning otherwise but
@@ -33,13 +34,13 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
 /**
  * Abstract immutable container with basic functionality to integrate easily into the driver ecosystem.
  *
- * @psalm-immutable
- *
  * @template TKey of array-key
  * @template TValue
  *
  * @implements ArrayAccess<TKey, TValue>
  * @implements IteratorAggregate<TKey, TValue>
+ *
+ * @psalm-immutable
  */
 abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, IteratorAggregate
 {
@@ -56,9 +57,9 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
     }
 
     /**
-     * @return ArrayIterator<TKey, TValue>
+     * @return Traversable<TKey, TValue>
      */
-    public function getIterator(): ArrayIterator
+    public function getIterator(): Traversable
     {
         return new ArrayIterator($this->toArray());
     }
@@ -66,7 +67,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
     /**
      * @param TKey $offset
      */
-    final public function offsetExists($offset): bool
+    public function offsetExists($offset): bool
     {
         return array_key_exists($offset, $this->toArray());
     }
@@ -76,7 +77,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      *
      * @return TValue
      */
-    final public function offsetGet($offset)
+    public function offsetGet($offset)
     {
         $serialized = $this->toArray();
         if (!array_key_exists($offset, $serialized)) {

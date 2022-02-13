@@ -59,7 +59,7 @@ final class BoltConfiguration implements ConfigInterface
      * @psalm-mutation-free
      *
      * @param callable():string|?string $database
-     * @param LazySSLContextOptions $sslContextOptions
+     * @param LazySSLContextOptions     $sslContextOptions
      * @param callable():bool|bool      $autoRouting
      */
     public function __construct($database = null, $sslContextOptions = null, $autoRouting = false)

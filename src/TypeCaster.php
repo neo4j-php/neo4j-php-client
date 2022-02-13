@@ -156,8 +156,6 @@ final class TypeCaster
      * @param mixed $value
      *
      * @return CypherMap<mixed>|null
-     *
-     * @pure
      */
     public static function toCypherMap($value): ?CypherMap
     {
