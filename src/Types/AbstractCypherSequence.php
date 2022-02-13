@@ -26,7 +26,6 @@ use function is_array;
 use function is_callable;
 use function is_object;
 use Iterator;
-use function iterator_to_array;
 use JsonSerializable;
 use OutOfBoundsException;
 use const PHP_INT_MAX;
@@ -320,11 +319,6 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return $this;
     }
 
-    public function __debugInfo(): array
-    {
-        return iterator_to_array($this, true);
-    }
-
     #[ReturnTypeWillChange]
     public function offsetGet($offset)
     {
@@ -376,9 +370,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      */
     final public function toArray(): array
     {
-        while ($this->valid()) {
-            $this->next();
-        }
+        $this->preload();
 
         return $this->cache;
     }
@@ -388,11 +380,11 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      *
      * @return array<TKey, TValue|array>
      */
-    final public function toArrayRecursive(): array
+    final public function toRecursiveArray(): array
     {
         return $this->map(static function ($x) {
             if ($x instanceof self) {
-                return $x->toArrayRecursive();
+                return $x->toRecursiveArray();
             }
 
             return $x;
@@ -476,6 +468,9 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return $this->generator;
     }
 
+    /**
+     * @return static<TValue, TKey>
+     */
     public function withCacheLimit(int $cacheLimit): self
     {
         $tbr = $this->copy();
@@ -490,6 +485,16 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         if ($this->cache === [] && $generator->valid()) {
             $this->cache[$generator->key()] = $generator->current();
             $this->keyCache[] = $generator->key();
+        }
+    }
+
+    /**
+     * Preload the lazy evaluation.
+     */
+    public function preload(): void
+    {
+        while ($this->valid()) {
+            $this->next();
         }
     }
 }

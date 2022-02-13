@@ -29,6 +29,9 @@ use PHPUnit\Framework\TestCase;
 
 final class BoltResultIntegrationTest extends TestCase
 {
+    /**
+     * @return list<list<string>>
+     */
     public function buildConnections(): array
     {
         $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
@@ -37,7 +40,7 @@ final class BoltResultIntegrationTest extends TestCase
             /** @var string|mixed $connections */
             $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
             if (!is_string($connections)) {
-                return ['bolt://neo4j:test@neo4j'];
+                return [['bolt://neo4j:test@neo4j']];
             }
         }
 

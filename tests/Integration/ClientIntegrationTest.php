@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use function count;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -58,7 +57,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 
     public function testEqualEffect(): void
     {
-        if (count($this->connectionAliases()) === 1) {
+        if (count(self::connectionAliases()) === 1) {
             self::markTestSkipped('Only one connection alias provided. Comparison is impossible.');
         }
         $statement = new Statement(
@@ -67,7 +66,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
         );
 
         $prev = null;
-        foreach ($this->connectionAliases() as $current) {
+        foreach (self::connectionAliases() as $current) {
             if (str_starts_with($current[0], 'neo4j')) {
                 self::markTestSkipped('Cannot guarantee successful test in cluster');
             }
@@ -147,8 +146,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
         self::assertEquals(['test' => 'a'], $map->getAsNode('x')->getProperties()->toArray());
         self::assertEquals(['test' => 'b'], $map->getAsNode('y')->getProperties()->toArray());
         self::assertEquals('a', $map->get('test'));
-        self::assertEquals(['c' => 'd'], $map->get('map')->toArray());
-        self::assertEquals([1, 2, 3], $map->get('list')->toArray());
+        self::assertEquals(['c' => 'd'], $map->getAsMap('map')->toArray());
+        self::assertEquals([1, 2, 3], $map->getAsArrayList('list')->toArray());
     }
 
     /**
@@ -204,8 +203,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
         self::assertEquals(['test' => 'a'], $map->getAsNode('x')->getProperties()->toArray());
         self::assertEquals(['test' => 'b'], $map->getAsNode('y')->getProperties()->toArray());
         self::assertEquals('a', $map->get('test'));
-        self::assertEquals(['c' => 'd'], $map->get('map')->toArray());
-        self::assertEquals([1, 2, 3], $map->get('list')->toArray());
+        self::assertEquals(['c' => 'd'], $map->getAsMap('map')->toArray());
+        self::assertEquals([1, 2, 3], $map->getAsArrayList('list')->toArray());
     }
 
     /**

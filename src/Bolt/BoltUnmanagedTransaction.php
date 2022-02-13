@@ -25,6 +25,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
+use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
 use function microtime;
 use Throwable;
@@ -74,7 +75,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
-        $tbr = $this->runStatements($statements)->each(static fn (CypherList $list) => $list->count());
+        $tbr = $this->runStatements($statements)->each(static function ($list) {
+            if ($list instanceof AbstractCypherSequence) {
+                $list->preload();
+            }
+        });
 
         try {
             $this->getBolt()->commit();
@@ -134,7 +139,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $start,
             $start - $run,
             $statement
-        )->withCacheLimit($this->config->getFetchSize());
+        );
     }
 
     /**
@@ -167,6 +172,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private function handleMessageException(MessageException $e): void
     {
         $exception = Neo4jException::fromMessageException($e);
+        if (!($exception->getClassification() === 'ClientError' && $exception->getCategory() === 'Request')) {
+            $this->connection->reset();
+        }
         if (!$this->isFinished() && in_array($exception->getClassification(), TransactionHelper::ROLLBACK_CLASSIFICATIONS)) {
             $this->isRolledBack = true;
         }

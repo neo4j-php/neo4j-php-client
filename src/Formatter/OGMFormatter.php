@@ -69,11 +69,11 @@ final class OGMFormatter implements FormatterInterface
      */
     public function formatBoltResult(array $meta, BoltResult $result, ConnectionInterface $connection, float $runStart, float $resultAvailableAfter, Statement $statement): CypherList
     {
-        return new CypherList(function () use ($result, $meta) {
+        return (new CypherList(function () use ($result, $meta) {
             foreach ($result as $row) {
                 yield $this->formatRow($meta, $row);
             }
-        });
+        }))->withCacheLimit($result->getFetchSize());
     }
 
     /**

@@ -188,7 +188,7 @@ final class SummarizedResultFormatter implements FormatterInterface
          *
          * @var SummarizedResult<CypherMap<OGMTypes>>
          */
-        return new SummarizedResult($summary, $formattedResult);
+        return (new SummarizedResult($summary, $formattedResult))->withCacheLimit($result->getFetchSize());
     }
 
     /**

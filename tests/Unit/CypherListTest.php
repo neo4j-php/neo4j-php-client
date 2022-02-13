@@ -26,6 +26,10 @@ use PHPUnit\Framework\TestCase;
 use function range;
 use stdClass;
 
+/**
+ * @psalm-suppress MixedOperand
+ * @psalm-suppress MixedAssignment
+ */
 final class CypherListTest extends TestCase
 {
     /** @var CypherList<string> */
@@ -408,6 +412,7 @@ final class CypherListTest extends TestCase
             return $x;
         });
 
+        /** @var int $i */
         self::assertEquals(0, $i);
 
         $pairs = $list->map(static fn ($x, $index): Pair => new Pair($index, $x));
@@ -437,6 +442,8 @@ final class CypherListTest extends TestCase
                 return $x;
             });
 
+        /** @var int $sumBefore */
+        /** @var int $sumAfter */
         $start = $range->get(0);
 
         self::assertEquals(5, $start);

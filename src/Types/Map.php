@@ -50,19 +50,29 @@ class Map extends AbstractCypherSequence
     public function __construct($iterable = [])
     {
         if (is_array($iterable)) {
+            $i = 0;
             foreach ($iterable as $key => $value) {
-                $this->keyCache[] = (string) $key;
-                $this->cache[(string) $key] = $value;
+                if (!$this->stringable($key)) {
+                    $key = (string) $i;
+                }
+                /** @var string $key */
+                $this->keyCache[] = $key;
+                /** @var TValue $value */
+                $this->cache[$key] = $value;
+                ++$i;
             }
-            $this->generator = new ArrayIterator([]);
+            /** @var ArrayIterator<string, TValue> */
+            $it = new ArrayIterator([]);
+            $this->generator = $it;
             $this->generatorPosition = count($this->keyCache);
         } else {
-            $this->generator = static function () use ($iterable): Generator {
+            $this->generator = function () use ($iterable): Generator {
                 $i = 0;
-                $iterable = is_callable($iterable) ? $iterable() : $iterable;
+                /** @var Generator<mixed, TValue> $it */
+                $it = is_callable($iterable) ? $iterable() : $iterable;
                 /** @var mixed $key */
-                foreach ($iterable as $key => $value) {
-                    if (is_string($key) || is_numeric($key) || is_object($key) && method_exists($key, '__toString')) {
+                foreach ($it as $key => $value) {
+                    if ($this->stringable($key)) {
                         yield (string) $key => $value;
                     } else {
                         yield (string) $i => $value;
@@ -73,8 +83,18 @@ class Map extends AbstractCypherSequence
         }
     }
 
+    /**
+     * @template Value
+     *
+     * @param callable():(\Generator<mixed, Value>) $operation
+     *
+     * @return static<Value>
+     *
+     * @psalm-mutation-free
+     */
     protected function withOperation($operation): Map
     {
+        /** @psalm-suppress UnsafeInstantiation */
         return new static($operation);
     }
 
@@ -500,5 +520,15 @@ class Map extends AbstractCypherSequence
     public static function fromIterable(iterable $iterable): Map
     {
         return new self($iterable);
+    }
+
+    /**
+     * @param mixed $key
+     *
+     * @psalm-mutation-free
+     */
+    private function stringable($key): bool
+    {
+        return is_string($key) || is_numeric($key) || (is_object($key) && method_exists($key, '__toString'));
     }
 }

@@ -63,7 +63,7 @@ use stdClass;
  * @psalm-type CypherResponse = array{columns:list<string>, data:list<CypherRowResponse>, stats?:CypherStats}
  * @psalm-type CypherResponseSet = array{results: list<CypherResponse>, errors: list<CypherError>}
  *
- * @psalm-type BoltMeta = array{t_first: int, fields: list<string>}
+ * @psalm-type BoltMeta = array{t_first: int, fields: list<string>, qid ?: int}
  *
  * @template ResultFormat
  */

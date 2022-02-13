@@ -20,7 +20,6 @@ use const JSON_THROW_ON_ERROR;
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\Types\ArrayList;
-use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;

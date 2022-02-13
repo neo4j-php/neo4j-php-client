@@ -41,6 +41,7 @@ class ArrayList extends AbstractCypherSequence
     public function __construct($iterable = [])
     {
         if (is_array($iterable)) {
+            /** @var array<array-key, TValue> $iterable */
             $this->keyCache = count($iterable) === 0 ? [] : range(0, count($iterable) - 1);
             $this->cache = array_values($iterable);
             $this->generator = new ArrayIterator([]);
@@ -48,8 +49,9 @@ class ArrayList extends AbstractCypherSequence
         } else {
             $this->generator = static function () use ($iterable): Generator {
                 $i = 0;
-                $iterable = is_callable($iterable) ? $iterable() : $iterable;
-                foreach ($iterable as $value) {
+                /** @var Generator<mixed, TValue> $it */
+                $it = is_callable($iterable) ? $iterable() : $iterable;
+                foreach ($it as $value) {
                     yield $i => $value;
                     ++$i;
                 }
@@ -57,8 +59,18 @@ class ArrayList extends AbstractCypherSequence
         }
     }
 
+    /**
+     * @template Value
+     *
+     * @param callable():(\Generator<mixed, Value>) $operation
+     *
+     * @return static<Value>
+     *
+     * @psalm-mutation-free
+     */
     protected function withOperation($operation): AbstractCypherSequence
     {
+        /** @psalm-suppress UnsafeInstantiation */
         return new static($operation);
     }
 

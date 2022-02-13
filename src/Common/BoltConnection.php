@@ -45,7 +45,8 @@ final class BoltConnection implements ConnectionInterface
     private BoltFactory $factory;
     /** @psalm-readonly */
     private DriverConfiguration $driverConfiguration;
-    private $ownerCount = 0;
+    private int $ownerCount = 0;
+    private bool $hasBeenReset = false;
 
     /**
      * @psalm-mutation-free
@@ -137,7 +138,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return $this->boltProtocol !== null;
+        return $this->boltProtocol !== null && !$this->hasBeenReset;
     }
 
     public function open(): void
@@ -156,6 +157,7 @@ final class BoltConnection implements ConnectionInterface
     {
         if ($this->ownerCount === 0 && $this->boltProtocol !== null) {
             $this->boltProtocol = null;
+            $this->hasBeenReset = false;
         }
     }
 
@@ -164,6 +166,9 @@ final class BoltConnection implements ConnectionInterface
         if ($this->boltProtocol !== null) {
             $this->boltProtocol->reset();
             $this->boltProtocol = $this->factory->build()[0];
+            if ($this->ownerCount > 0) {
+                $this->hasBeenReset = true;
+            }
         }
     }
 

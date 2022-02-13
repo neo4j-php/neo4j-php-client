@@ -56,11 +56,11 @@ final class BasicFormatter implements FormatterInterface
      */
     public function formatBoltResult(array $meta, BoltResult $result, ?ConnectionInterface $connection = null, ?float $runStart = null, ?float $resultAvailableAfter = null, ?Statement $statement = null): CypherList
     {
-        return new CypherList(function () use ($meta, $result) {
+        return (new CypherList(function () use ($meta, $result) {
             foreach ($result as $row) {
                 yield $this->formatRow($meta, $row);
             }
-        });
+        }))->withCacheLimit($result->getFetchSize());
     }
 
     /**

@@ -46,6 +46,11 @@ final class BoltResult implements Iterator
         $this->connection->incrementOwner();
     }
 
+    public function getFetchSize(): int
+    {
+        return $this->fetchSize;
+    }
+
     private ?Generator $it = null;
 
     /**
@@ -57,7 +62,7 @@ final class BoltResult implements Iterator
     }
 
     /**
-     * @return Generator<int|array>
+     * @return Generator<int, list>
      */
     public function getIt(): Generator
     {
@@ -69,7 +74,7 @@ final class BoltResult implements Iterator
     }
 
     /**
-     * @return Generator<int, array>
+     * @return Generator<int, list>
      */
     public function iterator(): Generator
     {
@@ -127,6 +132,9 @@ final class BoltResult implements Iterator
         }
     }
 
+    /**
+     * @return list
+     */
     public function current(): array
     {
         return $this->getIt()->current();
@@ -155,14 +163,19 @@ final class BoltResult implements Iterator
     public function __destruct()
     {
         if ($this->connection->isOpen()) {
-            $v3 = $this->connection->getImplementation();
-            if ($v3 instanceof V4 && $this->qid === -1) {
-                $v3->discard(['qid' => $this->qid]);
-            }
+            $this->discard();
         }
         if ($this->meta === null) {
             $this->connection->decrementOwner();
             $this->connection->close();
+        }
+    }
+
+    public function discard(): void
+    {
+        $v3 = $this->connection->getImplementation();
+        if ($v3 instanceof V4 && $this->meta === null) {
+            $v3->discard(['qid' => $this->qid]);
         }
     }
 }
