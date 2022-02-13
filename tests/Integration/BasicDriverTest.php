@@ -12,13 +12,13 @@
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Dotenv\Dotenv;
-use Laudis\Neo4j\Exception\Neo4jException;
 use function explode;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
 use PHPUnit\Framework\TestCase;
 
