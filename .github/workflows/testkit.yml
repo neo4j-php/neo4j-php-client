@@ -77,14 +77,14 @@ jobs:
           cd testkit
           python -m pip install -r requirements.txt
 
-      - name: Run TestKit
-        env:
-          TEST_NEO4J_HOST: localhost
-          TEST_NEO4J_USER: neo4j
-          TEST_NEO4J_PASS: test
-          TEST_DRIVER_NAME: php
-        run: |
-          php testkit-backend/index.php &
-          cd testkit
-          sleep 2
-          python3 -m unittest -v "tests.neo4j.test_authentication.TestAuthenticationBasic"
+#      - name: Run TestKit
+#        env:
+#          TEST_NEO4J_HOST: localhost
+#          TEST_NEO4J_USER: neo4j
+#          TEST_NEO4J_PASS: test
+#          TEST_DRIVER_NAME: php
+#        run: |
+#          php testkit-backend/index.php &
+#          cd testkit
+#          sleep 2
+#          python3 -m unittest -v "tests.neo4j.test_authentication.TestAuthenticationBasic"
