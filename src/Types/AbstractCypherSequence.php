@@ -54,7 +54,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     protected int $generatorPosition = 0;
 
     /**
-     * @var (callable():(\Generator<TKey, TValue>))|\Generator<TKey, TValue>
+     * @var (callable():(\Iterator<TKey, TValue>))|\Iterator<TKey, TValue>
      */
     protected $generator;
 
@@ -374,26 +374,29 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      *
      * @return array<TKey, TValue>
      */
-    final public function toArray(bool $recursive = false): array
+    final public function toArray(): array
     {
         while ($this->valid()) {
             $this->next();
         }
 
-        if ($recursive === false) {
-            return $this->cache;
-        }
+        return $this->cache;
+    }
 
-        $tbr = [];
-        foreach ($this->cache as $key => $item) {
-            if ($item instanceof self) {
-                $tbr[$key] = $item->toArray(true);
-            } else {
-                $tbr[$key] = $item;
+    /**
+     * Returns the sequence as an array.
+     *
+     * @return array<TKey, TValue|array>
+     */
+    final public function toArrayRecursive(): array
+    {
+        return $this->map(static function ($x) {
+            if ($x instanceof self) {
+                return $x->toArrayRecursive();
             }
-        }
 
-        return $tbr;
+            return $x;
+        })->toArray();
     }
 
     final public function count(): int
