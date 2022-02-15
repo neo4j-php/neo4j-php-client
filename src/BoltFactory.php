@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Laudis Neo4j package.
  *
@@ -13,11 +15,13 @@ namespace Laudis\Neo4j;
 
 use Bolt\Bolt;
 use Bolt\connection\IConnection;
+use Bolt\connection\Socket;
 use Bolt\connection\StreamSocket;
 use Bolt\error\ConnectException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Exception;
+use function extension_loaded;
 use Laudis\Neo4j\Bolt\SslConfigurator;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -89,9 +93,13 @@ final class BoltFactory
         AuthenticateInterface $authenticate,
         DriverConfiguration $config
     ): self {
-        $socket = new StreamSocket($uri->getHost(), $uri->getPort() ?? 7687, TransactionConfiguration::DEFAULT_TIMEOUT);
-
-        self::configureSsl($uri, $socket, $config);
+        $ssl = (new SslConfigurator())->configure($uri, $config);
+        if (extension_loaded('sockets') && $ssl === null) {
+            $socket = new Socket($uri->getHost(), $uri->getPort() ?? 7687, TransactionConfiguration::DEFAULT_TIMEOUT);
+        } else {
+            $socket = new StreamSocket($uri->getHost(), $uri->getPort() ?? 7687, TransactionConfiguration::DEFAULT_TIMEOUT);
+            self::configureSsl($uri, $socket, $config);
+        }
 
         return new self(new Bolt($socket), $authenticate, $config->getUserAgent(), $socket);
     }
