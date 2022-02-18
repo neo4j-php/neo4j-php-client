@@ -34,7 +34,7 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @param iterable<string, scalar|iterable|null> $parameters
+     * @param iterable<string, mixed> $parameters
      *
      * @return SummarizedResult<CypherMap>
      */

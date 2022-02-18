@@ -55,7 +55,7 @@ final class Session implements SessionInterface
     }
 
     /**
-     * @param iterable<string, scalar|iterable|null> $parameters
+     * @param iterable<string, mixed> $parameters
      *
      * @return SummarizedResult<CypherMap>
      */

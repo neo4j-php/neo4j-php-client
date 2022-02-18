@@ -28,7 +28,7 @@ interface ClientInterface extends TransactionInterface
     /**
      * Runs a one off transaction with the provided query and parameters over the connection with the provided alias or the master alias otherwise.
      *
-     * @param iterable<string, scalar|iterable|null> $parameters
+     * @param iterable<string, mixed> $parameters
      *
      * @throws Neo4jException
      *

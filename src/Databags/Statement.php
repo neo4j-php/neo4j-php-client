@@ -25,11 +25,11 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
 final class Statement extends AbstractCypherObject
 {
     private string $text;
-    /** @var iterable<string, scalar|iterable|null> */
+    /** @var iterable<string, mixed> */
     private iterable $parameters;
 
     /**
-     * @param iterable<string, scalar|iterable|null> $parameters
+     * @param iterable<string, mixed> $parameters
      */
     public function __construct(string $text, iterable $parameters)
     {
@@ -40,7 +40,7 @@ final class Statement extends AbstractCypherObject
     /**
      * @pure
      *
-     * @param iterable<string, scalar|iterable|null>|null $parameters
+     * @param iterable<string, mixed>|null $parameters
      */
     public static function create(string $text, ?iterable $parameters = null): Statement
     {
@@ -58,7 +58,7 @@ final class Statement extends AbstractCypherObject
     /**
      * The parameter mapping.
      *
-     * @return iterable<string, scalar|iterable|null>
+     * @return iterable<string, mixed>
      */
     public function getParameters(): iterable
     {

@@ -21,13 +21,13 @@ final class SessionRunRequest
     private string $cypher;
     /** @var iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> */
     private iterable $params;
-    /** @var iterable<string, scalar|iterable|null>|null */
+    /** @var iterable<string, mixed>|null */
     private ?iterable $txMeta;
     private ?int $timeout;
 
     /**
      * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>|null $params
-     * @param iterable<string, scalar|iterable|null>|null                                  $txMeta
+     * @param iterable<string, mixed>|null                                  $txMeta
      */
     public function __construct(Uuid $sessionId, string $cypher, ?iterable $params, ?iterable $txMeta, ?int $timeout)
     {
@@ -57,7 +57,7 @@ final class SessionRunRequest
     }
 
     /**
-     * @return iterable<string, scalar|iterable|null>|null
+     * @return iterable<string, mixed>|null
      */
     public function getTxMeta(): ?iterable
     {

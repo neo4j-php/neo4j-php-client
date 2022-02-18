@@ -164,7 +164,7 @@ final class ParameterHelper
     }
 
     /**
-     * @param iterable<iterable|scalar|null> $parameters
+     * @param iterable<mixed> $parameters
      *
      * @return CypherMap<iterable|scalar|stdClass|null>
      */
@@ -172,6 +172,10 @@ final class ParameterHelper
     {
         /** @var array<string, iterable|scalar|stdClass|null> $tbr */
         $tbr = [];
+        /**
+         * @var mixed $key
+         * @var mixed $value
+         */
         foreach ($parameters as $key => $value) {
             if (!(is_int($key) || is_string($key))) {
                 $msg = 'The parameters must have an integer or string as key values, '.gettype($key).' received.';
