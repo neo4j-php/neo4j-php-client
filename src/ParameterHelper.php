@@ -13,8 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use Bolt\structures\DateTime;
+use Bolt\structures\Duration;
 use Bolt\structures\IStructure;
 use function count;
+use function date_default_timezone_get;
+use DateInterval;
+use DateTimeInterface;
+use DateTimeZone;
 use function gettype;
 use InvalidArgumentException;
 use function is_array;
@@ -67,13 +73,14 @@ final class ParameterHelper
     /**
      * @param mixed $value
      *
-     * @return iterable|scalar|stdClass|null|IStructure
+     * @return iterable|scalar|stdClass|IStructure|null
      */
     public static function asParameter($value, bool $boltDriver = false)
     {
         return self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
             self::convertBoltConvertibles($value, $boltDriver) ??
+            self::convertTemporalTypes($value, $boltDriver) ??
             self::filledIterableToArray($value) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
@@ -195,10 +202,49 @@ final class ParameterHelper
         return $tbr;
     }
 
+    /**
+     * @param mixed $value
+     */
     private static function convertBoltConvertibles($value, bool $boltDriver): ?IStructure
     {
         if ($boltDriver && $value instanceof BoltConvertibleInterface) {
             return $value->convertToBolt();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private static function convertTemporalTypes($value, bool $boltDriver): ?IStructure
+    {
+        if ($boltDriver) {
+            if ($value instanceof DateTimeInterface) {
+                $tz = $value->getTimezone();
+                /** @var DateTimeInterface $gm */
+                $gm = gmdate('now');
+                if ($tz) {
+                    $tz = $tz->getOffset($gm);
+                } else {
+                    $tz = (new DateTimeZone(date_default_timezone_get()))->getOffset($gm);
+                }
+
+                return new DateTime(
+                    $value->getTimestamp(),
+                    ((int) $value->format('u')) * 1000,
+                    $tz
+                );
+            }
+
+            if ($value instanceof DateInterval) {
+                return new Duration(
+                    $value->y * 12 + $value->m,
+                    $value->d,
+                    $value->h * 60 * 60 * $value->i * 60 + $value->s * 60,
+                    (int) ($value->f * 1000)
+                );
+            }
         }
 
         return null;
