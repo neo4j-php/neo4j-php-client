@@ -113,6 +113,7 @@ final class ParameterHelper
     private static function filterInvalidType($value)
     {
         if ($value !== null && !is_scalar($value)) {
+            /** @psalm-suppress ImpureFunctionCall */
             throw new InvalidArgumentException(sprintf('Cannot format parameter of type: %s to work with Neo4J', get_debug_type($value)));
         }
 
