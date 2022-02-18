@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Bolt\structures\IStructure;
+use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+
 /**
  * The time of day represented in nanoseconds.
  *
@@ -20,7 +23,7 @@ namespace Laudis\Neo4j\Types;
  *
  * @extends AbstractPropertyObject<int, int>
  */
-final class LocalTime extends AbstractPropertyObject
+final class LocalTime extends AbstractPropertyObject implements BoltConvertibleInterface
 {
     private int $nanoseconds;
 
@@ -48,5 +51,10 @@ final class LocalTime extends AbstractPropertyObject
     public function getProperties(): CypherMap
     {
         return new CypherMap($this);
+    }
+
+    public function convertToBolt(): IStructure
+    {
+        return new \Bolt\structures\LocalTime($this->getNanoseconds());
     }
 }

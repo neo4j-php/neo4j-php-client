@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Bolt\structures\IStructure;
 use DateTimeImmutable;
 use Exception;
+use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 
 /**
  * A date represented by days since unix epoch.
@@ -23,7 +25,7 @@ use Exception;
  *
  * @extends AbstractPropertyObject<int, int>
  */
-final class Date extends AbstractPropertyObject
+final class Date extends AbstractPropertyObject implements BoltConvertibleInterface
 {
     private int $days;
 
@@ -58,5 +60,10 @@ final class Date extends AbstractPropertyObject
     public function toArray(): array
     {
         return ['days' => $this->days];
+    }
+
+    public function convertToBolt(): IStructure
+    {
+        return new \Bolt\structures\Date($this->getDays());
     }
 }
