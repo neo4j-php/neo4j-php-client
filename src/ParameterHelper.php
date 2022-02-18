@@ -168,7 +168,7 @@ final class ParameterHelper
      *
      * @return CypherMap<iterable|scalar|stdClass|null>
      */
-    public static function formatParameters(iterable $parameters): CypherMap
+    public static function formatParameters(iterable $parameters, bool $boltDriver = false): CypherMap
     {
         /** @var array<string, iterable|scalar|stdClass|null> $tbr */
         $tbr = [];
@@ -177,7 +177,7 @@ final class ParameterHelper
                 $msg = 'The parameters must have an integer or string as key values, '.gettype($key).' received.';
                 throw new InvalidArgumentException($msg);
             }
-            $tbr[(string) $key] = self::asParameter($value);
+            $tbr[(string) $key] = self::asParameter($value, $boltDriver);
         }
 
         return new CypherMap($tbr);

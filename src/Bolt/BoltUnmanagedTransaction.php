@@ -119,7 +119,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function runStatement(Statement $statement)
     {
         $extra = ['db' => $this->database, 'tx_timeout' => (int) ($this->tsxConfig->getTimeout() * 1000)];
-        $parameters = ParameterHelper::formatParameters($statement->getParameters());
+        $parameters = ParameterHelper::formatParameters($statement->getParameters(), true);
         $start = microtime(true);
 
         try {
