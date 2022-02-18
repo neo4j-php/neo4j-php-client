@@ -230,6 +230,8 @@ final class CypherMap extends Map
      * @param iterable<Value> $iterable
      *
      * @return self<Value>
+     *
+     * @pure
      */
     public static function fromIterable(iterable $iterable): CypherMap
     {
@@ -239,8 +241,16 @@ final class CypherMap extends Map
     /**
      * @psalm-mutation-free
      */
-    public function keyBy(string $key): CypherList
+    public function pluck(string $key): CypherList
     {
-        return CypherList::fromIterable(parent::keyBy($key));
+        return CypherList::fromIterable(parent::pluck($key));
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function keyBy(string $key): CypherMap
+    {
+        return CypherMap::fromIterable(parent::keyBy($key));
     }
 }

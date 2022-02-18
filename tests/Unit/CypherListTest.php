@@ -398,7 +398,7 @@ final class CypherListTest extends TestCase
             $object,
             ['x' => 'arrayX', 'y' => 'wrong'],
             'wrong',
-        ])->keyBy('x');
+        ])->pluck('x');
 
         self::assertEquals(['stdClassX', 'arrayX'], $list->toArray());
     }

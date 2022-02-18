@@ -24,14 +24,18 @@ use function implode;
 use const INF;
 use function is_array;
 use function is_callable;
+use function is_numeric;
 use function is_object;
+use function is_string;
 use Iterator;
 use JsonSerializable;
+use function method_exists;
 use OutOfBoundsException;
 use const PHP_INT_MAX;
 use function property_exists;
 use ReturnTypeWillChange;
 use function sprintf;
+use UnexpectedValueException;
 
 /**
  * Abstract immutable sequence with basic functional methods.
@@ -281,7 +285,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      *
      * @psalm-mutation-free
      */
-    public function keyBy(string $key): ArrayList
+    public function pluck(string $key): ArrayList
     {
         return new ArrayList(function () use ($key) {
             foreach ($this as $value) {
@@ -289,6 +293,28 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
                     yield $value[$key];
                 } elseif (is_object($value) && property_exists($value, $key)) {
                     yield $value->$key;
+                }
+            }
+        });
+    }
+
+    /**
+     * Uses the values found at the provided key as the key for the new Map.
+     *
+     * @return Map<mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function keyBy(string $key): Map
+    {
+        return new Map(function () use ($key) {
+            foreach ($this as $value) {
+                if (is_array($value) && array_key_exists($key, $value) && $this->isStringable($value[$key])) {
+                    yield $value[$key] => $value;
+                } elseif (is_object($value) && property_exists($value, $key) && $this->isStringable($value->$key)) {
+                    yield $value->$key => $value;
+                } else {
+                    throw new UnexpectedValueException('Cannot convert the value to a string');
                 }
             }
         });
@@ -496,5 +522,15 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         while ($this->valid()) {
             $this->next();
         }
+    }
+
+    /**
+     * @param mixed $key
+     *
+     * @psalm-mutation-free
+     */
+    protected function isStringable($key): bool
+    {
+        return is_string($key) || is_numeric($key) || (is_object($key) && method_exists($key, '__toString'));
     }
 }

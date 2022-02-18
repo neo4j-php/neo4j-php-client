@@ -22,13 +22,9 @@ use Generator;
 use function is_array;
 use function is_callable;
 use function is_iterable;
-use function is_numeric;
-use function is_object;
-use function is_string;
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
-use function method_exists;
 use OutOfBoundsException;
 use function sprintf;
 use stdClass;
@@ -52,7 +48,7 @@ class Map extends AbstractCypherSequence
         if (is_array($iterable)) {
             $i = 0;
             foreach ($iterable as $key => $value) {
-                if (!$this->stringable($key)) {
+                if (!$this->isStringable($key)) {
                     $key = (string) $i;
                 }
                 /** @var string $key */
@@ -72,7 +68,7 @@ class Map extends AbstractCypherSequence
                 $it = is_callable($iterable) ? $iterable() : $iterable;
                 /** @var mixed $key */
                 foreach ($it as $key => $value) {
-                    if ($this->stringable($key)) {
+                    if ($this->isStringable($key)) {
                         yield (string) $key => $value;
                     } else {
                         yield (string) $i => $value;
@@ -520,15 +516,5 @@ class Map extends AbstractCypherSequence
     public static function fromIterable(iterable $iterable): Map
     {
         return new self($iterable);
-    }
-
-    /**
-     * @param mixed $key
-     *
-     * @psalm-mutation-free
-     */
-    private function stringable($key): bool
-    {
-        return is_string($key) || is_numeric($key) || (is_object($key) && method_exists($key, '__toString'));
     }
 }

@@ -493,7 +493,7 @@ final class CypherMapTest extends TestCase
             'x' => $object,
             'y' => ['x' => 'arrayX', 'y' => 'wrong'],
             'z' => 'wrong',
-        ])->keyBy('x');
+        ])->pluck('x');
 
         self::assertEquals(['stdClassX', 'arrayX'], $list->toArray());
     }
