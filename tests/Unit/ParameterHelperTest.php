@@ -148,7 +148,7 @@ final class ParameterHelperTest extends TestCase
     public function testInvalidType(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Requests must be iterable, scalar, null or string able');
+        $this->expectExceptionMessage('Cannot format parameter of type: stdClass to work with Neo4J');
         ParameterHelper::asParameter(new stdClass());
     }
 }
