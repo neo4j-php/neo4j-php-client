@@ -17,12 +17,14 @@ use Bolt\structures\DateTime;
 use Bolt\structures\Duration;
 use Bolt\structures\IStructure;
 use function count;
+use const DATE_ATOM;
 use function date_default_timezone_get;
 use DateInterval;
 use DateTimeInterface;
 use DateTimeZone;
 use function get_debug_type;
 use function gettype;
+use function gmdate;
 use InvalidArgumentException;
 use function is_array;
 use function is_int;
@@ -228,7 +230,7 @@ final class ParameterHelper
             if ($value instanceof DateTimeInterface) {
                 $tz = $value->getTimezone();
                 /** @var DateTimeInterface $gm */
-                $gm = gmdate('now');
+                $gm = new \DateTime(gmdate(DATE_ATOM));
                 if ($tz) {
                     $tz = $tz->getOffset($gm);
                 } else {

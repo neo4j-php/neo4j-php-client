@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use DateTime;
+use DateTimeZone;
 use InvalidArgumentException;
 use Iterator;
 use Laudis\Neo4j\ParameterHelper;
@@ -150,5 +152,14 @@ final class ParameterHelperTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Cannot format parameter of type: stdClass to work with Neo4J');
         ParameterHelper::asParameter(new stdClass());
+    }
+
+    public function testDateTime(): void
+    {
+        $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), true);
+
+        self::assertInstanceOf(\Bolt\structures\DateTime::class, $date);
+        self::assertLessThanOrEqual(2 * 60 * 60, $date->tz_offset_seconds());
+        self::assertGreaterThanOrEqual(60 * 60, $date->tz_offset_seconds());
     }
 }
