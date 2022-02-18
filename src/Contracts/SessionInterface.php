@@ -43,7 +43,7 @@ interface SessionInterface extends TransactionInterface
     public function runStatement(Statement $statement, ?TransactionConfiguration $config = null);
 
     /**
-     * @param iterable<string, scalar|iterable|null> $parameters
+     * @param iterable<string, mixed> $parameters
      *
      * @return ResultFormat
      */

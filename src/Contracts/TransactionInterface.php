@@ -27,7 +27,7 @@ use Laudis\Neo4j\Types\CypherList;
 interface TransactionInterface
 {
     /**
-     * @param iterable<string, scalar|iterable|null> $parameters
+     * @param iterable<string, mixed> $parameters
      *
      * @return ResultFormat
      */

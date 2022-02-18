@@ -35,7 +35,7 @@ final class Time extends AbstractPropertyObject implements BoltConvertibleInterf
     }
 
     /**
-     * @return array{nanoseconds: int, tzOffsetSeconds: int}
+     * @return array{nanoSeconds: int, tzOffsetSeconds: int}
      */
     public function toArray(): array
     {
