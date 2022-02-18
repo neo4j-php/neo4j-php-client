@@ -129,7 +129,7 @@ final class BoltOGMTranslator
 
     private function makeFromBoltTime(BoltTime $time): Time
     {
-        return new Time((float) $time->nanoseconds() / 1000000000);
+        return new Time($time->nanoseconds(), $time->tz_offset_seconds());
     }
 
     private function makeFromBoltLocalTime(BoltLocalTime $time): LocalTime

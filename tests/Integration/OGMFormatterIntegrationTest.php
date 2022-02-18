@@ -211,8 +211,8 @@ CYPHER
 
         $time = $results->first()->get('time');
         self::assertInstanceOf(Time::class, $time);
-        self::assertEquals(12.0 * 60 * 60, $time->getSeconds());
-        self::assertEquals(12.0 * 60 * 60, $time->seconds);
+        self::assertEquals(12.0 * 60 * 60 * 1000000000, $time->getNanoSeconds());
+        self::assertEquals(12.0 * 60 * 60 * 1000000000, $time->nanoSeconds);
     }
 
     /**
