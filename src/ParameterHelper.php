@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use Bolt\structures\IStructure;
 use function count;
 use function gettype;
 use InvalidArgumentException;
@@ -20,6 +21,7 @@ use function is_array;
 use function is_int;
 use function is_object;
 use function is_string;
+use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use stdClass;
@@ -65,12 +67,13 @@ final class ParameterHelper
     /**
      * @param mixed $value
      *
-     * @return iterable|scalar|stdClass|null
+     * @return iterable|scalar|stdClass|null|IStructure
      */
-    public static function asParameter($value)
+    public static function asParameter($value, bool $boltDriver = false)
     {
         return self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
+            self::convertBoltConvertibles($value, $boltDriver) ??
             self::filledIterableToArray($value) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
@@ -190,5 +193,14 @@ final class ParameterHelper
         }
 
         return $tbr;
+    }
+
+    private static function convertBoltConvertibles($value, bool $boltDriver): ?IStructure
+    {
+        if ($boltDriver && $value instanceof BoltConvertibleInterface) {
+            return $value->convertToBolt();
+        }
+
+        return null;
     }
 }
