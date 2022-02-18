@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Bolt\structures\IStructure;
+use Bolt\structures\Point2D;
+use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 
 /**
@@ -24,7 +27,7 @@ use Laudis\Neo4j\Contracts\PointInterface;
  *
  * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
  */
-class CartesianPoint extends AbstractPropertyObject implements PointInterface
+class CartesianPoint extends AbstractPropertyObject implements PointInterface, BoltConvertibleInterface
 {
     private float $x;
     private float $y;
@@ -41,6 +44,11 @@ class CartesianPoint extends AbstractPropertyObject implements PointInterface
         $this->y = $y;
         $this->crs = $crs;
         $this->srid = $srid;
+    }
+
+    public function convertToBolt(): IStructure
+    {
+        return new Point2D($this->getSrid(), $this->getX(), $this->getY());
     }
 
     public function getX(): float

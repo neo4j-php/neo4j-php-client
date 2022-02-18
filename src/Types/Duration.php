@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Bolt\structures\IStructure;
 use DateInterval;
 use Exception;
+use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 
 /**
  * A temporal range represented in months, days, seconds and nanoseconds.
@@ -23,7 +25,7 @@ use Exception;
  *
  * @extends AbstractPropertyObject<int, int>
  */
-final class Duration extends AbstractPropertyObject
+final class Duration extends AbstractPropertyObject implements BoltConvertibleInterface
 {
     private int $months;
     private int $days;
@@ -96,5 +98,15 @@ final class Duration extends AbstractPropertyObject
     public function getProperties(): CypherMap
     {
         return new CypherMap($this);
+    }
+
+    public function convertToBolt(): IStructure
+    {
+        return new \Bolt\structures\Duration(
+            $this->getMonths(),
+            $this->getDays(),
+            $this->getSeconds(),
+            $this->getNanoseconds()
+        );
     }
 }

@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Bolt\structures\IStructure;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
+use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use RuntimeException;
 use function sprintf;
 
@@ -26,7 +28,7 @@ use function sprintf;
  *
  * @extends AbstractPropertyObject<int, int>
  */
-final class DateTime extends AbstractPropertyObject
+final class DateTime extends AbstractPropertyObject implements BoltConvertibleInterface
 {
     private int $seconds;
     private int $nanoseconds;
@@ -99,5 +101,10 @@ final class DateTime extends AbstractPropertyObject
     public function getProperties(): CypherMap
     {
         return new CypherMap($this);
+    }
+
+    public function convertToBolt(): IStructure
+    {
+        return new \Bolt\structures\DateTime($this->getSeconds(), $this->getNanoseconds(), $this->getTimeZoneOffsetSeconds());
     }
 }
