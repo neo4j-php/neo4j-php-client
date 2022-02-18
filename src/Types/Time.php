@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Bolt\structures\IStructure;
+use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+
 /**
  * A time object represented in seconds since the unix epoch.
  *
@@ -20,33 +23,42 @@ namespace Laudis\Neo4j\Types;
  *
  * @extends AbstractPropertyObject<float, float>
  */
-final class Time extends AbstractPropertyObject
+final class Time extends AbstractPropertyObject implements BoltConvertibleInterface
 {
-    private float $seconds;
+    private int $nanoSeconds;
+    private int $tzOffsetSeconds;
 
-    public function __construct(float $seconds)
+    public function __construct(int $nanoSeconds, int $tzOffsetSeconds)
     {
-        $this->seconds = $seconds;
+        $this->nanoSeconds = $nanoSeconds;
+        $this->tzOffsetSeconds = $tzOffsetSeconds;
     }
 
     /**
-     * The seconds since the unix epoch.
-     */
-    public function getSeconds(): float
-    {
-        return $this->seconds;
-    }
-
-    /**
-     * @return array{seconds: float}
+     * @return array{nanoseconds: int, tzOffsetSeconds: int}
      */
     public function toArray(): array
     {
-        return ['seconds' => $this->seconds];
+        return ['nanoSeconds' => $this->nanoSeconds, 'tzOffsetSeconds' => $this->tzOffsetSeconds];
+    }
+
+    public function getTzOffsetSeconds(): int
+    {
+        return $this->tzOffsetSeconds;
+    }
+
+    public function getNanoSeconds(): int
+    {
+        return $this->nanoSeconds;
     }
 
     public function getProperties(): CypherMap
     {
         return new CypherMap($this);
+    }
+
+    public function convertToBolt(): IStructure
+    {
+        return new \Bolt\structures\Time($this->getNanoSeconds(), $this->getTzOffsetSeconds());
     }
 }

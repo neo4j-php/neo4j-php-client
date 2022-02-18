@@ -410,7 +410,7 @@ final class HttpOGMTranslator
         $values = explode(':', $value);
 
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
-        return new Time(((int) $values[0]) * 60 * 60 + ((int) $values[1]) * 60);
+        return new Time((((int) $values[0]) * 60 * 60 + ((int) $values[1]) * 60) * 1000000000, 0);
     }
 
     /**
