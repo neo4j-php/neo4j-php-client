@@ -84,7 +84,7 @@ final class ParameterHelper
             self::emptySequenceToArray($value) ??
             self::convertBoltConvertibles($value, $boltDriver) ??
             self::convertTemporalTypes($value, $boltDriver) ??
-            self::filledIterableToArray($value) ??
+            self::filledIterableToArray($value, $boltDriver) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
     }
@@ -158,10 +158,10 @@ final class ParameterHelper
     /**
      * @param mixed $value
      */
-    private static function filledIterableToArray($value): ?array
+    private static function filledIterableToArray($value, bool $boltDriver): ?array
     {
         if (is_iterable($value)) {
-            return self::iterableToArray($value);
+            return self::iterableToArray($value, $boltDriver);
         }
 
         return null;
@@ -191,7 +191,7 @@ final class ParameterHelper
         return new CypherMap($tbr);
     }
 
-    private static function iterableToArray(iterable $value): array
+    private static function iterableToArray(iterable $value, bool $boltDriver): array
     {
         $tbr = [];
         /**
@@ -200,7 +200,7 @@ final class ParameterHelper
          */
         foreach ($value as $key => $val) {
             if (is_int($key) || is_string($key)) {
-                $tbr[$key] = self::asParameter($val);
+                $tbr[$key] = self::asParameter($val, $boltDriver);
             } else {
                 $msg = 'Iterable parameters must have an integer or string as key values, '.gettype($key).' received.';
                 throw new InvalidArgumentException($msg);
