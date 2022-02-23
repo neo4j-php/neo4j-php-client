@@ -13,18 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use Bolt\structures\DateTime;
+use Bolt\structures\DateTimeZoneId;
 use Bolt\structures\Duration;
 use Bolt\structures\IStructure;
 use function count;
-use const DATE_ATOM;
-use function date_default_timezone_get;
 use DateInterval;
 use DateTimeInterface;
-use DateTimeZone;
 use function get_debug_type;
 use function gettype;
-use function gmdate;
 use InvalidArgumentException;
 use function is_array;
 use function is_int;
@@ -229,19 +225,10 @@ final class ParameterHelper
     {
         if ($boltDriver) {
             if ($value instanceof DateTimeInterface) {
-                $tz = $value->getTimezone();
-                /** @var DateTimeInterface $gm */
-                $gm = new \DateTime(gmdate(DATE_ATOM));
-                if ($tz) {
-                    $tz = $tz->getOffset($gm);
-                } else {
-                    $tz = (new DateTimeZone(date_default_timezone_get()))->getOffset($gm);
-                }
-
-                return new DateTime(
+                return new DateTimeZoneId(
                     $value->getTimestamp(),
                     ((int) $value->format('u')) * 1000,
-                    $tz
+                    $value->getTimezone()->getName()
                 );
             }
 
