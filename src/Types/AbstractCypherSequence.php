@@ -289,7 +289,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     {
         return new ArrayList(function () use ($key) {
             foreach ($this as $value) {
-                if (is_array($value) && array_key_exists($key, $value)) {
+                if ((is_array($value) && array_key_exists($key, $value)) || ($value instanceof ArrayAccess && $value->offsetExists($key))) {
                     yield $value[$key];
                 } elseif (is_object($value) && property_exists($value, $key)) {
                     yield $value->$key;
@@ -309,7 +309,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     {
         return new Map(function () use ($key) {
             foreach ($this as $value) {
-                if (is_array($value) && array_key_exists($key, $value) && $this->isStringable($value[$key])) {
+                if (((is_array($value) && array_key_exists($key, $value)) || ($value instanceof ArrayAccess && $value->offsetExists($key))) && $this->isStringable($value[$key])) {
                     yield $value[$key] => $value;
                 } elseif (is_object($value) && property_exists($value, $key) && $this->isStringable($value->$key)) {
                     yield $value->$key => $value;
