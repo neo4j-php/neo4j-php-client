@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Formatter\Specialised;
 
 use Bolt\structures\Date as BoltDate;
 use Bolt\structures\DateTime as BoltDateTime;
+use Bolt\structures\DateTimeZoneId as BoltDateTimeZoneId;
 use Bolt\structures\Duration as BoltDuration;
 use Bolt\structures\LocalDateTime as BoltLocalDateTime;
 use Bolt\structures\LocalTime as BoltLocalTime;
@@ -32,6 +33,7 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId;
 use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
@@ -71,6 +73,7 @@ final class BoltOGMTranslator
             BoltPath::class => [$this, 'makeFromBoltPath'],
             BoltPoint2D::class => [$this, 'makeFromBoltPoint2D'],
             BoltPoint3D::class => [$this, 'makeFromBoltPoint3D'],
+            BoltDateTimeZoneId::class => [$this, 'makeBoltTimezoneIdentifier'],
             'array' => [$this, 'mapArray'],
             'int' => static fn (int $x): int => $x,
             'null' => static fn (): ?object => null,
@@ -110,6 +113,11 @@ final class BoltOGMTranslator
     private function makeFromBoltLocalDateTime(BoltLocalDateTime $time): LocalDateTime
     {
         return new LocalDateTime($time->seconds(), $time->nanoseconds());
+    }
+
+    private function makeBoltTimezoneIdentifier(BoltDateTimeZoneId $time): DateTimeZoneId
+    {
+        return new DateTimeZoneId($time->seconds(), $time->nanoseconds(), $time->tz_id());
     }
 
     private function makeFromBoltDuration(BoltDuration $duration): Duration

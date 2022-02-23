@@ -25,7 +25,7 @@ use function sprintf;
  *
  * @extends AbstractPropertyObject<int|string, int|string>
  */
-final class DateTimezoneId extends AbstractPropertyObject implements BoltConvertibleInterface
+final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvertibleInterface
 {
     private int $seconds;
     private int $nanoseconds;
