@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use Bolt\structures\DateTimeZoneId;
 use DateTime;
 use DateTimeZone;
 use InvalidArgumentException;
@@ -158,8 +159,7 @@ final class ParameterHelperTest extends TestCase
     {
         $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), true);
 
-        self::assertInstanceOf(\Bolt\structures\DateTime::class, $date);
-        self::assertLessThanOrEqual(2 * 60 * 60, $date->tz_offset_seconds());
-        self::assertGreaterThanOrEqual(60 * 60, $date->tz_offset_seconds());
+        self::assertInstanceOf(DateTimeZoneId::class, $date);
+        self::assertEquals('Europe/Brussels', $date->tz_id());
     }
 }
