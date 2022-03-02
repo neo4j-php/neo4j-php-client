@@ -24,27 +24,19 @@ use Laudis\Neo4j\Contracts\PointInterface;
  *
  * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
  */
-final class WGS84Point extends CartesianPoint implements PointInterface
+final class WGS84Point extends AbstractPoint implements PointInterface, BoltConvertibleInterface
 {
-    private float $latitude;
-    private float $longitude;
+    public const SRID = 4326;
+    public const CRS  = 'wgs-84';
 
-    /**
-     * @param Crs $crs
-     */
-    public function __construct(float $latitude, float $longitude, float $x, float $y, string $crs, int $srid)
+    public function getSrid(): int
     {
-        parent::__construct($x, $y, $crs, $srid);
-        $this->latitude = $latitude;
-        $this->longitude = $longitude;
+        return self::SRID;
     }
 
-    /**
-     * A numeric expression that represents the latitude/y value in decimal degrees.
-     */
-    public function getLatitude(): float
+    public function getCrs(): string
     {
-        return $this->latitude;
+        return self::CRS;
     }
 
     /**
@@ -52,26 +44,14 @@ final class WGS84Point extends CartesianPoint implements PointInterface
      */
     public function getLongitude(): float
     {
-        return $this->longitude;
+        return $this->getX();
     }
 
     /**
-     * @return array{
-     *                latitude: float,
-     *                longitude: float,
-     *                x: float,
-     *                y: float,
-     *                crs: Crs,
-     *                srid: int
-     *                }
+     * A numeric expression that represents the latitude/y value in decimal degrees.
      */
-    public function toArray(): array
+    public function getLatitude(): float
     {
-        $tbr = parent::toArray();
-
-        $tbr['longitude'] = $this->longitude;
-        $tbr['latitude'] = $this->latitude;
-
-        return $tbr;
+        return $this->getY();
     }
 }

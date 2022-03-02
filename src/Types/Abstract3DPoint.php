@@ -27,18 +27,38 @@ use Laudis\Neo4j\Contracts\PointInterface;
  *
  * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
  */
-final class Cartesian3DPoint extends Abstract3DPoint implements PointInterface, BoltConvertibleInterface
+abstract class Abstract3DPoint extends AbstractPoint implements PointInterface, BoltConvertibleInterface
 {
-    public const SRID = 9157;
-    public const CRS = 'cartesian-3d';
+    private float $z;
 
-    public function getSrid(): int
+    public function convertToBolt(): IStructure
     {
-        return self::SRID;
+        return new Point3D($this->getSrid(), $this->getX(), $this->getY(), $this->getZ());
     }
 
-    public function getCrs(): string
+    /**
+     * @param Crs $crs
+     */
+    public function __construct(float $x, float $y, float $z)
     {
-        return self::CRS;
+        parent::__construct($x, $y, $crs, $srid);
+        $this->z = $z;
+    }
+
+    public function getZ(): float
+    {
+        return $this->z;
+    }
+
+    /**
+     * @return array{x: float, y: float, z: float, srid: int, crs: Crs}
+     */
+    public function toArray(): array
+    {
+        $tbr = parent::toArray();
+
+        $tbr['z'] = $this->z;
+
+        return $tbr;
     }
 }
