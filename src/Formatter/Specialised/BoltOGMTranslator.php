@@ -194,9 +194,7 @@ final class BoltOGMTranslator
         } elseif ($x->srid() === WGS84Point::SRID) {
             return new WGS84Point($x->x(), $x->y());
         }
-        throw new UnexpectedValueException(
-            'An srid of ' . $x->srid() . ' has been returned, which has not been implemented.'
-        );
+        throw new UnexpectedValueException('An srid of '.$x->srid().' has been returned, which has not been implemented.');
     }
 
     private function makeFromBoltPoint3D(BoltPoint3D $x): Cartesian3DPoint
@@ -206,9 +204,7 @@ final class BoltOGMTranslator
         } elseif ($x->srid() === WGS843DPoint::SRID) {
             return new WGS843DPoint($x->x(), $x->y(), $x->z());
         }
-        throw new UnexpectedValueException(
-            'An srid of ' . $x->srid() . ' has been returned, which has not been implemented.'
-        );
+        throw new UnexpectedValueException('An srid of '.$x->srid().' has been returned, which has not been implemented.');
     }
 
     private function makeFromBoltPath(BoltPath $path): Path

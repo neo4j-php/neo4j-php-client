@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\structures\IStructure;
-use Bolt\structures\Point3D;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 

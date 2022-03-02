@@ -42,6 +42,7 @@ use function sprintf;
 use stdClass;
 use function str_pad;
 use function substr;
+use UnexpectedValueException;
 
 /**
  * @psalm-immutable
@@ -308,9 +309,7 @@ final class HttpOGMTranslator
                 $coordinates[2],
             );
         }
-        throw new UnexpectedValueException(
-            'A point with srid ' . $srid . ' and name ' . $crs->name . ' has been returned, which has not been implemented.'
-        );
+        throw new UnexpectedValueException('A point with srid '.$srid.' and name '.$crs->name.' has been returned, which has not been implemented.');
     }
 
     /**

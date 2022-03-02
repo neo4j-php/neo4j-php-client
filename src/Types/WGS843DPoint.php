@@ -26,8 +26,8 @@ use Laudis\Neo4j\Contracts\PointInterface;
  */
 final class WGS843DPoint extends Abstract3DPoint implements PointInterface, BoltConvertibleInterface
 {
-    const SRID = 4979;
-    const CRS = 'wgs-84-3d';
+    public const SRID = 4979;
+    public const CRS = 'wgs-84-3d';
 
     public function getSrid(): int
     {
