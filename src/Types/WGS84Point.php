@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 
 /**

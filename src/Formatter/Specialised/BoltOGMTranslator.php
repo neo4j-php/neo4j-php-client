@@ -27,6 +27,8 @@ use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
 use Bolt\structures\UnboundRelationship as BoltUnboundRelationship;
 use function call_user_func;
+use Laudis\Neo4j\Types\Abstract3DPoint;
+use Laudis\Neo4j\Types\AbstractPoint;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
@@ -187,7 +189,7 @@ final class BoltOGMTranslator
         );
     }
 
-    private function makeFromBoltPoint2D(BoltPoint2d $x): CartesianPoint
+    private function makeFromBoltPoint2D(BoltPoint2d $x): AbstractPoint
     {
         if ($x->srid() === CartesianPoint::SRID) {
             return new CartesianPoint($x->x(), $x->y());
@@ -197,7 +199,7 @@ final class BoltOGMTranslator
         throw new UnexpectedValueException('An srid of '.$x->srid().' has been returned, which has not been implemented.');
     }
 
-    private function makeFromBoltPoint3D(BoltPoint3D $x): Cartesian3DPoint
+    private function makeFromBoltPoint3D(BoltPoint3D $x): Abstract3DPoint
     {
         if ($x->srid() === Cartesian3DPoint::SRID) {
             return new Cartesian3DPoint($x->x(), $x->y(), $x->z());
