@@ -49,4 +49,9 @@ final class WGS843DPoint extends Abstract3DPoint implements PointInterface, Bolt
     {
         return $this->getZ();
     }
+
+    public function getCrs(): string
+    {
+        return self::CRS;
+    }
 }

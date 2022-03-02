@@ -41,7 +41,7 @@ abstract class Abstract3DPoint extends AbstractPoint implements PointInterface, 
      */
     public function __construct(float $x, float $y, float $z)
     {
-        parent::__construct($x, $y, $crs, $srid);
+        parent::__construct($x, $y);
         $this->z = $z;
     }
 
