@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\structures\IStructure;
-use Bolt\structures\Point3D;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 
@@ -27,38 +25,18 @@ use Laudis\Neo4j\Contracts\PointInterface;
  *
  * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
  */
-class Cartesian3DPoint extends CartesianPoint implements PointInterface, BoltConvertibleInterface
+final class Cartesian3DPoint extends Abstract3DPoint implements PointInterface, BoltConvertibleInterface
 {
-    private float $z;
+    public const SRID = 9157;
+    public const CRS = 'cartesian-3d';
 
-    public function convertToBolt(): IStructure
+    public function getSrid(): int
     {
-        return new Point3D($this->getSrid(), $this->getX(), $this->getY(), $this->getZ());
+        return self::SRID;
     }
 
-    /**
-     * @param Crs $crs
-     */
-    public function __construct(float $x, float $y, float $z, string $crs, int $srid)
+    public function getCrs(): string
     {
-        parent::__construct($x, $y, $crs, $srid);
-        $this->z = $z;
-    }
-
-    public function getZ(): float
-    {
-        return $this->z;
-    }
-
-    /**
-     * @return array{x: float, y: float, z: float, srid: int, crs: Crs}
-     */
-    public function toArray(): array
-    {
-        $tbr = parent::toArray();
-
-        $tbr['z'] = $this->z;
-
-        return $tbr;
+        return self::CRS;
     }
 }

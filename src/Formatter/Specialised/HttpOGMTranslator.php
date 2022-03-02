@@ -42,6 +42,7 @@ use function sprintf;
 use stdClass;
 use function str_pad;
 use function substr;
+use UnexpectedValueException;
 
 /**
  * @psalm-immutable
@@ -278,50 +279,39 @@ final class HttpOGMTranslator
     {
         /** @var stdClass $crs */
         $crs = $value->crs;
-        /** @var "cartesian"|"cartesian-3d"|"wgs-84"|"wgs-84-3d" */
-        $name = $crs->name;
         /** @var array{0: float, 1: float, 2:float} $coordinates */
         $coordinates = $value->coordinates;
         /** @var int $srid */
         $srid = $crs->srid;
-        if ($name === 'cartesian') {
+        if ($srid === CartesianPoint::SRID) {
             return new CartesianPoint(
                 $coordinates[0],
                 $coordinates[1],
-                $name,
-                $srid
             );
         }
-        if ($name === 'cartesian-3d') {
+        if ($srid === Cartesian3DPoint::SRID) {
             return new Cartesian3DPoint(
                 $coordinates[0],
                 $coordinates[1],
                 $coordinates[2],
-                $name,
-                $srid
             );
         }
-        if ($name === 'wgs-84') {
+        if ($srid === WGS84Point::SRID) {
             return new WGS84Point(
                 $coordinates[0],
                 $coordinates[1],
-                $coordinates[0],
-                $coordinates[1],
-                $name,
-                $srid
             );
         }
-
-        return new WGS843DPoint(
-            $coordinates[0],
-            $coordinates[1],
-            $coordinates[2],
-            $coordinates[0],
-            $coordinates[1],
-            $coordinates[2],
-            $name,
-            $srid
-        );
+        if ($srid === WGS843DPoint::SRID) {
+            return new WGS843DPoint(
+                $coordinates[0],
+                $coordinates[1],
+                $coordinates[2],
+            );
+        }
+        /** @var string $name */
+        $name = $crs->name;
+        throw new UnexpectedValueException('A point with srid '.$srid.' and name '.$name.' has been returned, which has not been implemented.');
     }
 
     /**

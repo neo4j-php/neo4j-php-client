@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 
 /**
@@ -24,60 +25,33 @@ use Laudis\Neo4j\Contracts\PointInterface;
  *
  * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
  */
-final class WGS843DPoint extends Cartesian3DPoint implements PointInterface
+final class WGS843DPoint extends Abstract3DPoint implements PointInterface, BoltConvertibleInterface
 {
-    private float $latitude;
-    private float $longitude;
-    private float $height;
+    public const SRID = 4979;
+    public const CRS = 'wgs-84-3d';
 
-    /**
-     * @param Crs $crs
-     */
-    public function __construct(float $latitude, float $longitude, float $height, float $x, float $y, float $z, string $crs, int $srid)
+    public function getSrid(): int
     {
-        parent::__construct($x, $y, $z, $crs, $srid);
-        $this->latitude = $latitude;
-        $this->longitude = $longitude;
-        $this->height = $height;
-    }
-
-    public function getLatitude(): float
-    {
-        return $this->latitude;
+        return self::SRID;
     }
 
     public function getLongitude(): float
     {
-        return $this->longitude;
+        return $this->getX();
+    }
+
+    public function getLatitude(): float
+    {
+        return $this->getY();
     }
 
     public function getHeight(): float
     {
-        return $this->height;
+        return $this->getZ();
     }
 
-    /**
-     * @psalm-suppress ImplementedReturnTypeMismatch False positive
-     *
-     * @return array{
-     *                latitude: float,
-     *                longitude: float,
-     *                height: float,
-     *                x: float,
-     *                y: float,
-     *                z: float,
-     *                crs: Crs,
-     *                srid: int
-     *                }
-     */
-    public function toArray(): array
+    public function getCrs(): string
     {
-        $tbr = parent::toArray();
-
-        $tbr['latitude'] = $this->latitude;
-        $tbr['longitude'] = $this->longitude;
-        $tbr['height'] = $this->height;
-
-        return $tbr;
+        return self::CRS;
     }
 }
