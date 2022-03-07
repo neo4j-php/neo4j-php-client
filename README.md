@@ -26,6 +26,12 @@
 
 An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
 
+### Follow along on the livestream
+
+We are currently running a biweekly neo4j + laravel livestream were we are building the RealWorld example app.
+
+The [github repostiory can be found here](https://github.com/neo4j-examples/php-laravel-neo4j-realworld-example), there are also [recordings](https://www.youtube.com/playlist?list=PL9Hl4pk2FsvViI9wmdDpRS7tZ8V6j4uJs). The live stream usually starts at 5 PM Brussels time on Wednesday, but you can [follow Florent on twitter](https://twitter.com/fbiville) for live updates in case the schedule changes.
+
 ## Start your driving experience in three easy steps
 
 ### Step 1: install via composer
@@ -44,7 +50,7 @@ use Laudis\Neo4j\ClientBuilder;
 $client = ClientBuilder::create()
     ->withDriver('bolt', 'bolt+s://user:password@localhost') // creates a bolt driver
     ->withDriver('https', 'https://test.com', Authenticate::basic('user', 'password')) // creates an http driver
-    ->withDriver('neo4j', 'neo4j://neo4j.test.com?database=my-database', Authenticate::kerberos('token')) // creates an auto routed driver
+    ->withDriver('neo4j', 'neo4j://neo4j.test.com?database=my-database', Authenticate::oidc('token')) // creates an auto routed driver with an OpenID Connect token
     ->withDefaultDriver('bolt')
     ->build();
 ```
@@ -215,27 +221,32 @@ foreach ($results as $result) {
 
 Cypher values and types map to these php types and classes:
 
-|Cypher|Php|
-|---|---|
-|null|`null`|
-|string|`string`|
-|integer|`int`|
-|float|`float`|
-|boolean|`bool`|
-|Map|`\Laudis\Neo4j\Types\CypherMap`|
-|List|`\Laudis\Neo4j\Types\CypherList`|
-|Point|`\Laudis\Neo4j\Contracts\PointInterface` *|
-|Date|`\Laudis\Neo4j\Types\Date`|
-|Time|`\Laudis\Neo4j\Types\Time`|
-|LocalTime|`\Laudis\Neo4j\Types\LocalTime`|
-|DateTime|`\Laudis\Neo4j\Types\DateTime`|
-|LocalDateTime|`\Laudis\Neo4j\Types\LocalDateTime`|
-|Duration|`\Laudis\Neo4j\Types\Duration`|
-|Node|`\Laudis\Neo4j\Types\Node`|
-|Relationship|`\Laudis\Neo4j\Types\Relationship`|
-|Path|`\Laudis\Neo4j\Types\Path`|
+| Cypher         | Php                                           |
+|----------------|-----------------------------------------------|
+| null           | * `null`                                      |
+| string         | * `string`                                    |
+| integer        | * `int`                                       |
+| float          | * `float`                                     |
+| boolean        | * `bool`                                      |
+| Map            | * `\Laudis\Neo4j\Types\CypherMap`             |
+| List           | * `\Laudis\Neo4j\Types\CypherList`            |
+| Point          | * `\Laudis\Neo4j\Contracts\PointInterface` ** |
+| Date           | * `\Laudis\Neo4j\Types\Date`                  |
+| Time           | * `\Laudis\Neo4j\Types\Time`                  |
+| LocalTime      | * `\Laudis\Neo4j\Types\LocalTime`             |
+| DateTime       | * `\Laudis\Neo4j\Types\DateTime`              |
+| DateTimeZoneId | * `\Laudis\Neo4j\Types\DateTimeZoneId`        |
+| LocalDateTime  | * `\Laudis\Neo4j\Types\LocalDateTime`         |
+| Duration       | * `\Laudis\Neo4j\Types\Duration`              |
+| Node           | `\Laudis\Neo4j\Types\Node`                    |
+| Relationship   | `\Laudis\Neo4j\Types\Relationship`            |
+| Path           | `\Laudis\Neo4j\Types\Path`                    |
 
-(*) A point can be one of four types implementing PointInterface: `\Laudis\Neo4j\Types\CartesianPoint` `\Laudis\Neo4j\Types\Cartesian3DPoint` `\Laudis\Neo4j\Types\WGS84Point` `\Laudis\Neo4j\Types\WGS843DPoint`
+(*) These items can also be used as parameters in the bolt protocol and will automatically be converted by the driver, so they can be used in Cypher.
+
+Besides these examples, `\DateTimeInterface` will map to `DateTimeZoneId` in Cypher. An empty or list-type `array` will be converted to a cypher `List`, and an `associative array` will be converted to a `map`.
+
+(**) A point can be one of four types implementing PointInterface: `\Laudis\Neo4j\Types\CartesianPoint` `\Laudis\Neo4j\Types\Cartesian3DPoint` `\Laudis\Neo4j\Types\WGS84Point` `\Laudis\Neo4j\Types\WGS843DPoint`
 
 ## Diving Deeper
 
@@ -278,10 +289,13 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 * A Neo4j database (minimum version 3.5)
 * ext-bcmath *
 * ext-json **
+* ext-sockets ***
 
 (*) Needed to implement the bolt protocol
 
 (**) Needed to implement the http protocol
+
+(***) Can be installed for optimal bolt protocol performance
 
 
 If you plan on using the HTTP drivers, make sure you have [psr-7](https://www.php-fig.org/psr/psr-7/), [psr-17](https://www.php-fig.org/psr/psr-17/) and [psr-18](https://www.php-fig.org/psr/psr-18/) implementations included into the project. If you don't have any, you can install them via composer:
@@ -395,26 +409,26 @@ bolt://localhost:7687?database=neo4j
 
 This library supports three drivers: bolt, HTTP and neo4j. The scheme part of the url determines the driver.
 
-| driver| scheme| valid certificate | self-signed certificate                       | function                      |
-|-------|-------|-------------------|-----------------------------------------------|-------------------------------|
-| neo4j | neo4j | neo4j+s           | neo4j+ssc                                     | Client side routing over bolt |
-| bolt  | bolt  | bolt+s            | bolt+ssc                                      | Single server over bolt       |
-| http  | http  | https             | configured through PSR Client implementation  | Single server over HTTP       |
+| driver | scheme | valid certificate | self-signed certificate                      | function                      |
+|--------|--------|-------------------|----------------------------------------------|-------------------------------|
+| neo4j  | neo4j  | neo4j+s           | neo4j+ssc                                    | Client side routing over bolt |
+| bolt   | bolt   | bolt+s            | bolt+ssc                                     | Single server over bolt       |
+| http   | http   | https             | configured through PSR Client implementation | Single server over HTTP       |
 
 ### Configuration objects
 
 A driver, session and transaction can be configured using configuration objects. An overview of the configuration options can be found here:
 
-| name | concept | description | class |
-|------|---------|-------------|-------|
-| user agent | driver | The user agent used to identify the client to the neo4j server. | `DriverConfiguration` |
-| Http PSR Bindings  | driver  | The relevant PSR implementation used by the driver when using the HTTP protocol. | `DriverConfiguration` |
-| database | session | The database to connect to. | `SessionConfiguration` |
-| fetch size | session | The amount of rows to fetch at once. (experimental) | `SessionConfiguration` |
-| access mode | session | The default mode when accessing the server. | `SessionConfiguration` |
-| bookmarks | session | The bookmarks used in the session. (experimental) | `SessionConfiguration` |
-| metadata | transaction | The metadata used during the transaction. (experimental) | `TransactionConfiguration` |
-| timeout | transaction | The maximum amount of time before timing out. | `TransactionConfiguration` |
+| name              | concept     | description                                                                      | class                      |
+|-------------------|-------------|----------------------------------------------------------------------------------|----------------------------|
+| user agent        | driver      | The user agent used to identify the client to the neo4j server.                  | `DriverConfiguration`      |
+| Http PSR Bindings | driver      | The relevant PSR implementation used by the driver when using the HTTP protocol. | `DriverConfiguration`      |
+| database          | session     | The database to connect to.                                                      | `SessionConfiguration`     |
+| fetch size        | session     | The amount of rows to fetch at once.                                             | `SessionConfiguration`     |
+| access mode       | session     | The default mode when accessing the server.                                      | `SessionConfiguration`     |
+| bookmarks         | session     | The bookmarks used in the session. (experimental)                                | `SessionConfiguration`     |
+| metadata          | transaction | The metadata used during the transaction. (experimental)                         | `TransactionConfiguration` |
+| timeout           | transaction | The maximum amount of time before timing out.                                    | `TransactionConfiguration` |
 
 Code Example:
 
