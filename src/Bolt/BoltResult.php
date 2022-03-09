@@ -46,7 +46,7 @@ final class BoltResult implements Iterator
         $this->qid = $qid;
         $this->connection->incrementOwner();
         if ($this->connection->getProtocol() === ConnectionProtocol::BOLT_V3()) {
-            $this->pull();
+            $this->fetchResults();
         }
     }
 
@@ -82,17 +82,21 @@ final class BoltResult implements Iterator
      */
     public function iterator(): Generator
     {
-        $i = 0;
-        while ($this->meta === null) {
-            $this->fetchResults();
-            foreach ($this->rows as $row) {
-                yield $i => $row;
-                ++$i;
+        if ($this->connection->getProtocol() === ConnectionProtocol::BOLT_V3()) {
+            yield from $this->rows;
+        } else {
+            $i = 0;
+            while ($this->meta === null) {
+                $this->fetchResults();
+                foreach ($this->rows as $row) {
+                    yield $i => $row;
+                    ++$i;
+                }
             }
-        }
 
-        if ($this->finishedCallback) {
-            call_user_func($this->finishedCallback, $this->meta);
+            if ($this->finishedCallback) {
+                call_user_func($this->finishedCallback, $this->meta);
+            }
         }
     }
 
