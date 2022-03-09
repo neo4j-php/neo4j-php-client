@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use function array_key_exists;
 use function array_splice;
 use Bolt\protocol\V4;
@@ -44,6 +45,9 @@ final class BoltResult implements Iterator
         $this->fetchSize = $fetchSize;
         $this->qid = $qid;
         $this->connection->incrementOwner();
+        if ($this->connection->getProtocol() === ConnectionProtocol::BOLT_V3()) {
+            $this->pull();
+        }
     }
 
     public function getFetchSize(): int
