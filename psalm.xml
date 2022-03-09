@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <psalm
     checkForThrowsInGlobalScope="true"
-    loadXdebugStub="true"
     findUnusedVariablesAndParams="true"
     ensureArrayIntOffsetsExist="true"
     ensureArrayStringOffsetsExist="true"
