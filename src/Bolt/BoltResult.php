@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Laudis\Neo4j\Enum\ConnectionProtocol;
 use function array_key_exists;
 use function array_splice;
 use Bolt\protocol\V4;
@@ -22,6 +21,7 @@ use function count;
 use Generator;
 use Iterator;
 use Laudis\Neo4j\Common\BoltConnection;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 /**
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
@@ -96,7 +96,7 @@ final class BoltResult implements Iterator
         }
 
         if ($this->finishedCallback) {
-            call_user_func($this->finishedCallback, $this->meta);
+            call_user_func($this->finishedCallback, $this->meta ?? []);
         }
     }
 
