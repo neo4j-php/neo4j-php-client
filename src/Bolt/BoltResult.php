@@ -93,10 +93,10 @@ final class BoltResult implements Iterator
                     ++$i;
                 }
             }
+        }
 
-            if ($this->finishedCallback) {
-                call_user_func($this->finishedCallback, $this->meta);
-            }
+        if ($this->finishedCallback) {
+            call_user_func($this->finishedCallback, $this->meta);
         }
     }
 
