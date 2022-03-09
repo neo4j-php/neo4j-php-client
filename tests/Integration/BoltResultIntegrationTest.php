@@ -61,14 +61,15 @@ final class BoltResultIntegrationTest extends TestCase
         $socket = new StreamSocket($uri->getHost(), $uri->getPort() ?? 7687);
 
         $i = 0;
+        $factory = new BoltFactory(new Bolt($socket), Authenticate::fromUrl($uri), '', $socket);
         $connection = new BoltConnection(
             '',
             $uri,
             '',
-            ConnectionProtocol::BOLT_V3(),
+            ConnectionProtocol::determineBoltVersion($factory->build()[0]),
             AccessMode::READ(),
             new DatabaseInfo(''),
-            new BoltFactory(new Bolt($socket), Authenticate::fromUrl($uri), '', $socket),
+            $factory,
             null,
             DriverConfiguration::default()
         );
