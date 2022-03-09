@@ -397,4 +397,17 @@ CYPHER
         /** @psalm-suppress MixedArgument */
         self::assertCount(3, $cache[$key]);
     }
+
+    /**
+     * @dataProvider connectionAliases
+     *
+     * @doesNotPerformAssertions
+     */
+    public function testTransactionRunNoConsumeResult(string $alias): void
+    {
+        $tsx = $this->getClient()->beginTransaction([], $alias);
+        $tsx->run('MATCH (x) RETURN x');
+        $tsx->run('MATCH (x) RETURN x');
+        $tsx->commit();
+    }
 }

@@ -60,7 +60,7 @@ services:
     neo4j:
         networks:
             - neo4j
-        image: neo4j:4.4-enterprise
+        image: neo4j:3.5-enterprise
         healthcheck:
             test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
@@ -76,7 +76,7 @@ services:
         env_file:
           - .env
     core1:
-        image: neo4j:4.4-enterprise
+        image: neo4j:3.5-enterprise
         healthcheck:
             test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
@@ -97,7 +97,7 @@ services:
           - .env
 
     core2:
-        image: neo4j:4.4-enterprise
+        image: neo4j:3.5-enterprise
         healthcheck:
             test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
@@ -118,7 +118,7 @@ services:
           - .env
 
     core3:
-        image: neo4j:4.4-enterprise
+        image: neo4j:3.5-enterprise
         healthcheck:
             test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
@@ -139,7 +139,7 @@ services:
           - .env
 
     readreplica1:
-        image: neo4j:4.4-enterprise
+        image: neo4j:3.5-enterprise
         healthcheck:
             test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
             interval: 30s
