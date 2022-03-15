@@ -240,7 +240,7 @@ final class HttpOGMTranslator
             $tbr[] = $x;
         }
 
-        return [new CypherList($tbr), $meta->incrementMeta()];
+        return [new CypherList($tbr), $meta];
     }
 
     /**
@@ -347,7 +347,7 @@ final class HttpOGMTranslator
                 $tbr = [$this->translateLocalTime($value), $meta];
                 break;
             default:
-                $tbr = [$value, $meta];
+                $tbr = [$value, $meta->incrementMeta()];
                 break;
         }
 
