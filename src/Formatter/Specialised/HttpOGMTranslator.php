@@ -144,7 +144,7 @@ final class HttpOGMTranslator
             return $this->translateString($value, $meta);
         }
 
-        return [$value, $meta];
+        return [$value, $meta->incrementMeta()];
     }
 
     /**
