@@ -162,7 +162,7 @@ final class HttpHelper
             throw new UnexpectedValueException('stdClass with '.count($joltSingleton).' elements is not a Jolt singleton.');
         }
 
-        foreach ((array) $joltSingleton as $key => $value) {
+        foreach ($joltSingleton as $key => $value) {
             return [$key, $value];
         }
 
