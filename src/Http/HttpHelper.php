@@ -158,6 +158,8 @@ final class HttpHelper
 
     public static function splitJoltSingleton(stdClass $joltSingleton): array
     {
+        $joltSingleton = (array) $joltSingleton;
+
         if (count($joltSingleton) !== 1) {
             throw new UnexpectedValueException('stdClass with '.count($joltSingleton).' elements is not a Jolt singleton.');
         }
