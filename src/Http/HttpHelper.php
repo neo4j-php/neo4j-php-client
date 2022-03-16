@@ -25,9 +25,9 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Psr\Http\Message\ResponseInterface;
-use UnexpectedValueException;
 use RuntimeException;
 use stdClass;
+use UnexpectedValueException;
 
 /**
  * Helper functions for the http protocol.
@@ -110,7 +110,6 @@ final class HttpHelper
         $data->data = [];
 
         foreach ($contents as $content) {
-
             $content = self::getJsonBody($content);
             [$key, $value] = self::splitJoltSingleton($content);
 
@@ -125,14 +124,14 @@ final class HttpHelper
                     if (!isset($data->header)) {
                         throw new UnexpectedValueException('Jolt response with data before new header received');
                     }
-                    $data->data []= $value;
+                    $data->data[] = $value;
                     break;
                 case 'summary':
                     if (!isset($data->header)) {
                         throw new UnexpectedValueException('Jolt response with summary before new header received');
                     }
-                    $data->summary []= $value;
-                    $rtr->results []= $data;
+                    $data->summary[] = $value;
+                    $rtr->results[] = $data;
                     $data = new stdClass();
                     $data->data = [];
                     break;
@@ -150,18 +149,19 @@ final class HttpHelper
                     $rtr->error = $value;
                     break;
                 default:
-                    throw new UnexpectedValueException('Jolt response with unknown key received: ' . $key);
+                    throw new UnexpectedValueException('Jolt response with unknown key received: '.$key);
             }
         }
 
         return $rtr;
     }
 
-    public static function splitJoltSingleton(stdClass $joltSingleton): array {
+    public static function splitJoltSingleton(stdClass $joltSingleton): array
+    {
         $joltSingleton = (array) $joltSingleton;
 
         if (count($joltSingleton) !== 1) {
-            throw new UnexpectedValueException('stdClass with ' . count($joltSingleton) . ' elements is not a Jolt singleton.');
+            throw new UnexpectedValueException('stdClass with '.count($joltSingleton).' elements is not a Jolt singleton.');
         }
 
         foreach ((array) $joltSingleton as $key => $value) {
