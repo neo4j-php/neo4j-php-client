@@ -172,7 +172,7 @@ final class HttpDriver implements DriverInterface
         return Resolvable::once($this->key.':requestFactory', function () {
             $bindings = $this->config->getHttpPsrBindings();
 
-            return new RequestFactory($bindings->getRequestFactory(), $this->auth, $this->uri, $this->config->getUserAgent());
+            return new RequestFactory($bindings->getRequestFactory(), $this->auth, $this->uri, $this->config->getUserAgent(), $this->formatter);
         });
     }
 

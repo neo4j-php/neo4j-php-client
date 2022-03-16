@@ -25,6 +25,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Psr\Http\Message\ResponseInterface;
+use UnexpectedValueException;
 use RuntimeException;
 use stdClass;
 
@@ -39,13 +40,25 @@ final class HttpHelper
      * Checks the response and interprets it. Throws if an error is detected.
      *
      * @throws JsonException
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
      */
     public static function interpretResponse(ResponseInterface $response): stdClass
     {
+        if ($response->getStatusCode() >= 400) {
+            throw new RuntimeException('HTTP Error: '.$response->getReasonPhrase());
+        }
+
         $contents = $response->getBody()->getContents();
 
         /** @var stdClass $body */
-        $body = json_decode($contents, false, 512, JSON_THROW_ON_ERROR);
+        // Jolt is a Json sequence (rfc 7464), so it starts with a RS control character "\036"
+        if ($contents[0] === "\036") {
+            $body = self::getJoltBody($contents);
+        } else {
+            // If not Jolt, assume it is Json
+            $body = self::getJsonBody($contents);
+        }
 
         $errors = [];
         /** @var list<stdClass> $bodyErrors */
@@ -62,11 +75,100 @@ final class HttpHelper
             throw new Neo4jException($errors);
         }
 
-        if ($response->getStatusCode() >= 400) {
-            throw new RuntimeException('HTTP Error: '.$response->getReasonPhrase());
+        return $body;
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public static function getJsonBody(string $contents): stdClass
+    {
+        return json_decode($contents, false, 512, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Converts a Jolt input (with JSON sequence separators) into a stdClass that contains the data of all jsons of the sequence.
+     *
+     * @throws JsonException
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public static function getJoltBody(string $contents): stdClass
+    {
+        // Split json sequence in single jsons, split on json sequence separators.
+        $contents = explode("\036", $contents);
+
+        // Drop first (empty) string.
+        array_shift($contents);
+
+        // stdClass to capture all the jsons
+        $rtr = new stdClass();
+        $rtr->results = [];
+
+        // stdClass to capture the jsons of the results of a single statement that has been sent.
+        $data = new stdClass();
+        $data->data = [];
+
+        foreach ($contents as $content) {
+
+            $content = self::getJsonBody($content);
+            [$key, $value] = self::splitJoltSingleton($content);
+
+            switch ($key) {
+                case 'header':
+                    if (isset($data->header)) {
+                        throw new UnexpectedValueException('Jolt response with second header before summary received');
+                    }
+                    $data->header = $value;
+                    break;
+                case 'data':
+                    if (!isset($data->header)) {
+                        throw new UnexpectedValueException('Jolt response with data before new header received');
+                    }
+                    $data->data []= $value;
+                    break;
+                case 'summary':
+                    if (!isset($data->header)) {
+                        throw new UnexpectedValueException('Jolt response with summary before new header received');
+                    }
+                    $data->summary []= $value;
+                    $rtr->results []= $data;
+                    $data = new stdClass();
+                    $data->data = [];
+                    break;
+
+                case 'info':
+                    if (isset($rtr->info)) {
+                        throw new UnexpectedValueException('Jolt response with multiple info rows received');
+                    }
+                    $rtr->info = $value;
+                    break;
+                case 'error':
+                    if (isset($rtr->error)) {
+                        throw new UnexpectedValueException('Jolt response with multiple error rows received');
+                    }
+                    $rtr->error = $value;
+                    break;
+                default:
+                    throw new UnexpectedValueException('Jolt response with unknown key received: ' . $key);
+            }
         }
 
-        return $body;
+        return $rtr;
+    }
+
+    public static function splitJoltSingleton(stdClass $joltSingleton): array {
+        $joltSingleton = (array) $joltSingleton;
+
+        if (count($joltSingleton) !== 1) {
+            throw new UnexpectedValueException('stdClass with ' . count($joltSingleton) . ' elements is not a Jolt singleton.');
+        }
+
+        foreach ((array) $joltSingleton as $key => $value) {
+            return [$key, $value];
+        }
+
+        throw new RuntimeException('This line of code should not be reached');
     }
 
     /**
