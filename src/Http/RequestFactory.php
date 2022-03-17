@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -32,8 +31,6 @@ final class RequestFactory implements RequestFactoryInterface
     private string $userAgent;
     /** @readonly */
     private UriInterface $authUri;
-    /** @readonly */
-    private ?FormatterInterface $formatter;
 
     /**
      * @psalm-mutation-free
@@ -42,14 +39,12 @@ final class RequestFactory implements RequestFactoryInterface
         RequestFactoryInterface $requestFactory,
         AuthenticateInterface $authenticate,
         UriInterface $authUri,
-        string $userAgent,
-        FormatterInterface $formatter = null
+        string $userAgent
     ) {
         $this->requestFactory = $requestFactory;
         $this->authenticate = $authenticate;
         $this->authUri = $authUri;
         $this->userAgent = $userAgent;
-        $this->formatter = $formatter;
     }
 
     public function createRequest(string $method, $uri, bool $formatterSpecificAcceptHeader = false): RequestInterface
@@ -62,23 +57,10 @@ final class RequestFactory implements RequestFactoryInterface
             $port = $uri->getScheme() === 'https' ? 7473 : 7474;
             $uri = $uri->withPort($port);
         }
-        $request = $request->withUri($uri);
 
-        if (
-            $formatterSpecificAcceptHeader &&
-            !is_null($this->formatter) &&
-            method_exists($this->formatter, 'requiresJolt') &&
-            $this->formatter->requiresJolt()
-        ) {
-            // TODO: throw an error if formatter requires Jolt and Neo4j version < 4.2.5
-            // @see https://github.com/neo4j/neo4j/issues/12663
-
-            $acceptHeader = 'application/vnd.neo4j.jolt+json-seq;strict=true;charset=UTF-8';
-        } else {
-            $acceptHeader = 'application/json;charset=UTF-8';
-        }
-
-        return $request->withHeader('Accept', $acceptHeader)
+        return $request
+            ->withUri($uri)
+            ->withHeader('Accept', 'application/json;charset=UTF-8')
             ->withHeader('Content-Type', 'application/json');
     }
 }
