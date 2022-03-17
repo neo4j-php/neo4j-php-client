@@ -109,10 +109,10 @@ final class OGMFormatter implements FormatterInterface
     private function decideTranslator(ConnectionInterface $connection)
     {
         if (version_compare($connection->getServerAgent(), '4.2.5') >= 0) {
-            return $this->legacyHttpFormatter;
+            return $this->legacyHttpTranslator;
         }
 
-        return $this->joltFormatter;
+        return $this->joltTranslator;
     }
 
     /**
