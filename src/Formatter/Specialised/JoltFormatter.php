@@ -12,6 +12,7 @@
 namespace Laudis\Neo4j\Formatter\Specialised;
 
 use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Http\HttpHelper;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -24,7 +25,7 @@ final class JoltFormatter
      */
     public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
-        // TODO - translate here.
+        $body = HttpHelper::interpretResponse($response);
 
         return new CypherList([]);
     }
