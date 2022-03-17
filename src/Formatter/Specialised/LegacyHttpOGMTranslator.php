@@ -64,8 +64,14 @@ final class LegacyHttpFormatter
      *
      * @return CypherList<CypherList<CypherMap<OGMTypes>>>
      */
-    public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
-    {
+    public function formatHttpResult(
+        ResponseInterface $response,
+        stdClass $body,
+        ConnectionInterface $connection,
+        float $resultsAvailableAfter,
+        float $resultsConsumedAfter,
+        iterable $statements
+    ): CypherList {
         /** @var list<CypherList<CypherMap<OGMTypes>>> $tbr */
         $tbr = [];
 

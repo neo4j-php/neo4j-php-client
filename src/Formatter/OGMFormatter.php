@@ -18,8 +18,8 @@ use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
-use Laudis\Neo4j\Formatter\Specialised\JoltFormatter;
-use Laudis\Neo4j\Formatter\Specialised\LegacyHttpFormatter;
+use Laudis\Neo4j\Formatter\Specialised\JoltHttpOGMTranslator;
+use Laudis\Neo4j\Formatter\Specialised\LegacyHttpOGMTranslator;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
@@ -43,17 +43,17 @@ use function version_compare;
 final class OGMFormatter implements FormatterInterface
 {
     private BoltOGMTranslator $boltTranslator;
-    private JoltFormatter $joltFormatter;
-    private LegacyHttpFormatter $legacyHttpFormatter;
+    private JoltHttpOGMTranslator $joltTranslator;
+    private LegacyHttpOGMTranslator $legacyHttpTranslator;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(BoltOGMTranslator $boltTranslator, JoltFormatter $joltFormatter, LegacyHttpFormatter $legacyHttpFormatter)
+    public function __construct(BoltOGMTranslator $boltTranslator, JoltHttpOGMTranslator $joltTranslator, LegacyHttpOGMTranslator $legacyHttpTranslator)
     {
         $this->boltTranslator = $boltTranslator;
-        $this->joltFormatter = $joltFormatter;
-        $this->legacyHttpFormatter = $legacyHttpFormatter;
+        $this->joltTranslator = $joltTranslator;
+        $this->legacyHttpTranslator = $legacyHttpTranslator;
     }
 
     /**
@@ -63,7 +63,7 @@ final class OGMFormatter implements FormatterInterface
      */
     public static function create(): OGMFormatter
     {
-        return new self(new BoltOGMTranslator(), new JoltFormatter(), new LegacyHttpFormatter());
+        return new self(new BoltOGMTranslator(), new JoltHttpOGMTranslator(), new LegacyHttpOGMTranslator());
     }
 
     /**
@@ -104,7 +104,7 @@ final class OGMFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      *
-     * @return LegacyHttpFormatter|JoltFormatter
+     * @return LegacyHttpOGMTranslator|JoltHttpOGMTranslator
      */
     private function decideTranslator(ConnectionInterface $connection)
     {
