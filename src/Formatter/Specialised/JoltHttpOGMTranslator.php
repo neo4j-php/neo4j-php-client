@@ -24,7 +24,7 @@ use stdClass;
  *
  * @psalm-import-type OGMTypes from OGMFormatter
  */
-final class JoltFormatter
+final class JoltHttpOGMTranslator
 {
     /**
      * @return CypherList<CypherList<CypherMap<OGMTypes>>>
