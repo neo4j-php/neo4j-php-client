@@ -57,7 +57,7 @@ use UnexpectedValueException;
  *
  * @psalm-immutable
  */
-final class LegacyHttpFormatter
+final class LegacyHttpOGMTranslator
 {
     /**
      * @psalm-mutation-free
