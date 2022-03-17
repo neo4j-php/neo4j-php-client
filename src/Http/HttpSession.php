@@ -108,7 +108,7 @@ final class HttpSession implements SessionInterface
     {
         $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve(), true);
         $connection = $this->pool->acquire($request->getUri(), $this->auth, $this->config);
-        $content = HttpHelper::statementsToJson($this->formatter, $statements);
+        $content = HttpHelper::statementsToJson($connection, $this->formatter, $statements);
         $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->resolve()->createStream($content));
 
         $start = microtime(true);
@@ -169,8 +169,8 @@ final class HttpSession implements SessionInterface
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve(), true);
-        $request->getBody()->write(HttpHelper::statementsToJson($this->formatter, $statements ?? []));
         $connection = $this->pool->acquire($request->getUri(), $this->auth, $this->config);
+        $request->getBody()->write(HttpHelper::statementsToJson($connection, $this->formatter, $statements ?? []));
         $response = $connection->getImplementation()->sendRequest($request);
 
         /** @var string */

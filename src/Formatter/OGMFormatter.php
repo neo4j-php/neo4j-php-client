@@ -83,18 +83,22 @@ final class OGMFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
-    {
-        /** @var list<CypherList<CypherMap<OGMTypes>>> $tbr */
-        $tbr = [];
-
-        /** @var list<stdClass> $results */
-        $results = $body->results;
-        foreach ($results as $result) {
-            $tbr[] = $this->decideTranslator($connection)->translateResult($result);
-        }
-
-        return new CypherList($tbr);
+    public function formatHttpResult(
+        ResponseInterface $response,
+        stdClass $body,
+        ConnectionInterface $connection,
+        float $resultsAvailableAfter,
+        float $resultsConsumedAfter,
+        iterable $statements
+    ): CypherList {
+        return $this->decideTranslator($connection)->formatHttpResult(
+            $response,
+            $body,
+            $connection,
+            $resultsAvailableAfter,
+            $resultsConsumedAfter,
+            $statements
+        );
     }
 
     /**
@@ -135,7 +139,7 @@ final class OGMFormatter implements FormatterInterface
      */
     public function decorateRequest(RequestInterface $request, ConnectionInterface $connection): RequestInterface
     {
-        return $this->decideTranslator($connection)->decorateRequest();
+        return $this->decideTranslator($connection)->decorateRequest($request);
     }
 
     /**
