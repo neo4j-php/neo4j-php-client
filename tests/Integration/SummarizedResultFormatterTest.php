@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use function bin2hex;
+use function dump;
 use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
@@ -22,7 +23,6 @@ use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-use function dump;
 use function random_bytes;
 use function serialize;
 use function unserialize;
@@ -96,6 +96,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         $serialise = serialize($results);
         $resultHasBeenSerialized = unserialize($serialise);
 
+        self::assertInstanceOf(SummarizedResult::class, $resultHasBeenSerialized);
         self::assertEquals($results->toRecursiveArray(), $resultHasBeenSerialized->toRecursiveArray());
     }
 
