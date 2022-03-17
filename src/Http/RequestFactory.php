@@ -47,7 +47,7 @@ final class RequestFactory implements RequestFactoryInterface
         $this->userAgent = $userAgent;
     }
 
-    public function createRequest(string $method, $uri, bool $formatterSpecificAcceptHeader = false): RequestInterface
+    public function createRequest(string $method, $uri): RequestInterface
     {
         $request = $this->requestFactory->createRequest($method, $uri);
         $request = $this->authenticate->authenticateHttp($request, $this->authUri, $this->userAgent);
