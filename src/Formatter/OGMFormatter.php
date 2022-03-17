@@ -98,6 +98,8 @@ final class OGMFormatter implements FormatterInterface
     }
 
     /**
+     * @psalm-mutation-free
+     *
      * @return LegacyHttpFormatter|JoltFormatter
      */
     private function decideTranslator(ConnectionInterface $connection)
@@ -131,18 +133,16 @@ final class OGMFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    public function decorateRequest(RequestInterface $request): RequestInterface
+    public function decorateRequest(RequestInterface $request, ConnectionInterface $connection): RequestInterface
     {
-        return $request;
+        return $this->decideTranslator($connection)->decorateRequest();
     }
 
     /**
      * @psalm-mutation-free
      */
-    public function statementConfigOverride(): array
+    public function statementConfigOverride(ConnectionInterface $connection): array
     {
-        return [
-            'resultDataContents' => ['ROW', 'GRAPH'],
-        ];
+        return $this->decideTranslator($connection)->statementConfigOverride();
     }
 }
