@@ -1,10 +1,29 @@
 <?php
 
+/*
+ * This file is part of the Laudis Neo4j package.
+ *
+ * (c) Laudis technologies <http://laudis.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Laudis\Neo4j\Formatter\Specialised;
 
+use function array_combine;
+use function array_key_exists;
+use function count;
+use function date;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use function explode;
+use function is_array;
+use function is_object;
+use function is_string;
+use function json_encode;
+use const JSON_THROW_ON_ERROR;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -27,21 +46,11 @@ use Laudis\Neo4j\Types\WGS84Point;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
-use stdClass;
-use UnexpectedValueException;
-use function array_combine;
-use function array_key_exists;
-use function count;
-use function date;
-use function explode;
-use function is_array;
-use function is_object;
-use function is_string;
-use function json_encode;
 use function sprintf;
+use stdClass;
 use function str_pad;
 use function substr;
-use const JSON_THROW_ON_ERROR;
+use UnexpectedValueException;
 
 /**
  * @psalm-import-type OGMTypes from OGMFormatter
