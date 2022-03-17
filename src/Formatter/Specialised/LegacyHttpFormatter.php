@@ -54,16 +54,11 @@ use UnexpectedValueException;
 
 /**
  * @psalm-import-type OGMTypes from OGMFormatter
+ *
+ * @psalm-immutable
  */
 final class LegacyHttpFormatter
 {
-    private HttpOGMTranslator $translator;
-
-    public function __construct(HttpOGMTranslator $translator)
-    {
-        $this->translator = $translator;
-    }
-
     /**
      * @psalm-mutation-free
      */
@@ -75,7 +70,7 @@ final class LegacyHttpFormatter
         /** @var list<stdClass> $results */
         $results = $body->results;
         foreach ($results as $result) {
-            $tbr[] = $this->translator->translateResult($result);
+            $tbr[] = $this->translateResult($result);
         }
 
         return new CypherList($tbr);

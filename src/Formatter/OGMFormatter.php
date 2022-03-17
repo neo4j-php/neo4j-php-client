@@ -18,12 +18,14 @@ use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
-use Laudis\Neo4j\Formatter\Specialised\HttpOGMTranslator;
+use Laudis\Neo4j\Formatter\Specialised\JoltFormatter;
+use Laudis\Neo4j\Formatter\Specialised\LegacyHttpFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
+use function version_compare;
 
 /**
  * Formats the result in a basic OGM (Object Graph Mapping) format by mapping al cypher types to types found in the \Laudis\Neo4j\Types namespace.
@@ -41,15 +43,17 @@ use stdClass;
 final class OGMFormatter implements FormatterInterface
 {
     private BoltOGMTranslator $boltTranslator;
-    private HttpOGMTranslator $httpTranslator;
+    private JoltFormatter $joltFormatter;
+    private LegacyHttpFormatter $legacyHttpFormatter;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(BoltOGMTranslator $boltTranslator, HttpOGMTranslator $httpTranslator)
+    public function __construct(BoltOGMTranslator $boltTranslator, JoltFormatter $joltFormatter, LegacyHttpFormatter $legacyHttpFormatter)
     {
         $this->boltTranslator = $boltTranslator;
-        $this->httpTranslator = $httpTranslator;
+        $this->joltFormatter = $joltFormatter;
+        $this->legacyHttpFormatter = $legacyHttpFormatter;
     }
 
     /**
@@ -59,7 +63,7 @@ final class OGMFormatter implements FormatterInterface
      */
     public static function create(): OGMFormatter
     {
-        return new self(new BoltOGMTranslator(), new HttpOGMTranslator());
+        return new self(new BoltOGMTranslator(), new JoltFormatter(), new LegacyHttpFormatter());
     }
 
     /**
@@ -87,10 +91,22 @@ final class OGMFormatter implements FormatterInterface
         /** @var list<stdClass> $results */
         $results = $body->results;
         foreach ($results as $result) {
-            $tbr[] = $this->httpTranslator->translateResult($result);
+            $tbr[] = $this->decideTranslator($connection)->translateResult($result);
         }
 
         return new CypherList($tbr);
+    }
+
+    /**
+     * @return LegacyHttpFormatter|JoltFormatter
+     */
+    private function decideTranslator(ConnectionInterface $connection)
+    {
+        if (version_compare('4.2.5', $connection->getServerAgent(), '>')) {
+            return $this->legacyHttpFormatter;
+        }
+
+        return $this->joltFormatter;
     }
 
     /**
