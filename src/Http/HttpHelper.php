@@ -13,12 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use function array_key_first;
 use function array_merge;
 use function count;
 use function json_decode;
 use function json_encode;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
@@ -83,6 +85,7 @@ final class HttpHelper
      */
     public static function getJsonBody(string $contents): stdClass
     {
+        /** @var stdClass */
         return json_decode($contents, false, 512, JSON_THROW_ON_ERROR);
     }
 
@@ -92,6 +95,9 @@ final class HttpHelper
      * @throws JsonException
      * @throws RuntimeException
      * @throws UnexpectedValueException
+     *
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedArrayAssignment
      */
     public static function getJoltBody(string $contents): stdClass
     {
@@ -156,19 +162,21 @@ final class HttpHelper
         return $rtr;
     }
 
+    /**
+     * @return array{0: string, 1: mixed}
+     */
     public static function splitJoltSingleton(stdClass $joltSingleton): array
     {
+        /** @var array<string, mixed> $joltSingleton */
         $joltSingleton = (array) $joltSingleton;
 
         if (count($joltSingleton) !== 1) {
             throw new UnexpectedValueException('stdClass with '.count($joltSingleton).' elements is not a Jolt singleton.');
         }
 
-        foreach ($joltSingleton as $key => $value) {
-            return [$key, $value];
-        }
+        $key = array_key_first($joltSingleton);
 
-        throw new RuntimeException('This line of code should not be reached');
+        return [$key, $joltSingleton[$key]];
     }
 
     /**
@@ -178,7 +186,7 @@ final class HttpHelper
      *
      * @throws JsonException
      */
-    public static function statementsToJson(FormatterInterface $formatter, iterable $statements): string
+    public static function statementsToJson(ConnectionInterface $connection, FormatterInterface $formatter, iterable $statements): string
     {
         $tbr = [];
         foreach ($statements as $statement) {
@@ -187,7 +195,7 @@ final class HttpHelper
                 'resultDataContents' => [],
                 'includeStats' => false,
             ];
-            $st = array_merge($st, $formatter->statementConfigOverride());
+            $st = array_merge($st, $formatter->statementConfigOverride($connection));
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
             $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
             $tbr[] = $st;

@@ -61,6 +61,8 @@ final class LegacyHttpFormatter
 {
     /**
      * @psalm-mutation-free
+     *
+     * @return CypherList<CypherList<CypherMap<OGMTypes>>>
      */
     public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
@@ -81,6 +83,9 @@ final class LegacyHttpFormatter
         return $request;
     }
 
+    /**
+     * @return array{resultDataContents?: list<'GRAPH'|'ROW'|'REST'>, includeStats?:bool}
+     */
     public function statementConfigOverride(): array
     {
         return [
@@ -229,7 +234,7 @@ final class LegacyHttpFormatter
                 $tbr[$key] = $this->translateProperties($castedValue);
             } elseif (is_array($value)) {
                 /** @var array<string, array|stdClass|scalar|null> $value */
-                $tbr[$key] = new CypherList($this->translateProperties($value)->values());
+                $tbr[$key] = new CypherList($this->translateProperties($value));
             } else {
                 $tbr[$key] = $value;
             }
