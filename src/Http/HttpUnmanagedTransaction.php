@@ -90,7 +90,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         $request = $this->request->withMethod('POST');
 
-        $body = HttpHelper::statementsToJson($this->formatter, $statements);
+        $body = HttpHelper::statementsToJson($this->connection, $this->formatter, $statements);
 
         $request = $request->withBody($this->factory->createStream($body));
         $start = microtime(true);
@@ -107,7 +107,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $uri = $this->request->getUri();
         $request = $this->request->withUri($uri->withPath($uri->getPath().'/commit'))->withMethod('POST');
 
-        $content = HttpHelper::statementsToJson($this->formatter, $statements);
+        $content = HttpHelper::statementsToJson($this->connection, $this->formatter, $statements);
         $request = $request->withBody($this->factory->createStream($content));
 
         $start = microtime(true);

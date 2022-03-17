@@ -12,6 +12,7 @@
 namespace Laudis\Neo4j\Formatter\Specialised;
 
 use function array_combine;
+use function array_key_exists;
 use function count;
 use function date;
 use DateInterval;
@@ -19,8 +20,13 @@ use DateTimeImmutable;
 use Exception;
 use function explode;
 use function is_array;
+use function is_object;
 use function is_string;
+use function json_encode;
+use const JSON_THROW_ON_ERROR;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
@@ -37,6 +43,8 @@ use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
 use function sprintf;
 use stdClass;
@@ -45,15 +53,46 @@ use function substr;
 use UnexpectedValueException;
 
 /**
+ * @psalm-import-type OGMTypes from OGMFormatter
+ *
  * @psalm-immutable
- *
- * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
- *
- * @psalm-suppress ImpureMethodCall
  */
-final class HttpOGMTranslator
+final class LegacyHttpFormatter
 {
+    /**
+     * @psalm-mutation-free
+     *
+     * @return CypherList<CypherList<CypherMap<OGMTypes>>>
+     */
+    public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
+    {
+        /** @var list<CypherList<CypherMap<OGMTypes>>> $tbr */
+        $tbr = [];
+
+        /** @var list<stdClass> $results */
+        $results = $body->results;
+        foreach ($results as $result) {
+            $tbr[] = $this->translateResult($result);
+        }
+
+        return new CypherList($tbr);
+    }
+
+    public function decorateRequest(RequestInterface $request): RequestInterface
+    {
+        return $request;
+    }
+
+    /**
+     * @return array{resultDataContents?: list<'GRAPH'|'ROW'|'REST'>, includeStats?:bool}
+     */
+    public function statementConfigOverride(): array
+    {
+        return [
+            'resultDataContents' => ['ROW', 'GRAPH'],
+        ];
+    }
+
     /**
      * @throws Exception
      *
@@ -195,7 +234,7 @@ final class HttpOGMTranslator
                 $tbr[$key] = $this->translateProperties($castedValue);
             } elseif (is_array($value)) {
                 /** @var array<string, array|stdClass|scalar|null> $value */
-                $tbr[$key] = new CypherList($this->translateProperties($value)->values());
+                $tbr[$key] = new CypherList($this->translateProperties($value));
             } else {
                 $tbr[$key] = $value;
             }
