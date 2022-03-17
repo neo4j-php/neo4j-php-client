@@ -22,6 +22,7 @@ use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use function dump;
 use function random_bytes;
 use function serialize;
 use function unserialize;
@@ -96,5 +97,17 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         $resultHasBeenSerialized = unserialize($serialise);
 
         self::assertEquals($results->toRecursiveArray(), $resultHasBeenSerialized->toRecursiveArray());
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     *
+     * @doesNotPerformAssertions
+     */
+    public function testDump(string $alias): void
+    {
+        $results = $this->getClient()->run('RETURN 1 AS one', [], $alias);
+
+        dump($results);
     }
 }
