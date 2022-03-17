@@ -99,7 +99,7 @@ interface FormatterInterface
      *
      * @psalm-mutation-free
      */
-    public function decorateRequest(RequestInterface $request): RequestInterface;
+    public function decorateRequest(RequestInterface $request, ConnectionInterface $connection): RequestInterface;
 
     /**
      * Overrides the statement config of the HTTP protocol.
@@ -110,5 +110,5 @@ interface FormatterInterface
      *
      * @psalm-mutation-free
      */
-    public function statementConfigOverride(): array;
+    public function statementConfigOverride(ConnectionInterface $connection): array;
 }

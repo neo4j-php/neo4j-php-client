@@ -202,7 +202,7 @@ final class BasicFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    public function decorateRequest(RequestInterface $request): RequestInterface
+    public function decorateRequest(RequestInterface $request, ConnectionInterface $connection): RequestInterface
     {
         return $request;
     }
@@ -210,7 +210,7 @@ final class BasicFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    public function statementConfigOverride(): array
+    public function statementConfigOverride(ConnectionInterface $connection): array
     {
         return [
             'resultDataContents' => ['ROW'],

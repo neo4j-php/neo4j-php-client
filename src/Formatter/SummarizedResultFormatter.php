@@ -217,17 +217,17 @@ final class SummarizedResultFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    public function decorateRequest(RequestInterface $request): RequestInterface
+    public function decorateRequest(RequestInterface $request, ConnectionInterface $connection): RequestInterface
     {
-        return $this->formatter->decorateRequest($request);
+        return $this->formatter->decorateRequest($request, $connection);
     }
 
     /**
      * @psalm-mutation-free
      */
-    public function statementConfigOverride(): array
+    public function statementConfigOverride(ConnectionInterface $connection): array
     {
-        return array_merge($this->formatter->statementConfigOverride(), [
+        return array_merge($this->formatter->statementConfigOverride($connection), [
             'includeStats' => true,
         ]);
     }
