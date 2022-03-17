@@ -23,6 +23,8 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use function random_bytes;
+use function serialize;
+use function unserialize;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -81,5 +83,18 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         $first = $results->first();
         self::assertInstanceOf(CypherMap::class, $first);
         self::assertEquals(1, $first->get('one'));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testSerialize(string $alias): void
+    {
+        $results = $this->getClient()->run('RETURN 1 AS one', [], $alias);
+
+        $serialise = serialize($results);
+        $resultHasBeenSerialized = unserialize($serialise);
+
+        self::assertEquals($results->toRecursiveArray(), $resultHasBeenSerialized->toRecursiveArray());
     }
 }
