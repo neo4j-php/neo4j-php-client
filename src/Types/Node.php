@@ -25,12 +25,12 @@ use function sprintf;
  *
  * @psalm-immutable
  *
- * @extends AbstractPropertyObject<OGMTypes, int|string|CypherMap<OGMTypes>>
- * @extends AbstractPropertyObject<OGMTypes, int|CypherList<string>|CypherMap<OGMTypes>>
+ * @extends AbstractPropertyObject<OGMTypes, mixed|string|CypherMap<OGMTypes>>
+ * @extends AbstractPropertyObject<OGMTypes, mixed|CypherList<string>|CypherMap<OGMTypes>>
  */
 final class Node extends AbstractPropertyObject
 {
-    private int $id;
+    private mixed $id;
     /** @var CypherList<string> */
     private CypherList $labels;
     /** @var CypherMap<OGMTypes> */
@@ -40,7 +40,7 @@ final class Node extends AbstractPropertyObject
      * @param CypherList<string>  $labels
      * @param CypherMap<OGMTypes> $properties
      */
-    public function __construct(int $id, CypherList $labels, CypherMap $properties)
+    public function __construct(mixed $id, CypherList $labels, CypherMap $properties)
     {
         $this->id = $id;
         $this->labels = $labels;
@@ -83,7 +83,7 @@ final class Node extends AbstractPropertyObject
      * @deprecated
      * @see self::getId
      */
-    public function id(): int
+    public function id(): mixed
     {
         return $this->id;
     }
@@ -91,7 +91,7 @@ final class Node extends AbstractPropertyObject
     /**
      * The id of the node.
      */
-    public function getId(): int
+    public function getId(): mixed
     {
         return $this->id;
     }
@@ -115,7 +115,7 @@ final class Node extends AbstractPropertyObject
     /**
      * @psalm-suppress ImplementedReturnTypeMismatch False positive.
      *
-     * @return array{id: int, labels: CypherList<string>, properties: CypherMap<OGMTypes>}
+     * @return array{id: mixed, labels: CypherList<string>, properties: CypherMap<OGMTypes>}
      */
     public function toArray(): array
     {
