@@ -136,7 +136,7 @@ final class HttpHelper
                     if (!isset($data->header)) {
                         throw new UnexpectedValueException('Jolt response with summary before new header received');
                     }
-                    $data->summary[] = $value;
+                    $data->summary = $value;
                     $rtr->results[] = $data;
                     $data = new stdClass();
                     $data->data = [];
