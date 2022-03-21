@@ -29,8 +29,14 @@ final class JoltHttpOGMTranslator
     /**
      * @return CypherList<CypherList<CypherMap<OGMTypes>>>
      */
-    public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
-    {
+    public function formatHttpResult(
+        ResponseInterface $response,
+        stdClass $body,
+        ConnectionInterface $connection,
+        float $resultsAvailableAfter,
+        float $resultsConsumedAfter,
+        iterable $statements
+    ): CypherList {
         /** @var CypherList<CypherList<CypherMap<OGMTypes>>> */
         return new CypherList(new CypherList());
     }
@@ -38,7 +44,10 @@ final class JoltHttpOGMTranslator
     public function decorateRequest(RequestInterface $request): RequestInterface
     {
         /** @psalm-suppress ImpureMethodCall */
-        return $request->withHeader('Accept', 'application/vnd.neo4j.jolt+json-seq;strict=true;charset=UTF-8');
+        return $request->withHeader(
+            'Accept',
+            'application/vnd.neo4j.jolt+json-seq;strict=true;charset=UTF-8'
+        );
     }
 
     /**
