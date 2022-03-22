@@ -18,6 +18,8 @@ use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
+use UnexpectedValueException;
+use function strtolower;
 
 /**
  * @psalm-immutable
@@ -26,6 +28,30 @@ use stdClass;
  */
 final class JoltHttpOGMTranslator
 {
+    private array $rawToTypes;
+
+    public function __construct()
+    {
+        $this->rawToTypes = [
+            '?' => static fn (string $value): bool => strtolower($value) === 'true',
+            'Z' => static fn (string $value): int => (int) $value,
+            'R' => static fn (string $value): float => (float) $value,
+            'U' => static fn (string $value): string => $value,
+            'T' => fn (string $value)/*TODO*/ => $this->translateDateTime($value),
+            '@' => fn (string $value): AbstractCypherPoint => $this->translatePoint($value),
+            '#' => static function (string $value) {
+                // TODO
+                throw new UnexpectedValueException('Binary data has not been implemented');
+            },
+            '[]' => fn (array $value): CypherList => $this->translateList($value),
+            '{}' => fn (stdClass $value): CypherMap => $this->translateMap($value),
+            '()' => fn (array $value): Node => new Node($value[0], new CypherList($value[1]), $this->translateMap($value[2])),
+            '->' => fn (array $value): Relation => new Relation($value[0], $value[1], $value[3], $value[2], $this->translateMap($value[4])),
+            '<-' => fn (array $value): Relation => new Relation($value[0], $value[3], $value[1], $value[2], $this->translateMap($value[4])),
+            '..' => fn (array $value): Path => $this->translatePath($value),
+        ];
+    }
+
     /**
      * @return CypherList<CypherList<CypherMap<OGMTypes>>>
      */
@@ -37,8 +63,134 @@ final class JoltHttpOGMTranslator
         float $resultsConsumedAfter,
         iterable $statements
     ): CypherList {
-        /** @var CypherList<CypherList<CypherMap<OGMTypes>>> */
-        return new CypherList(new CypherList());
+        $allResults = [];
+        // TODO: Lazy evaluation.
+        foreach ($body->results as $result) {
+            $fields = $result->header->fields;
+            $rows = [];
+            foreach ($result->data as $data) {
+                $row = [];
+                foreach ($data as $key => $value) {
+                    $row[$fields[$key]] = $this->translateJoltType($value);
+                }
+                $rows []= new CypherMap($row);
+            }
+            $allResults []= new CypherList($rows);
+        }
+        return new CypherList($allResults);
+    }
+
+    private function translateDateTime(string $datetime)
+    {
+        // TODO; They're in ISO format so shouldn't be too hard
+        throw new UnexpectedValueException('Date/time values have not been implemented yet');
+    }
+
+    /**
+     * Assumes that 2D points are of the form "SRID=$srid;POINT($x $y)" and 3D points are of the form "SRID=$srid;POINT Z($x $y $z)".
+     * @throws UnexpectedValueException
+     */
+    private function translatePoint(string $value): PointInterface
+    {
+        [$srid, $coordinates] = explode(';', $value, 2);
+
+        $srid = $this->getSRID($srid);
+        $coordinates = $this->getCoordinates($coordinates);
+
+        if ($srid === CartesianPoint::SRID) {
+            return new CartesianPoint(
+                $coordinates[0],
+                $coordinates[1],
+            );
+        }
+        if ($srid === Cartesian3DPoint::SRID) {
+            return new Cartesian3DPoint(
+                $coordinates[0],
+                $coordinates[1],
+                $coordinates[2],
+            );
+        }
+        if ($srid === WGS84Point::SRID) {
+            return new WGS84Point(
+                $coordinates[0],
+                $coordinates[1],
+            );
+        }
+        if ($srid === WGS843DPoint::SRID) {
+            return new WGS843DPoint(
+                $coordinates[0],
+                $coordinates[1],
+                $coordinates[2],
+            );
+        }
+        throw new UnexpectedValueException('A point with srid '.$srid.' has been returned, which has not been implemented.');
+    }
+
+    private function getSRID(string $value): int
+    {
+        $matches = [];
+        if (!preg_match('/^SRID=([0-9]+)$/', $value, $matches)) {
+            throw new UnexpectedValueException('Unexpected SRID string: '.$value);
+        }
+        return (int) $matches[1];
+    }
+
+    private function getCoordinates(string $value): array
+    {
+        $matches = [];
+        if (!preg_match('/^POINT ?(Z?) ?\(([0-9 ]+)\)$/', $value, $matches)) {
+            throw new UnexpectedValueException('Unexpected point coordinates string: '.$value);
+        }
+        $coordinates = explode(' ', $matches[2]);
+        if ($matches[1] === 'Z') {
+            if (count($coordinates) !== 3) {
+                throw new UnexpectedValueException('Expected 3 coordinates in string: '.$value);
+            }
+        } else {
+            if (count($coordinates) !== 2) {
+                throw new UnexpectedValueException('Expected 2 coordinates in string: '.$value);
+            }
+        }
+        return $coordinates;
+    }
+
+    private function translateMap(stdClass $value): CypherMap
+    {
+        return new CypherMap(
+            function () use ($value) {
+                foreach ((array) $value as $key => $element) {
+                    yield $key => $this->translateJoltType($element);
+                }
+            }
+        );
+    }
+
+    private function translateList(array $value): CypherList
+    {
+        return new CypherList(
+            function () use ($value) {
+                foreach ($value as $element) {
+                    yield $this->translateJoltType($element);
+                }
+            }
+        );
+    }
+
+    private function translatePath(array $value)
+    {
+        $nodes = [];
+        $relations = [];
+        $ids = [];
+        foreach ($value as $i => $nodeOrRelation) {
+            $nodeOrRelation = $this->translateJoltType($nodeOrRelation);
+            if ($i%2) {
+                $relations[] = $nodeOrRelation;
+            } else {
+                $nodes[] = $nodeOrRelation;
+            }
+            $ids[] = $nodeOrRelation->getId();
+        }
+        return new Path(new CypherList($nodes), new CypherList($relations), new CypherList($ids));
     }
 
     public function decorateRequest(RequestInterface $request): RequestInterface
