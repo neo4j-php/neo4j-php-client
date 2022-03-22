@@ -19,8 +19,8 @@ use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
-use UnexpectedValueException;
 use function strtolower;
+use UnexpectedValueException;
 
 /**
  * @psalm-immutable
@@ -74,10 +74,11 @@ final class JoltHttpOGMTranslator
                 foreach ($data as $key => $value) {
                     $row[$fields[$key]] = $this->translateJoltType($value);
                 }
-                $rows []= new CypherMap($row);
+                $rows[] = new CypherMap($row);
             }
-            $allResults []= new CypherList($rows);
+            $allResults[] = new CypherList($rows);
         }
+
         return new CypherList($allResults);
     }
 
@@ -89,6 +90,7 @@ final class JoltHttpOGMTranslator
 
     /**
      * Assumes that 2D points are of the form "SRID=$srid;POINT($x $y)" and 3D points are of the form "SRID=$srid;POINT Z($x $y $z)".
+     *
      * @throws UnexpectedValueException
      */
     private function translatePoint(string $value): PointInterface
@@ -133,6 +135,7 @@ final class JoltHttpOGMTranslator
         if (!preg_match('/^SRID=([0-9]+)$/', $value, $matches)) {
             throw new UnexpectedValueException('Unexpected SRID string: '.$value);
         }
+
         return (int) $matches[1];
     }
 
@@ -152,6 +155,7 @@ final class JoltHttpOGMTranslator
                 throw new UnexpectedValueException('Expected 2 coordinates in string: '.$value);
             }
         }
+
         return $coordinates;
     }
 
@@ -184,13 +188,14 @@ final class JoltHttpOGMTranslator
         $ids = [];
         foreach ($value as $i => $nodeOrRelation) {
             $nodeOrRelation = $this->translateJoltType($nodeOrRelation);
-            if ($i%2) {
+            if ($i % 2) {
                 $relations[] = $nodeOrRelation;
             } else {
                 $nodes[] = $nodeOrRelation;
             }
             $ids[] = $nodeOrRelation->getId();
         }
+
         return new Path(new CypherList($nodes), new CypherList($relations), new CypherList($ids));
     }
 
