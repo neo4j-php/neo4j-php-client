@@ -16,14 +16,14 @@ use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Http\HttpHelper;
 use Laudis\Neo4j\Types\AbstractPropertyObject;
-use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
-use Laudis\Neo4j\Types\WGS84Point;
-use Laudis\Neo4j\Types\WGS843DPoint;
-use Laudis\Neo4j\Types\Relation;
-use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Relation;
+use Laudis\Neo4j\Types\WGS843DPoint;
+use Laudis\Neo4j\Types\WGS84Point;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
@@ -90,15 +90,17 @@ final class JoltHttpOGMTranslator
         return new CypherList($allResults);
     }
 
-    private function translateJoltType(?stdClass $value) {
+    private function translateJoltType(?stdClass $value)
+    {
         if (is_null($value)) {
             return null;
         }
 
         [$key, $value] = HttpHelper::splitJoltSingleton($value);
         if (!isset($this->rawToTypes[$key])) {
-            throw new UnexpectedValueException('Unexpected Jolt key: ' . $key);
+            throw new UnexpectedValueException('Unexpected Jolt key: '.$key);
         }
+
         return $this->rawToTypes[$key]($value);
     }
 
