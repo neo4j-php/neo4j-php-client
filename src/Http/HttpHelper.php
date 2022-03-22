@@ -149,10 +149,16 @@ final class HttpHelper
                     $rtr->info = $value;
                     break;
                 case 'error':
-                    if (isset($rtr->error)) {
+                    if (isset($rtr->errors)) {
                         throw new UnexpectedValueException('Jolt response with multiple error rows received');
                     }
-                    $rtr->error = $value;
+                    $rtr->errors = [];
+                    foreach ($value->errors as $error) {
+                        $rtr->errors[] = (object) [
+                            'code' => self::splitJoltSingleton($error->code)[1],
+                            'message' => self::splitJoltSingleton($error->message)[1],
+                        ];
+                    }
                     break;
                 default:
                     throw new UnexpectedValueException('Jolt response with unknown key received: '.$key);
