@@ -26,6 +26,7 @@ use Bolt\structures\Point3D as BoltPoint3D;
 use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
 use Bolt\structures\UnboundRelationship as BoltUnboundRelationship;
+use function call_user_func;
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
@@ -46,7 +47,6 @@ use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 use UnexpectedValueException;
-use function call_user_func;
 
 /**
  * Translates Bolt objects to Driver Types.
