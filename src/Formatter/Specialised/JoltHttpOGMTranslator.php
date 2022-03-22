@@ -14,7 +14,15 @@ namespace Laudis\Neo4j\Formatter\Specialised;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Http\HttpHelper;
+use Laudis\Neo4j\Types\AbstractPropertyObject;
 use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\Cartesian3DPoint;
+use Laudis\Neo4j\Types\CartesianPoint;
+use Laudis\Neo4j\Types\WGS84Point;
+use Laudis\Neo4j\Types\WGS843DPoint;
+use Laudis\Neo4j\Types\Relation;
+use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -38,7 +46,7 @@ final class JoltHttpOGMTranslator
             'Z' => static fn (string $value): int => (int) $value,
             'R' => static fn (string $value): float => (float) $value,
             'U' => static fn (string $value): string => $value,
-            'T' => fn (string $value)/*TODO*/ => $this->translateDateTime($value),
+            'T' => fn (string $value): AbstractPropertyObject => $this->translateDateTime($value),
             '@' => fn (string $value): PointInterface => $this->translatePoint($value),
             '#' => static function (string $value) {
                 // TODO
@@ -80,6 +88,18 @@ final class JoltHttpOGMTranslator
         }
 
         return new CypherList($allResults);
+    }
+
+    private function translateJoltType(?stdClass $value) {
+        if (is_null($value)) {
+            return null;
+        }
+
+        [$key, $value] = HttpHelper::splitJoltSingleton($value);
+        if (!isset($this->rawToTypes[$key])) {
+            throw new UnexpectedValueException('Unexpected Jolt key: ' . $key);
+        }
+        return $this->rawToTypes[$key]($value);
     }
 
     private function translateDateTime(string $datetime)
@@ -142,7 +162,7 @@ final class JoltHttpOGMTranslator
     private function getCoordinates(string $value): array
     {
         $matches = [];
-        if (!preg_match('/^POINT ?(Z?) ?\(([0-9 ]+)\)$/', $value, $matches)) {
+        if (!preg_match('/^POINT ?(Z?) ?\(([0-9\. ]+)\)$/', $value, $matches)) {
             throw new UnexpectedValueException('Unexpected point coordinates string: '.$value);
         }
         $coordinates = explode(' ', $matches[2]);
