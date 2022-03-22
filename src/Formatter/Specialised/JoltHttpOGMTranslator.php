@@ -12,6 +12,7 @@
 namespace Laudis\Neo4j\Formatter\Specialised;
 
 use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -38,7 +39,7 @@ final class JoltHttpOGMTranslator
             'R' => static fn (string $value): float => (float) $value,
             'U' => static fn (string $value): string => $value,
             'T' => fn (string $value)/*TODO*/ => $this->translateDateTime($value),
-            '@' => fn (string $value): AbstractCypherPoint => $this->translatePoint($value),
+            '@' => fn (string $value): PointInterface => $this->translatePoint($value),
             '#' => static function (string $value) {
                 // TODO
                 throw new UnexpectedValueException('Binary data has not been implemented');
