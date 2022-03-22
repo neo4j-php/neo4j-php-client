@@ -21,7 +21,8 @@ use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
-use Laudis\Neo4j\Types\Relation;
+use Laudis\Neo4j\Types\Path;
+use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 use Psr\Http\Message\RequestInterface;
@@ -55,8 +56,8 @@ final class JoltHttpOGMTranslator
             '[]' => fn (array $value): CypherList => $this->translateList($value),
             '{}' => fn (stdClass $value): CypherMap => $this->translateMap($value),
             '()' => fn (array $value): Node => new Node($value[0], new CypherList($value[1]), $this->translateMap($value[2])),
-            '->' => fn (array $value): Relation => new Relation($value[0], $value[1], $value[3], $value[2], $this->translateMap($value[4])),
-            '<-' => fn (array $value): Relation => new Relation($value[0], $value[3], $value[1], $value[2], $this->translateMap($value[4])),
+            '->' => fn (array $value): Relationship => new Relationship($value[0], $value[1], $value[3], $value[2], $this->translateMap($value[4])),
+            '<-' => fn (array $value): Relationship => new Relationship($value[0], $value[3], $value[1], $value[2], $this->translateMap($value[4])),
             '..' => fn (array $value): Path => $this->translatePath($value),
         ];
     }
