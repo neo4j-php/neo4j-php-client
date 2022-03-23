@@ -75,7 +75,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         if ($response->summary instanceof stdClass) {
             /** @var stdClass $stats */
             $stats = $response->summary->stats;
-        } elseif (!isset($response->stats)) {
+        } elseif (isset($response->stats)) {
             /** @var stdClass $stats */
             $stats = $response->stats;
         } else {
