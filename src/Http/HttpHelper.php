@@ -169,6 +169,8 @@ final class HttpHelper
     }
 
     /**
+     * @pure
+     *
      * @return array{0: string, 1: mixed}
      */
     public static function splitJoltSingleton(stdClass $joltSingleton): array
