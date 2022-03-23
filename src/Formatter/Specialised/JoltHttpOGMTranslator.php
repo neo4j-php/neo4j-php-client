@@ -13,7 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
+use function array_key_first;
 use Closure;
+use function is_array;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -206,9 +208,18 @@ final class JoltHttpOGMTranslator
     {
         return new CypherMap(
             function () use ($value) {
-                /** @var stdClass|null $element */
+                /** @var stdClass|array|null $element */
                 foreach ((array) $value as $key => $element) {
-                    yield $key => $this->translateJoltType($element);
+                    // There is an odd case in the JOLT protocol when dealing with properties in a node. Lists appear not to receive a composite type label, which is why we have to handle them specifically here.
+                    if (is_array($element)) {
+                        if (array_key_first($element) === 0) {
+                            yield $key => new CypherList($element);
+                        } else {
+                            yield $key => new CypherMap($element);
+                        }
+                    } else {
+                        yield $key => $this->translateJoltType($element);
+                    }
                 }
             }
         );

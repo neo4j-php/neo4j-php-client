@@ -13,10 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use function is_iterable;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Types\AbstractCypherSequence;
 
 final class TransactionHelper
 {
@@ -59,11 +59,8 @@ final class TransactionHelper
      */
     private static function triggerLazyResult($tbr): void
     {
-        if (is_iterable($tbr)) {
-            /** @var mixed $x */
-            foreach ($tbr as $x) {
-                self::triggerLazyResult($x);
-            }
+        if ($tbr instanceof AbstractCypherSequence) {
+            $tbr->preload();
         }
     }
 }

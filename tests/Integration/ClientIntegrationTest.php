@@ -74,7 +74,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
                 $x = $this->getClient()->runStatement($statement, $prev);
                 $y = $this->getClient()->runStatement($statement, $current[0]);
 
-                self::assertEquals($x->first()->getAsNode('u')->getProperties(), $y->first()->getAsNode('u')->getProperties());
+                self::assertEquals($x->first()->getAsNode('u')->getProperties()->toArray(), $y->first()->getAsNode('u')->getProperties()->toArray());
             }
             $prev = $current[0];
         }

@@ -179,11 +179,9 @@ final class HttpSession implements SessionInterface
         $response = $connection->getImplementation()->sendRequest($request);
 
         $response = HttpHelper::interpretResponse($response);
-        /** @var stdClass|null $info */
-        $info = $response->info;
-        if (is_object($info)) {
+        if (isset($response->info) && $response->info instanceof stdClass) {
             /** @var string */
-            $url = $info->commit;
+            $url = $response->info->commit;
         } else {
             /** @var string */
             $url = $response->commit;
