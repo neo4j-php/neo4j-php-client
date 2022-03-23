@@ -87,6 +87,7 @@ final class JoltHttpOGMTranslator
         $allResults = [];
         /** @var stdClass $result */
         foreach ($body->results as $result) {
+
             /** @var stdClass $header */
             $header = $result->header;
             /** @var list<string> $fields */
@@ -133,7 +134,7 @@ final class JoltHttpOGMTranslator
      */
     private function translateDateTime(string $datetime)
     {
-        if (preg_match('/^\d+-\d{2}-\d{2}$/', $datetime)) {
+        if (preg_match('/^[\-−]?\d+-\d{2}-\d{2}$/u', $datetime)) {
             $date = DateTimeImmutable::createFromFormat('Y-m-d', $datetime);
 
             return new Date((int) $date->diff(new DateTimeImmutable('@0'))->format('%a'));
@@ -145,7 +146,7 @@ final class JoltHttpOGMTranslator
             return new LocalTime($nanoseconds);
         }
 
-        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?(?<zone>[\w\W])+$/', $datetime, $matches)) {
+        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?(?<zone>.+)$/', $datetime, $matches)) {
             $nanoseconds = $this->nanosecondsFromMatches($matches);
 
             $offset = $this->offsetFromMatches($matches);
@@ -239,13 +240,11 @@ final class JoltHttpOGMTranslator
             function () use ($value) {
                 /** @var stdClass|array|null $element */
                 foreach ((array) $value as $key => $element) {
-                    // There is an odd case in the JOLT protocol when dealing with properties in a node. Lists appear not to receive a composite type label, which is why we have to handle them specifically here.
+                    // There is an odd case in the JOLT protocol when dealing with properties in a node.
+                    // Lists appear not to receive a composite type label,
+                    // which is why we have to handle them specifically here.
                     if (is_array($element)) {
-                        if (array_key_first($element) === 0) {
-                            yield $key => new CypherList($element);
-                        } else {
-                            yield $key => new CypherMap($element);
-                        }
+                        yield $key => new CypherList($element);
                     } else {
                         yield $key => $this->translateJoltType($element);
                     }
