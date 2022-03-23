@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
+use function sprintf;
+
 /**
  * A relationship without any nodes attached to it.
  *
@@ -22,7 +25,7 @@ namespace Laudis\Neo4j\Types;
  *
  * @extends AbstractPropertyObject<OGMTypes, int|string|CypherMap<OGMTypes>>
  */
-final class UnboundRelationship extends AbstractPropertyObject
+class UnboundRelationship extends AbstractPropertyObject
 {
     private int $id;
     private string $type;
@@ -67,5 +70,21 @@ final class UnboundRelationship extends AbstractPropertyObject
             'type' => $this->getType(),
             'properties' => $this->getProperties(),
         ];
+    }
+
+    /**
+     * Gets the property of the relationship by key.
+     *
+     * @return OGMTypes
+     */
+    public function getProperty(string $key)
+    {
+        /** @psalm-suppress ImpureMethodCall */
+        if (!$this->properties->hasKey($key)) {
+            throw new PropertyDoesNotExistException(sprintf('Property "%s" does not exist on relationship', $key));
+        }
+
+        /** @psalm-suppress ImpureMethodCall */
+        return $this->properties->get($key);
     }
 }
