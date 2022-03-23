@@ -73,6 +73,23 @@ final class JoltHttpOGMTranslator
         ];
     }
 
+    public function decorateRequest(RequestInterface $request): RequestInterface
+    {
+        /** @psalm-suppress ImpureMethodCall */
+        return $request->withHeader(
+            'Accept',
+            'application/vnd.neo4j.jolt+json-seq;strict=true;charset=UTF-8'
+        );
+    }
+
+    /**
+     * @return array{resultDataContents?: list<'GRAPH'|'ROW'|'REST'>, includeStats?:bool}
+     */
+    public function statementConfigOverride(): array
+    {
+        return [];
+    }
+
     /**
      * @return CypherList<CypherList<CypherMap<OGMTypes>>>
      */
@@ -124,37 +141,6 @@ final class JoltHttpOGMTranslator
         }
 
         return $this->rawToTypes[$key]($input);
-    }
-
-    /**
-     * @return OGMTypes
-     *
-     * @psalm-suppress ImpureMethodCall
-     * @psalm-suppress PossiblyFalseReference
-     */
-    private function translateDateTime(string $datetime)
-    {
-        if (preg_match('/^[\-−]?\d+-\d{2}-\d{2}$/u', $datetime)) {
-            $date = DateTimeImmutable::createFromFormat('Y-m-d', $datetime);
-
-            return new Date((int) $date->diff(new DateTimeImmutable('@0'))->format('%a'));
-        }
-
-        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?$/', $datetime, $matches)) {
-            $nanoseconds = $this->nanosecondsFromMatches($matches);
-
-            return new LocalTime($nanoseconds);
-        }
-
-        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?(?<zone>.+)$/', $datetime, $matches)) {
-            $nanoseconds = $this->nanosecondsFromMatches($matches);
-
-            $offset = $this->offsetFromMatches($matches);
-
-            return new Time($nanoseconds, $offset);
-        }
-
-        throw new UnexpectedValueException('Date/time values have not been implemented yet');
     }
 
     /**
@@ -290,23 +276,6 @@ final class JoltHttpOGMTranslator
         return new Path(new CypherList($nodes), new CypherList($relations), new CypherList($ids));
     }
 
-    public function decorateRequest(RequestInterface $request): RequestInterface
-    {
-        /** @psalm-suppress ImpureMethodCall */
-        return $request->withHeader(
-            'Accept',
-            'application/vnd.neo4j.jolt+json-seq;strict=true;charset=UTF-8'
-        );
-    }
-
-    /**
-     * @return array{resultDataContents?: list<'GRAPH'|'ROW'|'REST'>, includeStats?:bool}
-     */
-    public function statementConfigOverride(): array
-    {
-        return [];
-    }
-
     /**
      * @param array{0: int, 1: list<string>, 2: stdClass} $value
      */
@@ -334,6 +303,37 @@ final class JoltHttpOGMTranslator
     private function translateBinary(): Closure
     {
         throw new UnexpectedValueException('Binary data has not been implemented');
+    }
+
+    /**
+     * @return OGMTypes
+     *
+     * @psalm-suppress ImpureMethodCall
+     * @psalm-suppress PossiblyFalseReference
+     */
+    private function translateDateTime(string $datetime)
+    {
+        if (preg_match('/^[\-−]?\d+-\d{2}-\d{2}$/u', $datetime)) {
+            $date = DateTimeImmutable::createFromFormat('Y-m-d', $datetime);
+
+            return new Date((int) $date->diff(new DateTimeImmutable('@0'))->format('%a'));
+        }
+
+        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?$/', $datetime, $matches)) {
+            $nanoseconds = $this->nanosecondsFromMatches($matches);
+
+            return new LocalTime($nanoseconds);
+        }
+
+        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?(?<zone>.+)$/', $datetime, $matches)) {
+            $nanoseconds = $this->nanosecondsFromMatches($matches);
+
+            $offset = $this->offsetFromMatches($matches);
+
+            return new Time($nanoseconds, $offset);
+        }
+
+        throw new UnexpectedValueException('Date/time values have not been implemented yet');
     }
 
     private function nanosecondsFromMatches(array $matches): int
