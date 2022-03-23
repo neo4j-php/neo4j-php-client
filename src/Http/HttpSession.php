@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use function is_object;
 use JsonException;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\TransactionHelper;
@@ -26,14 +27,13 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
+use function microtime;
+use function parse_url;
+use const PHP_URL_PATH;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use stdClass;
-use function is_object;
-use function microtime;
-use function parse_url;
-use const PHP_URL_PATH;
 
 /**
  * @template T
@@ -78,22 +78,21 @@ final class HttpSession implements SessionInterface
     /**
      * @psalm-mutation-free
      *
-     * @param FormatterInterface<T> $formatter
+     * @param FormatterInterface<T>              $formatter
      * @param Resolvable<StreamFactoryInterface> $factory
-     * @param Resolvable<string> $uri
-     * @param Resolvable<RequestFactory> $requestFactory
+     * @param Resolvable<string>                 $uri
+     * @param Resolvable<RequestFactory>         $requestFactory
      */
     public function __construct(
-        Resolvable            $factory,
-        HttpConnectionPool    $manager,
-        SessionConfiguration  $config,
-        FormatterInterface    $formatter,
-        Resolvable            $requestFactory,
-        Resolvable            $uri,
+        Resolvable $factory,
+        HttpConnectionPool $manager,
+        SessionConfiguration $config,
+        FormatterInterface $formatter,
+        Resolvable $requestFactory,
+        Resolvable $uri,
         AuthenticateInterface $auth,
-        string                $userAgent
-    )
-    {
+        string $userAgent
+    ) {
         $this->streamFactory = $factory;
         $this->config = $config;
         $this->pool = $manager;
@@ -134,7 +133,7 @@ final class HttpSession implements SessionInterface
 
     public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
-        return TransactionHelper::retry(fn() => $this->openTransaction(), $tsxHandler);
+        return TransactionHelper::retry(fn () => $this->openTransaction(), $tsxHandler);
     }
 
     public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
@@ -213,7 +212,7 @@ final class HttpSession implements SessionInterface
 
     private function instantCommitRequest(RequestInterface $request): RequestInterface
     {
-        $path = $request->getUri()->getPath() . '/commit';
+        $path = $request->getUri()->getPath().'/commit';
         $uri = $request->getUri()->withPath($path);
 
         return $request->withUri($uri);
