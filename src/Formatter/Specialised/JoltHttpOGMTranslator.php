@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
-use function array_key_first;
 use Closure;
 use DateTimeImmutable;
 use function is_array;
@@ -104,7 +103,6 @@ final class JoltHttpOGMTranslator
         $allResults = [];
         /** @var stdClass $result */
         foreach ($body->results as $result) {
-
             /** @var stdClass $header */
             $header = $result->header;
             /** @var list<string> $fields */

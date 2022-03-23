@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
-use function is_object;
 use JsonException;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\TransactionHelper;
