@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Formatter\Specialised;
 
 use function array_key_first;
 use Closure;
+use DateTimeImmutable;
 use function is_array;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
@@ -24,15 +25,21 @@ use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
+use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
+use function preg_match;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
+use function str_pad;
+use const STR_PAD_RIGHT;
 use function strtolower;
 use UnexpectedValueException;
 
@@ -120,10 +127,32 @@ final class JoltHttpOGMTranslator
 
     /**
      * @return OGMTypes
+     *
+     * @psalm-suppress ImpureMethodCall
+     * @psalm-suppress PossiblyFalseReference
      */
     private function translateDateTime(string $datetime)
     {
-        // TODO; They're in ISO format so shouldn't be too hard
+        if (preg_match('/^\d+-\d{2}-\d{2}$/', $datetime)) {
+            $date = DateTimeImmutable::createFromFormat('Y-m-d', $datetime);
+
+            return new Date((int) $date->diff(new DateTimeImmutable('@0'))->format('%a'));
+        }
+
+        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?$/', $datetime, $matches)) {
+            $nanoseconds = $this->nanosecondsFromMatches($matches);
+
+            return new LocalTime($nanoseconds);
+        }
+
+        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?(?<zone>[\w\W])+$/', $datetime, $matches)) {
+            $nanoseconds = $this->nanosecondsFromMatches($matches);
+
+            $offset = $this->offsetFromMatches($matches);
+
+            return new Time($nanoseconds, $offset);
+        }
+
         throw new UnexpectedValueException('Date/time values have not been implemented yet');
     }
 
@@ -306,5 +335,28 @@ final class JoltHttpOGMTranslator
     private function translateBinary(): Closure
     {
         throw new UnexpectedValueException('Binary data has not been implemented');
+    }
+
+    private function nanosecondsFromMatches(array $matches): int
+    {
+        /** @var array{0: string, 1: string, 2: string, 3: string, 4?: array{0: string, 1: string}} $matches */
+        $seconds = ((int) $matches[1]) * 60 * 60 + ((int) $matches[2]) * 60 + ((int) $matches[3]);
+        $nanoseconds = $matches[4][1] ?? '0';
+        $nanoseconds = str_pad($nanoseconds, 9, '0', STR_PAD_RIGHT);
+
+        return $seconds * 1000 * 1000 * 1000 + (int) $nanoseconds;
+    }
+
+    private function offsetFromMatches(array $matches): int
+    {
+        /** @var array{zone: string} $matches */
+        $zone = $matches['zone'];
+
+        if (preg_match('/(\d{2}):(\d{2})/', $zone, $matches)) {
+            /** @var array{0: string, 1: string, 2: string} $matches */
+            return ((int) $matches[1]) * 60 + (int) $matches[2];
+        }
+
+        return 0;
     }
 }
