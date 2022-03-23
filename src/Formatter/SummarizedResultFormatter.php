@@ -72,7 +72,13 @@ final class SummarizedResultFormatter implements FormatterInterface
      */
     public function formatHttpStats(stdClass $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
     {
-        if (!isset($response->stats)) {
+        if ($response->summary instanceof stdClass) {
+            /** @var stdClass $stats */
+            $stats = $response->summary->stats;
+        } elseif (!isset($response->stats)) {
+            /** @var stdClass $stats */
+            $stats = $response->stats;
+        } else {
             throw new UnexpectedValueException('No stats found in the response set');
         }
 
@@ -81,20 +87,20 @@ final class SummarizedResultFormatter implements FormatterInterface
          * @psalm-suppress MixedArgument
          */
         $counters = new SummaryCounters(
-            $response->stats->nodes_created ?? 0,
-            $response->stats->nodes_deleted ?? 0,
-            $response->stats->relationships_created ?? 0,
-            $response->stats->relationships_deleted ?? 0,
-            $response->stats->properties_set ?? 0,
-            $response->stats->labels_added ?? 0,
-            $response->stats->labels_removed ?? 0,
-            $response->stats->indexes_added ?? 0,
-            $response->stats->indexes_removed ?? 0,
-            $response->stats->constraints_added ?? 0,
-            $response->stats->constraints_removed ?? 0,
-            $response->stats->contains_updates ?? false,
-            $response->stats->contains_system_updates ?? false,
-            $response->stats->system_updates ?? 0,
+            $stats->nodes_created ?? 0,
+            $stats->nodes_deleted ?? 0,
+            $stats->relationships_created ?? 0,
+            $stats->relationships_deleted ?? 0,
+            $stats->properties_set ?? 0,
+            $stats->labels_added ?? 0,
+            $stats->labels_removed ?? 0,
+            $stats->indexes_added ?? 0,
+            $stats->indexes_removed ?? 0,
+            $stats->constraints_added ?? 0,
+            $stats->constraints_removed ?? 0,
+            $stats->contains_updates ?? false,
+            $stats->contains_system_updates ?? false,
+            $stats->system_updates ?? 0,
         );
 
         $summary = new ResultSummary(
