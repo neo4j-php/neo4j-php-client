@@ -316,7 +316,7 @@ final class JoltHttpOGMTranslator
     private const ZONE_REGEX = '(?<zone>.+)';
 
     /**
-     * @return OGMTypes
+     * @return Date|LocalDateTime|LocalTime|DateTime|Duration|Time
      *
      * @psalm-suppress ImpureMethodCall
      * @psalm-suppress PossiblyFalseReference
@@ -364,7 +364,7 @@ final class JoltHttpOGMTranslator
         }
 
         if (str_starts_with($datetime, 'P')) {
-            return $this->durationFromFormat($datetime, $matches);
+            return $this->durationFromFormat($datetime);
         }
 
         throw new UnexpectedValueException(sprintf('Could not handle date/time "%s"', $datetime));
@@ -429,6 +429,9 @@ final class JoltHttpOGMTranslator
         return [$seconds, $nanoseconds];
     }
 
+    /**
+     * @psalm-suppress ImpureMethodCall
+     */
     private function durationFromFormat(string $datetime): Duration
     {
         $nanoseconds = 0;

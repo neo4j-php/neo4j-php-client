@@ -98,6 +98,8 @@ final class HttpHelper
      *
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAssignment
+     * @psalm-suppress MixedPropertyFetch
+     * @psalm-suppress MixedArgument
      */
     public static function getJoltBody(string $contents): stdClass
     {
