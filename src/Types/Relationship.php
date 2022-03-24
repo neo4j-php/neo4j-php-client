@@ -68,7 +68,7 @@ final class Relationship extends UnboundRelationship
         $tbr = parent::toArray();
 
         $tbr['startNodeId'] = $this->getStartNodeId();
-        $tbr['endNodeId'] = $this->getStartNodeId();
+        $tbr['endNodeId'] = $this->getEndNodeId();
 
         return $tbr;
     }
