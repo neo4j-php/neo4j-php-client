@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Formatter\Specialised;
 
 use Closure;
 use const DATE_ATOM;
+use DateInterval;
 use DateTimeImmutable;
 use function is_array;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -27,6 +28,7 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
@@ -43,6 +45,8 @@ use RuntimeException;
 use stdClass;
 use function str_pad;
 use const STR_PAD_RIGHT;
+use function str_replace;
+use function str_starts_with;
 use function strtolower;
 use UnexpectedValueException;
 
@@ -359,6 +363,10 @@ final class JoltHttpOGMTranslator
             return new DateTime($seconds, $nanoseconds, $offset);
         }
 
+        if (str_starts_with($datetime, 'P')) {
+            return $this->durationFromFormat($datetime, $matches);
+        }
+
         throw new UnexpectedValueException(sprintf('Could not handle date/time "%s"', $datetime));
     }
 
@@ -419,5 +427,24 @@ final class JoltHttpOGMTranslator
         $nanoseconds %= 1000000000;
 
         return [$seconds, $nanoseconds];
+    }
+
+    private function durationFromFormat(string $datetime): Duration
+    {
+        $nanoseconds = 0;
+        // PHP date interval does not understand fractions of a second.
+        if (preg_match('/\.(?<nanoseconds>\d+)S/u', $datetime, $matches)) {
+            /** @var array{0: string, nanoseconds: string} $matches */
+            $nanoseconds = (int) str_pad($matches['nanoseconds'], 9, '0', STR_PAD_RIGHT);
+
+            $datetime = str_replace($matches[0], 'S', $datetime);
+        }
+
+        $interval = new DateInterval($datetime);
+        $months = (int) $interval->format('%y') * 12 + (int) $interval->format('%m');
+        $days = (int) $interval->format('%d');
+        $seconds = (int) $interval->format('%h') * 60 * 60 + (int) $interval->format('%i') * 60 + (int) $interval->format('%s');
+
+        return new Duration($months, $days, $seconds, $nanoseconds);
     }
 }
