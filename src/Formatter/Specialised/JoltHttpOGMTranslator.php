@@ -171,7 +171,7 @@ final class JoltHttpOGMTranslator
             return new Cartesian3DPoint(
                 (float) $coordinates[0],
                 (float) $coordinates[1],
-                (float) $coordinates[2],
+                (float) ($coordinates[2] ?? 0.0),
             );
         }
         if ($srid === WGS84Point::SRID) {
@@ -184,7 +184,7 @@ final class JoltHttpOGMTranslator
             return new WGS843DPoint(
                 (float) $coordinates[0],
                 (float) $coordinates[1],
-                (float) $coordinates[2],
+                (float) ($coordinates[2] ?? 0.0),
             );
         }
         throw new UnexpectedValueException('A point with srid '.$srid.' has been returned, which has not been implemented.');
@@ -320,6 +320,7 @@ final class JoltHttpOGMTranslator
      * @return Date|LocalDateTime|LocalTime|DateTime|Duration|Time
      *
      * @psalm-suppress ImpureMethodCall
+     * @psalm-suppress ImpureFunctionCall
      * @psalm-suppress PossiblyFalseReference
      */
     private function translateDateTime(string $datetime)
