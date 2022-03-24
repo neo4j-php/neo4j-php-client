@@ -202,7 +202,7 @@ final class JoltHttpOGMTranslator
     }
 
     /**
-     * @return array{0: string, 1: string, 2: string} $coordinates
+     * @return array{0: string, 1: string, 2?: string} $coordinates
      */
     private function getCoordinates(string $value): array
     {
@@ -216,10 +216,11 @@ final class JoltHttpOGMTranslator
             throw new UnexpectedValueException('Expected 3 coordinates in string: '.$value);
         }
 
-        if (count($coordinates) !== 2) {
+        if ($matches[1] !== 'Z' && count($coordinates) !== 2) {
             throw new UnexpectedValueException('Expected 2 coordinates in string: '.$value);
         }
 
+        /** @var array{0: string, 1: string, 2?: string} */
         return $coordinates;
     }
 
