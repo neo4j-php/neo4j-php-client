@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter\Specialised;
 
 use Closure;
+use const DATE_ATOM;
 use DateTimeImmutable;
 use function is_array;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -25,6 +26,8 @@ use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
@@ -36,6 +39,7 @@ use Laudis\Neo4j\Types\WGS84Point;
 use function preg_match;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
 use stdClass;
 use function str_pad;
 use const STR_PAD_RIGHT;
@@ -303,6 +307,10 @@ final class JoltHttpOGMTranslator
         throw new UnexpectedValueException('Binary data has not been implemented');
     }
 
+    private const TIME_REGEX = '(?<hours>\d{2}):(?<minutes>\d{2}):(?<seconds>\d{2})((\.)(?<nanoseconds>\d+))?';
+    private const DATE_REGEX = '(?<date>[\-−]?\d+-\d{2}-\d{2})';
+    private const ZONE_REGEX = '(?<zone>.+)';
+
     /**
      * @return OGMTypes
      *
@@ -311,19 +319,19 @@ final class JoltHttpOGMTranslator
      */
     private function translateDateTime(string $datetime)
     {
-        if (preg_match('/^[\-−]?\d+-\d{2}-\d{2}$/u', $datetime)) {
-            $date = DateTimeImmutable::createFromFormat('Y-m-d', $datetime);
+        if (preg_match('/^'.self::DATE_REGEX.'$/u', $datetime, $matches)) {
+            $days = $this->daysFromMatches($matches);
 
-            return new Date((int) $date->diff(new DateTimeImmutable('@0'))->format('%a'));
+            return new Date($days);
         }
 
-        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?$/', $datetime, $matches)) {
+        if (preg_match('/^'.self::TIME_REGEX.'$/u', $datetime, $matches)) {
             $nanoseconds = $this->nanosecondsFromMatches($matches);
 
             return new LocalTime($nanoseconds);
         }
 
-        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})((\.)(\d+))?(?<zone>.+)$/', $datetime, $matches)) {
+        if (preg_match('/^'.self::TIME_REGEX.self::ZONE_REGEX.'$/u', $datetime, $matches)) {
             $nanoseconds = $this->nanosecondsFromMatches($matches);
 
             $offset = $this->offsetFromMatches($matches);
@@ -331,14 +339,36 @@ final class JoltHttpOGMTranslator
             return new Time($nanoseconds, $offset);
         }
 
-        throw new UnexpectedValueException('Date/time values have not been implemented yet');
+        if (preg_match('/^'.self::DATE_REGEX.'T'.self::TIME_REGEX.'$/u', $datetime, $matches)) {
+            $nanoseconds = $this->nanosecondsFromMatches($matches);
+            $seconds = $this->secondsInDaysFromMatches($matches);
+
+            [$seconds, $nanoseconds] = $this->addNanoSecondsToSeconds($nanoseconds, $seconds);
+
+            return new LocalDateTime($seconds, $nanoseconds);
+        }
+
+        if (preg_match('/^'.self::DATE_REGEX.'T'.self::TIME_REGEX.self::ZONE_REGEX.'$/u', $datetime, $matches)) {
+            $nanoseconds = $this->nanosecondsFromMatches($matches);
+            $seconds = $this->secondsInDaysFromMatches($matches);
+
+            [$seconds, $nanoseconds] = $this->addNanoSecondsToSeconds($nanoseconds, $seconds);
+
+            $offset = $this->offsetFromMatches($matches);
+
+            return new DateTime($seconds, $nanoseconds, $offset);
+        }
+
+        throw new UnexpectedValueException(sprintf('Could not handle date/time "%s"', $datetime));
     }
 
     private function nanosecondsFromMatches(array $matches): int
     {
-        /** @var array{0: string, 1: string, 2: string, 3: string, 4?: array{0: string, 1: string}} $matches */
-        $seconds = ((int) $matches[1]) * 60 * 60 + ((int) $matches[2]) * 60 + ((int) $matches[3]);
-        $nanoseconds = $matches[4][1] ?? '0';
+        /** @var array{0: string, hours: string, minutes: string, seconds: string, nanoseconds?:  string} $matches */
+        ['hours' => $hours, 'minutes' => $minutes, 'seconds' => $seconds] = $matches;
+        $seconds = (((int) $hours) * 60 * 60) + (((int) $minutes) * 60) + ((int) $seconds);
+
+        $nanoseconds = $matches['nanoseconds'] ?? '0';
         $nanoseconds = str_pad($nanoseconds, 9, '0', STR_PAD_RIGHT);
 
         return $seconds * 1000 * 1000 * 1000 + (int) $nanoseconds;
@@ -351,9 +381,43 @@ final class JoltHttpOGMTranslator
 
         if (preg_match('/(\d{2}):(\d{2})/', $zone, $matches)) {
             /** @var array{0: string, 1: string, 2: string} $matches */
-            return ((int) $matches[1]) * 60 + (int) $matches[2];
+            return ((int) $matches[1]) * 60 * 60 + (int) $matches[2] * 60;
         }
 
         return 0;
+    }
+
+    private function daysFromMatches(array $matches): int
+    {
+        /** @var array{date: string} $matches */
+        $date = DateTimeImmutable::createFromFormat('Y-m-d', $matches['date']);
+        if ($date === false) {
+            throw new RuntimeException(sprintf('Cannot create DateTime from "%s" in format "Y-m-d"', $matches['date']));
+        }
+
+        /** @psalm-suppress ImpureMethodCall */
+        return (int) $date->diff(new DateTimeImmutable('@0'))->format('%a');
+    }
+
+    private function secondsInDaysFromMatches(array $matches): int
+    {
+        /** @var array{date: string} $matches */
+        $date = DateTimeImmutable::createFromFormat(DATE_ATOM, $matches['date'].'T00:00:00+00:00');
+        if ($date === false) {
+            throw new RuntimeException(sprintf('Cannot create DateTime from "%s" in format "Y-m-d"', $matches['date']));
+        }
+
+        return $date->getTimestamp();
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    private function addNanoSecondsToSeconds(int $nanoseconds, int $seconds): array
+    {
+        $seconds += (int) ($nanoseconds / 1000 / 1000 / 1000);
+        $nanoseconds %= 1000000000;
+
+        return [$seconds, $nanoseconds];
     }
 }
