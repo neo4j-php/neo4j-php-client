@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use function array_key_exists;
 use function array_splice;
 use Bolt\protocol\V4;
 use function call_user_func;
@@ -109,24 +108,9 @@ final class BoltResult implements Iterator
         return $this->meta ?? [];
     }
 
-    /**
-     * @return non-empty-list<list>
-     */
-    private function pull(): array
-    {
-        $protocol = $this->connection->getImplementation();
-        if (!$protocol instanceof V4) {
-            /** @var non-empty-list<list> */
-            return $protocol->pullAll(['qid' => $this->qid]);
-        }
-
-        /** @var non-empty-list<list> */
-        return $protocol->pull(['n' => $this->fetchSize, 'qid' => $this->qid]);
-    }
-
     private function fetchResults(): void
     {
-        $meta = $this->pull();
+        $meta = $this->connection->pull($this->qid, $this->fetchSize);
 
         /** @var list<list> $rows */
         $rows = array_splice($meta, 0, count($meta) - 1);

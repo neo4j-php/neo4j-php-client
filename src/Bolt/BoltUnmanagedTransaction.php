@@ -50,7 +50,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /** @psalm-readonly */
     private BoltConnection $connection;
     /** @psalm-readonly */
-    private string $database;
+    private ?string $database;
 
     private bool $isRolledBack = false;
 
@@ -61,7 +61,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @param FormatterInterface<T> $formatter
      */
-    public function __construct(string $database, FormatterInterface $formatter, BoltConnection $connection, SessionConfiguration $config, TransactionConfiguration $tsxConfig)
+    public function __construct(?string $database, FormatterInterface $formatter, BoltConnection $connection, SessionConfiguration $config, TransactionConfiguration $tsxConfig)
     {
         $this->formatter = $formatter;
         $this->connection = $connection;
@@ -82,7 +82,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         });
 
         try {
-            $this->getBolt()->commit();
+            $this->connection->commit();
             $this->isCommitted = true;
         } catch (MessageException $e) {
             $this->handleMessageException($e);
@@ -96,7 +96,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function rollback(): void
     {
         try {
-            $this->connection->getImplementation()->rollback();
+            $this->connection->rollback();
             $this->isRolledBack = true;
         } catch (MessageException $e) {
             $this->handleMessageException($e);
@@ -118,13 +118,16 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function runStatement(Statement $statement)
     {
-        $extra = ['db' => $this->database, 'tx_timeout' => (int) ($this->tsxConfig->getTimeout() * 1000)];
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), true);
         $start = microtime(true);
 
         try {
-            /** @var BoltMeta $meta */
-            $meta = $this->getBolt()->run($statement->getText(), $parameters->toArray(), $extra);
+            $meta = $this->connection->run(
+                $statement->getText(),
+                $parameters->toArray(),
+                $this->database,
+                $this->tsxConfig->getTimeout()
+            );
             $run = microtime(true);
         } catch (MessageException $e) {
             $this->handleMessageException($e);
@@ -154,14 +157,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         }
 
         return new CypherList($tbr);
-    }
-
-    /**
-     * @psalm-immutable
-     */
-    private function getBolt(): V3
-    {
-        return $this->connection->getImplementation();
     }
 
     /**

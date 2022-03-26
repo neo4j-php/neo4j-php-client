@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Common;
 
 use Bolt\protocol\V3;
+use Bolt\protocol\V4;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
@@ -25,6 +26,8 @@ use RuntimeException;
 
 /**
  * @implements ConnectionInterface<V3>
+ *
+ * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
  */
 final class BoltConnection implements ConnectionInterface
 {
@@ -144,9 +147,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function open(): void
     {
-        if ($this->boltProtocol === null) {
-            $this->boltProtocol = $this->factory->build()[0];
-        }
+        $this->boltProtocol = $this->factory->build()[0];
     }
 
     public function setTimeout(float $timeout): void
@@ -156,7 +157,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
-        if ($this->ownerCount === 0 && $this->boltProtocol !== null) {
+        if ($this->ownerCount === 0) {
             $this->boltProtocol = null;
             $this->hasBeenReset = false;
         }
@@ -164,7 +165,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function reset(): void
     {
-        if ($this->boltProtocol !== null) {
+        if ($this->boltProtocol) {
             $this->boltProtocol->reset();
             $this->boltProtocol = $this->factory->build()[0];
             if ($this->ownerCount > 0) {
@@ -179,17 +180,69 @@ final class BoltConnection implements ConnectionInterface
      */
     public function begin(?string $database, ?float $timeout): void
     {
-        $params = [];
-        if ($database) {
-            $params['db'] = $database;
-        }
-        if ($timeout) {
-            $params['tx_timeout'] = $timeout * 1000;
+        if ($this->boltProtocol === null) {
+            throw new RuntimeException('Cannot begin on a closed connection');
         }
 
-        if ($this->boltProtocol) {
-            $this->boltProtocol->begin($params);
+        $this->boltProtocol->begin($this->buildExtra($database, $timeout));
+    }
+
+    /**
+     * @return BoltMeta
+     */
+    public function run(string $text, array $parameters, ?string $database, ?float $timeout): array
+    {
+        if ($this->boltProtocol === null) {
+            throw new RuntimeException('Cannot run on a closed connection');
         }
+
+        /** @var BoltMeta */
+        return $this->boltProtocol->run($text, $parameters, $this->buildExtra($database, $timeout));
+    }
+
+    public function commit(): void
+    {
+        if ($this->boltProtocol === null) {
+            throw new RuntimeException('Cannot commit on a closed connection');
+        }
+
+        $this->boltProtocol->commit();
+    }
+
+    public function rollback(): void
+    {
+        if ($this->boltProtocol === null) {
+            throw new RuntimeException('Cannot commit on a closed connection');
+        }
+
+        $this->boltProtocol->rollback();
+    }
+
+    /**
+     * @return non-empty-list<list>
+     */
+    public function pull(?int $qid, ?int $fetchSize): array
+    {
+        if ($this->boltProtocol === null) {
+            throw new RuntimeException('Cannot pull on a closed connection');
+        }
+
+        $extra = [];
+        if ($fetchSize) {
+            $extra['n'] = $fetchSize;
+        }
+
+        if ($qid) {
+            $extra['qid'] = $qid;
+        }
+
+        if (!$this->boltProtocol instanceof V4) {
+            /** @var non-empty-list<list> */
+            return $this->boltProtocol->pullAll($extra);
+        }
+
+        /** @var non-empty-list<list> */
+        return $this->boltProtocol->pull($extra);
     }
 
     /**
@@ -214,5 +267,18 @@ final class BoltConnection implements ConnectionInterface
     public function decrementOwner(): void
     {
         --$this->ownerCount;
+    }
+
+    private function buildExtra(?string $database, ?float $timeout): array
+    {
+        $extra = [];
+        if ($database) {
+            $extra['db'] = $database;
+        }
+        if ($timeout) {
+            $extra['tx_timeout'] = $timeout * 1000;
+        }
+
+        return $extra;
     }
 }
