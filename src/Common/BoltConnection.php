@@ -47,6 +47,7 @@ final class BoltConnection implements ConnectionInterface
     private DriverConfiguration $driverConfiguration;
     private int $ownerCount = 0;
     private bool $hasBeenReset = false;
+    private string $expectedState = 'READY';
 
     /**
      * @psalm-mutation-free
@@ -169,6 +170,25 @@ final class BoltConnection implements ConnectionInterface
             if ($this->ownerCount > 0) {
                 $this->hasBeenReset = true;
             }
+        }
+    }
+
+    /**
+     * @param string|null $database the database to connect to
+     * @param float|null  $timeout  timeout in seconds
+     */
+    public function begin(?string $database, ?float $timeout): void
+    {
+        $params = [];
+        if ($database) {
+            $params['db'] = $database;
+        }
+        if ($timeout) {
+            $params['tx_timeout'] = $timeout * 1000;
+        }
+
+        if ($this->boltProtocol) {
+            $this->boltProtocol->begin($params);
         }
     }
 

@@ -145,9 +145,9 @@ final class SessionConfiguration
     /**
      * The database where the session is going to connect to.
      */
-    public function getDatabase(): string
+    public function getDatabase(): ?string
     {
-        return $this->database ?? self::DEFAULT_DATABASE;
+        return $this->database;
     }
 
     /**
