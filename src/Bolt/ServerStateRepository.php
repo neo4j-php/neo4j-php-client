@@ -13,24 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use function array_filter;
+use function array_map;
 use function in_array;
 
 /**
  * @see https://7687.org/bolt/bolt-protocol-server-state-specification-4.html#version-43
+ *
+ * @psalm-immutable
  */
 final class ServerStateRepository
 {
-    private const KEYS = ['State' => 0, 'Request Message' => 1, 'Triggers Signal' => 2, 'Server Response' => 3, 'New State' => 4];
-    public function canSendMessage(string $state, string $message): bool
-    {
-        return in_array($message, $this->getMessagesForState($state), true);
-    }
-
-    public function isValidState(string $state): bool
-    {
-        return in_array($state, $this->getStates(), true);
-    }
-
     private const TRANSITIONS = [
         ['CONNECTED', 'HELLO', null, 'SUCCESS', 'READY'],
         ['CONNECTED', 'HELLO', null, 'FAILURE', 'DEFUNCT'],
@@ -89,19 +82,88 @@ final class ServerStateRepository
         ['INTERRUPTED', 'GOODBYE', 'DISCONNECT', null, 'DEFUNCT'],
     ];
 
+    /** @var list<StateTransition> */
+    private array $transitions;
+
+    public function __construct()
+    {
+        $this->transitions = array_map(static fn ($x) => StateTransition::fromArray($x), self::TRANSITIONS);
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    public function expectedStates(string $state, string $message): array
+    {
+        $tbr = [];
+        foreach ($this->getAvailableTransitionsForState($state) as $transition) {
+            $tbr[$transition->getServerResponse() ?? ''] = $transition->getNewState();
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * Returns the expected state for the response.
+     */
+    public function expectedStateForResponse(string $state, string $message, string $response): ?string
+    {
+        return $this->expectedStates($state, $message)[$response] ?? null;
+    }
+
+    /**
+     * Returns the signal if the state transition response triggers one, null otherwise.
+     */
+    public function expectedSignalForResponse(string $state, string $message, string $response): ?string
+    {
+        foreach ($this->getAvailableTransitionsForStateAndMessage($state, $message) as $transition) {
+            if ($transition->getTriggersSignal()) {
+                return $transition->getTriggersSignal();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<StateTransition>
+     */
+    public function getAvailableTransitionsForStateAndMessage(string $state, string $message): array
+    {
+        return array_values(array_filter(
+            $this->getAvailableTransitionsForState($state),
+            static fn ($x) => $x->getMessage() === $message
+        ));
+    }
+
+    /**
+     * Returns the available transitions for the state.
+     *
+     * @return list<StateTransition>
+     */
+    private function getAvailableTransitionsForState(string $state): array
+    {
+        return array_values(
+            array_filter($this->transitions, static fn ($x) => $x->getOriginalState() === $state)
+        );
+    }
+
+    public function canSendMessage(string $state, string $message): bool
+    {
+        return in_array($message, $this->getMessagesForState($state), true);
+    }
+
+    public function isValidState(string $state): bool
+    {
+        return in_array($state, $this->getStates(), true);
+    }
+
     /**
      * @return list<string>
      */
     public function getMessagesForState(string $state): array
     {
-        $messages = [];
-        foreach (self::TRANSITIONS as $transition) {
-            if ($transition[self::KEYS['State']] === $state) {
-                $messages[] = $transition[self::KEYS['Request Message']];
-            }
-        }
-
-        return $messages;
+        return array_map(static fn ($x) => $x->getMessage(), $this->getAvailableTransitionsForState($state));
     }
 
     /**
@@ -109,7 +171,6 @@ final class ServerStateRepository
      */
     public function getStates(): array
     {
-        /** @var list<string> */
-        return array_unique(array_map(static fn (array $x) => $x[self::KEYS['State']], self::TRANSITIONS));
+        return array_values(array_unique(array_map(static fn ($x) => $x->getOriginalState(), $this->transitions)));
     }
 }
