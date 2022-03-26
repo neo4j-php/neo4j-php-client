@@ -411,4 +411,18 @@ CYPHER
         $tsx->run('MATCH (x) RETURN x');
         $tsx->commit();
     }
+
+    /**
+     * @dataProvider connectionAliases
+     *
+     * @doesNotPerformAssertions
+     */
+    public function testTransactionRunNoConsumeButSaveResult(string $alias): void
+    {
+        $tsx = $this->getClient()->beginTransaction([], $alias);
+        $result = $tsx->run("MATCH (n:Node) SET n.testing = 'world' RETURN n");
+        $tsx->commit();
+
+        unset($result);
+    }
 }
