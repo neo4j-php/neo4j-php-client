@@ -236,6 +236,7 @@ final class JoltHttpOGMTranslator
                     // There is an odd case in the JOLT protocol when dealing with properties in a node.
                     // Lists appear not to receive a composite type label,
                     // which is why we have to handle them specifically here.
+                    // @see https://github.com/neo4j/neo4j/issues/12858
                     if (is_array($element)) {
                         yield $key => new CypherList($element);
                     } else {
