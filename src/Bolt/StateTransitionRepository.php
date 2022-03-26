@@ -22,7 +22,7 @@ use function in_array;
  *
  * @psalm-immutable
  */
-final class ServerStateRepository
+final class StateTransitionRepository
 {
     private const TRANSITIONS = [
         ['CONNECTED', 'HELLO', null, 'SUCCESS', 'READY'],

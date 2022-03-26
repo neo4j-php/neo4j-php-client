@@ -62,29 +62,29 @@ final class TransactionConfiguration
     /**
      * Get the configured transaction metadata.
      *
-     * @return iterable<string, scalar|array|null>
+     * @return iterable<string, scalar|array|null>|null
      */
-    public function getMetaData(): iterable
+    public function getMetaData(): ?iterable
     {
         $tbr = $this->metaData;
         if (is_callable($tbr)) {
             $tbr = $tbr();
         }
 
-        return $tbr ?? [];
+        return $tbr;
     }
 
     /**
      * Get the configured transaction timeout in seconds.
      */
-    public function getTimeout(): float
+    public function getTimeout(): ?float
     {
         $tbr = $this->timeout;
         if (is_callable($tbr)) {
             $tbr = $tbr();
         }
 
-        return $tbr ?? self::DEFAULT_TIMEOUT;
+        return $tbr;
     }
 
     /**
