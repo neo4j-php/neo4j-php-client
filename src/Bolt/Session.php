@@ -172,7 +172,7 @@ final class Session implements SessionInterface
         try {
             $connection = $this->acquireConnection($config, $sessionConfig);
 
-            $connection->getImplementation()->begin(['db' => $this->config->getDatabase(), 'tx_timeout' => (int) ($config->getTimeout() * 1000)]);
+            $connection->begin($this->config->getDatabase(), $config->getTimeout());
         } catch (MessageException $e) {
             if (isset($connection)) {
                 $connection->reset();
