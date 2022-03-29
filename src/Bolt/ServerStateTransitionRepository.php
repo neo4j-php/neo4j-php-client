@@ -85,9 +85,20 @@ final class StateTransitionRepository
     /** @var list<StateTransition> */
     private array $transitions;
 
-    public function __construct()
+    private function __construct()
     {
         $this->transitions = array_map(static fn ($x) => StateTransition::fromArray($x), self::TRANSITIONS);
+    }
+
+    private static ?self $instance = null;
+
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+
+        return self::$instance;
     }
 
     /**
