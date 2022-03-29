@@ -16,7 +16,7 @@ namespace Laudis\Neo4j\Bolt;
 /**
  * @psalm-immutable
  */
-final class StateTransition
+final class ServerStateTransition
 {
     public function __construct(
         private string $originalState,

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
@@ -26,19 +27,9 @@ use Psr\Http\Message\UriInterface;
 final class HttpConnection implements ConnectionInterface
 {
     /** @psalm-readonly */
-    private string $serverAgent;
-    /** @psalm-readonly */
-    private UriInterface $serverAddress;
-    /** @psalm-readonly */
-    private string $serverVersion;
-    /** @psalm-readonly */
-    private ConnectionProtocol $protocol;
-    /** @psalm-readonly */
-    private AccessMode $accessMode;
-    /** @psalm-readonly */
-    private DatabaseInfo $databaseInfo;
-    /** @psalm-readonly */
     private ClientInterface $client;
+    /** @psalm-readonly */
+    private ConnectionConfiguration $config;
 
     private bool $isOpen = true;
 
@@ -47,20 +38,10 @@ final class HttpConnection implements ConnectionInterface
      */
     public function __construct(
         ClientInterface $client,
-        string $serverAgent,
-        UriInterface $serverAddress,
-        string $serverVersion,
-        ConnectionProtocol $protocol,
-        AccessMode $accessMode,
-        DatabaseInfo $databaseInfo
+        ConnectionConfiguration $config
     ) {
-        $this->serverAgent = $serverAgent;
-        $this->serverAddress = $serverAddress;
-        $this->serverVersion = $serverVersion;
-        $this->protocol = $protocol;
-        $this->accessMode = $accessMode;
-        $this->databaseInfo = $databaseInfo;
         $this->client = $client;
+        $this->config = $config;
     }
 
     /**
@@ -76,7 +57,7 @@ final class HttpConnection implements ConnectionInterface
      */
     public function getServerAgent(): string
     {
-        return $this->serverAgent;
+        return $this->config->getServerAgent();
     }
 
     /**
@@ -84,7 +65,7 @@ final class HttpConnection implements ConnectionInterface
      */
     public function getServerAddress(): UriInterface
     {
-        return $this->serverAddress;
+        return $this->config->getServerAddress();
     }
 
     /**
@@ -92,7 +73,7 @@ final class HttpConnection implements ConnectionInterface
      */
     public function getServerVersion(): string
     {
-        return $this->serverVersion;
+        return $this->config->getServerVersion();
     }
 
     /**
@@ -100,7 +81,7 @@ final class HttpConnection implements ConnectionInterface
      */
     public function getProtocol(): ConnectionProtocol
     {
-        return $this->protocol;
+        return $this->config->getProtocol();
     }
 
     /**
@@ -108,7 +89,7 @@ final class HttpConnection implements ConnectionInterface
      */
     public function getAccessMode(): AccessMode
     {
-        return $this->accessMode;
+        return $this->config->getAccessMode();
     }
 
     /**
@@ -116,7 +97,7 @@ final class HttpConnection implements ConnectionInterface
      */
     public function getDatabaseInfo(): DatabaseInfo
     {
-        return $this->databaseInfo;
+        return $this->config->getDatabaseInfo();
     }
 
     /**

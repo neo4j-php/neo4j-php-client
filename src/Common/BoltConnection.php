@@ -15,6 +15,8 @@ namespace Laudis\Neo4j\Common;
 
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
+use Laudis\Neo4j\Bolt\ServerStateTransition;
+use Laudis\Neo4j\Bolt\ServerStateTransitionRepository;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
@@ -23,6 +25,7 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * @implements ConnectionInterface<V3>
@@ -33,47 +36,30 @@ final class BoltConnection implements ConnectionInterface
 {
     private ?V3 $boltProtocol;
     /** @psalm-readonly */
-    private string $serverAgent;
-    /** @psalm-readonly */
-    private UriInterface $serverAddress;
-    /** @psalm-readonly */
-    private string $serverVersion;
-    /** @psalm-readonly */
-    private ConnectionProtocol $protocol;
-    /** @psalm-readonly */
-    private AccessMode $accessMode;
-    /** @psalm-readonly */
-    private DatabaseInfo $databaseInfo;
+    private ConnectionConfiguration $config;
     /** @psalm-readonly */
     private BoltFactory $factory;
-    /** @psalm-readonly */
-    private DriverConfiguration $driverConfiguration;
+
     private int $ownerCount = 0;
     private string $expectedState = 'READY';
+    /** @var list<callable(list<ServerStateTransition>): void> */
+    private array $beforeTransitionEventListeners = [];
+    /** @var list<callable(ServerStateTransition): void> */
+    private array $afterTransitionEventListeners = [];
+    private ServerStateTransitionRepository $transitions;
 
     /**
      * @psalm-mutation-free
      */
     public function __construct(
-        string $serverAgent,
-        UriInterface $serverAddress,
-        string $serverVersion,
-        ConnectionProtocol $protocol,
-        AccessMode $accessMode,
-        DatabaseInfo $databaseInfo,
         BoltFactory $factory,
         ?V3 $boltProtocol,
-        DriverConfiguration $config
+        ConnectionConfiguration $config
     ) {
-        $this->serverAgent = $serverAgent;
-        $this->serverAddress = $serverAddress;
-        $this->serverVersion = $serverVersion;
-        $this->protocol = $protocol;
-        $this->accessMode = $accessMode;
-        $this->databaseInfo = $databaseInfo;
         $this->factory = $factory;
         $this->boltProtocol = $boltProtocol;
-        $this->driverConfiguration = $config;
+        $this->transitions = ServerStateTransitionRepository::getInstance();
+        $this->config = $config;
     }
 
     /**
@@ -93,7 +79,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getServerAgent(): string
     {
-        return $this->serverAgent;
+        return $this->config->getServerAgent();
     }
 
     /**
@@ -101,7 +87,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getServerAddress(): UriInterface
     {
-        return $this->serverAddress;
+        return $this->config->getServerAddress();
     }
 
     /**
@@ -109,7 +95,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getServerVersion(): string
     {
-        return $this->serverVersion;
+        return $this->config->getServerVersion();
     }
 
     /**
@@ -117,7 +103,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getProtocol(): ConnectionProtocol
     {
-        return $this->protocol;
+        return $this->config->getProtocol();
     }
 
     /**
@@ -125,7 +111,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getAccessMode(): AccessMode
     {
-        return $this->accessMode;
+        return $this->config->getAccessMode();
     }
 
     /**
@@ -133,7 +119,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getDatabaseInfo(): DatabaseInfo
     {
-        return $this->databaseInfo;
+        return $this->config->getDatabaseInfo();
     }
 
     /**
@@ -179,7 +165,25 @@ final class BoltConnection implements ConnectionInterface
             throw new RuntimeException('Cannot begin on a closed connection');
         }
 
-        $this->boltProtocol->begin($this->buildExtra($database, $timeout));
+        $transitions = $this->transitions->getAvailableTransitionsForStateAndMessage($this->expectedState, 'BEGIN');
+
+        $this->triggerBeforeEvents($transitions);
+
+        try {
+            $this->boltProtocol->begin($this->buildExtra($database, $timeout));
+            $transition = $this->getSuccessTransition($transitions);
+
+            $this->expectedState = $transition->getNewState() ?? 'READY';
+        } catch (Throwable $e) {
+            $transition = $this->getFailureTransition($transitions);
+            $this->expectedState = $transition->getNewState() ?? 'READY';
+
+            throw $e;
+        } finally {
+            if (isset($transition)) {
+                $this->triggerAfterEvents($transition);
+            }
+        }
     }
 
     /**
@@ -275,5 +279,74 @@ final class BoltConnection implements ConnectionInterface
         }
 
         return $extra;
+    }
+
+    /**
+     * @param callable(list<ServerStateTransition>): void $listener
+     */
+    public function bindBeforeTransitionEventListener($listener): void
+    {
+        $this->beforeTransitionEventListeners[] = $listener;
+    }
+
+    /**
+     * @param callable(ServerStateTransition): void $listener
+     */
+    private function bindAfterTransitionEventListener($listener): void
+    {
+        $this->afterTransitionEventListeners[] = $listener;
+    }
+
+    /**
+     * @param list<ServerStateTransition> $states
+     *
+     * @return ServerStateTransition
+     */
+    private function getFailureTransition(array $states): ServerStateTransition
+    {
+        return $this->getTransitionForResponse($states, 'FAILURE');
+    }
+
+    /**
+     * @param list<ServerStateTransition> $states
+     *
+     * @return ServerStateTransition
+     */
+    private function getSuccessTransition(array $states): ServerStateTransition
+    {
+        return $this->getTransitionForResponse($states, 'SUCCESS');
+    }
+
+    /**
+     * @param list<ServerStateTransition> $states
+     *
+     * @return ServerStateTransition
+     */
+    private function getTransitionForResponse(array $states, string $response): ServerStateTransition
+    {
+        foreach ($states as $state) {
+            if ($state->getServerResponse() === $response) {
+                return $state;
+            }
+        }
+
+        throw new RuntimeException("Cannot find $response transition");
+    }
+
+    public function triggerAfterEvents(ServerStateTransition $transition): void
+    {
+        foreach ($this->afterTransitionEventListeners as $listener) {
+            $listener($transition);
+        }
+    }
+
+    /**
+     * @param list<ServerStateTransition> $transitions
+     */
+    public function triggerBeforeEvents(array $transitions): void
+    {
+        foreach ($this->beforeTransitionEventListeners as $listener) {
+            $listener($transitions);
+        }
     }
 }
