@@ -22,8 +22,16 @@ use function in_array;
  *
  * @psalm-immutable
  */
-final class StateTransitionRepository
+final class ServerStateTransitionRepository
 {
+    /**
+     * The order of the 2nd dimension arrays are:
+     *  - original state
+     *  - message
+     *  - triggers signal
+     *  - server response
+     *  - new state.
+     */
     private const TRANSITIONS = [
         ['CONNECTED', 'HELLO', null, 'SUCCESS', 'READY'],
         ['CONNECTED', 'HELLO', null, 'FAILURE', 'DEFUNCT'],
@@ -82,12 +90,12 @@ final class StateTransitionRepository
         ['INTERRUPTED', 'GOODBYE', 'DISCONNECT', null, 'DEFUNCT'],
     ];
 
-    /** @var list<StateTransition> */
+    /** @var list<ServerStateTransition> */
     private array $transitions;
 
     private function __construct()
     {
-        $this->transitions = array_map(static fn ($x) => StateTransition::fromArray($x), self::TRANSITIONS);
+        $this->transitions = array_map(static fn ($x) => ServerStateTransition::fromArray($x), self::TRANSITIONS);
     }
 
     private static ?self $instance = null;
@@ -137,7 +145,7 @@ final class StateTransitionRepository
     }
 
     /**
-     * @return list<StateTransition>
+     * @return list<ServerStateTransition>
      */
     public function getAvailableTransitionsForStateAndMessage(string $state, string $message): array
     {
@@ -150,7 +158,7 @@ final class StateTransitionRepository
     /**
      * Returns the available transitions for the state.
      *
-     * @return list<StateTransition>
+     * @return list<ServerStateTransition>
      */
     private function getAvailableTransitionsForState(string $state): array
     {
