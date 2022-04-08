@@ -197,9 +197,13 @@ final class SummarizedResultFormatter implements FormatterInterface
         /**
          * @psalm-suppress MixedArgument
          *
-         * @var SummarizedResult<CypherMap<OGMTypes>>
+         * @var SummarizedResult<CypherMap<OGMTypes>> $result
          */
-        return (new SummarizedResult($summary, $formattedResult))->withCacheLimit($result->getFetchSize());
+        $result = (new SummarizedResult($summary, $formattedResult))->withCacheLimit($result->getFetchSize());
+
+        $connection->subscribeResult($result);
+
+        return $result;
     }
 
     /**

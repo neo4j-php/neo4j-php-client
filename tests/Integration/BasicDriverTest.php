@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /*
  * This file is part of the Laudis Neo4j package.
@@ -57,7 +58,7 @@ final class BasicDriverTest extends TestCase
 
         $session = $driver->createSession();
 
-        $x = $session->run('MATCH (x) DETACH DELETE x');
+        $session->run('MATCH (x) DETACH DELETE x');
         $session->run('CREATE (x:X {id: 0})');
 
         $id = 1;
