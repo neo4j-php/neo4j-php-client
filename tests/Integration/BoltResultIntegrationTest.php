@@ -14,18 +14,18 @@ namespace Laudis\Neo4j\Tests\Integration;
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
 use Dotenv\Dotenv;
-use function explode;
-use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\BoltFactory;
-use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use PHPUnit\Framework\TestCase;
+use function explode;
+use function is_string;
 
 final class BoltResultIntegrationTest extends TestCase
 {

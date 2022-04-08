@@ -11,14 +11,13 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\Common;
+namespace Laudis\Neo4j\Bolt;
 
 use BadMethodCallException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
-use Laudis\Neo4j\Bolt\ServerStateTransition;
-use Laudis\Neo4j\Bolt\ServerStateTransitionRepository;
 use Laudis\Neo4j\BoltFactory;
+use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -53,11 +52,8 @@ final class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(
-        BoltFactory $factory,
-        ?V3 $boltProtocol,
-        ConnectionConfiguration $config
-    ) {
+    public function __construct(BoltFactory $factory, ?V3 $boltProtocol, ConnectionConfiguration $config)
+    {
         $this->factory = $factory;
         $this->boltProtocol = $boltProtocol;
         $this->transitions = ServerStateTransitionRepository::getInstance();
@@ -119,7 +115,7 @@ final class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
-    public function getDatabaseInfo(): DatabaseInfo
+    public function getDatabaseInfo(): ?DatabaseInfo
     {
         return $this->config->getDatabaseInfo();
     }
@@ -148,8 +144,8 @@ final class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
-        $this->handleMessage('GOODBYE', function () {
-            $this->boltProtocol->goodbye();
+        $this->handleMessage('GOODBYE', static function (V3 $bolt) {
+            $bolt->goodbye();
         });
 
         $this->boltProtocol = null;
@@ -159,9 +155,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function reset(): void
     {
-        $this->handleMessage('RESET', function () {
-            $this->boltProtocol->reset();
-        });
+        $this->handleMessage('RESET', static fn (V3 $bolt) => $bolt->reset());
 
         $this->boltProtocol = $this->factory->build()[0];
         $this->beforeTransitionEventListeners = [];
@@ -174,16 +168,31 @@ final class BoltConnection implements ConnectionInterface
      */
     public function begin(?string $database, ?float $timeout): void
     {
-        $this->handleMessage('BEGIN', function () use ($database, $timeout) {
-            $this->boltProtocol->begin($this->buildExtra($database, $timeout));
+        $extra = $this->buildExtra($database, $timeout);
+        $this->handleMessage('BEGIN', static fn (V3 $bolt) => $bolt->begin($extra));
+    }
+
+    /**
+     * @param string|null $database the database to connect to
+     * @param float|null  $timeout  timeout in seconds
+     */
+    public function discard(?int $qid): void
+    {
+        $extra = $this->buildExtraParam($qid, null);
+        $this->handleMessage('DISCARD', function (V3 $bolt) use ($extra) {
+            if ($bolt instanceof V4) {
+                $bolt->discard($extra);
+            } else {
+                $bolt->discardAll($extra);
+            }
         });
     }
 
     /**
      * @template T
      *
-     * @param string        $message the bolt message we are trying to send
-     * @param callable(): T $action  the actual action to send the message
+     * @param string          $message the bolt message we are trying to send
+     * @param callable(V3): T $action  the actual action to send the message
      *
      * @return T
      */
@@ -203,7 +212,7 @@ final class BoltConnection implements ConnectionInterface
         $this->triggerBeforeEvents($transitions);
 
         try {
-            $tbr = $action();
+            $tbr = $action($this->boltProtocol);
 
             // If no exceptions are thrown, we know the underlying bolt library
             // received a success response, making sure we can use the success transition
@@ -220,7 +229,9 @@ final class BoltConnection implements ConnectionInterface
         } finally {
             // In the end, all listeners need to be able to handle the state transition,
             // regardless of the call stack.
-            $this->triggerAfterEvents($transition);
+            if (isset($transition)) {
+                $this->triggerAfterEvents($transition);
+            }
         }
 
         return $tbr;
@@ -231,19 +242,20 @@ final class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout): array
     {
-        return $this->handleMessage('RUN', function () use ($text, $parameters, $database, $timeout) {
-            return $this->boltProtocol->run($text, $parameters, $this->buildExtra($database, $timeout));
+        return $this->handleMessage('RUN', function (V3 $bolt) use ($text, $parameters, $database, $timeout) {
+            /** @var BoltMeta */
+            return $bolt->run($text, $parameters, $this->buildExtra($database, $timeout));
         });
     }
 
     public function commit(): void
     {
-        $this->handleMessage('COMMIT', fn () => $this->boltProtocol->commit());
+        $this->handleMessage('COMMIT', static fn (V3 $bolt) => $bolt->commit());
     }
 
     public function rollback(): void
     {
-        $this->handleMessage('ROLLBACK', fn () => $this->boltProtocol->commit());
+        $this->handleMessage('ROLLBACK', static fn (V3 $bolt) => $bolt->commit());
     }
 
     /**
@@ -251,23 +263,16 @@ final class BoltConnection implements ConnectionInterface
      */
     public function pull(?int $qid, ?int $fetchSize): array
     {
-        return $this->handleMessage('PULL', function () use ($qid, $fetchSize) {
-            $extra = [];
-            if ($fetchSize) {
-                $extra['n'] = $fetchSize;
-            }
+        $extra = $this->buildExtraParam($fetchSize, $qid);
 
-            if ($qid) {
-                $extra['qid'] = $qid;
-            }
-
-            if (!$this->boltProtocol instanceof V4) {
+        return $this->handleMessage('PULL', function (V3 $bolt) use ($extra) {
+            if (!$bolt instanceof V4) {
                 /** @var non-empty-list<list> */
-                return $this->boltProtocol->pullAll($extra);
+                return $bolt->pullAll($extra);
             }
 
             /** @var non-empty-list<list> */
-            return $this->boltProtocol->pull($extra);
+            return $bolt->pull($extra);
         });
     }
 
@@ -314,6 +319,20 @@ final class BoltConnection implements ConnectionInterface
     public function bindBeforeTransitionEventListener($listener): void
     {
         $this->beforeTransitionEventListeners[] = $listener;
+    }
+
+    public function buildExtraParam(?int $fetchSize, ?int $qid): array
+    {
+        $extra = [];
+        if ($fetchSize) {
+            $extra['n'] = $fetchSize;
+        }
+
+        if ($qid) {
+            $extra['qid'] = $qid;
+        }
+
+        return $extra;
     }
 
     /**

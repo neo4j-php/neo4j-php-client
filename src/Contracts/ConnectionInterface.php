@@ -74,7 +74,7 @@ interface ConnectionInterface
      *
      * @psalm-mutation-free
      */
-    public function getDatabaseInfo(): DatabaseInfo;
+    public function getDatabaseInfo(): ?DatabaseInfo;
 
     /**
      * Opens the connection.

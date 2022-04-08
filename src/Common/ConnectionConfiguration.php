@@ -29,8 +29,8 @@ final class ConnectionConfiguration
     private string $serverVersion;
     private ConnectionProtocol $protocol;
     private AccessMode $accessMode;
-    private DatabaseInfo $databaseInfo;
     private DriverConfiguration $driverConfiguration;
+    private ?DatabaseInfo $databaseInfo;
 
     public function __construct(
         string $serverAgent,
@@ -38,16 +38,16 @@ final class ConnectionConfiguration
         string $serverVersion,
         ConnectionProtocol $protocol,
         AccessMode $accessMode,
-        DatabaseInfo $databaseInfo,
-        DriverConfiguration $driverConfiguration
+        DriverConfiguration $driverConfiguration,
+        ?DatabaseInfo $databaseInfo
     ) {
         $this->serverAgent = $serverAgent;
         $this->serverAddress = $serverAddress;
         $this->serverVersion = $serverVersion;
         $this->protocol = $protocol;
         $this->accessMode = $accessMode;
-        $this->databaseInfo = $databaseInfo;
         $this->driverConfiguration = $driverConfiguration;
+        $this->databaseInfo = $databaseInfo;
     }
 
     public function getServerAgent(): string
@@ -75,13 +75,13 @@ final class ConnectionConfiguration
         return $this->accessMode;
     }
 
-    public function getDatabaseInfo(): DatabaseInfo
-    {
-        return $this->databaseInfo;
-    }
-
     public function getDriverConfiguration(): DriverConfiguration
     {
         return $this->driverConfiguration;
+    }
+
+    public function getDatabaseInfo(): ?DatabaseInfo
+    {
+        return $this->databaseInfo;
     }
 }

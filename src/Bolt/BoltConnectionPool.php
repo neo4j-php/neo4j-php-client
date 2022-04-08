@@ -13,11 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\Bolt;
-use Bolt\protocol\V3;
 use Exception;
 use Laudis\Neo4j\BoltFactory;
-use Laudis\Neo4j\Common\BoltConnection;
+use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
@@ -26,7 +24,9 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
+use Bolt\protocol\V3;
 use Throwable;
+use function explode;
 
 /**
  * Manages singular Bolt connections.
@@ -104,9 +104,6 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         return true;
     }
 
-    /**
-     * @throws \ReflectionException
-     */
     private function getConnection(
         UriInterface $connectingTo,
         AuthenticateInterface $authenticate,
@@ -115,16 +112,16 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         $factory = BoltFactory::fromVariables($connectingTo, $authenticate, $this->driverConfig);
         [$bolt, $response] = $factory->build();
 
-        return new BoltConnection(
+        $config = new ConnectionConfiguration(
             $response['server'],
             $connectingTo,
             explode('/', $response['server'])[1] ?? '',
             ConnectionProtocol::determineBoltVersion($bolt),
             $config->getAccessMode(),
-            new DatabaseInfo($config->getDatabase()),
-            $factory,
-            $bolt,
-            $this->driverConfig
+            $this->driverConfig,
+            $config->getDatabase() === null ? null : new DatabaseInfo($config->getDatabase())
         );
+
+        return new BoltConnection($factory, $bolt, $config);
     }
 }
