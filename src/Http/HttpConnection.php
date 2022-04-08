@@ -36,10 +36,8 @@ final class HttpConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(
-        ClientInterface $client,
-        ConnectionConfiguration $config
-    ) {
+    public function __construct(ClientInterface $client, ConnectionConfiguration $config)
+    {
         $this->client = $client;
         $this->config = $config;
     }

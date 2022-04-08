@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\error\ConnectionTimeoutException;
 use Bolt\error\MessageException;
-use Bolt\protocol\V3;
 use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
