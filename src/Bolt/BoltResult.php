@@ -143,7 +143,6 @@ final class BoltResult implements Iterator
     public function rewind(): void
     {
         // Rewind is impossible
-        throw new BadMethodCallException('Cannot rewind a bolt result.');
     }
 
     public function __destruct()

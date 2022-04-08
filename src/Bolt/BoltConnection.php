@@ -143,17 +143,18 @@ final class BoltConnection implements ConnectionInterface
         $this->factory->getConnection()->setTimeout($timeout);
     }
 
+    /**
+     * Closes the connection.
+     *
+     * Any of the preconditioned states are: 'READY', 'STREAMING', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
+     * Sends signal: 'DISCONNECT'
+     */
     public function close(): void
     {
-        $this->possibleStates(['READY', 'STREAMING', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'GOODBYE');
-
-        $this->signal('DISCONNECT');
-
         $this->consumeResults();
 
         $this->protocol()->goodbye();
 
-        $this->boltProtocol = null;
         $this->serverState = 'DEFUNCT';
         $this->subscribedResults = [];
     }
@@ -170,12 +171,14 @@ final class BoltConnection implements ConnectionInterface
         $this->subscribedResults = [];
     }
 
+    /**
+     * Resets the connection.
+     *
+     * Any of the preconditioned states are: 'READY', 'STREAMING', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
+     * Sends signal: 'INTERRUPT'
+     */
     public function reset(): void
     {
-        $this->possibleStates(['READY', 'STREAMING', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'RESET');
-
-        $this->signal('INTERRUPT');
-
         $this->consumeResults();
 
         try {
@@ -191,16 +194,15 @@ final class BoltConnection implements ConnectionInterface
     }
 
     /**
-     * @param string|null $database the database to connect to
-     * @param float|null  $timeout  timeout in seconds
+     * Begins a transaction.
+     *
+     * Any of the preconditioned states are: 'READY', 'INTERRUPTED'.
      */
     public function begin(?string $database, ?float $timeout): void
     {
-        $this->possibleStates(['READY', 'INTERRUPTED'], 'BEGIN');
-
         $this->consumeResults();
 
-        $extra = $this->buildExtra($database, $timeout);
+        $extra = $this->buildRunExtra($database, $timeout);
         try {
             $this->protocol()->begin($extra);
         } catch (IgnoredException $e) {
@@ -215,15 +217,14 @@ final class BoltConnection implements ConnectionInterface
     }
 
     /**
-     * @param string|null $database the database to connect to
-     * @param float|null  $timeout  timeout in seconds
+     * Discards a result.
+     *
+     * Any of the preconditioned states are: 'STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
      */
     public function discard(?int $qid): void
     {
-        $this->possibleStates(['STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'DISCARD');
-
         try {
-            $extra = $this->buildExtraParam(null, $qid);
+            $extra = $this->buildResultExtra(null, $qid);
             $bolt = $this->protocol();
 
             if ($bolt instanceof V4) {
@@ -245,18 +246,20 @@ final class BoltConnection implements ConnectionInterface
     }
 
     /**
+     * Runs a query/statement.
+     *
+     * Any of the preconditioned states are: 'STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
+     *
      * @return BoltMeta
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout): array
     {
-        $this->possibleStates(['READY', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'RUN');
-
         if (!str_starts_with($this->serverState, 'TX_')) {
             $this->consumeResults();
         }
 
         try {
-            $extra = $this->buildExtra($database, $timeout);
+            $extra = $this->buildRunExtra($database, $timeout);
 
             $tbr = $this->protocol()->run($text, $parameters, $extra);
 
@@ -278,10 +281,13 @@ final class BoltConnection implements ConnectionInterface
         }
     }
 
+    /**
+     * Commits a transaction.
+     *
+     * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
+     */
     public function commit(): void
     {
-        $this->possibleStates(['TX_READY', 'INTERRUPTED'], 'COMMIT');
-
         $this->consumeResults();
 
         try {
@@ -299,10 +305,13 @@ final class BoltConnection implements ConnectionInterface
         $this->serverState = 'READY';
     }
 
+    /**
+     * Rolls back a transaction.
+     *
+     * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
+     */
     public function rollback(): void
     {
-        $this->possibleStates(['TX_READY', 'INTERRUPTED'], 'ROLLBACK');
-
         $this->consumeResults();
 
         try {
@@ -321,12 +330,15 @@ final class BoltConnection implements ConnectionInterface
     }
 
     /**
+     * Pulls a result set.
+     *
+     * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
+     *
      * @return non-empty-list<list>
      */
     public function pull(?int $qid, ?int $fetchSize): array
     {
-        $this->possibleStates(['STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'ROLLBACK');
-        $extra = $this->buildExtraParam($fetchSize, $qid);
+        $extra = $this->buildResultExtra($fetchSize, $qid);
 
         $bolt = $this->protocol();
         try {
@@ -362,12 +374,12 @@ final class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if ($this->serverState !== 'DISCONNECTED' && $this->serverState !== 'DEFUNCT' && $this->boltProtocol !== null) {
+        if ($this->serverState !== 'DISCONNECTED' && $this->serverState !== 'DEFUNCT') {
             $this->close();
         }
     }
 
-    private function buildExtra(?string $database, ?float $timeout): array
+    private function buildRunExtra(?string $database, ?float $timeout): array
     {
         $extra = [];
         if ($database) {
@@ -380,7 +392,7 @@ final class BoltConnection implements ConnectionInterface
         return $extra;
     }
 
-    public function buildExtraParam(?int $fetchSize, ?int $qid): array
+    private function buildResultExtra(?int $fetchSize, ?int $qid): array
     {
         $extra = [];
         if ($fetchSize) {
@@ -394,28 +406,14 @@ final class BoltConnection implements ConnectionInterface
         return $extra;
     }
 
-    /**
-     * @return string
-     */
     public function getServerState(): string
     {
         return $this->serverState;
     }
 
-    /**
-     * @param callable(ServerStateTransition): void $listener
-     */
-    private function bindAfterTransitionEventListener($listener): void
+    private function subscribeResult(SummarizedResult $result): void
     {
-        $this->subscribedResults[] = $listener;
-    }
-
-    private function possibleStates(array $array, string $string)
-    {
-    }
-
-    private function signal(string $string)
-    {
+        $this->subscribedResults[] = WeakReference::create($result);
     }
 
     private function protocol(): V3
