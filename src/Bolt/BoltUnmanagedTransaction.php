@@ -65,7 +65,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $this->connection = $connection;
         $this->database = $database;
         $this->config = $config;
-        $this->connection->incrementOwner();
         $this->tsxConfig = $tsxConfig;
     }
 
@@ -199,11 +198,5 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function isFinished(): bool
     {
         return $this->isRolledBack() || $this->isCommitted();
-    }
-
-    public function __destruct()
-    {
-        $this->connection->decrementOwner();
-        $this->connection->close();
     }
 }

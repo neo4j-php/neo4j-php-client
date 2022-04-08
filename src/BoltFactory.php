@@ -94,10 +94,11 @@ final class BoltFactory
         DriverConfiguration $config
     ): self {
         $ssl = (new SslConfigurator())->configure($uri, $config);
+        $port = $uri->getPort() ?? 7687;
         if (extension_loaded('sockets') && $ssl === null) {
-            $socket = new Socket($uri->getHost(), $uri->getPort() ?? 7687, TransactionConfiguration::DEFAULT_TIMEOUT);
+            $socket = new Socket($uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
         } else {
-            $socket = new StreamSocket($uri->getHost(), $uri->getPort() ?? 7687, TransactionConfiguration::DEFAULT_TIMEOUT);
+            $socket = new StreamSocket($uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
             self::configureSsl($uri, $socket, $config);
         }
 
