@@ -57,7 +57,7 @@ final class BasicDriverTest extends TestCase
 
         $session = $driver->createSession();
 
-        $session->run('MATCH (x) DETACH DELETE x');
+        $x = $session->run('MATCH (x) DETACH DELETE x');
         $session->run('CREATE (x:X {id: 0})');
 
         $id = 1;

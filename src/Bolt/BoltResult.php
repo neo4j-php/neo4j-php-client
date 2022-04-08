@@ -42,10 +42,6 @@ final class BoltResult implements Iterator
         $this->connection = $connection;
         $this->fetchSize = $fetchSize;
         $this->qid = $qid;
-        $this->connection->incrementOwner();
-        if ($this->connection->getProtocol() === ConnectionProtocol::BOLT_V3()) {
-            $this->fetchResults();
-        }
     }
 
     public function getFetchSize(): int
@@ -118,8 +114,6 @@ final class BoltResult implements Iterator
         /** @var array{0: array} $meta */
         if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
             $this->meta = $meta[0];
-            $this->connection->decrementOwner();
-            $this->connection->close();
         }
     }
 
@@ -154,12 +148,8 @@ final class BoltResult implements Iterator
 
     public function __destruct()
     {
-        if ($this->connection->isOpen()) {
+        if (in_array($this->connection->getServerState(), ['STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], true)) {
             $this->discard();
-        }
-        if ($this->meta === null) {
-            $this->connection->decrementOwner();
-            $this->connection->close();
         }
     }
 

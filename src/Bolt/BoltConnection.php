@@ -14,19 +14,24 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use BadMethodCallException;
+use Bolt\error\IgnoredException;
+use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
+use function count;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use LogicException;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
-use Throwable;
+use function str_starts_with;
+use WeakReference;
 
 /**
  * @implements ConnectionInterface<V3>
@@ -42,12 +47,9 @@ final class BoltConnection implements ConnectionInterface
     private BoltFactory $factory;
 
     private int $ownerCount = 0;
-    private ?string $expectedState = 'READY';
-    /** @var list<callable(list<ServerStateTransition>): void> */
-    private array $beforeTransitionEventListeners = [];
-    /** @var list<callable(ServerStateTransition): void> */
-    private array $afterTransitionEventListeners = [];
-    private ServerStateTransitionRepository $transitions;
+    private string $serverState = 'DISCONNECTED';
+    /** @var list<WeakReference<SummarizedResult>> */
+    private array $subscribedResults = [];
 
     /**
      * @psalm-mutation-free
@@ -56,7 +58,6 @@ final class BoltConnection implements ConnectionInterface
     {
         $this->factory = $factory;
         $this->boltProtocol = $boltProtocol;
-        $this->transitions = ServerStateTransitionRepository::getInstance();
         $this->config = $config;
     }
 
@@ -144,22 +145,49 @@ final class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
-        $this->handleMessage('GOODBYE', static function (V3 $bolt) {
-            $bolt->goodbye();
-        });
+        $this->possibleStates(['READY', 'STREAMING', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'GOODBYE');
+
+        $this->signal('DISCONNECT');
+
+        $this->consumeResults();
+
+        $this->protocol()->goodbye();
 
         $this->boltProtocol = null;
-        $this->beforeTransitionEventListeners = [];
-        $this->afterTransitionEventListeners = [];
+        $this->serverState = 'DEFUNCT';
+        $this->subscribedResults = [];
+    }
+
+    private function consumeResults(): void
+    {
+        foreach ($this->subscribedResults as $result) {
+            $result = $result->get();
+            if ($result) {
+                $result->preload();
+            }
+        }
+
+        $this->subscribedResults = [];
     }
 
     public function reset(): void
     {
-        $this->handleMessage('RESET', static fn (V3 $bolt) => $bolt->reset());
+        $this->possibleStates(['READY', 'STREAMING', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'RESET');
 
-        $this->boltProtocol = $this->factory->build()[0];
-        $this->beforeTransitionEventListeners = [];
-        $this->afterTransitionEventListeners = [];
+        $this->signal('INTERRUPT');
+
+        $this->consumeResults();
+
+        try {
+            $this->protocol()->reset();
+        } catch (MessageException $e) {
+            $this->serverState = 'DEFUNCT';
+
+            throw $e;
+        }
+
+        $this->subscribedResults = [];
+        $this->serverState = 'READY';
     }
 
     /**
@@ -168,8 +196,22 @@ final class BoltConnection implements ConnectionInterface
      */
     public function begin(?string $database, ?float $timeout): void
     {
+        $this->possibleStates(['READY', 'INTERRUPTED'], 'BEGIN');
+
+        $this->consumeResults();
+
         $extra = $this->buildExtra($database, $timeout);
-        $this->handleMessage('BEGIN', static fn (V3 $bolt) => $bolt->begin($extra));
+        try {
+            $this->protocol()->begin($extra);
+        } catch (IgnoredException $e) {
+            $this->serverState = 'INTERRUPTED';
+
+            throw $e;
+        } catch (MessageException $e) {
+            $this->serverState = 'FAILED';
+
+            throw $e;
+        }
     }
 
     /**
@@ -178,63 +220,28 @@ final class BoltConnection implements ConnectionInterface
      */
     public function discard(?int $qid): void
     {
-        $extra = $this->buildExtraParam($qid, null);
-        $this->handleMessage('DISCARD', function (V3 $bolt) use ($extra) {
-            if ($bolt instanceof V4) {
-                $bolt->discard($extra);
-            } else {
-                $bolt->discardAll($extra);
-            }
-        });
-    }
-
-    /**
-     * @template T
-     *
-     * @param string          $message the bolt message we are trying to send
-     * @param callable(V3): T $action  the actual action to send the message
-     *
-     * @return T
-     */
-    private function handleMessage(string $message, $action)
-    {
-        if ($this->boltProtocol === null || $this->expectedState === null) {
-            throw new LogicException("Cannot send \"$message\" message on a closed connection");
-        }
-
-        // First, we fetch the available transitions for the given state of the server
-        // and the intended message to send.
-        $transitions = $this->transitions->getAvailableTransitionsForStateAndMessage($this->expectedState, $message);
-
-        // We notify the event listeners before sending the message.
-        // Since we don't know whether it will fail or not, we need to send all
-        // possible transitions.
-        $this->triggerBeforeEvents($transitions);
+        $this->possibleStates(['STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'DISCARD');
 
         try {
-            $tbr = $action($this->boltProtocol);
+            $extra = $this->buildExtraParam(null, $qid);
+            $bolt = $this->protocol();
 
-            // If no exceptions are thrown, we know the underlying bolt library
-            // received a success response, making sure we can use the success transition
-            $transition = $this->getSuccessTransition($transitions);
-            $this->expectedState = $transition->getNewState();
-        } catch (Throwable $e) {
-            // If an an exception is thrown, we know the underlying bolt library
-            // received a failure response, making sure we can use the failure transition
-            // and propagate the exception further
-            $transition = $this->getFailureTransition($transitions);
-            $this->expectedState = $transition->getNewState();
+            if ($bolt instanceof V4) {
+                $result = $bolt->discard($extra);
+            } else {
+                $result = $bolt->discardAll($extra);
+            }
+
+            $this->interpretResult($result);
+        } catch (MessageException $e) {
+            $this->serverState = 'FAILED';
 
             throw $e;
-        } finally {
-            // In the end, all listeners need to be able to handle the state transition,
-            // regardless of the call stack.
-            if (isset($transition)) {
-                $this->triggerAfterEvents($transition);
-            }
-        }
+        } catch (IgnoredException $e) {
+            $this->serverState = 'IGNORED';
 
-        return $tbr;
+            throw $e;
+        }
     }
 
     /**
@@ -242,20 +249,75 @@ final class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout): array
     {
-        return $this->handleMessage('RUN', function (V3 $bolt) use ($text, $parameters, $database, $timeout) {
-            /** @var BoltMeta */
-            return $bolt->run($text, $parameters, $this->buildExtra($database, $timeout));
-        });
+        $this->possibleStates(['READY', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'RUN');
+
+        if (!str_starts_with($this->serverState, 'TX_')) {
+            $this->consumeResults();
+        }
+
+        try {
+            $extra = $this->buildExtra($database, $timeout);
+
+            $tbr = $this->protocol()->run($text, $parameters, $extra);
+
+            if (str_starts_with($this->serverState, 'TX_')) {
+                $this->serverState = 'TX_STREAMING';
+            } else {
+                $this->serverState = 'STREAMING';
+            }
+
+            return $tbr;
+        } catch (MessageException $e) {
+            $this->serverState = 'FAILED';
+
+            throw $e;
+        } catch (IgnoredException $e) {
+            $this->serverState = 'IGNORED';
+
+            throw $e;
+        }
     }
 
     public function commit(): void
     {
-        $this->handleMessage('COMMIT', static fn (V3 $bolt) => $bolt->commit());
+        $this->possibleStates(['TX_READY', 'INTERRUPTED'], 'COMMIT');
+
+        $this->consumeResults();
+
+        try {
+            $this->protocol()->commit();
+        } catch (MessageException $e) {
+            $this->serverState = 'FAILED';
+
+            throw $e;
+        } catch (IgnoredException $e) {
+            $this->serverState = 'IGNORED';
+
+            throw $e;
+        }
+
+        $this->serverState = 'READY';
     }
 
     public function rollback(): void
     {
-        $this->handleMessage('ROLLBACK', static fn (V3 $bolt) => $bolt->commit());
+        $this->possibleStates(['TX_READY', 'INTERRUPTED'], 'ROLLBACK');
+
+        $this->consumeResults();
+
+        try {
+            $this->protocol()->rollback();
+        } catch (MessageException $e) {
+            $this->serverState = 'FAILED';
+
+            throw $e;
+        } catch (IgnoredException $e) {
+            $this->serverState = 'IGNORED';
+
+            throw $e;
+        }
+
+        $this->serverState = 'READY';
     }
 
     /**
@@ -263,17 +325,31 @@ final class BoltConnection implements ConnectionInterface
      */
     public function pull(?int $qid, ?int $fetchSize): array
     {
+        $this->possibleStates(['STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'], 'ROLLBACK');
         $extra = $this->buildExtraParam($fetchSize, $qid);
 
-        return $this->handleMessage('PULL', function (V3 $bolt) use ($extra) {
+        $bolt = $this->protocol();
+        try {
             if (!$bolt instanceof V4) {
                 /** @var non-empty-list<list> */
-                return $bolt->pullAll($extra);
+                $tbr = $bolt->pullAll($extra);
+            } else {
+                /** @var non-empty-list<list> */
+                $tbr = $bolt->pull($extra);
             }
+        } catch (MessageException $e) {
+            $this->serverState = 'FAILED';
 
-            /** @var non-empty-list<list> */
-            return $bolt->pull($extra);
-        });
+            throw $e;
+        } catch (IgnoredException $e) {
+            $this->serverState = 'IGNORED';
+
+            throw $e;
+        }
+
+        $this->interpretResult($tbr);
+
+        return $tbr;
     }
 
     /**
@@ -286,18 +362,9 @@ final class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        $this->ownerCount = 0;
-        $this->close();
-    }
-
-    public function incrementOwner(): void
-    {
-        ++$this->ownerCount;
-    }
-
-    public function decrementOwner(): void
-    {
-        --$this->ownerCount;
+        if ($this->serverState !== 'DISCONNECTED' && $this->serverState !== 'DEFUNCT' && $this->boltProtocol !== null) {
+            $this->close();
+        }
     }
 
     private function buildExtra(?string $database, ?float $timeout): array
@@ -311,14 +378,6 @@ final class BoltConnection implements ConnectionInterface
         }
 
         return $extra;
-    }
-
-    /**
-     * @param callable(list<ServerStateTransition>): void $listener
-     */
-    public function bindBeforeTransitionEventListener($listener): void
-    {
-        $this->beforeTransitionEventListeners[] = $listener;
     }
 
     public function buildExtraParam(?int $fetchSize, ?int $qid): array
@@ -336,62 +395,50 @@ final class BoltConnection implements ConnectionInterface
     }
 
     /**
+     * @return string
+     */
+    public function getServerState(): string
+    {
+        return $this->serverState;
+    }
+
+    /**
      * @param callable(ServerStateTransition): void $listener
      */
     private function bindAfterTransitionEventListener($listener): void
     {
-        $this->afterTransitionEventListeners[] = $listener;
+        $this->subscribedResults[] = $listener;
     }
 
-    public function getExpectedState(): ?string
+    private function possibleStates(array $array, string $string)
     {
-        return $this->expectedState;
     }
 
-    /**
-     * @param list<ServerStateTransition> $states
-     */
-    private function getFailureTransition(array $states): ServerStateTransition
+    private function signal(string $string)
     {
-        return $this->getTransitionForResponse($states, 'FAILURE');
     }
 
-    /**
-     * @param list<ServerStateTransition> $states
-     */
-    private function getSuccessTransition(array $states): ServerStateTransition
+    private function protocol(): V3
     {
-        return $this->getTransitionForResponse($states, 'SUCCESS');
+        if ($this->boltProtocol === null) {
+            throw new LogicException('Cannot use protocol if it is not created');
+        }
+
+        return $this->boltProtocol;
     }
 
-    /**
-     * @param list<ServerStateTransition> $states
-     */
-    private function getTransitionForResponse(array $states, string $response): ServerStateTransition
+    private function interpretResult(array $result): void
     {
-        foreach ($states as $state) {
-            if ($state->getServerResponse() === $response) {
-                return $state;
+        if (str_starts_with($this->serverState, 'TX_')) {
+            if ($has_more ?? count($this->subscribedResults) === 1) {
+                $this->serverState = 'TX_STREAMING';
+            } else {
+                $this->serverState = 'TX_READY';
             }
-        }
-
-        throw new RuntimeException("Cannot find $response transition");
-    }
-
-    public function triggerAfterEvents(ServerStateTransition $transition): void
-    {
-        foreach ($this->afterTransitionEventListeners as $listener) {
-            $listener($transition);
-        }
-    }
-
-    /**
-     * @param list<ServerStateTransition> $transitions
-     */
-    public function triggerBeforeEvents(array $transitions): void
-    {
-        foreach ($this->beforeTransitionEventListeners as $listener) {
-            $listener($transitions);
+        } elseif ($result['has_more'] ?? false) {
+            $this->serverState = 'STREAMING';
+        } else {
+            $this->serverState = 'READY';
         }
     }
 }
