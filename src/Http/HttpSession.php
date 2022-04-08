@@ -17,7 +17,6 @@ use JsonException;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -29,7 +28,6 @@ use Laudis\Neo4j\Types\CypherList;
 use function microtime;
 use function parse_url;
 use const PHP_URL_PATH;
-use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use stdClass;
@@ -193,11 +191,9 @@ final class HttpSession implements SessionInterface
     }
 
     /**
-     * @param ConnectionInterface<ClientInterface> $connection
-     *
      * @return HttpUnmanagedTransaction<T>
      */
-    private function makeTransaction(ConnectionInterface $connection, RequestInterface $request): HttpUnmanagedTransaction
+    private function makeTransaction(HttpConnection $connection, RequestInterface $request): HttpUnmanagedTransaction
     {
         return new HttpUnmanagedTransaction(
             $request,

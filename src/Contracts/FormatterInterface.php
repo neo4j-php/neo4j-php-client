@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Bolt\Bolt;
-use Bolt\protocol\V3;
 use JsonException;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
@@ -74,7 +73,7 @@ interface FormatterInterface
     /**
      * Formats the results of the bolt protocol to the unified format.
      *
-     * @param BoltMeta                $meta
+     * @param BoltMeta $meta
      *
      * @return ResultFormat
      */

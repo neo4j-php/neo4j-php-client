@@ -13,13 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Databags\DatabaseInfo;
 use function in_array;
 use function is_int;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\ResultSummary;
 use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\Statement;

@@ -13,13 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use function array_splice;
 use BadMethodCallException;
+use function call_user_func;
+use function count;
 use Generator;
 use Iterator;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
-use function array_splice;
-use function call_user_func;
-use function count;
 
 /**
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface

@@ -13,7 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\protocol\V3;
 use Exception;
+use function explode;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -24,9 +26,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
-use Bolt\protocol\V3;
 use Throwable;
-use function explode;
 
 /**
  * Manages singular Bolt connections.
