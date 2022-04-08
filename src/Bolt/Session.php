@@ -177,7 +177,7 @@ final class Session implements SessionInterface
 
             $connection->begin($this->config->getDatabase(), $config->getTimeout());
         } catch (MessageException $e) {
-            if (isset($connection)) {
+            if (isset($connection) && $connection->getServerState() === 'FAILED') {
                 $connection->reset();
             }
             throw Neo4jException::fromMessageException($e);

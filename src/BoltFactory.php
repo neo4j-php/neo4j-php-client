@@ -113,4 +113,9 @@ final class BoltFactory
             $socket->setSslContextOptions($options);
         }
     }
+
+    public function getAuth(): AuthenticateInterface
+    {
+        return $this->auth;
+    }
 }

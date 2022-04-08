@@ -65,11 +65,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
 
         foreach (self::$connectionCache[$key] as $i => $connection) {
             if (!$connection->isOpen()) {
-                $sslConfig = $connection->getDriverConfiguration()->getSslConfiguration();
-                $newSslConfig = $this->driverConfig->getSslConfiguration();
-                if ($sslConfig->getMode() !== $newSslConfig->getMode() ||
-                    $sslConfig->isVerifyPeer() === $newSslConfig->isVerifyPeer()
-                ) {
+                if ($this->compare($connection, $authenticate)) {
                     $connection = $this->getConnection($connectingTo, $authenticate, $config);
 
                     /** @psalm-suppress PropertyTypeCoercion */
@@ -80,6 +76,9 @@ final class BoltConnectionPool implements ConnectionPoolInterface
 
                 $connection->open();
 
+                return $connection;
+            }
+            if ($connection->getServerState() === 'READY' && !$this->compare($connection, $authenticate)) {
                 return $connection;
             }
         }
@@ -123,5 +122,15 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         );
 
         return new BoltConnection($factory, $bolt, $config);
+    }
+
+    private function compare(BoltConnection $connection, AuthenticateInterface $authenticate): bool
+    {
+        $sslConfig = $connection->getDriverConfiguration()->getSslConfiguration();
+        $newSslConfig = $this->driverConfig->getSslConfiguration();
+
+        return $sslConfig->getMode() !== $newSslConfig->getMode() ||
+            $sslConfig->isVerifyPeer() === $newSslConfig->isVerifyPeer() ||
+            $authenticate !== $connection->getFactory()->getAuth();
     }
 }

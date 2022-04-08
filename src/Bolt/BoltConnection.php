@@ -18,16 +18,14 @@ use Bolt\error\IgnoredException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
-use Laudis\Neo4j\Types\CypherList;
-use function count;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
-use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Types\CypherList;
 use LogicException;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
@@ -127,7 +125,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return $this->boltProtocol !== null;
+        return $this->serverState !== 'DISCONNECTED' && $this->serverState !== 'DEFUNCT';
     }
 
     public function open(): void
@@ -157,6 +155,7 @@ final class BoltConnection implements ConnectionInterface
         $this->protocol()->goodbye();
 
         $this->serverState = 'DEFUNCT';
+        $this->boltProtocol = null; // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe
     }
 
     private function consumeResults(): void
@@ -214,6 +213,13 @@ final class BoltConnection implements ConnectionInterface
 
             throw $e;
         }
+
+        $this->serverState = 'TX_READY';
+    }
+
+    public function getFactory(): BoltFactory
+    {
+        return $this->factory;
     }
 
     /**
@@ -360,7 +366,7 @@ final class BoltConnection implements ConnectionInterface
             throw $e;
         }
 
-        $this->interpretResult($tbr);
+        $this->interpretResult($tbr[count($tbr) - 1]);
 
         return $tbr;
     }
@@ -375,7 +381,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if ($this->serverState !== 'DISCONNECTED' && $this->serverState !== 'DEFUNCT') {
+        if ($this->isOpen()) {
             $this->close();
         }
     }
@@ -396,11 +402,11 @@ final class BoltConnection implements ConnectionInterface
     private function buildResultExtra(?int $fetchSize, ?int $qid): array
     {
         $extra = [];
-        if ($fetchSize) {
+        if ($fetchSize !== null) {
             $extra['n'] = $fetchSize;
         }
 
-        if ($qid) {
+        if ($qid !== null) {
             $extra['qid'] = $qid;
         }
 
@@ -429,7 +435,7 @@ final class BoltConnection implements ConnectionInterface
     private function interpretResult(array $result): void
     {
         if (str_starts_with($this->serverState, 'TX_')) {
-            if ($result['has_more'] ?? count($this->subscribedResults) === 1) {
+            if ($result['has_more'] ?? ($this->countResults() > 1)) {
                 $this->serverState = 'TX_STREAMING';
             } else {
                 $this->serverState = 'TX_READY';
@@ -439,5 +445,17 @@ final class BoltConnection implements ConnectionInterface
         } else {
             $this->serverState = 'READY';
         }
+    }
+
+    private function countResults(): int
+    {
+        $ctr = 0;
+        foreach ($this->subscribedResults as $result) {
+            if ($result->get() !== null) {
+                ++$ctr;
+            }
+        }
+
+        return $ctr;
     }
 }

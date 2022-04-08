@@ -409,11 +409,7 @@ CYPHER
         $result = $this->getClient()
             ->getDriver($alias)
             ->createSession()
-            ->run(
-                "MATCH (n:Node) SET n.testing = 'hello' WITH * CALL apoc.util.sleep(2000000)",
-                [],
-                TransactionConfiguration::default()->withTimeout(150)
-            );
+            ->run("CALL apoc.util.sleep(2000000)", [], TransactionConfiguration::default()->withTimeout(150));
 
         unset($result);
     }
