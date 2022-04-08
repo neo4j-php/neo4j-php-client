@@ -44,7 +44,7 @@ final class BasicDriverTest extends TestCase
 
         $tbr = [];
         foreach (explode(',', $connections) as $connection) {
-            $tbr[] = [$connection];
+            $tbr[$connection] = [$connection];
         }
 
         return $tbr;
