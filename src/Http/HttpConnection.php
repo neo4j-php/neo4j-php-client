@@ -95,7 +95,7 @@ final class HttpConnection implements ConnectionInterface
      */
     public function getDatabaseInfo(): DatabaseInfo
     {
-        return $this->config->getDatabaseInfo();
+        return $this->config->getDatabaseInfo() ?? new DatabaseInfo('');
     }
 
     /**

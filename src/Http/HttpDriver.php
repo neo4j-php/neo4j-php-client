@@ -158,7 +158,8 @@ final class HttpDriver implements DriverInterface
         return new HttpConnectionPool(
             Resolvable::once($this->key.':client', fn () => $this->config->getHttpPsrBindings()->getClient()),
             $this->resolvableFactory(),
-            $this->streamFactory()
+            $this->streamFactory(),
+            $this->config
         );
     }
 
