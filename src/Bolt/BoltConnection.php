@@ -18,6 +18,7 @@ use Bolt\error\IgnoredException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
+use Laudis\Neo4j\Types\CypherList;
 use function count;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
@@ -48,7 +49,7 @@ final class BoltConnection implements ConnectionInterface
 
     private int $ownerCount = 0;
     private string $serverState = 'DISCONNECTED';
-    /** @var list<WeakReference<SummarizedResult>> */
+    /** @var list<WeakReference<CypherList>> */
     private array $subscribedResults = [];
 
     /**
@@ -411,7 +412,7 @@ final class BoltConnection implements ConnectionInterface
         return $this->serverState;
     }
 
-    public function subscribeResult(SummarizedResult $result): void
+    public function subscribeResult(CypherList $result): void
     {
         $this->subscribedResults[] = WeakReference::create($result);
     }
