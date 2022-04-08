@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use BadMethodCallException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Laudis\Neo4j\Bolt\ServerStateTransition;
@@ -23,6 +24,7 @@ use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use LogicException;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
 use Throwable;
@@ -41,7 +43,7 @@ final class BoltConnection implements ConnectionInterface
     private BoltFactory $factory;
 
     private int $ownerCount = 0;
-    private string $expectedState = 'READY';
+    private ?string $expectedState = 'READY';
     /** @var list<callable(list<ServerStateTransition>): void> */
     private array $beforeTransitionEventListeners = [];
     /** @var list<callable(ServerStateTransition): void> */
@@ -132,6 +134,10 @@ final class BoltConnection implements ConnectionInterface
 
     public function open(): void
     {
+        if ($this->boltProtocol !== null) {
+            throw new BadMethodCallException('Cannot open a connection that is already open');
+        }
+
         $this->boltProtocol = $this->factory->build()[0];
     }
 
@@ -142,17 +148,24 @@ final class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
-        if ($this->ownerCount === 0) {
-            $this->boltProtocol = null;
-        }
+        $this->handleMessage('GOODBYE', function () {
+            $this->boltProtocol->goodbye();
+        });
+
+        $this->boltProtocol = null;
+        $this->beforeTransitionEventListeners = [];
+        $this->afterTransitionEventListeners = [];
     }
 
     public function reset(): void
     {
-        if ($this->boltProtocol) {
+        $this->handleMessage('RESET', function () {
             $this->boltProtocol->reset();
-            $this->boltProtocol = $this->factory->build()[0];
-        }
+        });
+
+        $this->boltProtocol = $this->factory->build()[0];
+        $this->beforeTransitionEventListeners = [];
+        $this->afterTransitionEventListeners = [];
     }
 
     /**
@@ -161,29 +174,56 @@ final class BoltConnection implements ConnectionInterface
      */
     public function begin(?string $database, ?float $timeout): void
     {
-        if ($this->boltProtocol === null) {
-            throw new RuntimeException('Cannot begin on a closed connection');
+        $this->handleMessage('BEGIN', function () use ($database, $timeout) {
+            $this->boltProtocol->begin($this->buildExtra($database, $timeout));
+        });
+    }
+
+    /**
+     * @template T
+     *
+     * @param string        $message the bolt message we are trying to send
+     * @param callable(): T $action  the actual action to send the message
+     *
+     * @return T
+     */
+    private function handleMessage(string $message, $action)
+    {
+        if ($this->boltProtocol === null || $this->expectedState === null) {
+            throw new LogicException("Cannot send \"$message\" message on a closed connection");
         }
 
-        $transitions = $this->transitions->getAvailableTransitionsForStateAndMessage($this->expectedState, 'BEGIN');
+        // First, we fetch the available transitions for the given state of the server
+        // and the intended message to send.
+        $transitions = $this->transitions->getAvailableTransitionsForStateAndMessage($this->expectedState, $message);
 
+        // We notify the event listeners before sending the message.
+        // Since we don't know whether it will fail or not, we need to send all
+        // possible transitions.
         $this->triggerBeforeEvents($transitions);
 
         try {
-            $this->boltProtocol->begin($this->buildExtra($database, $timeout));
-            $transition = $this->getSuccessTransition($transitions);
+            $tbr = $action();
 
-            $this->expectedState = $transition->getNewState() ?? 'READY';
+            // If no exceptions are thrown, we know the underlying bolt library
+            // received a success response, making sure we can use the success transition
+            $transition = $this->getSuccessTransition($transitions);
+            $this->expectedState = $transition->getNewState();
         } catch (Throwable $e) {
+            // If an an exception is thrown, we know the underlying bolt library
+            // received a failure response, making sure we can use the failure transition
+            // and propagate the exception further
             $transition = $this->getFailureTransition($transitions);
-            $this->expectedState = $transition->getNewState() ?? 'READY';
+            $this->expectedState = $transition->getNewState();
 
             throw $e;
         } finally {
-            if (isset($transition)) {
-                $this->triggerAfterEvents($transition);
-            }
+            // In the end, all listeners need to be able to handle the state transition,
+            // regardless of the call stack.
+            $this->triggerAfterEvents($transition);
         }
+
+        return $tbr;
     }
 
     /**
@@ -191,30 +231,19 @@ final class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout): array
     {
-        if ($this->boltProtocol === null) {
-            throw new RuntimeException('Cannot run on a closed connection');
-        }
-
-        /** @var BoltMeta */
-        return $this->boltProtocol->run($text, $parameters, $this->buildExtra($database, $timeout));
+        return $this->handleMessage('RUN', function () use ($text, $parameters, $database, $timeout) {
+            return $this->boltProtocol->run($text, $parameters, $this->buildExtra($database, $timeout));
+        });
     }
 
     public function commit(): void
     {
-        if ($this->boltProtocol === null) {
-            throw new RuntimeException('Cannot commit on a closed connection');
-        }
-
-        $this->boltProtocol->commit();
+        $this->handleMessage('COMMIT', fn () => $this->boltProtocol->commit());
     }
 
     public function rollback(): void
     {
-        if ($this->boltProtocol === null) {
-            throw new RuntimeException('Cannot commit on a closed connection');
-        }
-
-        $this->boltProtocol->rollback();
+        $this->handleMessage('ROLLBACK', fn () => $this->boltProtocol->commit());
     }
 
     /**
@@ -222,26 +251,24 @@ final class BoltConnection implements ConnectionInterface
      */
     public function pull(?int $qid, ?int $fetchSize): array
     {
-        if ($this->boltProtocol === null) {
-            throw new RuntimeException('Cannot pull on a closed connection');
-        }
+        return $this->handleMessage('PULL', function () use ($qid, $fetchSize) {
+            $extra = [];
+            if ($fetchSize) {
+                $extra['n'] = $fetchSize;
+            }
 
-        $extra = [];
-        if ($fetchSize) {
-            $extra['n'] = $fetchSize;
-        }
+            if ($qid) {
+                $extra['qid'] = $qid;
+            }
 
-        if ($qid) {
-            $extra['qid'] = $qid;
-        }
+            if (!$this->boltProtocol instanceof V4) {
+                /** @var non-empty-list<list> */
+                return $this->boltProtocol->pullAll($extra);
+            }
 
-        if (!$this->boltProtocol instanceof V4) {
             /** @var non-empty-list<list> */
-            return $this->boltProtocol->pullAll($extra);
-        }
-
-        /** @var non-empty-list<list> */
-        return $this->boltProtocol->pull($extra);
+            return $this->boltProtocol->pull($extra);
+        });
     }
 
     /**
@@ -249,7 +276,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getDriverConfiguration(): DriverConfiguration
     {
-        return $this->driverConfiguration;
+        return $this->config->getDriverConfiguration();
     }
 
     public function __destruct()
@@ -297,10 +324,13 @@ final class BoltConnection implements ConnectionInterface
         $this->afterTransitionEventListeners[] = $listener;
     }
 
+    public function getExpectedState(): ?string
+    {
+        return $this->expectedState;
+    }
+
     /**
      * @param list<ServerStateTransition> $states
-     *
-     * @return ServerStateTransition
      */
     private function getFailureTransition(array $states): ServerStateTransition
     {
@@ -309,8 +339,6 @@ final class BoltConnection implements ConnectionInterface
 
     /**
      * @param list<ServerStateTransition> $states
-     *
-     * @return ServerStateTransition
      */
     private function getSuccessTransition(array $states): ServerStateTransition
     {
@@ -319,8 +347,6 @@ final class BoltConnection implements ConnectionInterface
 
     /**
      * @param list<ServerStateTransition> $states
-     *
-     * @return ServerStateTransition
      */
     private function getTransitionForResponse(array $states, string $response): ServerStateTransition
     {
