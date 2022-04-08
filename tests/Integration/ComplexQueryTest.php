@@ -379,6 +379,52 @@ CYPHER
     /**
      * @dataProvider connectionAliases
      */
+    public function testSimpleTimeout(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not support timeouts at the moment');
+        }
+
+        try {
+            $this->getClient()
+                ->getDriver($alias)
+                ->createSession()
+                ->run(
+                    "MATCH (n:Node) SET n.testing = 'hello' WITH * CALL apoc.util.sleep(2000000)",
+                    [],
+                    TransactionConfiguration::default()->withTimeout(10)
+                );
+        } catch (Neo4jException $e) {
+            self::assertEquals('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
+        }
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testDiscardAfterTimeout(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not support timeouts at the moment');
+        }
+
+        $this->expectException(Neo4jException::class);
+
+        $result = $this->getClient()
+            ->getDriver($alias)
+            ->createSession()
+            ->run(
+                "MATCH (n:Node) SET n.testing = 'hello' WITH * CALL apoc.util.sleep(2000000)",
+                [],
+                TransactionConfiguration::default()->withTimeout(150)
+            );
+
+        unset($result);
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
     public function testTimeout(string $alias): void
     {
         if (str_starts_with($alias, 'http')) {

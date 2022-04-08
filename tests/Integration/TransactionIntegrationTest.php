@@ -21,6 +21,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use ReflectionClass;
 use function str_starts_with;
+use Throwable;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
@@ -308,7 +309,7 @@ CYPHER
         $exception = false;
         try {
             $tsx->commit();
-        } catch (Neo4jException $e) {
+        } catch (Throwable $e) {
             $exception = true;
         }
         self::assertTrue($exception);
@@ -354,7 +355,7 @@ CYPHER
         $exception = false;
         try {
             $tsx->rollback();
-        } catch (Neo4jException $e) {
+        } catch (Throwable $e) {
             $exception = true;
         }
         self::assertTrue($exception);

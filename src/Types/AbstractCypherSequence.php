@@ -16,10 +16,12 @@ namespace Laudis\Neo4j\Types;
 use function array_key_exists;
 use function array_reverse;
 use ArrayAccess;
+use ArrayIterator;
 use BadMethodCallException;
 use function call_user_func;
 use function count;
 use Countable;
+use function get_object_vars;
 use function implode;
 use const INF;
 use function is_array;
@@ -532,5 +534,17 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     protected function isStringable($key): bool
     {
         return is_string($key) || is_numeric($key) || (is_object($key) && method_exists($key, '__toString'));
+    }
+
+    public function __serialize(): array
+    {
+        $this->preload();
+
+        $tbr = get_object_vars($this);
+        $tbr['generator'] = new ArrayIterator($this->cache);
+        $tbr['currentPosition'] = 0;
+        $tbr['generatorPosition'] = 0;
+
+        return $tbr;
     }
 }

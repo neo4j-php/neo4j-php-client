@@ -160,7 +160,9 @@ final class Session implements SessionInterface
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
         $connection = $this->pool->acquire($this->uri, $this->auth, $sessionConfig);
-        $connection->setTimeout($config->getTimeout());
+        // We try and let the server do the timeout management.
+        // Since the client should not run indefinitely, we just multiply the client side by two, just in case
+        $connection->setTimeout($config->getTimeout() * 2);
 
         return $connection;
     }
