@@ -268,6 +268,7 @@ final class BoltConnection implements ConnectionInterface
                 $this->serverState = 'STREAMING';
             }
 
+            /** @var BoltMeta */
             return $tbr;
         } catch (MessageException $e) {
             $this->serverState = 'FAILED';
@@ -427,7 +428,7 @@ final class BoltConnection implements ConnectionInterface
     private function interpretResult(array $result): void
     {
         if (str_starts_with($this->serverState, 'TX_')) {
-            if ($has_more ?? count($this->subscribedResults) === 1) {
+            if ($result['has_more'] ?? count($this->subscribedResults) === 1) {
                 $this->serverState = 'TX_STREAMING';
             } else {
                 $this->serverState = 'TX_READY';
