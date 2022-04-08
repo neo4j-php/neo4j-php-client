@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\error\ConnectionTimeoutException;
 use Bolt\error\MessageException;
-use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -26,8 +25,8 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
-use function microtime;
 use Throwable;
+use function microtime;
 
 /**
  * Manages a transaction over the bolt protocol.

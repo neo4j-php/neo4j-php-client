@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\error\MessageException;
 use Exception;
-use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -160,9 +159,13 @@ final class Session implements SessionInterface
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
         $connection = $this->pool->acquire($this->uri, $this->auth, $sessionConfig);
+
         // We try and let the server do the timeout management.
         // Since the client should not run indefinitely, we just multiply the client side by two, just in case
-        $connection->setTimeout($config->getTimeout() * 2);
+        $timeout = $config->getTimeout();
+        if ($timeout) {
+            $connection->setTimeout($timeout * 2);
+        }
 
         return $connection;
     }

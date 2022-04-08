@@ -13,14 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use function array_splice;
-use Bolt\protocol\V4;
-use function call_user_func;
-use function count;
+use BadMethodCallException;
 use Generator;
 use Iterator;
-use Laudis\Neo4j\Common\BoltConnection;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use function array_splice;
+use function call_user_func;
+use function count;
 
 /**
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
@@ -34,7 +33,7 @@ final class BoltResult implements Iterator
     /** @var list<list> */
     private array $rows = [];
     private ?array $meta = null;
-    /** @var callable(array):void|null */
+    /** @var (callable(array):void)|null */
     private $finishedCallback;
     private int $qid;
 
@@ -150,6 +149,7 @@ final class BoltResult implements Iterator
     public function rewind(): void
     {
         // Rewind is impossible
+        throw new BadMethodCallException('Cannot rewind a bolt result.');
     }
 
     public function __destruct()
@@ -165,9 +165,6 @@ final class BoltResult implements Iterator
 
     public function discard(): void
     {
-        $v3 = $this->connection->getImplementation();
-        if ($v3 instanceof V4 && $this->meta === null) {
-            $v3->discard(['qid' => $this->qid]);
-        }
+        $this->connection->discard($this->qid);
     }
 }
