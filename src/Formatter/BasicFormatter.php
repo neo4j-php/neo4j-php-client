@@ -18,6 +18,7 @@ use function get_class;
 use function gettype;
 use function is_array;
 use function is_object;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -54,13 +55,17 @@ final class BasicFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<array|scalar|null>>
      */
-    public function formatBoltResult(array $meta, BoltResult $result, ?ConnectionInterface $connection = null, ?float $runStart = null, ?float $resultAvailableAfter = null, ?Statement $statement = null): CypherList
+    public function formatBoltResult(array $meta, BoltResult $result, ?BoltConnection $connection = null, ?float $runStart = null, ?float $resultAvailableAfter = null, ?Statement $statement = null): CypherList
     {
-        return (new CypherList(function () use ($meta, $result) {
+        $result = (new CypherList(function () use ($meta, $result) {
             foreach ($result as $row) {
                 yield $this->formatRow($meta, $row);
             }
         }))->withCacheLimit($result->getFetchSize());
+
+        $connection->subscribeResult($result);
+
+        return $result;
     }
 
     /**

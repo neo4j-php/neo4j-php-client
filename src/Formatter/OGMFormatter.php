@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -71,13 +72,17 @@ final class OGMFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<OGMTypes>>
      */
-    public function formatBoltResult(array $meta, BoltResult $result, ConnectionInterface $connection, float $runStart, float $resultAvailableAfter, Statement $statement): CypherList
+    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement): CypherList
     {
-        return (new CypherList(function () use ($result, $meta) {
+        $tbr = (new CypherList(function () use ($result, $meta) {
             foreach ($result as $row) {
                 yield $this->formatRow($meta, $row);
             }
         }))->withCacheLimit($result->getFetchSize());
+
+        $connection->subscribeResult($tbr);
+
+        return $tbr;
     }
 
     /**
