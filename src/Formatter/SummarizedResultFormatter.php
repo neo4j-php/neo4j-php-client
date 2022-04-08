@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use Laudis\Neo4j\Bolt\BoltConnection;
+use Laudis\Neo4j\Databags\DatabaseInfo;
 use function in_array;
 use function is_int;
 use Laudis\Neo4j\Bolt\BoltResult;
@@ -24,6 +26,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Enum\QueryTypeEnum;
+use Laudis\Neo4j\Http\HttpConnection;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use function microtime;
@@ -70,7 +73,7 @@ final class SummarizedResultFormatter implements FormatterInterface
      *
      * @psalm-mutation-free
      */
-    public function formatHttpStats(stdClass $response, ConnectionInterface $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
+    public function formatHttpStats(stdClass $response, HttpConnection $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
     {
         if ($response->summary instanceof stdClass) {
             /** @var stdClass $stats */
@@ -161,7 +164,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         );
     }
 
-    public function formatBoltResult(array $meta, BoltResult $result, ConnectionInterface $connection, float $runStart, float $resultAvailableAfter, Statement $statement): SummarizedResult
+    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement): SummarizedResult
     {
         /** @var ResultSummary|null $summary */
         $summary = null;
@@ -169,9 +172,11 @@ final class SummarizedResultFormatter implements FormatterInterface
             /** @var BoltCypherStats $counters */
             $stats = $this->formatBoltStats($counters);
             $resultConsumedAfter = $runStart - microtime(true);
+            /** @var string */
+            $db = $counters['db'] ?? '';
             $summary = new ResultSummary(
                 $stats,
-                $connection->getDatabaseInfo(),
+                new DatabaseInfo($db),
                 new CypherList(),
                 null,
                 null,
@@ -202,7 +207,7 @@ final class SummarizedResultFormatter implements FormatterInterface
      *
      * @psalm-suppress ImpureMethodCall
      */
-    public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
+    public function formatHttpResult(ResponseInterface $response, stdClass $body, HttpConnection $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
         /** @var list<SummarizedResult<CypherMap<OGMTypes>>> */
         $tbr = [];

@@ -16,8 +16,10 @@ namespace Laudis\Neo4j\Contracts;
 use Bolt\Bolt;
 use Bolt\protocol\V3;
 use JsonException;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Http\HttpConnection;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -73,11 +75,10 @@ interface FormatterInterface
      * Formats the results of the bolt protocol to the unified format.
      *
      * @param BoltMeta                $meta
-     * @param ConnectionInterface<V3> $connection
      *
      * @return ResultFormat
      */
-    public function formatBoltResult(array $meta, BoltResult $result, ConnectionInterface $connection, float $runStart, float $resultAvailableAfter, Statement $statement);
+    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement);
 
     /**
      * Formats the results of the HTTP protocol to the unified format.
@@ -90,7 +91,7 @@ interface FormatterInterface
      *
      * @psalm-mutation-free
      */
-    public function formatHttpResult(ResponseInterface $response, stdClass $body, ConnectionInterface $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
+    public function formatHttpResult(ResponseInterface $response, stdClass $body, HttpConnection $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
 
     /**
      * Decorates a request to make make sure it requests the correct format.

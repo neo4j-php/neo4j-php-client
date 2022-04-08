@@ -16,7 +16,6 @@ namespace Laudis\Neo4j\Http;
 use function array_intersect;
 use function array_unique;
 use Laudis\Neo4j\Common\TransactionHelper;
-use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
@@ -24,7 +23,6 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use function microtime;
-use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -41,12 +39,8 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     private RequestInterface $request;
     /** @psalm-readonly */
     private StreamFactoryInterface $factory;
-    /**
-     * @psalm-readonly
-     *
-     * @var ConnectionInterface<ClientInterface>
-     */
-    private ConnectionInterface $connection;
+    /** @psalm-readonly */
+    private HttpConnection $connection;
     /**
      * @psalm-readonly
      *
@@ -61,12 +55,11 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @psalm-mutation-free
      *
-     * @param FormatterInterface<T>                $formatter
-     * @param ConnectionInterface<ClientInterface> $connection
+     * @param FormatterInterface<T> $formatter
      */
     public function __construct(
         RequestInterface $request,
-        ConnectionInterface $connection,
+        HttpConnection $connection,
         StreamFactoryInterface $factory,
         FormatterInterface $formatter
     ) {

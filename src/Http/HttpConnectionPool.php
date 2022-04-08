@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use function json_encode;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -47,6 +49,8 @@ final class HttpConnectionPool implements ConnectionPoolInterface
      * @psalm-readonly
      */
     private Resolvable $streamFactory;
+    /** @psalm-readonly */
+    private DriverConfiguration $config;
 
     /**
      * @param Resolvable<StreamFactoryInterface> $streamFactory
@@ -54,18 +58,19 @@ final class HttpConnectionPool implements ConnectionPoolInterface
      * @param Resolvable<ClientInterface>        $client
      * @psalm-mutation-free
      */
-    public function __construct(Resolvable $client, Resolvable $requestFactory, Resolvable $streamFactory)
+    public function __construct(Resolvable $client, Resolvable $requestFactory, Resolvable $streamFactory, DriverConfiguration $config)
     {
         $this->client = $client;
         $this->requestFactory = $requestFactory;
         $this->streamFactory = $streamFactory;
+        $this->config = $config;
     }
 
     public function acquire(
         UriInterface $uri,
         AuthenticateInterface $authenticate,
         SessionConfiguration $config
-    ): ConnectionInterface {
+    ): HttpConnection {
         $request = $this->requestFactory->resolve()->createRequest('POST', $uri);
 
         $path = $request->getUri()->getPath().'/commit';
@@ -95,15 +100,17 @@ CYPHER
 
         $version = $results[0]['versions'][0] ?? '';
 
-        return new HttpConnection(
-            $this->client->resolve(),
+        $config = new ConnectionConfiguration(
             $results[0]['name'].'-'.$results[0]['edition'].'/'.($version),
             $uri,
             $version,
             ConnectionProtocol::HTTP(),
             $config->getAccessMode(),
-            new DatabaseInfo($config->getDatabase())
+            $this->config,
+            new DatabaseInfo($config->getDatabase() ?? '')
         );
+
+        return new HttpConnection($this->client->resolve(), $config);
     }
 
     public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool
