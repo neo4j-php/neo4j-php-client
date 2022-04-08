@@ -118,7 +118,7 @@ final class HttpDriver implements DriverInterface
             $this->formatter,
             $factory,
             Resolvable::once($this->key.':tsxUrl', function () use ($config, $factory) {
-                $database = $config->getDatabase();
+                $database = $config->getDatabase() ?? '';
                 $request = $factory->resolve()->createRequest('GET', $this->uri);
                 $client = $this->config->getHttpPsrBindings()->getClient();
 

@@ -13,10 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use function array_slice;
+use function array_unique;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
+use function count;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
@@ -28,9 +31,6 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
-use function array_slice;
-use function array_unique;
-use function count;
 use function random_int;
 use function str_starts_with;
 use function time;
