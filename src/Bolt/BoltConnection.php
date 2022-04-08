@@ -156,7 +156,6 @@ final class BoltConnection implements ConnectionInterface
         $this->protocol()->goodbye();
 
         $this->serverState = 'DEFUNCT';
-        $this->subscribedResults = [];
     }
 
     private function consumeResults(): void
@@ -386,7 +385,7 @@ final class BoltConnection implements ConnectionInterface
             $extra['db'] = $database;
         }
         if ($timeout) {
-            $extra['tx_timeout'] = $timeout * 1000;
+            $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
         return $extra;
@@ -411,7 +410,7 @@ final class BoltConnection implements ConnectionInterface
         return $this->serverState;
     }
 
-    private function subscribeResult(SummarizedResult $result): void
+    public function subscribeResult(SummarizedResult $result): void
     {
         $this->subscribedResults[] = WeakReference::create($result);
     }

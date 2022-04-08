@@ -14,6 +14,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
 use Dotenv\Dotenv;
+use Laudis\Neo4j\Common\ConnectionConfiguration;
 use function explode;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -62,17 +63,16 @@ final class BoltResultIntegrationTest extends TestCase
 
         $i = 0;
         $factory = new BoltFactory(new Bolt($socket), Authenticate::fromUrl($uri), '', $socket);
-        $connection = new BoltConnection(
+        $config = new ConnectionConfiguration(
             '',
             $uri,
             '',
             ConnectionProtocol::determineBoltVersion($factory->build()[0]),
             AccessMode::READ(),
-            new DatabaseInfo(''),
-            $factory,
-            null,
-            DriverConfiguration::default()
+            DriverConfiguration::default(),
+            null
         );
+        $connection = new BoltConnection($factory, null, $config);
         $connection->open();
         $connection->getImplementation()->run('UNWIND range(1, 100000) AS i RETURN i');
         $result = new BoltResult($connection, 1000, -1);
