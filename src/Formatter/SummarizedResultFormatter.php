@@ -75,7 +75,7 @@ final class SummarizedResultFormatter implements FormatterInterface
      */
     public function formatHttpStats(stdClass $response, HttpConnection $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
     {
-        if ($response->summary instanceof stdClass) {
+        if (isset($response->summary) && $response->summary instanceof stdClass) {
             /** @var stdClass $stats */
             $stats = $response->summary->stats;
         } elseif (isset($response->stats)) {
