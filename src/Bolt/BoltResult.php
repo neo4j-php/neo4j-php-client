@@ -146,7 +146,7 @@ final class BoltResult implements Iterator
 
     public function __destruct()
     {
-        if ($this->valid() && in_array($this->connection->getServerState(), ['STREAMING', 'TX_STREAMING'], true)) {
+        if ($this->meta === null && in_array($this->connection->getServerState(), ['STREAMING', 'TX_STREAMING'], true)) {
             $this->discard();
         }
     }

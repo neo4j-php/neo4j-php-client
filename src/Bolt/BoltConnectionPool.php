@@ -78,7 +78,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
 
                 return $connection;
             }
-            if ($connection->getServerState() === 'READY' && !$this->compare($connection, $authenticate)) {
+            if ($connection->getServerState() === 'READY' && $authenticate === $connection->getFactory()->getAuth()) {
                 return $connection;
             }
         }
