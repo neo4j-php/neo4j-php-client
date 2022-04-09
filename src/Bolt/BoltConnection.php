@@ -272,7 +272,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout): array
     {
-        if (!str_starts_with($this->serverState, 'TX_')) {
+        if (!str_starts_with($this->serverState, 'TX_') || str_starts_with($this->getServerVersion(), '3')) {
             $this->consumeResults();
         }
 
