@@ -40,7 +40,7 @@ use Psr\Http\Message\UriInterface;
  */
 final class Session implements SessionInterface
 {
-    /** @psalm-readonly  */
+    /** @psalm-readonly */
     private SessionConfiguration $config;
     /**
      * @psalm-readonly
@@ -56,7 +56,7 @@ final class Session implements SessionInterface
     private FormatterInterface $formatter;
     /** @psalm-readonly */
     private UriInterface $uri;
-    /** @psalm-readonly  */
+    /** @psalm-readonly */
     private AuthenticateInterface $auth;
 
     /**
@@ -164,6 +164,7 @@ final class Session implements SessionInterface
         // Since the client should not run indefinitely, we just multiply the client side by two, just in case
         $timeout = $config->getTimeout();
         if ($timeout) {
+            $timeout = ($timeout < 30) ? 30 : $timeout;
             $connection->setTimeout($timeout * 2);
         }
 
