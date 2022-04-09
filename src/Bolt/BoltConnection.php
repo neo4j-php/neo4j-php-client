@@ -378,7 +378,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if ($this->isOpen()) {
+        if ($this->serverState !== 'FAILED' && $this->isOpen()) {
             $this->close();
         }
     }
