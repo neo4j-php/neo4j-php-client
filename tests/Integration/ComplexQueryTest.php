@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Bolt\error\ConnectionTimeoutException;
-use Bolt\error\MessageException;
 use Generator;
 use function getenv;
 use InvalidArgumentException;

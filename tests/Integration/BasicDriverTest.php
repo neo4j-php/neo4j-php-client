@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 final class BasicDriverTest extends TestCase
 {
     /**
-     * @return list<array{0: string}>
+     * @return non-empty-array<string, array{0: string}>
      */
     public function getConnections(): array
     {

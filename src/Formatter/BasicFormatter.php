@@ -55,7 +55,7 @@ final class BasicFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<array|scalar|null>>
      */
-    public function formatBoltResult(array $meta, BoltResult $result, ?BoltConnection $connection = null, ?float $runStart = null, ?float $resultAvailableAfter = null, ?Statement $statement = null): CypherList
+    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, ?float $runStart = null, ?float $resultAvailableAfter = null, ?Statement $statement = null): CypherList
     {
         $result = (new CypherList(function () use ($meta, $result) {
             foreach ($result as $row) {
