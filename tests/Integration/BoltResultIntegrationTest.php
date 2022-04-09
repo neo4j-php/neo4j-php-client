@@ -19,6 +19,7 @@ use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
+use Laudis\Neo4j\Bolt\SslConfigurator;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Uri;
@@ -59,6 +60,10 @@ final class BoltResultIntegrationTest extends TestCase
     {
         $uri = Uri::create($connection);
         $socket = new StreamSocket($uri->getHost(), $uri->getPort() ?? 7687);
+        $options = (new SslConfigurator())->configure($uri, DriverConfiguration::default());
+        if ($options !== null) {
+            $socket->setSslContextOptions($options);
+        }
 
         $i = 0;
         $factory = new BoltFactory(new Bolt($socket), Authenticate::fromUrl($uri), '', $socket);
