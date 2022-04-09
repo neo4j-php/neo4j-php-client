@@ -46,7 +46,19 @@ final class BoltConnection implements ConnectionInterface
     private BoltFactory $factory;
 
     private string $serverState = 'DISCONNECTED';
-    /** @var list<WeakReference<CypherList>> */
+    /**
+     * @note We are using references to "subscribed results" to maintain backwards compatibility and try and strike
+     *       a balance between performance and ease of use.
+     *       The connection will discard or pull the results depending on the server state transition. This way end
+     *       users don't have to worry about consuming result sets, it will all happen behind te scenes. There are some
+     *       edge cases where the result set will be pulled or discarded when it is not strictly necessary, and we
+     *       should introduce a "manual" mode later down the road to allow the end users to optimise the result
+     *       consumption themselves.
+     *       A great moment to do this would be when neo4j 5 is released as it will presumably allow us to do more
+     *       stuff with PULL and DISCARD messages.
+     *
+     * @var list<WeakReference<CypherList>>
+     */
     private array $subscribedResults = [];
 
     /**
