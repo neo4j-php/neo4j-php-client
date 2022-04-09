@@ -357,9 +357,12 @@ CYPHER
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
 
-        $this->expectException(ConnectionTimeoutException::class);
+        $this->expectException(Neo4jException::class);
         $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
-            $tsx->run('CALL apoc.util.sleep(10000)');
+            $tsx->run(<<<'CYPHER'
+            UNWIND range(1, 10000) AS id
+            MERGE (x:Node {id: id})
+            CYPHER);
         }, $alias, TransactionConfiguration::default()->withTimeout(1));
     }
 
@@ -371,9 +374,12 @@ CYPHER
         if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
-        $this->expectException(ConnectionTimeoutException::class);
+        $this->expectException(Neo4jException::class);
         $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
-        $tsx->run('CALL apoc.util.sleep(10000)');
+        $tsx->run(<<<'CYPHER'
+        UNWIND range(1, 10000) AS id
+        MERGE (x:Node {id: id})
+        CYPHER);
     }
 
     /**
@@ -389,7 +395,7 @@ CYPHER
             $this->getClient()
                 ->getDriver($alias)
                 ->createSession()
-                ->run('CALL apoc.util.sleep(2000000)', [], TransactionConfiguration::default()->withTimeout(10));
+                ->run('UNWIND range(1, 1000000) AS x MERGE (:Number {value: x})', [], TransactionConfiguration::default()->withTimeout(10));
         } catch (Neo4jException $e) {
             self::assertEquals('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
         }
@@ -409,7 +415,7 @@ CYPHER
         $result = $this->getClient()
             ->getDriver($alias)
             ->createSession()
-            ->run("CALL apoc.util.sleep(2000000)", [], TransactionConfiguration::default()->withTimeout(150));
+            ->run('UNWIND range(1, 1000000) AS x MERGE (:Number {value: x})', [], TransactionConfiguration::default()->withTimeout(150));
 
         unset($result);
     }
@@ -423,10 +429,11 @@ CYPHER
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
 
+        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
         try {
-            $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
-            $tsx->run('CALL apoc.util.sleep(10000)');
-        } catch (ConnectionTimeoutException $e) {
+            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        } catch (Neo4jException $e) {
+            self::assertEquals('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
             $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(20));
             self::assertEquals(1, $tsx->run('RETURN 1 AS one')->first()->get('one'));
         }
@@ -455,8 +462,11 @@ CYPHER
             self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
         }
 
-        $this->expectException(MessageException::class);
-        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
-        $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        try {
+            $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+            $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
+        } catch (Neo4jException $e) {
+            self::assertEquals('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
+        }
     }
 }
