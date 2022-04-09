@@ -69,6 +69,9 @@ final class BoltConnection implements ConnectionInterface
         $this->factory = $factory;
         $this->boltProtocol = $boltProtocol;
         $this->config = $config;
+        if ($boltProtocol) {
+            $this->serverState = 'READY';
+        }
     }
 
     /**

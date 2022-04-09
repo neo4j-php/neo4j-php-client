@@ -18,7 +18,6 @@ use function call_user_func;
 use function count;
 use Generator;
 use Iterator;
-use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 /**
  * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
@@ -75,21 +74,17 @@ final class BoltResult implements Iterator
      */
     public function iterator(): Generator
     {
-        if ($this->connection->getProtocol() === ConnectionProtocol::BOLT_V3()) {
-            yield from $this->rows;
-        } else {
-            $i = 0;
-            while ($this->meta === null) {
-                $this->fetchResults();
-                foreach ($this->rows as $row) {
-                    yield $i => $row;
-                    ++$i;
-                }
+        $i = 0;
+        while ($this->meta === null) {
+            $this->fetchResults();
+            foreach ($this->rows as $row) {
+                yield $i => $row;
+                ++$i;
             }
         }
 
         if ($this->finishedCallback) {
-            call_user_func($this->finishedCallback, $this->meta ?? []);
+            call_user_func($this->finishedCallback, $this->meta);
         }
     }
 
@@ -153,6 +148,6 @@ final class BoltResult implements Iterator
 
     public function discard(): void
     {
-        $this->connection->discard($this->qid);
+        $this->connection->discard($this->qid === -1 ? null : $this->qid);
     }
 }
