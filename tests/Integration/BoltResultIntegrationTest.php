@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
 final class BoltResultIntegrationTest extends TestCase
 {
     /**
-     * @return list<list<string>>
+     * @return array<string, list<string>>
      */
     public function buildConnections(): array
     {
@@ -40,13 +40,13 @@ final class BoltResultIntegrationTest extends TestCase
             /** @var string|mixed $connections */
             $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
             if (!is_string($connections)) {
-                return [['bolt://neo4j:test@neo4j']];
+                return ['bolt://neo4j:test@neo4j' => ['bolt://neo4j:test@neo4j']];
             }
         }
 
         $tbr = [];
         foreach (explode(',', $connections) as $connection) {
-            $tbr[] = [$connection];
+            $tbr[$connection] = [$connection];
         }
 
         return $tbr;

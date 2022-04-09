@@ -178,8 +178,6 @@ final class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
-        $this->consumeResults();
-
         try {
             $this->protocol()->reset();
         } catch (MessageException $e) {
