@@ -45,7 +45,6 @@ final class BoltConnection implements ConnectionInterface
     /** @psalm-readonly */
     private BoltFactory $factory;
 
-    private int $ownerCount = 0;
     private string $serverState = 'DISCONNECTED';
     /** @var list<WeakReference<CypherList>> */
     private array $subscribedResults = [];
