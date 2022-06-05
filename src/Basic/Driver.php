@@ -46,7 +46,7 @@ final class Driver implements DriverInterface
      */
     public function createSession(?SessionConfiguration $config = null): Session
     {
-        return new Session($this->driver->createSession());
+        return new Session($this->driver->createSession($config));
     }
 
     public function verifyConnectivity(): bool
