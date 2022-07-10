@@ -420,6 +420,25 @@ CYPHER
 
     /**
      * @dataProvider connectionAliases
+     *
+     * @doesNotPerformAssertions
+     */
+    public function testTimeoutNoReturn(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not support timeouts at the moment');
+        }
+
+        $result = $this->getClient()
+            ->getDriver($alias)
+            ->createSession()
+            ->run('CALL apoc.util.sleep(2000000)', [], TransactionConfiguration::default()->withTimeout(150));
+
+        unset($result);
+    }
+
+    /**
+     * @dataProvider connectionAliases
      */
     public function testTimeout(string $alias): void
     {
