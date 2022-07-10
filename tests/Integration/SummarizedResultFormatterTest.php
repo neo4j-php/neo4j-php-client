@@ -111,4 +111,22 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
 
         dump($results);
     }
+
+    public function testConsumedPositive(): void
+    {
+        $results = $this->getClient()->run('RETURN 1 AS one');
+
+        self::assertInstanceOf(SummarizedResult::class, $results);
+
+        self::assertGreaterThan(0, $results->getSummary()->getResultConsumedAfter());
+    }
+
+    public function testAvailableAfter(): void
+    {
+        $results = $this->getClient()->run('RETURN 1 AS one');
+
+        self::assertInstanceOf(SummarizedResult::class, $results);
+
+        self::assertGreaterThan(0, $results->getSummary()->getResultAvailableAfter());
+    }
 }

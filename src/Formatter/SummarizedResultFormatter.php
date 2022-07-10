@@ -171,7 +171,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         $result->setFinishedCallback(function (array $counters) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
             /** @var BoltCypherStats $counters */
             $stats = $this->formatBoltStats($counters);
-            $resultConsumedAfter = $runStart - microtime(true);
+            $resultConsumedAfter = microtime(true) - $runStart;
             /** @var string */
             $db = $counters['db'] ?? '';
             $summary = new ResultSummary(

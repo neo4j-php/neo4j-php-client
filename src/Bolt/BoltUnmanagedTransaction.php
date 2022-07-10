@@ -137,7 +137,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             new BoltResult($this->connection, $this->config->getFetchSize(), $meta['qid'] ?? -1),
             $this->connection,
             $start,
-            $start - $run,
+            $run - $start,
             $statement
         );
     }
