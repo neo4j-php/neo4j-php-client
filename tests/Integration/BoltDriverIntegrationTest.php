@@ -18,6 +18,8 @@ use Dotenv\Dotenv;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\UriInterface;
 
@@ -102,5 +104,35 @@ CYPHER);
         $driver = BoltDriver::create('bolt://neo4j:test@127.0.0.0');
         $this->expectException(ConnectException::class);
         $driver->createSession()->run('RETURN 1');
+    }
+
+    public function testBookmarkUpdates(): void
+    {
+        if ($this->uri === null) {
+            self::markTestSkipped('No bolt uri provided');
+        }
+
+        $session = BoltDriver::create($this->uri->__toString())->createSession();
+        $bookmark = $session->getLastBookmark();
+        $this->assertEquals([], $bookmark->values());
+        $this->assertTrue($bookmark->isEmpty());
+        $previousBookmark = $bookmark;
+
+        /** @var SummarizedResult $result */
+        $result = $session->run('MATCH (x) RETURN x');
+        $result->preload();
+
+        $bookmark = $session->getLastBookmark();
+        $this->assertFalse($bookmark->isEmpty());
+        $this->assertNotEquals($previousBookmark->values(), $bookmark->values());
+        $previousBookmark = $bookmark;
+
+        /** @var SummarizedResult $result */
+        $result = $session->run('CREATE (x:Node)');
+        $result->preload();
+
+        $bookmark = $session->getLastBookmark();
+        $this->assertFalse($bookmark->isEmpty());
+        $this->assertNotEquals($previousBookmark->values(), $bookmark->values());
     }
 }

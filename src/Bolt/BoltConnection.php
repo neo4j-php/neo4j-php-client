@@ -210,11 +210,11 @@ final class BoltConnection implements ConnectionInterface
      *
      * Any of the preconditioned states are: 'READY', 'INTERRUPTED'.
      */
-    public function begin(?string $database, ?float $timeout): void
+    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder): void
     {
         $this->consumeResults();
 
-        $extra = $this->buildRunExtra($database, $timeout);
+        $extra = $this->buildRunExtra($database, $timeout, $holder);
         try {
             $this->protocol()->begin($extra);
         } catch (IgnoredException $e) {
