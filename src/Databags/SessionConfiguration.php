@@ -37,7 +37,7 @@ final class SessionConfiguration
     private $fetchSize;
     /** @var pure-callable():(AccessMode|null)|AccessMode|null */
     private $accessMode;
-    /** @var pure-callable():(iterable<string>|null)|iterable<string>|null */
+    /** @var pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark>|null */
     private $bookmarks;
 
     /**
@@ -64,7 +64,7 @@ final class SessionConfiguration
      * @param string|null $database
      * @param pure-callable():(int|null)|int|null                      $fetchSize
      * @param pure-callable():(AccessMode|null)|AccessMode|null        $defaultAccessMode
-     * @param pure-callable():(iterable<string>|null)|iterable<string> $bookmarks
+     * @param pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark> $bookmarks
      */
     public static function create($database = null, $fetchSize = null, $defaultAccessMode = null, $bookmarks = null): self
     {
@@ -112,7 +112,7 @@ final class SessionConfiguration
     /**
      * Creates a new session with the provided bookmarks.
      *
-     * @param pure-callable():(iterable<string>|null)|iterable<string>|null $bookmarks
+     * @param pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark>|null $bookmarks
      */
     public function withBookmarks($bookmarks): self
     {

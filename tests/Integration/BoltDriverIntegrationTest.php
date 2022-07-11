@@ -18,7 +18,6 @@ use Dotenv\Dotenv;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\UriInterface;

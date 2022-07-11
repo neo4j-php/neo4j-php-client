@@ -17,7 +17,7 @@ final class BookmarkHolder
 {
     private Bookmark $bookmark;
 
-    public function __construct(Bookmark $bookmark = null)
+    public function __construct(Bookmark $bookmark)
     {
         $this->bookmark = $bookmark;
     }

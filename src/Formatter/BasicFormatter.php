@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter;
 
 use Bolt\structures\Path;
-use Laudis\Neo4j\Databags\BookmarkHolder;
 use function get_class;
 use function gettype;
 use function is_array;
@@ -23,6 +22,7 @@ use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;

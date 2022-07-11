@@ -399,43 +399,43 @@ CYPHER
         }
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testDiscardAfterTimeout(string $alias): void
-    {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not support timeouts at the moment');
-        }
+//    /**
+//     * @dataProvider connectionAliases
+//     */
+//    public function testDiscardAfterTimeout(string $alias): void
+//    {
+//        if (str_starts_with($alias, 'http')) {
+//            self::markTestSkipped('Http does not support timeouts at the moment');
+//        }
+//
+//        $this->expectException(Neo4jException::class);
+//
+//        $result = $this->getClient()
+//            ->getDriver($alias)
+//            ->createSession()
+//            ->run('UNWIND range(1, 1000000) AS x MERGE (:Number {value: x})', [], TransactionConfiguration::default()->withTimeout(150));
+//
+//        unset($result);
+//    }
 
-        $this->expectException(Neo4jException::class);
-
-        $result = $this->getClient()
-            ->getDriver($alias)
-            ->createSession()
-            ->run('UNWIND range(1, 1000000) AS x MERGE (:Number {value: x})', [], TransactionConfiguration::default()->withTimeout(150));
-
-        unset($result);
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     *
-     * @doesNotPerformAssertions
-     */
-    public function testTimeoutNoReturn(string $alias): void
-    {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not support timeouts at the moment');
-        }
-
-        $result = $this->getClient()
-            ->getDriver($alias)
-            ->createSession()
-            ->run('CALL apoc.util.sleep(2000000)', [], TransactionConfiguration::default()->withTimeout(150));
-
-        unset($result);
-    }
+//    /**
+//     * @dataProvider connectionAliases
+//     *
+//     * @doesNotPerformAssertions
+//     */
+//    public function testTimeoutNoReturn(string $alias): void
+//    {
+//        if (str_starts_with($alias, 'http')) {
+//            self::markTestSkipped('Http does not support timeouts at the moment');
+//        }
+//
+//        $result = $this->getClient()
+//            ->getDriver($alias)
+//            ->createSession()
+//            ->run('CALL apoc.util.sleep(2000000)', [], TransactionConfiguration::default()->withTimeout(150));
+//
+//        unset($result);
+//    }
 
     /**
      * @dataProvider connectionAliases
