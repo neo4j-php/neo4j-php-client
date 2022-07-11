@@ -44,7 +44,7 @@ final class SessionConfiguration
      * @param string|null $database
      * @param pure-callable():(int|null)|int|null                           $fetchSize
      * @param pure-callable():(AccessMode|null)|AccessMode|null             $defaultAccessMode
-     * @param pure-callable():(iterable<string>|null)|iterable<string>|null $bookmarks
+     * @param pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark>|null $bookmarks
      */
     public function __construct(
         $database = null,
@@ -152,6 +152,8 @@ final class SessionConfiguration
 
     /**
      * Returns the initial bookmarks.
+     *
+     * @return iterable<Bookmark>
      */
     public function getBookmarks(): iterable
     {
