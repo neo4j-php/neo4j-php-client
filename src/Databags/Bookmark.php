@@ -13,27 +13,24 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use function bin2hex;
-use Exception;
-use function random_bytes;
-use function substr;
+use function array_unique;
 
 final class Bookmark
 {
     /** @var list<string> */
-    private array $bookmarks;
+    private array $values;
 
     /**
      * @param list<string> $bookmarks
      */
-    public function __construct(?array $bookmarks = null)
+    public function __construct(?iterable $bookmarks = null)
     {
-        $this->bookmarks = $bookmarks ?? [];
+        $this->values = $bookmarks ?? [];
     }
 
     public function isEmpty(): bool
     {
-        return count($this->bookmarks) === 0;
+        return count($this->values) === 0;
     }
 
     /**
@@ -41,37 +38,22 @@ final class Bookmark
      */
     public function values(): array
     {
-        return $this->bookmarks;
+        return $this->values;
     }
 
     /**
-     * @throws Exception
+     * @param iterable<Bookmark>|null $bookmarks
      */
-    public function withIncrement(?string $bookmark = null): self
+    public static function from(?iterable $bookmarks): self
     {
-        $copy = $this->bookmarks;
-        if ($bookmark === null) {
-            $bookmark = $this->generateUuidV4();
+        $bookmarks ??= [];
+        $values = [];
+
+        foreach ($bookmarks as $bookmark) {
+            array_push($values, ...$bookmark->values());
+            $values = array_values(array_unique($values));
         }
-        $copy[] = $bookmark;
 
-        return new self($copy);
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function generateUuidV4(): string
-    {
-        $uuid = random_bytes(16);
-        $uuid[6] = ((int) $uuid[6]) & 0x0F | 0x40;
-        $uuid[8] = ((int) $uuid[8]) & 0x3F | 0x80;
-        $uuid = bin2hex($uuid);
-
-        return substr($uuid, 0, 8).'-'
-            .substr($uuid, 8, 4).'-'
-            .substr($uuid, 12, 4).'-'
-            .substr($uuid, 16, 4).'-'
-            .substr($uuid, 20, 12);
+        return new self($values);
     }
 }
