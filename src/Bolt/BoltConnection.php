@@ -21,6 +21,7 @@ use Bolt\protocol\V4;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
@@ -270,14 +271,14 @@ final class BoltConnection implements ConnectionInterface
      *
      * @return BoltMeta
      */
-    public function run(string $text, array $parameters, ?string $database, ?float $timeout): array
+    public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder): array
     {
         if (!str_starts_with($this->serverState, 'TX_') || str_starts_with($this->getServerVersion(), '3')) {
             $this->consumeResults();
         }
 
         try {
-            $extra = $this->buildRunExtra($database, $timeout);
+            $extra = $this->buildRunExtra($database, $timeout, $holder);
 
             $tbr = $this->protocol()->run($text, $parameters, $extra);
 
@@ -398,7 +399,7 @@ final class BoltConnection implements ConnectionInterface
         }
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout): array
+    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder): array
     {
         $extra = [];
         if ($database) {
@@ -406,6 +407,10 @@ final class BoltConnection implements ConnectionInterface
         }
         if ($timeout) {
             $extra['tx_timeout'] = (int) ($timeout * 1000);
+        }
+
+        if (!$holder->getBookmark()->isEmpty()) {
+            $extra['bookmarks'] = $holder->getBookmark()->values();
         }
 
         return $extra;

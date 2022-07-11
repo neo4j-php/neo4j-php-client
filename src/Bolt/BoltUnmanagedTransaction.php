@@ -132,7 +132,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $statement->getText(),
                 $parameters->toArray(),
                 $this->database,
-                $this->tsxConfig->getTimeout()
+                $this->tsxConfig->getTimeout(),
+                $this->bookmarkHolder
             );
             $run = microtime(true);
         } catch (MessageException $e) {
