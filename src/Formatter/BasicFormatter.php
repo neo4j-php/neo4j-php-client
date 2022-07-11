@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter;
 
 use Bolt\structures\Path;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use function get_class;
 use function gettype;
 use function is_array;
@@ -55,7 +56,7 @@ final class BasicFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<array|scalar|null>>
      */
-    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, ?float $runStart = null, ?float $resultAvailableAfter = null, ?Statement $statement = null): CypherList
+    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, ?float $runStart, ?float $resultAvailableAfter, ?Statement $statement, ?BookmarkHolder $holder = null): CypherList
     {
         $result = (new CypherList(function () use ($meta, $result) {
             foreach ($result as $row) {
