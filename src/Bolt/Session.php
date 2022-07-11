@@ -180,7 +180,7 @@ final class Session implements SessionInterface
         try {
             $connection = $this->acquireConnection($config, $sessionConfig);
 
-            $connection->begin($this->config->getDatabase(), $config->getTimeout());
+            $connection->begin($this->config->getDatabase(), $config->getTimeout(), $this->bookmarkHolder);
         } catch (MessageException $e) {
             if (isset($connection) && $connection->getServerState() === 'FAILED') {
                 $connection->reset();
