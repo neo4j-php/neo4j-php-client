@@ -13,19 +13,20 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Requests;
 
+use Laudis\Neo4j\Databags\Bookmark;
 use Symfony\Component\Uid\Uuid;
 
 final class NewSessionRequest
 {
     private Uuid $driverId;
     private string $accessMode;
-    /** @var iterable<string>|null  */
+    /** @var iterable<Bookmark>|null  */
     private ?iterable $bookmarks;
     private ?string $database;
     private ?int $fetchSize;
 
     /**
-     * @param iterable<string>|null $bookmarks
+     * @param iterable<Bookmark>|null $bookmarks
      */
     public function __construct(
         Uuid $driverId,
@@ -52,7 +53,7 @@ final class NewSessionRequest
     }
 
     /**
-     * @return iterable<string>|null
+     * @return iterable<Bookmark>|null
      */
     public function getBookmarks(): ?iterable
     {

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use function array_splice;
-use function call_user_func;
 use function count;
 use Generator;
 use Iterator;
