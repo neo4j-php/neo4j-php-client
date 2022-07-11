@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use function in_array;
 use function is_int;
 use Laudis\Neo4j\Bolt\BoltConnection;
@@ -164,16 +166,16 @@ final class SummarizedResultFormatter implements FormatterInterface
         );
     }
 
-    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement): SummarizedResult
+    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder): SummarizedResult
     {
         /** @var ResultSummary|null $summary */
         $summary = null;
-        $result->setFinishedCallback(function (array $counters) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
-            /** @var BoltCypherStats $counters */
-            $stats = $this->formatBoltStats($counters);
+        $result->addFinishedCallback(function (array $response) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
+            /** @var BoltCypherStats $response */
+            $stats = $this->formatBoltStats($response);
             $resultConsumedAfter = microtime(true) - $runStart;
             /** @var string */
-            $db = $counters['db'] ?? '';
+            $db = $response['db'] ?? '';
             $summary = new ResultSummary(
                 $stats,
                 new DatabaseInfo($db),
@@ -192,7 +194,7 @@ final class SummarizedResultFormatter implements FormatterInterface
             );
         });
 
-        $formattedResult = $this->formatter->formatBoltResult($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement);
+        $formattedResult = $this->formatter->formatBoltResult($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement, $holder);
 
         /**
          * @psalm-suppress MixedArgument

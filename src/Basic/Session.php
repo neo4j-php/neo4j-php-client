@@ -12,6 +12,7 @@
 namespace Laudis\Neo4j\Basic;
 
 use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -91,5 +92,10 @@ final class Session implements SessionInterface
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
         return $this->session->writeTransaction($tsxHandler, $config);
+    }
+
+    public function getLastBookmark(): Bookmark
+    {
+        return $this->session->getLastBookmark();
     }
 }

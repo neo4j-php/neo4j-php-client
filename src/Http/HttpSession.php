@@ -20,6 +20,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -209,5 +210,10 @@ final class HttpSession implements SessionInterface
         $uri = $request->getUri()->withPath($path);
 
         return $request->withUri($uri);
+    }
+
+    public function getLastBookmark(): Bookmark
+    {
+        return new Bookmark([]);
     }
 }

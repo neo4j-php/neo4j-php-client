@@ -22,6 +22,8 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -58,6 +60,7 @@ final class Session implements SessionInterface
     private UriInterface $uri;
     /** @psalm-readonly */
     private AuthenticateInterface $auth;
+    private BookmarkHolder $bookmarkHolder;
 
     /**
      * @param FormatterInterface<ResultFormat>       $formatter
@@ -77,6 +80,7 @@ final class Session implements SessionInterface
         $this->formatter = $formatter;
         $this->uri = $uri;
         $this->auth = $auth;
+        $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
 
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
@@ -150,7 +154,7 @@ final class Session implements SessionInterface
     ): TransactionInterface {
         $connection = $this->acquireConnection($tsxConfig, $config);
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $tsxConfig);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $tsxConfig, $this->bookmarkHolder);
     }
 
     /**
@@ -184,11 +188,16 @@ final class Session implements SessionInterface
             throw Neo4jException::fromMessageException($e);
         }
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $config);
+        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $config, $this->bookmarkHolder);
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration
     {
         return TransactionConfiguration::default()->merge($config);
+    }
+
+    public function getLastBookmark(): Bookmark
+    {
+        return $this->bookmarkHolder->getBookmark();
     }
 }

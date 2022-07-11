@@ -17,6 +17,8 @@ use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\Specialised\JoltHttpOGMTranslator;
@@ -26,6 +28,7 @@ use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
+use function array_key_exists;
 use function version_compare;
 
 /**
@@ -72,7 +75,7 @@ final class OGMFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<OGMTypes>>
      */
-    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement): CypherList
+    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder): CypherList
     {
         $tbr = (new CypherList(function () use ($result, $meta) {
             foreach ($result as $row) {
@@ -81,6 +84,11 @@ final class OGMFormatter implements FormatterInterface
         }))->withCacheLimit($result->getFetchSize());
 
         $connection->subscribeResult($tbr);
+        $result->addFinishedCallback(function (array $response) use ($holder) {
+            if (array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
+                $holder->setBookmark(new Bookmark([$response['bookmark']]));
+            }
+        });
 
         return $tbr;
     }

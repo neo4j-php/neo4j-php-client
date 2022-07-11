@@ -31,8 +31,8 @@ final class BoltResult implements Iterator
     /** @var list<list> */
     private array $rows = [];
     private ?array $meta = null;
-    /** @var (callable(array):void)|null */
-    private $finishedCallback;
+    /** @var list<(callable(array):void)> */
+    private array $finishedCallbacks = [];
     private int $qid;
 
     public function __construct(BoltConnection $connection, int $fetchSize, int $qid)
@@ -52,9 +52,9 @@ final class BoltResult implements Iterator
     /**
      * @param callable(array):void $finishedCallback
      */
-    public function setFinishedCallback(callable $finishedCallback): void
+    public function addFinishedCallback(callable $finishedCallback): void
     {
-        $this->finishedCallback = $finishedCallback;
+        $this->finishedCallbacks[] = $finishedCallback;
     }
 
     /**
@@ -83,8 +83,8 @@ final class BoltResult implements Iterator
             }
         }
 
-        if ($this->finishedCallback) {
-            call_user_func($this->finishedCallback, $this->meta);
+        foreach ($this->finishedCallbacks as $finishedCallback) {
+            $finishedCallback($this->meta);
         }
     }
 

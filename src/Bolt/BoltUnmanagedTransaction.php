@@ -18,6 +18,7 @@ use Bolt\error\MessageException;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -55,17 +56,25 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     private bool $isCommitted = false;
     private SessionConfiguration $config;
     private TransactionConfiguration $tsxConfig;
+    private BookmarkHolder $bookmarkHolder;
 
     /**
      * @param FormatterInterface<T> $formatter
      */
-    public function __construct(?string $database, FormatterInterface $formatter, BoltConnection $connection, SessionConfiguration $config, TransactionConfiguration $tsxConfig)
-    {
+    public function __construct(
+        ?string $database,
+        FormatterInterface $formatter,
+        BoltConnection $connection,
+        SessionConfiguration $config,
+        TransactionConfiguration $tsxConfig,
+        BookmarkHolder $bookmarkHolder
+    ) {
         $this->formatter = $formatter;
         $this->connection = $connection;
         $this->database = $database;
         $this->config = $config;
         $this->tsxConfig = $tsxConfig;
+        $this->bookmarkHolder = $bookmarkHolder;
     }
 
     public function commit(iterable $statements = []): CypherList
@@ -138,7 +147,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->connection,
             $start,
             $run - $start,
-            $statement
+            $statement,
+            $this->bookmarkHolder
         );
     }
 
