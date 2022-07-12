@@ -60,6 +60,7 @@ final class Session implements SessionInterface
     private UriInterface $uri;
     /** @psalm-readonly */
     private AuthenticateInterface $auth;
+    /** @psalm-readonly */
     private BookmarkHolder $bookmarkHolder;
 
     /**
