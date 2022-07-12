@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -399,24 +399,24 @@ CYPHER
         }
     }
 
-//    /**
-//     * @dataProvider connectionAliases
-//     */
-//    public function testDiscardAfterTimeout(string $alias): void
-//    {
-//        if (str_starts_with($alias, 'http')) {
-//            self::markTestSkipped('Http does not support timeouts at the moment');
-//        }
-//
-//        $this->expectException(Neo4jException::class);
-//
-//        $result = $this->getClient()
-//            ->getDriver($alias)
-//            ->createSession()
-//            ->run('UNWIND range(1, 1000000) AS x MERGE (:Number {value: x})', [], TransactionConfiguration::default()->withTimeout(150));
-//
-//        unset($result);
-//    }
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testDiscardAfterTimeout(string $alias): void
+    {
+        if (str_starts_with($alias, 'http')) {
+            self::markTestSkipped('Http does not support timeouts at the moment');
+        }
+
+        $this->expectException(Neo4jException::class);
+
+        $result = $this->getClient()
+            ->getDriver($alias)
+            ->createSession()
+            ->run('UNWIND range(1, 1000000) AS x MERGE (:Number {value: x})', [], TransactionConfiguration::default()->withTimeout(150));
+
+        unset($result);
+    }
 
 //    /**
 //     * @dataProvider connectionAliases

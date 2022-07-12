@@ -20,7 +20,7 @@ final class NewSessionRequest
 {
     private Uuid $driverId;
     private string $accessMode;
-    /** @var iterable<Bookmark>|null  */
+    /** @var iterable<Bookmark>|null */
     private ?iterable $bookmarks;
     private ?string $database;
     private ?int $fetchSize;
