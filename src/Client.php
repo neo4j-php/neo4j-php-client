@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use function array_key_exists;
-
 use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;

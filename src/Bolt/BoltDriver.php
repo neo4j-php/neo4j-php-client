@@ -15,9 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Exception;
-
 use function is_string;
-
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;

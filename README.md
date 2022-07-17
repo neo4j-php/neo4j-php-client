@@ -8,8 +8,8 @@
 [![Latest Stable Version](https://poser.pugx.org/laudis/neo4j-php-client/v)](https://packagist.org/packages/laudis/neo4j-php-client)
 [![Commits Since latest](https://img.shields.io/github/commits-since/neo4j-php/neo4j-php-client/latest)](https://github.com/neo4j-php/neo4j-php-client/commits/main)
 
-[![Packagist Downloads](https://img.shields.io/packagist/dt/laudis/neo4j-php-client)](//packagist.org/packages/laudis/neo4j-php-client)
-[![Packagist Downloads](https://img.shields.io/packagist/dm/laudis/neo4j-php-client)](//packagist.org/packages/laudis/neo4j-php-client)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/laudis/neo4j-php-client)](https://packagist.org/packages/laudis/neo4j-php-client/stats)
+[![Packagist Downloads](https://img.shields.io/packagist/dm/laudis/neo4j-php-client)](https://packagist.org/packages/laudis/neo4j-php-client/stats)
 [![Discord](https://img.shields.io/discord/787399249741479977)](https://discord.com/channels/787399249741479977)
 
 

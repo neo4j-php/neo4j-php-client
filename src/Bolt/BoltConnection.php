@@ -29,9 +29,7 @@ use Laudis\Neo4j\Types\CypherList;
 use LogicException;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
-
 use function str_starts_with;
-
 use WeakReference;
 
 /**

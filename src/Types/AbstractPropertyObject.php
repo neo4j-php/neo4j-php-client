@@ -14,11 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use BadMethodCallException;
-
 use function get_class;
-
 use Laudis\Neo4j\Contracts\HasPropertiesInterface;
-
 use function sprintf;
 
 /**

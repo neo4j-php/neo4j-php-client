@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use function is_string;
-
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\Uri;
@@ -27,7 +26,6 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriInterface;
-
 use function str_replace;
 use function uniqid;
 

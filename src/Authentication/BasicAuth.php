@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Authentication;
 
 use function base64_encode;
-
 use Bolt\helpers\Auth;
 use Bolt\protocol\V3;
 use Exception;

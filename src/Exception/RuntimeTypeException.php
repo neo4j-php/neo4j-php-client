@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Exception;
 
 use function get_debug_type;
-
 use RuntimeException;
 
 final class RuntimeTypeException extends RuntimeException

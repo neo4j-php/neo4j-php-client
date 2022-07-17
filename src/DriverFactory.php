@@ -15,7 +15,6 @@ namespace Laudis\Neo4j;
 
 use function in_array;
 use function is_string;
-
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use function count;
-
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
@@ -27,7 +26,6 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-
 use function str_starts_with;
 
 /**

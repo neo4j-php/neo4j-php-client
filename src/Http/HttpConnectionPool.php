@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use function json_encode;
-
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;

@@ -21,9 +21,7 @@ use Bolt\error\ConnectException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Exception;
-
 use function extension_loaded;
-
 use Laudis\Neo4j\Bolt\SslConfigurator;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;

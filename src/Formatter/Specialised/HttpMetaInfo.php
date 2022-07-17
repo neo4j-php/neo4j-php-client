@@ -12,7 +12,6 @@
 namespace Laudis\Neo4j\Formatter\Specialised;
 
 use function is_array;
-
 use stdClass;
 
 /**

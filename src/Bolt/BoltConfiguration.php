@@ -16,7 +16,6 @@ namespace Laudis\Neo4j\Bolt;
 use function call_user_func;
 use function is_callable;
 use function is_string;
-
 use Laudis\Neo4j\Client;
 use Laudis\Neo4j\Contracts\ConfigInterface;
 

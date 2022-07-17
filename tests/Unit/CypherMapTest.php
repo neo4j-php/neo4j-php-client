@@ -15,11 +15,8 @@ use ArrayIterator;
 use BadMethodCallException;
 use Generator;
 use IteratorAggregate;
-
 use function json_encode;
-
 use const JSON_THROW_ON_ERROR;
-
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\Types\ArrayList;

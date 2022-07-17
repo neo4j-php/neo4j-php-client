@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Formatter;
 
 use function in_array;
 use function is_int;
-
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -30,9 +29,7 @@ use Laudis\Neo4j\Enum\QueryTypeEnum;
 use Laudis\Neo4j\Http\HttpConnection;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-
 use function microtime;
-
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;

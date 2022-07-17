@@ -19,7 +19,6 @@ use DateTimeZone;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use RuntimeException;
-
 use function sprintf;
 
 /**

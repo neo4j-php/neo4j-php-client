@@ -15,11 +15,8 @@ namespace Laudis\Neo4j\Databags;
 
 use function call_user_func;
 use function is_callable;
-
 use Laudis\Neo4j\Enum\AccessMode;
-
 use function parse_str;
-
 use Psr\Http\Message\UriInterface;
 
 /**

@@ -14,12 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use function call_user_func;
-
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
-
 use function is_callable;
-
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;

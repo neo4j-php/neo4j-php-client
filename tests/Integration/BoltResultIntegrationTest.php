@@ -14,10 +14,8 @@ namespace Laudis\Neo4j\Tests\Integration;
 use Bolt\Bolt;
 use Bolt\connection\StreamSocket;
 use Dotenv\Dotenv;
-
 use function explode;
 use function is_string;
-
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;

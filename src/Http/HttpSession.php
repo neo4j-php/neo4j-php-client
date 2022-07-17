@@ -25,12 +25,9 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
-
 use function microtime;
 use function parse_url;
-
 use const PHP_URL_PATH;
-
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use stdClass;

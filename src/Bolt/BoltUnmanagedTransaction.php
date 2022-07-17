@@ -25,9 +25,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
-
 use function microtime;
-
 use Throwable;
 
 /**

@@ -20,9 +20,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use ReflectionClass;
-
 use function str_starts_with;
-
 use Throwable;
 
 /**

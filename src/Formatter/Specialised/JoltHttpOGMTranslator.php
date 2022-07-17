@@ -14,14 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter\Specialised;
 
 use Closure;
-
 use const DATE_ATOM;
-
 use DateInterval;
 use DateTimeImmutable;
-
 use function is_array;
-
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -42,22 +38,16 @@ use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
-
 use function preg_match;
-
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
 use stdClass;
-
 use function str_pad;
-
 use const STR_PAD_RIGHT;
-
 use function str_replace;
 use function str_starts_with;
 use function strtolower;
-
 use UnexpectedValueException;
 
 /**

@@ -14,9 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use BadMethodCallException;
-
 use function json_encode;
-
 use JsonException;
 use Laudis\Neo4j\Types\AbstractCypherObject;
 use OutOfBoundsException;

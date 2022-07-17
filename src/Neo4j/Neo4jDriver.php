@@ -14,9 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use Exception;
-
 use function is_string;
-
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Bolt\Session;

@@ -14,11 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Enum;
 
 use Bolt\protocol\V3;
-
 use const E_DEPRECATED;
-
 use function error_reporting;
-
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 

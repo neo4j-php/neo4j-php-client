@@ -14,12 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Formatter;
 
 use Bolt\structures\Path;
-
 use function get_class;
 use function gettype;
 use function is_array;
 use function is_object;
-
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;

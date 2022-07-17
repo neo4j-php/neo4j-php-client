@@ -14,10 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Dotenv\Dotenv;
-
 use function explode;
 use function is_string;
-
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\ClientInterface;

@@ -26,7 +26,6 @@ use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
-
 use function version_compare;
 
 /**

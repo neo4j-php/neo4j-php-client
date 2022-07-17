@@ -15,25 +15,18 @@ namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
 use function array_key_last;
-
 use ArrayIterator;
-
 use function count;
 use function func_num_args;
-
 use Generator;
-
 use function is_array;
 use function is_callable;
 use function is_iterable;
-
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use OutOfBoundsException;
-
 use function sprintf;
-
 use stdClass;
 
 /**

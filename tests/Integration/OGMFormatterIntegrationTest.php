@@ -14,12 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use function compact;
-
 use DateInterval;
 use Exception;
-
 use function json_encode;
-
 use JsonException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
@@ -37,7 +34,6 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
-
 use function range;
 use function sprintf;
 use function str_contains;

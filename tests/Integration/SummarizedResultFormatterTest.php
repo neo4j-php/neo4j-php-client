@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use function bin2hex;
 use function dump;
-
 use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
@@ -24,7 +23,6 @@ use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-
 use function random_bytes;
 use function serialize;
 use function unserialize;

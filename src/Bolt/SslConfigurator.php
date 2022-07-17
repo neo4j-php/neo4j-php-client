@@ -12,11 +12,8 @@
 namespace Laudis\Neo4j\Bolt;
 
 use function explode;
-
 use const FILTER_VALIDATE_IP;
-
 use function filter_var;
-
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
 use Psr\Http\Message\UriInterface;

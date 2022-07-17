@@ -14,9 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Dotenv\Dotenv;
-
 use function explode;
-
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use PHPUnit\Framework\TestCase;

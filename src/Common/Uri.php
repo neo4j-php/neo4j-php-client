@@ -14,12 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Common;
 
 use InvalidArgumentException;
-
 use function ltrim;
 use function parse_url;
-
 use Psr\Http\Message\UriInterface;
-
 use function sprintf;
 use function strtolower;
 

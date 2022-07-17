@@ -17,7 +17,6 @@ use Bolt\structures\IStructure;
 use DateTimeImmutable;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
-
 use function sprintf;
 
 /**

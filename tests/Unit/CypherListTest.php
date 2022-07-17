@@ -14,21 +14,16 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use function array_sum;
-
 use ArrayIterator;
 use BadMethodCallException;
 use Generator;
-
 use function hexdec;
 use function json_encode;
-
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Types\CypherList;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
-
 use function range;
-
 use stdClass;
 
 /**

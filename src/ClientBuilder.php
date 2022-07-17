@@ -15,7 +15,6 @@ namespace Laudis\Neo4j;
 
 use function http_build_query;
 use function in_array;
-
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\Common\Uri;

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use function func_num_args;
-
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 

@@ -17,7 +17,6 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-
 use function str_starts_with;
 
 /**

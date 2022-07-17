@@ -18,10 +18,8 @@ use function is_iterable;
 use function is_numeric;
 use function is_object;
 use function is_scalar;
-
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-
 use function method_exists;
 
 final class TypeCaster

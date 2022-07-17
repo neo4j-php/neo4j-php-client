@@ -16,22 +16,16 @@ namespace Laudis\Neo4j;
 use Bolt\structures\DateTimeZoneId;
 use Bolt\structures\Duration;
 use Bolt\structures\IStructure;
-
 use function count;
-
 use DateInterval;
 use DateTimeInterface;
-
 use function get_debug_type;
 use function gettype;
-
 use InvalidArgumentException;
-
 use function is_array;
 use function is_int;
 use function is_object;
 use function is_string;
-
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;

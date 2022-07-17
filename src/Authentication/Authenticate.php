@@ -14,10 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Authentication;
 
 use function explode;
-
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\UriInterface;
-
 use function substr_count;
 
 /**

@@ -14,21 +14,15 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
-
 use ArrayAccess;
 use ArrayIterator;
 use BadMethodCallException;
-
 use const E_DEPRECATED;
-
 use function error_reporting;
-
 use IteratorAggregate;
 use JsonSerializable;
 use OutOfBoundsException;
-
 use function sprintf;
-
 use Traversable;
 
 /**

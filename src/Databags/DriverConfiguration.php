@@ -14,9 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use function call_user_func;
-
 use Composer\InstalledVersions;
-
 use function function_exists;
 use function is_callable;
 use function sprintf;

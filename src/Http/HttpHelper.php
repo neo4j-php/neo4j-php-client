@@ -18,9 +18,7 @@ use function array_merge;
 use function count;
 use function json_decode;
 use function json_encode;
-
 use const JSON_THROW_ON_ERROR;
-
 use JsonException;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;

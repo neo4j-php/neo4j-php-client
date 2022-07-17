@@ -14,16 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use AppendIterator;
-
 use function array_values;
-
 use ArrayIterator;
 use Generator;
-
 use function is_array;
 use function is_callable;
 use function is_iterable;
-
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use OutOfBoundsException;

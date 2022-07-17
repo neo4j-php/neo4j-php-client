@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use function in_array;
-
 use Laudis\Neo4j\Enum\RoutingRoles;
 
 /**

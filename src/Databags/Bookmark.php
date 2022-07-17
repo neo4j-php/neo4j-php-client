@@ -14,9 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use function bin2hex;
-
 use Exception;
-
 use function random_bytes;
 use function substr;
 
