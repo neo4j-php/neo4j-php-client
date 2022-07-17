@@ -1,9 +1,9 @@
 <?php
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,15 +13,21 @@ namespace Laudis\Neo4j\Tests\Performance;
 
 use function array_pop;
 use function base64_encode;
+
 use Bolt\error\ConnectException;
+
 use function count;
+
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Tests\Integration\EnvironmentAwareIntegrationTest;
+
 use function random_bytes;
+
 use RuntimeException;
+
 use function sleep;
 use function str_starts_with;
 

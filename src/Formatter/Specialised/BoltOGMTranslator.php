@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -26,7 +26,9 @@ use Bolt\structures\Point3D as BoltPoint3D;
 use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
 use Bolt\structures\UnboundRelationship as BoltUnboundRelationship;
+
 use function call_user_func;
+
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
 use Laudis\Neo4j\Types\Cartesian3DPoint;

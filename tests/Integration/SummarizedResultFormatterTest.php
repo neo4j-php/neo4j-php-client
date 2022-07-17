@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use function bin2hex;
 use function dump;
+
 use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
@@ -23,6 +24,7 @@ use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+
 use function random_bytes;
 use function serialize;
 use function unserialize;

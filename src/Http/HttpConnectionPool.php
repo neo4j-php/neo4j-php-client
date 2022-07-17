@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use function json_encode;
+
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -100,7 +101,7 @@ CYPHER
         $version = $results[0]['versions'][0] ?? '';
 
         $config = new ConnectionConfiguration(
-            $results[0]['name'].'-'.$results[0]['edition'].'/'.($version),
+            $results[0]['name'].'-'.$results[0]['edition'].'/'.$version,
             $uri,
             $version,
             ConnectionProtocol::HTTP(),

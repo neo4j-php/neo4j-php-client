@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Generator;
+
 use function getenv;
+
 use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
@@ -29,6 +31,7 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
+
 use function str_starts_with;
 
 /**

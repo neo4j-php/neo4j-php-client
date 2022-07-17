@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,9 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use function compact;
+
 use DateInterval;
 use Exception;
+
 use function json_encode;
+
 use JsonException;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
@@ -34,6 +37,7 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
+
 use function range;
 use function sprintf;
 use function str_contains;

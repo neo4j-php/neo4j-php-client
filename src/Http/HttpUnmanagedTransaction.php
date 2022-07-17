@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Http;
 
 use function array_intersect;
 use function array_unique;
+
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -22,7 +23,9 @@ use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
+
 use function microtime;
+
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;

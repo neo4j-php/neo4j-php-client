@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,11 +15,14 @@ namespace Laudis\Neo4j\Neo4j;
 
 use function array_slice;
 use function array_unique;
+
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
+
 use function count;
+
 use Exception;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
@@ -31,6 +34,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
+
 use function random_int;
 use function str_starts_with;
 use function time;

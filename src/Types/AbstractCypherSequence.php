@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,28 +15,42 @@ namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
 use function array_reverse;
+
 use ArrayAccess;
 use ArrayIterator;
 use BadMethodCallException;
+
 use function call_user_func;
 use function count;
+
 use Countable;
+
 use function get_object_vars;
 use function implode;
+
 use const INF;
+
 use function is_array;
 use function is_callable;
 use function is_numeric;
 use function is_object;
 use function is_string;
+
 use Iterator;
 use JsonSerializable;
+
 use function method_exists;
+
 use OutOfBoundsException;
+
 use const PHP_INT_MAX;
+
 use function property_exists;
+
 use ReturnTypeWillChange;
+
 use function sprintf;
+
 use UnexpectedValueException;
 
 /**

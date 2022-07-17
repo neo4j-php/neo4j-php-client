@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,18 +15,25 @@ namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
 use function array_key_last;
+
 use ArrayIterator;
+
 use function count;
 use function func_num_args;
+
 use Generator;
+
 use function is_array;
 use function is_callable;
 use function is_iterable;
+
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use OutOfBoundsException;
+
 use function sprintf;
+
 use stdClass;
 
 /**
