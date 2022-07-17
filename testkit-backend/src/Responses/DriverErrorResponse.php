@@ -23,9 +23,9 @@ final class DriverErrorResponse implements TestkitResponseInterface
 {
     private Uuid $id;
     private string $errorType;
-    private string $message;
+    private ?string $message;
 
-    public function __construct(Uuid $id, string $errorType, string $message)
+    public function __construct(Uuid $id, string $errorType, ?string $message)
     {
         $this->id = $id;
         $this->errorType = $errorType;

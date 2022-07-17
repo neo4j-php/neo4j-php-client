@@ -26,12 +26,12 @@ use InvalidArgumentException;
 final class Neo4jError
 {
     private string $code;
-    private string $message;
+    private ?string $message;
     private string $classification;
     private string $category;
     private string $title;
 
-    public function __construct(string $code, string $message, string $classification, string $category, string $title)
+    public function __construct(string $code, ?string $message, string $classification, string $category, string $title)
     {
         $this->code = $code;
         $this->message = $message;
@@ -53,7 +53,7 @@ final class Neo4jError
      *
      * @throws InvalidArgumentException
      */
-    public static function fromMessageAndCode(string $code, string $message): Neo4jError
+    public static function fromMessageAndCode(string $code, ?string $message): Neo4jError
     {
         $parts = explode('.', $code, 4);
         if (count($parts) < 4) {
@@ -74,7 +74,7 @@ final class Neo4jError
     /**
      * Returns the message of the error.
      */
-    public function getMessage(): string
+    public function getMessage(): ?string
     {
         return $this->message;
     }

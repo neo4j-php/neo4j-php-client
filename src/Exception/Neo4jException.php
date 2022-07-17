@@ -37,7 +37,7 @@ final class Neo4jException extends RuntimeException
     public function __construct(array $errors, Throwable $previous = null)
     {
         $error = $errors[0];
-        $message = sprintf(self::MESSAGE_TEMPLATE, $error->getCode(), $error->getMessage());
+        $message = sprintf(self::MESSAGE_TEMPLATE, $error->getCode(), $error->getMessage() ?? 'NULL');
         parent::__construct($message, 0, $previous);
         $this->errors = $errors;
     }
@@ -63,7 +63,7 @@ final class Neo4jException extends RuntimeException
         return $this->errors[0]->getCode();
     }
 
-    public function getNeo4jMessage(): string
+    public function getNeo4jMessage(): ?string
     {
         return $this->errors[0]->getMessage();
     }
