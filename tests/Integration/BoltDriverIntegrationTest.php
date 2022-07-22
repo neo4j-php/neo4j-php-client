@@ -90,7 +90,7 @@ CYPHER);
      */
     public function testInvalidIp(): void
     {
-        $driver = BoltDriver::create('bolt://neo4j:test@127.0.0.0');
+        $driver = BoltDriver::create('bolt://neo4j:test@999.999.999.999');
         $this->expectException(ConnectException::class);
         $driver->createSession()->run('RETURN 1');
     }
@@ -100,7 +100,7 @@ CYPHER);
      */
     public function testInvalidSocket(): void
     {
-        $driver = BoltDriver::create('bolt://neo4j:test@127.0.0.0');
+        $driver = BoltDriver::create('bolt://neo4j:test@999.999.999.999');
         $this->expectException(ConnectException::class);
         $driver->createSession()->run('RETURN 1');
     }
