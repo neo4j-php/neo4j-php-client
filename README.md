@@ -22,7 +22,7 @@
 - Fully typed with [psalm](https://psalm.dev/)
 - Bolt, HTTP and auto routed drivers available
 
-## See the driver in action
+## See the client in action
 
 An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
 
@@ -81,9 +81,9 @@ You can control the driver using three different approaches:
 
 ### Transaction functions
 
-Transaction functions are the **de facto** standard when using the driver. It is the most portable as it is resistant to a lot of the pitfalls when first developing with high availability solutions such as [Neo4j aura](https://neo4j.com/blog/neo4j-aura-enterprise-ga-release/) or a [cluster](https://neo4j.com/docs/operations-manual/current/clustering/).
+Transaction functions are the **de facto** standard when using the client. It is the most portable as it is resistant to a lot of the pitfalls when first developing with high availability solutions such as [Neo4j aura](https://neo4j.com/blog/neo4j-aura-enterprise-ga-release/) or a [cluster](https://neo4j.com/docs/operations-manual/current/clustering/).
 
-The driver manages transaction functions:
+The client manages transaction functions:
 - It **re-executes** the function in case of a [transient error](https://neo4j.com/docs/status-codes/current/#_classifications).
 - It **commits** the transaction on successful execution
 - It **rolls back** the transaction in case of a timeout.
