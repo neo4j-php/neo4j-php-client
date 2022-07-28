@@ -57,9 +57,6 @@ final class Client implements ClientInterface
         return new UnmanagedTransaction($this->client->beginTransaction($statements, $alias, $config));
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function getDriver(?string $alias): DriverInterface
     {
         return $this->client->getDriver($alias);

@@ -36,6 +36,7 @@ class DriverSetupManager implements Countable
 
     /** @var array<string, SplPriorityQueue<int, DriverSetup>> */
     private array $driverSetups = [];
+    /** @var array<string, DriverInterface<ResultFormat>> */
     private array $drivers = [];
     private ?string $default = null;
     private FormatterInterface $formatter;
@@ -61,6 +62,7 @@ class DriverSetupManager implements Countable
 
         $setups = $this->driverSetups;
 
+        /** @var SplPriorityQueue<int, DriverSetup> */
         $setups[$alias] ??= new SplPriorityQueue();
         /** @psalm-suppress ImpureMethodCall */
         $setups[$alias]->insert($setup, $priority ?? 0);
@@ -83,6 +85,7 @@ class DriverSetupManager implements Countable
                 throw new InvalidArgumentException(sprintf('Cannot find a driver setup with alias: "%s"', $alias));
             }
 
+            /** @var SplPriorityQueue<int, DriverSetup> */
             $this->driverSetups['default'] = new SplPriorityQueue();
             $setup = new DriverSetup(Uri::create(self::DEFAULT_DRIVER_CONFIG), Authenticate::disabled());
             $this->driverSetups['default']->insert($setup, PHP_INT_MIN);

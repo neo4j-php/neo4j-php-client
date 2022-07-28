@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Psr\Http\Message\UriInterface;
 
 /**
