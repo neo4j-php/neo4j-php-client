@@ -284,7 +284,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
     public function testInvalidConnection(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The provided alias: "gh" was not found in the client');
+        $this->expectExceptionMessage('Cannot find a driver setup with alias: "gh"');
 
         $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN 1 AS x'), 'gh');
     }
