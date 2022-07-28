@@ -17,6 +17,7 @@ use function http_build_query;
 use function in_array;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConfiguration;
+use Laudis\Neo4j\Common\DriverSetupManager;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -28,6 +29,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Http\HttpConfig;
 use Laudis\Neo4j\Types\CypherMap;
@@ -37,43 +39,32 @@ use Laudis\Neo4j\Types\CypherMap;
  *
  * @template T
  *
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from OGMFormatter
  */
 final class ClientBuilder
 {
     public const SUPPORTED_SCHEMES = ['', 'bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https'];
 
-    /**
-     * @psalm-readonly
-     *
-     * @var array<string, DriverSetup>
-     */
-    private array $driverConfigurations;
     /** @psalm-readonly */
     private DriverConfiguration $defaultDriverConfig;
     /** @psalm-readonly */
     private TransactionConfiguration $defaultTransactionConfig;
     /** @psalm-readonly */
     private SessionConfiguration $defaultSessionConfig;
-    /** @psalm-readonly */
-    private ?string $defaultDriver;
-    /** @psalm-readonly */
-    private FormatterInterface $formatter;
+    /** @var DriverSetupManager<T> */
+    private DriverSetupManager $driverSetups;
 
     /**
      * @psalm-mutation-free
      *
-     * @param array<string, DriverSetup> $driverConfigurations
-     * @param FormatterInterface<T>      $formatter
+     * @param DriverSetupManager<T> $driverSetups
      */
-    public function __construct(DriverConfiguration $configuration, SessionConfiguration $sessionConfiguration, TransactionConfiguration $transactionConfiguration, FormatterInterface $formatter, array $driverConfigurations, ?string $defaultDriver)
+    public function __construct(DriverConfiguration $configuration, SessionConfiguration $sessionConfiguration, TransactionConfiguration $transactionConfiguration, DriverSetupManager $driverSetups)
     {
-        $this->driverConfigurations = $driverConfigurations;
         $this->defaultDriverConfig = $configuration;
-        $this->defaultDriver = $defaultDriver;
-        $this->formatter = $formatter;
         $this->defaultSessionConfig = $sessionConfiguration;
         $this->defaultTransactionConfig = $transactionConfiguration;
+        $this->driverSetups = $driverSetups;
     }
 
     /**
@@ -89,9 +80,7 @@ final class ClientBuilder
             DriverConfiguration::default(),
             SessionConfiguration::default(),
             TransactionConfiguration::default(),
-            SummarizedResultFormatter::create(),
-            [],
-            null
+            new DriverSetupManager(SummarizedResultFormatter::create(), DriverConfiguration::default())
         );
     }
 
@@ -100,21 +89,21 @@ final class ClientBuilder
      *
      * @return self<T>
      */
-    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null): self
+    public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?int $priority = 0): self
     {
         $uri = Uri::create($url);
 
         $authentication ??= Authenticate::fromUrl($uri);
 
-        return $this->withParsedUrl($alias, $uri, $authentication);
+        return $this->withParsedUrl($alias, $uri, $authentication, $priority ?? 0);
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      *
      * @return self<T>
      */
-    private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication): self
+    private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication, int $priority): self
     {
         $scheme = $uri->getScheme();
 
@@ -122,17 +111,10 @@ final class ClientBuilder
             throw UnsupportedScheme::make($scheme, self::SUPPORTED_SCHEMES);
         }
 
-        $setup = new DriverSetup($uri, $authentication);
-        $configs = array_merge($this->driverConfigurations, [$alias => $setup]);
+        $tbr = clone $this;
+        $tbr->driverSetups = $this->driverSetups->withSetup(new DriverSetup($uri, $authentication), $alias, $priority);
 
-        return new self(
-            $this->defaultDriverConfig,
-            $this->defaultSessionConfig,
-            $this->defaultTransactionConfig,
-            $this->formatter,
-            $configs,
-            $this->defaultDriver
-        );
+        return $tbr;
     }
 
     /**
@@ -171,7 +153,7 @@ final class ClientBuilder
             $parsedUrl = $parsedUrl->withScheme('bolt'.$postScheme);
         }
 
-        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl($parsedUrl));
+        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl($parsedUrl), 0);
     }
 
     /**
@@ -196,16 +178,10 @@ final class ClientBuilder
         $uri = $uri->withScheme($scheme === '' ? 'http' : $scheme);
         $uri = $uri->withPort($uri->getPort() === 7687 ? 7474 : $uri->getPort());
 
-        $self = new self(
-            $this->defaultDriverConfig->withHttpPsrBindings($bindings),
-            $this->defaultSessionConfig,
-            $this->defaultTransactionConfig,
-            $this->formatter,
-            $this->driverConfigurations,
-            $this->defaultDriver
-        );
+        $tbr = clone $this;
+        $tbr->defaultDriverConfig = $this->defaultDriverConfig->withHttpPsrBindings($bindings);
 
-        return $self->withParsedUrl($alias, $uri, Authenticate::fromUrl($uri));
+        return $tbr->withParsedUrl($alias, $uri, Authenticate::fromUrl($uri), 0);
     }
 
     /**
@@ -230,14 +206,10 @@ final class ClientBuilder
      */
     public function withDefaultDriver(string $alias): self
     {
-        return new self(
-            $this->defaultDriverConfig,
-            $this->defaultSessionConfig,
-            $this->defaultTransactionConfig,
-            $this->formatter,
-            $this->driverConfigurations,
-            $alias
-        );
+        $tbr = clone $this;
+        $tbr->driverSetups = $this->driverSetups->withDefault($alias);
+
+        return $tbr;
     }
 
     /**
@@ -254,9 +226,7 @@ final class ClientBuilder
             $this->defaultDriverConfig,
             $this->defaultSessionConfig,
             $this->defaultTransactionConfig,
-            $formatter,
-            $this->driverConfigurations,
-            $this->defaultDriver
+            $this->driverSetups->withFormatter($formatter)
         );
     }
 
@@ -268,12 +238,9 @@ final class ClientBuilder
     public function build(): ClientInterface
     {
         return new Client(
-            $this->driverConfigurations,
-            $this->defaultDriverConfig,
+            $this->driverSetups,
             $this->defaultSessionConfig,
             $this->defaultTransactionConfig,
-            $this->formatter,
-            $this->defaultDriver
         );
     }
 
@@ -287,14 +254,10 @@ final class ClientBuilder
     {
         $config = $this->defaultDriverConfig->withHttpPsrBindings($bindings);
 
-        return new self(
-            $config,
-            $this->defaultSessionConfig,
-            $this->defaultTransactionConfig,
-            $this->formatter,
-            $this->driverConfigurations,
-            $this->defaultDriver
-        );
+        $tbr = clone $this;
+        $tbr->defaultDriverConfig = $config;
+
+        return $tbr;
     }
 
     /**
@@ -304,14 +267,10 @@ final class ClientBuilder
      */
     public function withDefaultDriverConfiguration(DriverConfiguration $config): self
     {
-        return new self(
-            $config,
-            $this->defaultSessionConfig,
-            $this->defaultTransactionConfig,
-            $this->formatter,
-            $this->driverConfigurations,
-            $this->defaultDriver
-        );
+        $tbr = clone $this;
+        $tbr->defaultDriverConfig = $config;
+
+        return $tbr;
     }
 
     /**
@@ -321,14 +280,10 @@ final class ClientBuilder
      */
     public function withDefaultSessionConfiguration(SessionConfiguration $config): self
     {
-        return new self(
-            $this->defaultDriverConfig,
-            $config,
-            $this->defaultTransactionConfig,
-            $this->formatter,
-            $this->driverConfigurations,
-            $this->defaultDriver
-        );
+        $tbr = clone $this;
+        $tbr->defaultSessionConfig = $config;
+
+        return $tbr;
     }
 
     /**
@@ -338,13 +293,9 @@ final class ClientBuilder
      */
     public function withDefaultTransactionConfiguration(TransactionConfiguration $config): self
     {
-        return new self(
-            $this->defaultDriverConfig,
-            $this->defaultSessionConfig,
-            $config,
-            $this->formatter,
-            $this->driverConfigurations,
-            $this->defaultDriver
-        );
+        $tbr = clone $this;
+        $tbr->defaultTransactionConfig = $config;
+
+        return $tbr;
     }
 }

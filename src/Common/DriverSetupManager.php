@@ -42,8 +42,9 @@ class DriverSetupManager implements Countable
     private DriverConfiguration $configuration;
 
     /**
+     * @psalm-mutation-free
+     *
      * @param FormatterInterface<ResultFormat> $formatter
-     * @param DriverConfiguration $configuration
      */
     public function __construct(FormatterInterface $formatter, DriverConfiguration $configuration)
     {
@@ -51,12 +52,23 @@ class DriverSetupManager implements Countable
         $this->configuration = $configuration;
     }
 
-    public function addSetup(DriverSetup $setup, ?string $alias = null, ?int $priority = 0): void
+    /**
+     * @psalm-mutation-free
+     */
+    public function withSetup(DriverSetup $setup, ?string $alias = null, ?int $priority = 0): self
     {
         $alias ??= $this->decideAlias($alias);
 
-        $this->driverSetups[$alias] ??= new SplPriorityQueue();
-        $this->driverSetups[$alias]->insert($setup, $priority ?? 0);
+        $setups = $this->driverSetups;
+
+        $setups[$alias] ??= new SplPriorityQueue();
+        /** @psalm-suppress ImpureMethodCall */
+        $setups[$alias]->insert($setup, $priority ?? 0);
+
+        $tbr = clone $this;
+        $tbr->driverSetups = $setups;
+
+        return $tbr;
     }
 
     /**
@@ -118,13 +130,36 @@ class DriverSetupManager implements Countable
         return $alias ?? $this->default ?? array_key_first($this->driverSetups) ?? 'default';
     }
 
-    public function setDefault(string $default): void
+    /**
+     * @psalm-mutation-free
+     */
+    public function withDefault(string $default): self
     {
-        $this->default = $default;
+        $tbr = clone $this;
+        $tbr->default = $default;
+
+        return $tbr;
     }
 
     public function count(): int
     {
         return array_reduce($this->driverSetups, static fn (int $acc, SplPriorityQueue $x) => $acc + $x->count(), 0);
+    }
+
+    /**
+     * @template U
+     *
+     * @param FormatterInterface<U>
+     *
+     * return self<U>
+     *
+     * @psalm-mutation-free
+     */
+    public function withFormatter(FormatterInterface $formatter): self
+    {
+        $tbr = clone $this;
+        $tbr->formatter = $formatter;
+
+        return $tbr;
     }
 }
