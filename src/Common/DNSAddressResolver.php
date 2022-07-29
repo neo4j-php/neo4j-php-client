@@ -19,6 +19,7 @@ use const DNS_A;
 use const DNS_AAAA;
 use function dns_get_record;
 use Laudis\Neo4j\Contracts\AddressResolverInterface;
+use Throwable;
 
 class DNSAddressResolver implements AddressResolverInterface
 {
@@ -31,8 +32,13 @@ class DNSAddressResolver implements AddressResolverInterface
         // as late as possible
         yield $host;
 
-        /** @var list<array{ip?: string|null}> $records */
-        $records = dns_get_record($host, DNS_A | DNS_AAAA);
+        try {
+            /** @var list<array{ip?: string|null}> $records */
+            $records = dns_get_record($host, DNS_A | DNS_AAAA);
+        } catch (Throwable $e) {
+            $records = []; // Failed DNS queries should not halt execution
+        }
+
         if (count($records) === 0) {
             yield from $this->tryReverseLookup($host);
         } else {
@@ -47,8 +53,13 @@ class DNSAddressResolver implements AddressResolverInterface
      */
     private function tryReverseLookup(string $host): iterable
     {
-        /** @var list<array{target?: string|null}> $records */
-        $records = dns_get_record($host.'.in-addr.arpa');
+        try {
+            /** @var list<array{target?: string|null}> $records */
+            $records = dns_get_record($host.'.in-addr.arpa');
+        } catch (Throwable $e) {
+            $records = []; // Failed DNS queries should not halt execution
+        }
+
         if (count($records) !== 0) {
             $records = array_map(static fn (array $x) => $x['target'] ?? '', $records);
             $records = array_filter($records, static fn (string $x) => $x !== '');
