@@ -81,9 +81,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         if ($table === null || $table->getTtl() < time()) {
             $addresses = $this->resolver->getAddresses($uri->getHost());
             $triedAddresses = [];
+            $canConnect = false;
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
                 if ($this->pool->canConnect($uri->withHost($address), $authenticate)) {
+                    $canConnect = true;
                     $connection = $this->pool->acquire($uri->withHost($address), $authenticate, $config);
                     $table = $this->routingTable($connection, $config);
                     self::$routingCache[$key] = $table;
@@ -92,7 +94,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
             }
 
-            throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $uri->getHost(), implode('", "', $triedAddresses)));
+            if (!$canConnect) {
+                throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $uri->getHost(), implode('", "', $triedAddresses)));
+            }
         }
 
         $server = $this->getNextServer($table, $config->getAccessMode()) ?? $uri;
