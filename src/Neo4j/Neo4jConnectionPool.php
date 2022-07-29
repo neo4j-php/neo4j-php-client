@@ -28,6 +28,7 @@ use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
+use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
@@ -41,7 +42,7 @@ use function time;
 /**
  * Connection pool for with auto client-side routing.
  *
- * @psalm-import-type BasicDriver from \Laudis\Neo4j\Contracts\DriverInterface
+ * @psalm-import-type BasicDriver from DriverInterface
  *
  * @implements ConnectionPoolInterface<V3>
  */
@@ -91,7 +92,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
             }
 
-            throw new RuntimeException(sprintf('Cannot connect to address: "%s". Addresses tried: "%s"', $uri->getHost(), implode('", "', $triedAddresses)));
+            throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $uri->getHost(), implode('", "', $triedAddresses)));
         }
 
         $server = $this->getNextServer($table, $config->getAccessMode()) ?? $uri;
