@@ -82,7 +82,6 @@ final class BoltFactory
                 throw new RuntimeException('Client only supports bolt version 3 and up.');
             }
 
-            /** @var V3|V4|V4_1|V4_2|V4_3|V4_4 $build */
             $response = $this->auth->authenticateBolt($build, $this->userAgent);
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);

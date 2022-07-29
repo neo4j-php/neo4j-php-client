@@ -254,13 +254,13 @@ final class BoltConnection implements ConnectionInterface
     public function discard(?int $qid): void
     {
         try {
-            $extra = $this->buildResultExtra(null, $qid);
             $bolt = $this->protocol();
 
             if ($bolt instanceof V4 || $bolt instanceof V4_1 || $bolt instanceof V4_2 || $bolt instanceof V4_3 || $bolt instanceof V4_4) {
+                $extra = $this->buildResultExtra(null, $qid);
                 $result = $bolt->discard($extra);
             } else {
-                $result = $bolt->discardAll($extra);
+                $result = $bolt->discardAll();
             }
 
             $this->interpretResult($result);
@@ -369,14 +369,13 @@ final class BoltConnection implements ConnectionInterface
      */
     public function pull(?int $qid, ?int $fetchSize): array
     {
-        $extra = $this->buildResultExtra($fetchSize, $qid);
-
         $bolt = $this->protocol();
         try {
             if ($bolt instanceof V3) {
                 /** @var non-empty-list<list> */
-                $tbr = $bolt->pullAll($extra);
+                $tbr = $bolt->pullAll();
             } else {
+                $extra = $this->buildResultExtra($fetchSize, $qid);
                 /** @var non-empty-list<list> */
                 $tbr = $bolt->pull($extra);
             }
