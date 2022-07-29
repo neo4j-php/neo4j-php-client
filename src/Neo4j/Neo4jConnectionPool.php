@@ -24,6 +24,7 @@ use Exception;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -32,6 +33,8 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
 use function random_int;
+use RuntimeException;
+use function sprintf;
 use function str_starts_with;
 use function time;
 
@@ -52,13 +55,15 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     private static array $routingCache = [];
     /** @psalm-readonly */
     private BoltConnectionPool $pool;
+    private AddressResolverInterface $resolver;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(BoltConnectionPool $pool)
+    public function __construct(BoltConnectionPool $pool, AddressResolverInterface $resolver)
     {
         $this->pool = $pool;
+        $this->resolver = $resolver;
     }
 
     /**
@@ -73,10 +78,20 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $table = self::$routingCache[$key] ?? null;
         if ($table === null || $table->getTtl() < time()) {
-            $connection = $this->pool->acquire($uri, $authenticate, $config);
-            $table = $this->routingTable($connection, $config);
-            self::$routingCache[$key] = $table;
-            $connection->close();
+            $addresses = $this->resolver->getAddresses($uri->getHost());
+            $triedAddresses = [];
+            foreach ($addresses as $address) {
+                $triedAddresses[] = $address;
+                if ($this->pool->canConnect($uri->withHost($address), $authenticate)) {
+                    $connection = $this->pool->acquire($uri->withHost($address), $authenticate, $config);
+                    $table = $this->routingTable($connection, $config);
+                    self::$routingCache[$key] = $table;
+                    $connection->close();
+                    break;
+                }
+            }
+
+            throw new RuntimeException(sprintf('Cannot connect to address: "%s". Addresses tried: "%s"', $uri->getHost(), implode('", "', $triedAddresses)));
         }
 
         $server = $this->getNextServer($table, $config->getAccessMode()) ?? $uri;

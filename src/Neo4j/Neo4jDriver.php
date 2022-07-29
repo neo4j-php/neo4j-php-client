@@ -18,6 +18,7 @@ use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Bolt\Session;
+use Laudis\Neo4j\Common\DNSAddressResolver;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
@@ -35,7 +36,7 @@ use Psr\Http\Message\UriInterface;
  *
  * @implements DriverInterface<T>
  *
- * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMResults from OGMFormatter
  */
 final class Neo4jDriver implements DriverInterface
 {
@@ -86,7 +87,7 @@ final class Neo4jDriver implements DriverInterface
             return new self(
                 $uri,
                 $authenticate ?? Authenticate::fromUrl($uri),
-                new Neo4jConnectionPool(new BoltConnectionPool($configuration)),
+                new Neo4jConnectionPool(new BoltConnectionPool($configuration), new DNSAddressResolver()),
                 $formatter,
             );
         }
@@ -94,7 +95,7 @@ final class Neo4jDriver implements DriverInterface
         return new self(
             $uri,
             $authenticate ?? Authenticate::fromUrl($uri),
-            new Neo4jConnectionPool(new BoltConnectionPool($configuration)),
+            new Neo4jConnectionPool(new BoltConnectionPool($configuration), new DNSAddressResolver()),
             OGMFormatter::create(),
         );
     }

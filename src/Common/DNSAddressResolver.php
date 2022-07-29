@@ -31,11 +31,12 @@ class DNSAddressResolver implements AddressResolverInterface
         // as late as possible
         yield $host;
 
+        /** @var list<array{ip?: string|null}> $records */
         $records = dns_get_record($host, DNS_A | DNS_AAAA);
         if (count($records) === 0) {
             yield from $this->tryReverseLookup($host);
         } else {
-            $records = array_map(static fn (array $x): string => $x['ip'] ?? '', $records);
+            $records = array_map(static fn (array $x) => $x['ip'] ?? '', $records);
             $records = array_filter($records, static fn (string $x) => $x !== '');
             yield from array_values(array_unique($records));
         }
@@ -46,9 +47,10 @@ class DNSAddressResolver implements AddressResolverInterface
      */
     private function tryReverseLookup(string $host): iterable
     {
+        /** @var list<array{target?: string|null}> $records */
         $records = dns_get_record($host.'.in-addr.arpa');
         if (count($records) !== 0) {
-            $records = array_map(static fn (array $x): string => $x['target'] ?? '', $records);
+            $records = array_map(static fn (array $x) => $x['target'] ?? '', $records);
             $records = array_filter($records, static fn (string $x) => $x !== '');
             yield from array_values(array_unique($records));
         }
