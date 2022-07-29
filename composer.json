@@ -31,7 +31,7 @@
         "psr/http-client": "^1.0",
         "php-http/message": "^1.0",
         "php-http/message-factory": "^1.0",
-        "stefanak-michal/bolt": "^4.1",
+        "stefanak-michal/bolt": "dev-protocol_messages_as_traits",
         "symfony/polyfill-php80": "^1.2",
         "ext-json": "*"
     },
