@@ -46,7 +46,6 @@ final class BoltConnection implements ConnectionInterface
     /** @psalm-readonly */
     private BoltFactory $factory;
 
-    private string $serverState = 'DISCONNECTED';
     /**
      * @note We are using references to "subscribed results" to maintain backwards compatibility and try and strike
      *       a balance between performance and ease of use.
@@ -70,9 +69,6 @@ final class BoltConnection implements ConnectionInterface
         $this->factory = $factory;
         $this->boltProtocol = $boltProtocol;
         $this->config = $config;
-        if ($boltProtocol) {
-            $this->serverState = 'READY';
-        }
     }
 
     /**
@@ -140,7 +136,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return $this->serverState !== 'DISCONNECTED' && $this->serverState !== 'DEFUNCT';
+        return $this->protocol()->serverState->is('DISCONNECTED', 'DEFUNCT');
     }
 
     public function open(): void
@@ -166,10 +162,7 @@ final class BoltConnection implements ConnectionInterface
     public function close(): void
     {
         $this->consumeResults();
-
         $this->protocol()->goodbye();
-
-        $this->serverState = 'DEFUNCT';
         $this->boltProtocol = null; // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe
     }
 
@@ -193,16 +186,8 @@ final class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
-        try {
-            $this->protocol()->reset();
-        } catch (MessageException $e) {
-            $this->serverState = 'DEFUNCT';
-
-            throw $e;
-        }
-
+        $this->protocol()->reset();
         $this->subscribedResults = [];
-        $this->serverState = 'READY';
     }
 
     /**
@@ -213,21 +198,8 @@ final class BoltConnection implements ConnectionInterface
     public function begin(?string $database, ?float $timeout, BookmarkHolder $holder): void
     {
         $this->consumeResults();
-
         $extra = $this->buildRunExtra($database, $timeout, $holder);
-        try {
-            $this->protocol()->begin($extra);
-        } catch (IgnoredException $e) {
-            $this->serverState = 'INTERRUPTED';
-
-            throw $e;
-        } catch (MessageException $e) {
-            $this->serverState = 'FAILED';
-
-            throw $e;
-        }
-
-        $this->serverState = 'TX_READY';
+        $this->protocol()->begin($extra);
     }
 
     public function getFactory(): BoltFactory
@@ -242,25 +214,13 @@ final class BoltConnection implements ConnectionInterface
      */
     public function discard(?int $qid): void
     {
-        try {
-            $extra = $this->buildResultExtra(null, $qid);
-            $bolt = $this->protocol();
+        $extra = $this->buildResultExtra(null, $qid);
+        $bolt = $this->protocol();
 
-            if ($bolt instanceof V4) {
-                $result = $bolt->discard($extra);
-            } else {
-                $result = $bolt->discardAll($extra);
-            }
-
-            $this->interpretResult($result);
-        } catch (MessageException $e) {
-            $this->serverState = 'FAILED';
-
-            throw $e;
-        } catch (IgnoredException $e) {
-            $this->serverState = 'IGNORED';
-
-            throw $e;
+        if ($bolt instanceof V4) {
+            $bolt->discard($extra);
+        } else {
+            $bolt->discardAll($extra);
         }
     }
 
@@ -273,32 +233,15 @@ final class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder): array
     {
-        if (!str_starts_with($this->serverState, 'TX_') || str_starts_with($this->getServerVersion(), '3')) {
+        if (!str_starts_with($this->protocol()->serverState->get(), 'TX_') || str_starts_with($this->getServerVersion(), '3')) {
             $this->consumeResults();
         }
 
-        try {
-            $extra = $this->buildRunExtra($database, $timeout, $holder);
+        $extra = $this->buildRunExtra($database, $timeout, $holder);
+        $tbr = $this->protocol()->run($text, $parameters, $extra);
 
-            $tbr = $this->protocol()->run($text, $parameters, $extra);
-
-            if (str_starts_with($this->serverState, 'TX_')) {
-                $this->serverState = 'TX_STREAMING';
-            } else {
-                $this->serverState = 'STREAMING';
-            }
-
-            /** @var BoltMeta */
-            return $tbr;
-        } catch (MessageException $e) {
-            $this->serverState = 'FAILED';
-
-            throw $e;
-        } catch (IgnoredException $e) {
-            $this->serverState = 'IGNORED';
-
-            throw $e;
-        }
+        /** @var BoltMeta */
+        return $tbr;
     }
 
     /**
@@ -309,20 +252,7 @@ final class BoltConnection implements ConnectionInterface
     public function commit(): void
     {
         $this->consumeResults();
-
-        try {
-            $this->protocol()->commit();
-        } catch (MessageException $e) {
-            $this->serverState = 'FAILED';
-
-            throw $e;
-        } catch (IgnoredException $e) {
-            $this->serverState = 'IGNORED';
-
-            throw $e;
-        }
-
-        $this->serverState = 'READY';
+        $this->protocol()->commit();
     }
 
     /**
@@ -333,20 +263,7 @@ final class BoltConnection implements ConnectionInterface
     public function rollback(): void
     {
         $this->consumeResults();
-
-        try {
-            $this->protocol()->rollback();
-        } catch (MessageException $e) {
-            $this->serverState = 'FAILED';
-
-            throw $e;
-        } catch (IgnoredException $e) {
-            $this->serverState = 'IGNORED';
-
-            throw $e;
-        }
-
-        $this->serverState = 'READY';
+        $this->protocol()->rollback();
     }
 
     /**
@@ -361,25 +278,13 @@ final class BoltConnection implements ConnectionInterface
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
         $bolt = $this->protocol();
-        try {
-            if (!$bolt instanceof V4) {
-                /** @var non-empty-list<list> */
-                $tbr = $bolt->pullAll($extra);
-            } else {
-                /** @var non-empty-list<list> */
-                $tbr = $bolt->pull($extra);
-            }
-        } catch (MessageException $e) {
-            $this->serverState = 'FAILED';
-
-            throw $e;
-        } catch (IgnoredException $e) {
-            $this->serverState = 'IGNORED';
-
-            throw $e;
+        if (!$bolt instanceof V4) {
+            /** @var non-empty-list<list> */
+            $tbr = $bolt->pullAll($extra);
+        } else {
+            /** @var non-empty-list<list> */
+            $tbr = $bolt->pull($extra);
         }
-
-        $this->interpretResult($tbr[count($tbr) - 1]);
 
         return $tbr;
     }
@@ -394,7 +299,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if ($this->serverState !== 'FAILED' && $this->isOpen()) {
+        if ($this->protocol()->serverState->get() !== 'FAILED' && $this->isOpen()) {
             $this->close();
         }
     }
@@ -406,7 +311,7 @@ final class BoltConnection implements ConnectionInterface
             $extra['db'] = $database;
         }
         if ($timeout) {
-            $extra['tx_timeout'] = (int) ($timeout * 1000);
+            $extra['tx_timeout'] = (int)($timeout * 1000);
         }
 
         if (!$holder->getBookmark()->isEmpty()) {
@@ -432,7 +337,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function getServerState(): string
     {
-        return $this->serverState;
+        return $this->protocol()->serverState->get();
     }
 
     public function subscribeResult(CypherList $result): void
@@ -447,32 +352,5 @@ final class BoltConnection implements ConnectionInterface
         }
 
         return $this->boltProtocol;
-    }
-
-    private function interpretResult(array $result): void
-    {
-        if (str_starts_with($this->serverState, 'TX_')) {
-            if ($result['has_more'] ?? ($this->countResults() > 1)) {
-                $this->serverState = 'TX_STREAMING';
-            } else {
-                $this->serverState = 'TX_READY';
-            }
-        } elseif ($result['has_more'] ?? false) {
-            $this->serverState = 'STREAMING';
-        } else {
-            $this->serverState = 'READY';
-        }
-    }
-
-    private function countResults(): int
-    {
-        $ctr = 0;
-        foreach ($this->subscribedResults as $result) {
-            if ($result->get() !== null) {
-                ++$ctr;
-            }
-        }
-
-        return $ctr;
     }
 }
