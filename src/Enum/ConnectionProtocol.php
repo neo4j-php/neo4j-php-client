@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
-use Bolt\protocol\V3;
+use Bolt\protocol\AProtocol;
 use const E_DEPRECATED;
 use function error_reporting;
 use JsonSerializable;
@@ -57,7 +57,7 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
      *
      * @psalm-suppress ImpureMethodCall
      */
-    public static function determineBoltVersion(V3 $bolt): self
+    public static function determineBoltVersion(AProtocol $bolt): self
     {
         $version = self::resolve($bolt->getVersion());
 

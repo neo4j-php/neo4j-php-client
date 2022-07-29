@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Neo4j;
 
 use function array_slice;
 use function array_unique;
+use Bolt\protocol\AProtocol;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_3;
@@ -40,7 +41,7 @@ use function time;
  *
  * @psalm-import-type BasicDriver from \Laudis\Neo4j\Contracts\DriverInterface
  *
- * @implements ConnectionPoolInterface<V3>
+ * @implements ConnectionPoolInterface<AProtocol>
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
@@ -108,7 +109,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @param ConnectionInterface<V3> $connection
+     * @param ConnectionInterface<AProtocol> $connection
      *
      * @throws Exception
      */

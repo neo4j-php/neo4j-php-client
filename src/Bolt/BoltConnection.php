@@ -16,8 +16,7 @@ namespace Laudis\Neo4j\Bolt;
 use BadMethodCallException;
 use Bolt\error\IgnoredException;
 use Bolt\error\MessageException;
-use Bolt\protocol\V3;
-use Bolt\protocol\V4;
+use Bolt\protocol\AProtocol;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -34,13 +33,13 @@ use function str_starts_with;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<V3>
+ * @implements ConnectionInterface<AProtocol>
  *
  * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
  */
 final class BoltConnection implements ConnectionInterface
 {
-    private ?V3 $boltProtocol;
+    private ?AProtocol $boltProtocol;
     /** @psalm-readonly */
     private ConnectionConfiguration $config;
     /** @psalm-readonly */
@@ -65,7 +64,7 @@ final class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(BoltFactory $factory, ?V3 $boltProtocol, ConnectionConfiguration $config)
+    public function __construct(BoltFactory $factory, ?AProtocol $boltProtocol, ConnectionConfiguration $config)
     {
         $this->factory = $factory;
         $this->boltProtocol = $boltProtocol;
@@ -78,7 +77,7 @@ final class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
-    public function getImplementation(): V3
+    public function getImplementation(): AProtocol
     {
         if ($this->boltProtocol === null) {
             throw new RuntimeException('Connection is closed');
@@ -246,7 +245,7 @@ final class BoltConnection implements ConnectionInterface
             $extra = $this->buildResultExtra(null, $qid);
             $bolt = $this->protocol();
 
-            if ($bolt instanceof V4) {
+            if (version_compare($bolt->getVersion(), '4', '>=')) {
                 $result = $bolt->discard($extra);
             } else {
                 $result = $bolt->discardAll($extra);
@@ -362,12 +361,12 @@ final class BoltConnection implements ConnectionInterface
 
         $bolt = $this->protocol();
         try {
-            if (!$bolt instanceof V4) {
-                /** @var non-empty-list<list> */
-                $tbr = $bolt->pullAll($extra);
-            } else {
+            if (version_compare($bolt->getVersion(), '4', '>=')) {
                 /** @var non-empty-list<list> */
                 $tbr = $bolt->pull($extra);
+            } else {
+                /** @var non-empty-list<list> */
+                $tbr = $bolt->pullAll($extra);
             }
         } catch (MessageException $e) {
             $this->serverState = 'FAILED';
@@ -440,7 +439,7 @@ final class BoltConnection implements ConnectionInterface
         $this->subscribedResults[] = WeakReference::create($result);
     }
 
-    private function protocol(): V3
+    private function protocol(): AProtocol
     {
         if ($this->boltProtocol === null) {
             throw new LogicException('Cannot use protocol if it is not created');

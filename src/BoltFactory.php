@@ -19,7 +19,6 @@ use Bolt\connection\Socket;
 use Bolt\connection\StreamSocket;
 use Bolt\error\ConnectException;
 use Bolt\error\MessageException;
-use Bolt\protocol\V3;
 use Exception;
 use function extension_loaded;
 use Laudis\Neo4j\Bolt\SslConfigurator;
@@ -58,7 +57,7 @@ final class BoltFactory
     /**
      * @throws Exception
      *
-     * @return array{0: V3, 1: array{server: string, connection_id: string, hints: list}}
+     * @return array{0: AProtocol, 1: array{server: string, connection_id: string, hints: list}}
      */
     public function build(): array
     {
@@ -71,7 +70,7 @@ final class BoltFactory
                 $build = $this->bolt->build();
             }
 
-            if (!$build instanceof V3) {
+            if (version_compare($build->getVersion(), '3', '<')) {
                 throw new RuntimeException('Client only supports bolt version 3 and up.');
             }
 

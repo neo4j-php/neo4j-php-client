@@ -12,7 +12,7 @@
 namespace Laudis\Neo4j\Authentication;
 
 use Bolt\helpers\Auth;
-use Bolt\protocol\V3;
+use Bolt\protocol\AProtocol;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -43,7 +43,7 @@ final class OpenIDConnectAuth implements AuthenticateInterface
             ->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(V3 $bolt, string $userAgent): array
+    public function authenticateBolt(AProtocol $bolt, string $userAgent): array
     {
         /** @var array{server: string, connection_id: string, hints: list} */
         return $bolt->hello(Auth::bearer($this->token));

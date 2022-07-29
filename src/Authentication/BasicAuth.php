@@ -15,7 +15,7 @@ namespace Laudis\Neo4j\Authentication;
 
 use function base64_encode;
 use Bolt\helpers\Auth;
-use Bolt\protocol\V3;
+use Bolt\protocol\AProtocol;
 use Exception;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
@@ -57,7 +57,7 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @throws Exception
      */
-    public function authenticateBolt(V3 $bolt, string $userAgent): array
+    public function authenticateBolt(AProtocol $bolt, string $userAgent): array
     {
         /** @var array{server: string, connection_id: string, hints: list} */
         return $bolt->hello(Auth::basic($this->username, $this->password, $userAgent));
