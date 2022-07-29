@@ -136,7 +136,7 @@ final class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return $this->protocol()->serverState->is('DISCONNECTED', 'DEFUNCT');
+        return !$this->protocol()->serverState->is('DISCONNECTED', 'DEFUNCT');
     }
 
     public function open(): void
