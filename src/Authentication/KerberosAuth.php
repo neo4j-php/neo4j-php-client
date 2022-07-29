@@ -48,9 +48,9 @@ final class KerberosAuth implements AuthenticateInterface
             ->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(AProtocol $bolt, string $userAgent): array
+    public function authenticateBolt(AProtocol $protocol, string $userAgent): array
     {
         /** @var array{server: string, connection_id: string, hints: list} */
-        return $bolt->hello(Auth::bearer($this->token, $userAgent));
+        return $protocol->hello(Auth::bearer($this->token, $userAgent));
     }
 }

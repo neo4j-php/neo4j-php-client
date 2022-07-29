@@ -37,9 +37,9 @@ final class NoAuth implements AuthenticateInterface
         return $request->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(AProtocol $bolt, string $userAgent): array
+    public function authenticateBolt(AProtocol $protocol, string $userAgent): array
     {
         /** @var array{server: string, connection_id: string, hints: list} */
-        return $bolt->hello(Auth::none($userAgent));
+        return $protocol->hello(Auth::none($userAgent));
     }
 }

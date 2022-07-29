@@ -19,6 +19,12 @@ use Bolt\connection\Socket;
 use Bolt\connection\StreamSocket;
 use Bolt\error\ConnectException;
 use Bolt\error\MessageException;
+use Bolt\protocol\V3;
+use Bolt\protocol\V4;
+use Bolt\protocol\V4_1;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
+use Bolt\protocol\V4_4;
 use Exception;
 use function extension_loaded;
 use Laudis\Neo4j\Bolt\SslConfigurator;
@@ -57,16 +63,18 @@ final class BoltFactory
     /**
      * @throws Exception
      *
-     * @return array{0: AProtocol, 1: array{server: string, connection_id: string, hints: list}}
+     * @return array{0: V3|V4|V4_1|V4_2|V4_3|V4_4, 1: array{server: string, connection_id: string, hints: list}}
      */
     public function build(): array
     {
         try {
             $this->bolt->setProtocolVersions(4.4, 4.3, 4.2, 3);
             try {
+                /** @var V3|V4_2|V4_3|V4_4 $build */
                 $build = $this->bolt->build();
             } catch (ConnectException $exception) {
                 $this->bolt->setProtocolVersions(4.1, 4.0, 4, 3);
+                /** @var V3|V4|V4_1 $build */
                 $build = $this->bolt->build();
             }
 
@@ -74,11 +82,13 @@ final class BoltFactory
                 throw new RuntimeException('Client only supports bolt version 3 and up.');
             }
 
+            /** @var V3|V4|V4_1|V4_2|V4_3|V4_4 $build */
             $response = $this->auth->authenticateBolt($build, $this->userAgent);
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);
         }
 
+        /** @var array{0: V3|V4|V4_1|V4_2|V4_3|V4_4, 1: array{server: string, connection_id: string, hints: list}} */
         return [$build, $response];
     }
 

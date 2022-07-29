@@ -14,6 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Bolt\protocol\AProtocol;
+use Bolt\protocol\V3;
+use Bolt\protocol\V4;
+use Bolt\protocol\V4_1;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
+use Bolt\protocol\V4_4;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -29,7 +35,9 @@ interface AuthenticateInterface
     /**
      * Authenticates a Bolt connection with the provided configuration Uri and userAgent.
      *
+     * @param V3|V4|V4_1|V4_2|V4_3|V4_4 $protocol
+     *
      * @return array{server: string, connection_id: string, hints: list}
      */
-    public function authenticateBolt(AProtocol $bolt, string $userAgent): array;
+    public function authenticateBolt(AProtocol $protocol, string $userAgent): array;
 }

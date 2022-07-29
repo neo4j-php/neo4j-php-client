@@ -17,9 +17,16 @@ use BadMethodCallException;
 use Bolt\error\IgnoredException;
 use Bolt\error\MessageException;
 use Bolt\protocol\AProtocol;
+use Bolt\protocol\V3;
+use Bolt\protocol\V4;
+use Bolt\protocol\V4_1;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
+use Bolt\protocol\V4_4;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -33,12 +40,13 @@ use function str_starts_with;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<AProtocol>
+ * @implements ConnectionInterface<V3|V4|V4_1|V4_2|V4_3|V4_4>
  *
- * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type BoltMeta from FormatterInterface
  */
 final class BoltConnection implements ConnectionInterface
 {
+    /** @var V3|V4|V4_1|V4_2|V4_3|V4_4|null */
     private ?AProtocol $boltProtocol;
     /** @psalm-readonly */
     private ConnectionConfiguration $config;
@@ -62,6 +70,8 @@ final class BoltConnection implements ConnectionInterface
     private array $subscribedResults = [];
 
     /**
+     * @param V3|V4|V4_1|V4_2|V4_3|V4_4|null $boltProtocol
+     *
      * @psalm-mutation-free
      */
     public function __construct(BoltFactory $factory, ?AProtocol $boltProtocol, ConnectionConfiguration $config)
@@ -75,6 +85,8 @@ final class BoltConnection implements ConnectionInterface
     }
 
     /**
+     * @return V3|V4|V4_1|V4_2|V4_3|V4_4
+     *
      * @psalm-mutation-free
      */
     public function getImplementation(): AProtocol
@@ -245,7 +257,7 @@ final class BoltConnection implements ConnectionInterface
             $extra = $this->buildResultExtra(null, $qid);
             $bolt = $this->protocol();
 
-            if (version_compare($bolt->getVersion(), '4', '>=')) {
+            if ($bolt instanceof V4 || $bolt instanceof V4_1 || $bolt instanceof V4_2 || $bolt instanceof V4_3 || $bolt instanceof V4_4) {
                 $result = $bolt->discard($extra);
             } else {
                 $result = $bolt->discardAll($extra);
@@ -361,12 +373,12 @@ final class BoltConnection implements ConnectionInterface
 
         $bolt = $this->protocol();
         try {
-            if (version_compare($bolt->getVersion(), '4', '>=')) {
-                /** @var non-empty-list<list> */
-                $tbr = $bolt->pull($extra);
-            } else {
+            if ($bolt instanceof V3) {
                 /** @var non-empty-list<list> */
                 $tbr = $bolt->pullAll($extra);
+            } else {
+                /** @var non-empty-list<list> */
+                $tbr = $bolt->pull($extra);
             }
         } catch (MessageException $e) {
             $this->serverState = 'FAILED';
@@ -439,6 +451,9 @@ final class BoltConnection implements ConnectionInterface
         $this->subscribedResults[] = WeakReference::create($result);
     }
 
+    /**
+     * @return V3|V4|V4_1|V4_2|V4_3|V4_4
+     */
     private function protocol(): AProtocol
     {
         if ($this->boltProtocol === null) {

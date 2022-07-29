@@ -13,7 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\protocol\AProtocol;
+use Bolt\protocol\V3;
+use Bolt\protocol\V4;
+use Bolt\protocol\V4_1;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
+use Bolt\protocol\V4_4;
 use Exception;
 use function explode;
 use Laudis\Neo4j\BoltFactory;
@@ -31,7 +36,7 @@ use Throwable;
 /**
  * Manages singular Bolt connections.
  *
- * @implements ConnectionPoolInterface<AProtocol>
+ * @implements ConnectionPoolInterface<V3|V4|V4_1|V4_2|V4_3|V4_4>
  */
 final class BoltConnectionPool implements ConnectionPoolInterface
 {

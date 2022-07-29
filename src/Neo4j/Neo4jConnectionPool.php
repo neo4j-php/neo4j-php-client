@@ -18,6 +18,8 @@ use function array_unique;
 use Bolt\protocol\AProtocol;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
+use Bolt\protocol\V4_1;
+use Bolt\protocol\V4_2;
 use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use function count;
@@ -109,7 +111,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @param ConnectionInterface<AProtocol> $connection
+     * @param ConnectionInterface<V3|V4|V4_1|V4_2|V4_3|V4_4> $connection
      *
      * @throws Exception
      */
@@ -125,7 +127,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             return $this->useRouteMessage($bolt, $config);
         }
 
-        if ($bolt instanceof V4) {
+        if ($bolt instanceof V4 || $bolt instanceof V4_1 || $bolt instanceof V4_2) {
             return $this->useRoutingTable($bolt);
         }
 
@@ -153,9 +155,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
+     * @param V4|V4_1|V4_2 $bolt
+     *
      * @throws Exception
      */
-    private function useRoutingTable(V4 $bolt): RoutingTable
+    private function useRoutingTable(AProtocol $bolt): RoutingTable
     {
         $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
         /** @var array{0: array{0: int, 1: list<array{addresses: list<string>, role:string}>}} */

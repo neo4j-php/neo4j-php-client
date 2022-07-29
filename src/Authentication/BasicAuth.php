@@ -57,9 +57,9 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @throws Exception
      */
-    public function authenticateBolt(AProtocol $bolt, string $userAgent): array
+    public function authenticateBolt(AProtocol $protocol, string $userAgent): array
     {
         /** @var array{server: string, connection_id: string, hints: list} */
-        return $bolt->hello(Auth::basic($this->username, $this->password, $userAgent));
+        return $protocol->hello(Auth::basic($this->username, $this->password, $userAgent));
     }
 }
