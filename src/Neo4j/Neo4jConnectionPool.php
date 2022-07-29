@@ -21,6 +21,7 @@ use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use function count;
 use Exception;
+use function implode;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Common\Uri;
@@ -78,14 +79,12 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $key = $uri->getHost().':'.($uri->getPort() ?? '7687');
 
         $table = self::$routingCache[$key] ?? null;
+        $triedAddresses = [];
         if ($table === null || $table->getTtl() < time()) {
             $addresses = $this->resolver->getAddresses($uri->getHost());
-            $triedAddresses = [];
-            $canConnect = false;
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
                 if ($this->pool->canConnect($uri->withHost($address), $authenticate)) {
-                    $canConnect = true;
                     $connection = $this->pool->acquire($uri->withHost($address), $authenticate, $config);
                     $table = $this->routingTable($connection, $config);
                     self::$routingCache[$key] = $table;
@@ -93,10 +92,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                     break;
                 }
             }
+        }
 
-            if (!$canConnect) {
-                throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $uri->getHost(), implode('", "', $triedAddresses)));
-            }
+        if ($table === null) {
+            throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $uri->getHost(), implode('", "', $triedAddresses)));
         }
 
         $server = $this->getNextServer($table, $config->getAccessMode()) ?? $uri;
