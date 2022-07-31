@@ -33,7 +33,11 @@
         "php-http/message-factory": "^1.0",
         "stefanak-michal/bolt": "^4.1",
         "symfony/polyfill-php80": "^1.2",
+        "psr/cache": "^2.0",
         "ext-json": "*"
+    },
+    "provide": {
+        "psr/cache-implementation": "2.0|3.0"
     },
     "suggest": {
         "ext-bcmath": "Needed to implement bolt protocol",
