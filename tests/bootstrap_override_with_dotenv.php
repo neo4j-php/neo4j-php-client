@@ -14,4 +14,4 @@ use Dotenv\Dotenv;
 require __DIR__.'/../vendor/autoload.php';
 
 /** @psalm-suppress UncaughtThrowInGlobalScope */
-Dotenv::createImmutable(__DIR__.'/../')->load();
+Dotenv::createMutable(__DIR__.'/../')->load();
