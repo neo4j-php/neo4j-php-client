@@ -45,9 +45,5 @@ jobs:
           progress: yes
           php_version: 7.4
           version: 2
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: phpunit.xml.dist
-          php_version: 7.4
-          bootstrap: vendor/autoload.php
-          args: --testsuite "Integration"
+      - name: Run unit tests
+        run: php vendor/bin/phpunit --testsuite Integration

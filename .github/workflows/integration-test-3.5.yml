@@ -38,9 +38,5 @@ jobs:
         uses: juliangruber/sleep-action@v1
         with:
          time: 60s
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: phpunit.xml.dist
-          php_version: 7.4
-          bootstrap: vendor/autoload.php
-          args: --testsuite "Integration"
+      - name: Run unit tests
+        run: php vendor/bin/phpunit --testsuite Integration
