@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Neo4j;
 
 use function array_slice;
 use function array_unique;
+use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_3;
@@ -30,6 +31,7 @@ use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
+use const PHP_INT_MAX;
 use Psr\Http\Message\UriInterface;
 use function random_int;
 use function str_starts_with;
@@ -128,7 +130,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             return $this->useRoutingTable($bolt);
         }
 
-        return $this->useClusterOverview($bolt);
+        return $this->useClusterOverview($bolt, $connection);
     }
 
     private function useRouteMessage(V4_3 $bolt, SessionConfiguration $config): RoutingTable
@@ -172,9 +174,22 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    private function useClusterOverview(V3 $bolt): RoutingTable
+    private function useClusterOverview(V3 $bolt, ConnectionInterface $c): RoutingTable
     {
-        $bolt->run('CALL dbms.cluster.overview()');
+        try {
+            $bolt->run('CALL dbms.cluster.overview()');
+        } catch (MessageException $e) {
+            return new RoutingTable([
+                [
+                    'addresses' => [(string) $c->getServerAddress()],
+                    'role' => 'WRITE',
+                ],
+                [
+                    'addresses' => [(string) $c->getServerAddress()],
+                    'role' => 'READ',
+                ],
+            ], PHP_INT_MAX);
+        }
         /** @var list<array{0: string, 1: list<string>, 2: string, 4: list, 4:string}> */
         $response = $bolt->pullAll();
         $response = array_slice($response, 0, count($response) - 1);
