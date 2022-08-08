@@ -164,6 +164,7 @@ final class DriverConfiguration
     {
         $cache = (is_callable($this->cache)) ? call_user_func($this->cache) : $this->cache;
 
-        return $cache ?? ;
+        /** @psalm-suppress ImpureMethodCall */
+        return $cache ?? Cache::getInstance();
     }
 }
