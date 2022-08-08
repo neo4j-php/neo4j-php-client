@@ -27,6 +27,7 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use Psr\Http\Message\UriInterface;
 use Psr\SimpleCache\CacheInterface;
+use function shuffle;
 use Throwable;
 
 /**
@@ -59,35 +60,36 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         ?UriInterface $server = null
     ): BoltConnection {
         $connectingTo = $server ?? $uri;
-        $key = $this->driverConfig->getUserAgent().':'.$connectingTo->getHost().':'.($connectingTo->getPort() ?? '7687');
-        $pool = $this->cache->get($key);
-        $pool = $pool->isHit() ? $pool->get() : [];
+        $keys = $this->generateKeys($connectingTo);
+        while (true) {
+            foreach ($this->cache->getMultiple($keys) as $key => $connection) {
+                // TODO - generate some locking of some sort.
+                // There are lots of ways to achieve this but none is perfect.
+                // The main contenders at the moment are:
+                // - leveraging the file system locks (slow, error prone, but no external dependencies)
+                // - use the semaphore (fast, but requires external dependencies)
+                // - use the lock library https://packagist.org/packages/malkusch/lock (flexible, but a lot more complicated)
+                $connection ??= $this->getConnection($uri, $authenticate, $config);
+                if (!$connection->isOpen()) {
+                    if ($this->compare($connection, $authenticate)) {
+                        $connection = $this->getConnection($connectingTo, $authenticate, $config);
 
-        foreach ($pool as $i => $connection) {
-            if (!$connection->isOpen()) {
-                if ($this->compare($connection, $authenticate)) {
-                    $connection = $this->getConnection($connectingTo, $authenticate, $config);
+                        $this->cache->set($key, $connection);
 
-                    /** @psalm-suppress PropertyTypeCoercion */
-                    self::$connectionCache[$key][$i] = $connection;
+                        return $connection;
+                    }
+
+                    $connection->open();
 
                     return $connection;
                 }
 
-                $connection->open();
-
-                return $connection;
-            }
-            if ($connection->getServerState() === 'READY' && $authenticate === $connection->getFactory()->getAuth()) {
-                return $connection;
+                if ($connection->getServerState() === 'READY' && $authenticate === $connection->getFactory()->getAuth(
+                    )) {
+                    return $connection;
+                }
             }
         }
-
-        $connection = $this->getConnection($connectingTo, $authenticate, $config);
-
-        self::$connectionCache[$key][] = $connection;
-
-        return $connection;
     }
 
     public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
@@ -132,5 +134,16 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         return $sslConfig->getMode() !== $newSslConfig->getMode() ||
             $sslConfig->isVerifyPeer() === $newSslConfig->isVerifyPeer() ||
             $authenticate !== $connection->getFactory()->getAuth();
+    }
+
+    private function generateKeys(UriInterface $connectingTo): \Generator
+    {
+        $key = $this->driverConfig->getUserAgent().':'.$connectingTo->getHost().':'.($connectingTo->getPort() ?? '7687');
+        $ranges = range(0, max(0, $this->driverConfig->getMaxPoolSize() - 1));
+        shuffle($ranges);
+
+        foreach ($ranges as $range) {
+            yield $key.':'.$range;
+        }
     }
 }
