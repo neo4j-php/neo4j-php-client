@@ -25,8 +25,10 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
+use function microtime;
 use Psr\Http\Message\UriInterface;
 use Psr\SimpleCache\CacheInterface;
+use RuntimeException;
 use function shuffle;
 use Throwable;
 
@@ -61,7 +63,9 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     ): BoltConnection {
         $connectingTo = $server ?? $uri;
         $keys = $this->generateKeys($connectingTo);
+        $start = microtime(true);
         while (true) {
+            $this->guardTiming($start, $connectingTo);
             foreach ($this->cache->getMultiple($keys) as $key => $connection) {
                 // TODO - generate some locking of some sort.
                 // There are lots of ways to achieve this but none is perfect.
@@ -84,10 +88,11 @@ final class BoltConnectionPool implements ConnectionPoolInterface
                     return $connection;
                 }
 
-                if ($connection->getServerState() === 'READY' && $authenticate === $connection->getFactory()->getAuth(
-                    )) {
+                if ($connection->getServerState() === 'READY' && $authenticate === $connection->getFactory()->getAuth()) {
                     return $connection;
                 }
+
+                $this->guardTiming($start, $connectingTo);
             }
         }
     }
@@ -144,6 +149,21 @@ final class BoltConnectionPool implements ConnectionPoolInterface
 
         foreach ($ranges as $range) {
             yield $key.':'.$range;
+        }
+    }
+
+    /**
+     * @param float $start
+     * @param UriInterface $connectingTo
+     *
+     * @return void
+     * @throws RuntimeException
+     */
+    private function guardTiming(float $start, UriInterface $connectingTo): void
+    {
+        $elapsed = microtime(true) - $start;
+        if ($elapsed > $this->driverConfig->getAcquireConnectionTimeout()) {
+            throw new RuntimeException("Connection to {$connectingTo} timed out after {$elapsed} seconds");
         }
     }
 }

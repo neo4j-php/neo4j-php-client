@@ -31,6 +31,7 @@ final class DriverConfiguration
     public const DEFAULT_USER_AGENT = 'neo4j-php-client/%s';
     public const DEFAULT_POOL_SIZE = 0x2F;
     public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
+    public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
 
     private ?string $userAgent;
     /** @var pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
@@ -39,18 +40,21 @@ final class DriverConfiguration
     private ?int $maxPoolSize;
     /** @var pure-callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
+    /** @var ?float */
+    private ?float $acquireConnectionTimeout;
 
     /**
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      * @param pure-callable():(CacheInterface|null)|CacheInterface|null $cache
      */
-    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize, $cache = null)
+    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize, $cache, ?float $acquireConnectionTimeout)
     {
         $this->userAgent = $userAgent;
         $this->httpPsrBindings = $httpPsrBindings;
         $this->sslConfig = $sslConfig;
         $this->maxPoolSize = $maxPoolSize;
         $this->cache = $cache;
+        $this->acquireConnectionTimeout = $acquireConnectionTimeout;
     }
 
     /**
@@ -58,9 +62,9 @@ final class DriverConfiguration
      *
      * @pure
      */
-    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize): self
+    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize, CacheInterface $cache, float $acquireConnectionTimeout): self
     {
-        return new self($userAgent, $httpPsrBindings, $sslConfig, $maxPoolSize);
+        return new self($userAgent, $httpPsrBindings, $sslConfig, $maxPoolSize, $cache, $acquireConnectionTimeout);
     }
 
     /**
@@ -71,7 +75,8 @@ final class DriverConfiguration
      */
     public static function default(): self
     {
-        return new self(self::DEFAULT_USER_AGENT, HttpPsrBindings::default(), SslConfiguration::default(), self::DEFAULT_POOL_SIZE);
+        /** @psalm-suppress ImpureMethodCall */
+        return new self(self::DEFAULT_USER_AGENT, HttpPsrBindings::default(), SslConfiguration::default(), self::DEFAULT_POOL_SIZE, Cache::getInstance(), self::DEFAULT_ACQUIRE_CONNECTION_TIMEOUT);
     }
 
     public function getUserAgent(): string
@@ -166,5 +171,18 @@ final class DriverConfiguration
 
         /** @psalm-suppress ImpureMethodCall */
         return $cache ?? Cache::getInstance();
+    }
+
+    public function getAcquireConnectionTimeout(): ?float
+    {
+        return $this->acquireConnectionTimeout;
+    }
+
+    public function withAcquireConnectionTimeout(?float $acquireConnectionTimeout): self
+    {
+        $tbr = clone $this;
+        $tbr->acquireConnectionTimeout = $acquireConnectionTimeout;
+
+        return $tbr;
     }
 }
