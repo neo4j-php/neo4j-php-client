@@ -17,6 +17,8 @@ use function call_user_func;
 use Composer\InstalledVersions;
 use function function_exists;
 use function is_callable;
+use Laudis\Neo4j\Common\Cache;
+use Psr\SimpleCache\CacheInterface;
 use function sprintf;
 
 /**
@@ -28,22 +30,27 @@ final class DriverConfiguration
 {
     public const DEFAULT_USER_AGENT = 'neo4j-php-client/%s';
     public const DEFAULT_POOL_SIZE = 0x2F;
+    public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
 
     private ?string $userAgent;
     /** @var pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
     private $httpPsrBindings;
     private SslConfiguration $sslConfig;
     private ?int $maxPoolSize;
+    /** @var pure-callable():(CacheInterface|null)|CacheInterface|null */
+    private $cache;
 
     /**
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
+     * @param pure-callable():(CacheInterface|null)|CacheInterface|null $cache
      */
-    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize)
+    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize, $cache = null)
     {
         $this->userAgent = $userAgent;
         $this->httpPsrBindings = $httpPsrBindings;
         $this->sslConfig = $sslConfig;
         $this->maxPoolSize = $maxPoolSize;
+        $this->cache = $cache;
     }
 
     /**
@@ -131,7 +138,7 @@ final class DriverConfiguration
 
     public function getMaxPoolSize(): ?int
     {
-        return $this->maxPoolSize;
+        return $this->maxPoolSize ?? self::DEFAULT_POOL_SIZE;
     }
 
     public function withMaxPoolSize(?int $maxPoolSize): self
@@ -140,5 +147,23 @@ final class DriverConfiguration
         $tbr->maxPoolSize = $maxPoolSize;
 
         return $tbr;
+    }
+
+    /**
+     * @param pure-callable():(CacheInterface|null)|CacheInterface|null $cache
+     */
+    public function withCache($cache): self
+    {
+        $tbr = clone $this;
+        $tbr->cache = $cache;
+
+        return $tbr;
+    }
+
+    public function getCache(): CacheInterface
+    {
+        $cache = (is_callable($this->cache)) ? call_user_func($this->cache) : $this->cache;
+
+        return $cache ?? ;
     }
 }

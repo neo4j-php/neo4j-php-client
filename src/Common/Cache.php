@@ -43,6 +43,20 @@ class Cache implements CacheInterface
 {
     /** @var array<string, array{0: T, 1: int}> */
     private array $items = [];
+    private static ?self $instance = null;
+
+    private function __construct()
+    {
+    }
+
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+
+        return self::$instance;
+    }
 
     /**
      * @template U

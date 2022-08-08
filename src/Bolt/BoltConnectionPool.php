@@ -25,8 +25,8 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
-use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Message\UriInterface;
+use Psr\SimpleCache\CacheInterface;
 use Throwable;
 
 /**
@@ -37,12 +37,12 @@ use Throwable;
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
     private DriverConfiguration $driverConfig;
-    private CacheItemPoolInterface $cache;
+    private CacheInterface $cache;
 
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(DriverConfiguration $driverConfig, CacheItemPoolInterface $cache)
+    public function __construct(DriverConfiguration $driverConfig, CacheInterface $cache)
     {
         $this->driverConfig = $driverConfig;
         $this->cache = $cache;
@@ -60,7 +60,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     ): BoltConnection {
         $connectingTo = $server ?? $uri;
         $key = $this->driverConfig->getUserAgent().':'.$connectingTo->getHost().':'.($connectingTo->getPort() ?? '7687');
-        $pool = $this->cache->getItem($key);
+        $pool = $this->cache->get($key);
         $pool = $pool->isHit() ? $pool->get() : [];
 
         foreach ($pool as $i => $connection) {
