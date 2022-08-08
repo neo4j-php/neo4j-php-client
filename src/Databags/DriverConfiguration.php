@@ -27,20 +27,23 @@ use function sprintf;
 final class DriverConfiguration
 {
     public const DEFAULT_USER_AGENT = 'neo4j-php-client/%s';
+    public const DEFAULT_POOL_SIZE = 0x2F;
 
     private ?string $userAgent;
     /** @var pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
     private $httpPsrBindings;
     private SslConfiguration $sslConfig;
+    private ?int $maxPoolSize;
 
     /**
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      */
-    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig)
+    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize)
     {
         $this->userAgent = $userAgent;
         $this->httpPsrBindings = $httpPsrBindings;
         $this->sslConfig = $sslConfig;
+        $this->maxPoolSize = $maxPoolSize;
     }
 
     /**
@@ -48,9 +51,9 @@ final class DriverConfiguration
      *
      * @pure
      */
-    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig): self
+    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize): self
     {
-        return new self($userAgent, $httpPsrBindings, $sslConfig);
+        return new self($userAgent, $httpPsrBindings, $sslConfig, $maxPoolSize);
     }
 
     /**
@@ -61,7 +64,7 @@ final class DriverConfiguration
      */
     public static function default(): self
     {
-        return new self(self::DEFAULT_USER_AGENT, HttpPsrBindings::default(), SslConfiguration::default());
+        return new self(self::DEFAULT_USER_AGENT, HttpPsrBindings::default(), SslConfiguration::default(), self::DEFAULT_POOL_SIZE);
     }
 
     public function getUserAgent(): string
@@ -124,5 +127,18 @@ final class DriverConfiguration
         $bindings = (is_callable($this->httpPsrBindings)) ? call_user_func($this->httpPsrBindings) : $this->httpPsrBindings;
 
         return $bindings ?? HttpPsrBindings::default();
+    }
+
+    public function getMaxPoolSize(): ?int
+    {
+        return $this->maxPoolSize;
+    }
+
+    public function withMaxPoolSize(?int $maxPoolSize): self
+    {
+        $tbr = clone $this;
+        $tbr->maxPoolSize = $maxPoolSize;
+
+        return $tbr;
     }
 }
