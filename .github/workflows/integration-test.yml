@@ -45,9 +45,5 @@ jobs:
           progress: yes
           php_version: 7.4
           version: 2
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: phpunit.xml.dist
-          php_version: 7.4
-          bootstrap: vendor/autoload.php
-          args: --testsuite "Integration"
+      - name: Run unit tests
+        run: echo NEO4J_CONNECTIONS=bolt://neo4j:test@localhost,neo4j://neo4j:test@localhost,http://neo4j:test@localhost >> .env && php vendor/bin/phpunit --testsuite Integration --bootstrap tests/bootstrap_override_with_dotenv.php
