@@ -141,7 +141,7 @@ final class DriverConfiguration
         return $bindings ?? HttpPsrBindings::default();
     }
 
-    public function getMaxPoolSize(): ?int
+    public function getMaxPoolSize(): int
     {
         return $this->maxPoolSize ?? self::DEFAULT_POOL_SIZE;
     }

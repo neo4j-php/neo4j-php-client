@@ -13,8 +13,8 @@ namespace Laudis\Neo4j\Common;
 
 use DateTime;
 use DateTimeInterface;
-use InvalidArgumentException;
 use function get_debug_type;
+use InvalidArgumentException;
 use function is_int;
 use function microtime;
 use const PHP_FLOAT_MAX;

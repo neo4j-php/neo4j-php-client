@@ -21,6 +21,7 @@ use Bolt\protocol\V4;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -36,7 +37,7 @@ use WeakReference;
 /**
  * @implements ConnectionInterface<V3>
  *
- * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type BoltMeta from FormatterInterface
  */
 final class BoltConnection implements ConnectionInterface
 {

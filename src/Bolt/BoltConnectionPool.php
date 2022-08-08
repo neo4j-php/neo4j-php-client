@@ -27,7 +27,6 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use function microtime;
 use Psr\Http\Message\UriInterface;
-use Psr\SimpleCache\CacheInterface;
 use RuntimeException;
 use function shuffle;
 use Throwable;
@@ -40,15 +39,13 @@ use Throwable;
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
     private DriverConfiguration $driverConfig;
-    private CacheInterface $cache;
 
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(DriverConfiguration $driverConfig, CacheInterface $cache)
+    public function __construct(DriverConfiguration $driverConfig)
     {
         $this->driverConfig = $driverConfig;
-        $this->cache = $cache;
     }
 
     /**
@@ -66,7 +63,11 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         $start = microtime(true);
         while (true) {
             $this->guardTiming($start, $connectingTo);
-            foreach ($this->cache->getMultiple($keys) as $key => $connection) {
+            /**
+             * @var string              $key
+             * @var BoltConnection|null $connection
+             */
+            foreach ($this->driverConfig->getCache()->getMultiple($keys) as $key => $connection) {
                 // TODO - generate some locking of some sort.
                 // There are lots of ways to achieve this but none is perfect.
                 // The main contenders at the moment are:
@@ -78,7 +79,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
                     if ($this->compare($connection, $authenticate)) {
                         $connection = $this->getConnection($connectingTo, $authenticate, $config);
 
-                        $this->cache->set($key, $connection);
+                        $this->driverConfig->getCache()->set($key, $connection);
 
                         return $connection;
                     }
@@ -143,6 +144,9 @@ final class BoltConnectionPool implements ConnectionPoolInterface
 
     private function generateKeys(UriInterface $connectingTo): \Generator
     {
+        // The idea of a randomized keys is to prevent a single connection from being used by multiple threads all at once.
+        // Round-robin or other algorithms are not suitable as there is no way to share the next connection between
+        // different standard php sessions without introducing a massive performance hit.
         $key = $this->driverConfig->getUserAgent().':'.$connectingTo->getHost().':'.($connectingTo->getPort() ?? '7687');
         $ranges = range(0, max(0, $this->driverConfig->getMaxPoolSize() - 1));
         shuffle($ranges);
@@ -153,10 +157,6 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @param float $start
-     * @param UriInterface $connectingTo
-     *
-     * @return void
      * @throws RuntimeException
      */
     private function guardTiming(float $start, UriInterface $connectingTo): void

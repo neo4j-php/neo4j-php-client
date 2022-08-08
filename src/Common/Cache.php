@@ -87,6 +87,11 @@ class Cache implements CacheInterface
         return true;
     }
 
+    /**
+     * @param iterable<string> $keys
+     *
+     * @throws InvalidCacheArgumentException
+     */
     public function deleteMultiple($keys): bool
     {
         $this->assertIterable($keys);
@@ -147,6 +152,7 @@ class Cache implements CacheInterface
     {
         $this->assertIterable($keys);
 
+        /** @var list<string> $cachedKeys */
         $cachedKeys = [];
         foreach ($keys as $key) {
             $this->assertValidKey($key); // pre-check the keys to make sure they are valid as the generator will be delay the tests
@@ -183,6 +189,8 @@ class Cache implements CacheInterface
     /**
      * @param mixed $key
      *
+     * @param-out string $key
+     *
      * @throws InvalidCacheArgumentException
      */
     private function assertValidKey($key): void
@@ -208,7 +216,7 @@ class Cache implements CacheInterface
     /**
      * @param mixed $keys
      *
-     * @param-out iterable $keys
+     * @param-out iterable<string> $keys
      *
      * @throws InvalidCacheArgumentException
      */
