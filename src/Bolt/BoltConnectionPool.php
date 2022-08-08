@@ -147,12 +147,12 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         // The idea of a randomized keys is to prevent a single connection from being used by multiple threads all at once.
         // Round-robin or other algorithms are not suitable as there is no way to share the next connection between
         // different standard php sessions without introducing a massive performance hit.
-        $key = $this->driverConfig->getUserAgent().':'.$connectingTo->getHost().':'.($connectingTo->getPort() ?? '7687');
+        $key = $this->driverConfig->getUserAgent().'|'.$connectingTo->getHost().'|'.($connectingTo->getPort() ?? '7687');
         $ranges = range(0, max(0, $this->driverConfig->getMaxPoolSize() - 1));
         shuffle($ranges);
 
         foreach ($ranges as $range) {
-            yield $key.':'.$range;
+            yield $key.'|'.$range;
         }
     }
 

@@ -76,7 +76,7 @@ final class DriverConfiguration
     public static function default(): self
     {
         /** @psalm-suppress ImpureMethodCall */
-        return new self(self::DEFAULT_USER_AGENT, HttpPsrBindings::default(), SslConfiguration::default(), self::DEFAULT_POOL_SIZE, Cache::getInstance(), self::DEFAULT_ACQUIRE_CONNECTION_TIMEOUT);
+        return new self(null, HttpPsrBindings::default(), SslConfiguration::default(), null, null, null);
     }
 
     public function getUserAgent(): string
