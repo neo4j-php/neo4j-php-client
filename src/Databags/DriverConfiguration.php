@@ -173,9 +173,9 @@ final class DriverConfiguration
         return $cache ?? Cache::getInstance();
     }
 
-    public function getAcquireConnectionTimeout(): ?float
+    public function getAcquireConnectionTimeout(): float
     {
-        return $this->acquireConnectionTimeout;
+        return $this->acquireConnectionTimeout ?? self::DEFAULT_ACQUIRE_CONNECTION_TIMEOUT;
     }
 
     public function withAcquireConnectionTimeout(?float $acquireConnectionTimeout): self

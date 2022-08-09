@@ -29,6 +29,7 @@ use function microtime;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
 use function shuffle;
+use function str_replace;
 use Throwable;
 
 /**
@@ -39,6 +40,7 @@ use Throwable;
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
     private DriverConfiguration $driverConfig;
+    private static array $activeConnections = [];
 
     /**
      * @psalm-external-mutation-free
@@ -74,10 +76,10 @@ final class BoltConnectionPool implements ConnectionPoolInterface
                 // - leveraging the file system locks (slow, error prone, but no external dependencies)
                 // - use the semaphore (fast, but requires external dependencies)
                 // - use the lock library https://packagist.org/packages/malkusch/lock (flexible, but a lot more complicated)
-                $connection ??= $this->getConnection($uri, $authenticate, $config);
+                $connection ??= $this->getConnection($uri, $authenticate, $config, $key);
                 if (!$connection->isOpen()) {
                     if ($this->compare($connection, $authenticate)) {
-                        $connection = $this->getConnection($connectingTo, $authenticate, $config);
+                        $connection = $this->getConnection($connectingTo, $authenticate, $config, $key);
 
                         $this->driverConfig->getCache()->set($key, $connection);
 
@@ -114,7 +116,8 @@ final class BoltConnectionPool implements ConnectionPoolInterface
     private function getConnection(
         UriInterface $connectingTo,
         AuthenticateInterface $authenticate,
-        SessionConfiguration $config
+        SessionConfiguration $config,
+        string $cacheKey
     ): BoltConnection {
         $factory = BoltFactory::fromVariables($connectingTo, $authenticate, $this->driverConfig);
         [$bolt, $response] = $factory->build();
@@ -129,7 +132,11 @@ final class BoltConnectionPool implements ConnectionPoolInterface
             $config->getDatabase() === null ? null : new DatabaseInfo($config->getDatabase())
         );
 
-        return new BoltConnection($factory, $bolt, $config);
+        $tbr = new BoltConnection($factory, $bolt, $config);
+
+        $this->driverConfig->getCache()->set($cacheKey, $tbr);
+
+        return $tbr;
     }
 
     private function compare(BoltConnection $connection, AuthenticateInterface $authenticate): bool
@@ -148,6 +155,16 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         // Round-robin or other algorithms are not suitable as there is no way to share the next connection between
         // different standard php sessions without introducing a massive performance hit.
         $key = $this->driverConfig->getUserAgent().'|'.$connectingTo->getHost().'|'.($connectingTo->getPort() ?? '7687');
+        $key = str_replace([
+            '{',
+            '}',
+            '(',
+            ')',
+            '/',
+            '\\',
+            '@',
+            ':',
+        ], '|', $key);
         $ranges = range(0, max(0, $this->driverConfig->getMaxPoolSize() - 1));
         shuffle($ranges);
 
