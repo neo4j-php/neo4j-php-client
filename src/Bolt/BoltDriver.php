@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\Bolt;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -26,6 +25,7 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
+use Throwable;
 
 /**
  * Drives a singular bolt connections.
@@ -34,13 +34,12 @@ use Psr\Http\Message\UriInterface;
  *
  * @implements DriverInterface<T>
  *
- * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMResults from OGMFormatter
  */
 final class BoltDriver implements DriverInterface
 {
     private UriInterface $parsedUrl;
-    private AuthenticateInterface $auth;
-    private BoltConnectionPool $pool;
+    private SingleBoltConnectionPool $pool;
     private FormatterInterface $formatter;
 
     /**
@@ -50,12 +49,10 @@ final class BoltDriver implements DriverInterface
      */
     public function __construct(
         UriInterface $parsedUrl,
-        AuthenticateInterface $auth,
-        BoltConnectionPool $pool,
+        SingleBoltConnectionPool $pool,
         FormatterInterface $formatter
     ) {
         $this->parsedUrl = $parsedUrl;
-        $this->auth = $auth;
         $this->pool = $pool;
         $this->formatter = $formatter;
     }
@@ -81,20 +78,19 @@ final class BoltDriver implements DriverInterface
         }
 
         $configuration ??= DriverConfiguration::default();
+        $authenticate ??= Authenticate::fromUrl($uri);
 
         if ($formatter !== null) {
             return new self(
                 $uri,
-                $authenticate ?? Authenticate::fromUrl($uri),
-                new BoltConnectionPool($configuration),
+                new SingleBoltConnectionPool($uri, $configuration, $authenticate),
                 $formatter
             );
         }
 
         return new self(
             $uri,
-            $authenticate ?? Authenticate::fromUrl($uri),
-            new BoltConnectionPool($configuration),
+            new SingleBoltConnectionPool($uri, $configuration, $authenticate),
             OGMFormatter::create(),
         );
     }
@@ -115,13 +111,18 @@ final class BoltDriver implements DriverInterface
             $sessionConfig,
             $this->pool,
             $this->formatter,
-            $this->parsedUrl,
-            $this->auth
+            $this->parsedUrl
         );
     }
 
     public function verifyConnectivity(): bool
     {
-        return $this->pool->canConnect($this->parsedUrl, $this->auth);
+        try {
+            $this->pool->acquire();
+        } catch (Throwable $e) {
+            return false;
+        }
+
+        return true;
     }
 }

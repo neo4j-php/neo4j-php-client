@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use Generator;
+use Laudis\Neo4j\Contracts\DriverInterface;
 use function array_slice;
 use function array_unique;
 use Bolt\error\MessageException;
@@ -44,7 +46,7 @@ use function time;
 /**
  * Connection pool for with auto client-side routing.
  *
- * @psalm-import-type BasicDriver from \Laudis\Neo4j\Contracts\DriverInterface
+ * @psalm-import-type BasicDriver from DriverInterface
  *
  * @implements ConnectionPoolInterface<V3>
  */
@@ -219,7 +221,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         return $this->pool->canConnect($uri, $authenticate);
     }
 
-    private function generateKeys(UriInterface $connectingTo): \Generator
+    private function generateKeys(UriInterface $connectingTo): Generator
     {
         // The idea of a randomized keys is to prevent a single connection from being used by multiple threads all at once.
         // Round-robin or other algorithms are not suitable as there is no way to share the next connection between

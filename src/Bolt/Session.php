@@ -65,7 +65,7 @@ final class Session implements SessionInterface
 
     /**
      * @param FormatterInterface<ResultFormat>       $formatter
-     * @param BoltConnectionPool|Neo4jConnectionPool $pool
+     * @param SingleBoltConnectionPool|Neo4jConnectionPool $pool
      *
      * @psalm-mutation-free
      */
@@ -73,14 +73,12 @@ final class Session implements SessionInterface
         SessionConfiguration $config,
         ConnectionPoolInterface $pool,
         FormatterInterface $formatter,
-        UriInterface $uri,
-        AuthenticateInterface $auth
+        UriInterface $uri
     ) {
         $this->config = $config;
         $this->pool = $pool;
         $this->formatter = $formatter;
         $this->uri = $uri;
-        $this->auth = $auth;
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
 
@@ -163,7 +161,7 @@ final class Session implements SessionInterface
      */
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
-        $connection = $this->pool->acquire($this->uri, $this->auth, $sessionConfig);
+        $connection = $this->pool->acquire($sessionConfig);
 
         // We try and let the server do the timeout management.
         // Since the client should not run indefinitely, we just multiply the client side by two, just in case

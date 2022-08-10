@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Psr\Http\Message\UriInterface;
 
 /**
  * A connection pool acts as a connection factory by managing multiple connections.
@@ -28,14 +27,10 @@ interface ConnectionPoolInterface
      *
      * @return ConnectionInterface<ProtocolImplementation>
      */
-    public function acquire(
-        UriInterface $uri,
-        AuthenticateInterface $authenticate,
-        SessionConfiguration $config
-    ): ConnectionInterface;
+    public function acquire(SessionConfiguration $config): ConnectionInterface;
 
     /**
-     * Returns true if the connection pool can make a connection to the server with the current Uri and authentication logic.
+     * Releases a connection back to the pool.
      */
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool;
+    public function release(ConnectionInterface $connection): void;
 }

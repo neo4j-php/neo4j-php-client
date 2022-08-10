@@ -19,6 +19,8 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
+use function sprintf;
+
 /**
  * Doesn't authenticate connections.
  */
@@ -41,5 +43,10 @@ final class NoAuth implements AuthenticateInterface
     {
         /** @var array{server: string, connection_id: string, hints: list} */
         return $bolt->hello(Auth::none($userAgent));
+    }
+
+    public function toString(UriInterface $uri): string
+    {
+        return sprintf('No Auth %s:%s', $uri->getHost(), $uri->getPort() ?? '');
     }
 }

@@ -18,6 +18,8 @@ use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\SingleThreadedSemaphore;
 use Laudis\Neo4j\Common\SysVSemaphore;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -27,7 +29,7 @@ use function microtime;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
 
-class SingleBoltConnectionPool
+class SingleBoltConnectionPool implements ConnectionPoolInterface
 {
     private SemaphoreInterface $semaphore;
     private UriInterface $uri;
@@ -35,10 +37,11 @@ class SingleBoltConnectionPool
     /** @var list<BoltConnection> */
     private array $activeConnections = [];
     private DriverConfiguration $config;
+    private AuthenticateInterface $auth;
 
-    public function __construct(UriInterface $uri, DriverConfiguration $config)
+    public function __construct(UriInterface $uri, DriverConfiguration $config, AuthenticateInterface $auth)
     {
-        $key = $uri->getHost().':'.$uri->getPort().':'.$config->getUserAgent();
+        $key = $uri->getHost().':'.$uri->getPort().':'.$config->getUserAgent().':'.$auth->toString($uri);
         if (extension_loaded('ext-sysvsem')) {
             $this->semaphore = SysVSemaphore::create($key, $config->getMaxPoolSize());
         } else {
@@ -47,9 +50,10 @@ class SingleBoltConnectionPool
 
         $this->uri = $uri;
         $this->config = $config;
+        $this->auth = $auth;
     }
 
-    public function acquire(AuthenticateInterface $auth, SessionConfiguration $config): BoltConnection
+    public function acquire(SessionConfiguration $config): BoltConnection
     {
         $generator = $this->semaphore->wait();
         $start = microtime(true);
@@ -64,10 +68,10 @@ class SingleBoltConnectionPool
             }
         }
 
-        return $this->returnAnyAvailableConnection() ?? $this->createNewConnection($auth, $config);
+        return $this->returnAnyAvailableConnection() ?? $this->createNewConnection($config);
     }
 
-    public function release(BoltConnection $connection): void
+    public function release(ConnectionInterface $connection): void
     {
         $this->semaphore->post();
         $connection->close();
@@ -103,11 +107,9 @@ class SingleBoltConnectionPool
         return null;
     }
 
-    private function createNewConnection(
-        AuthenticateInterface $authenticate,
-        SessionConfiguration $config
-    ): BoltConnection {
-        $factory = BoltFactory::fromVariables($this->uri, $authenticate, $this->config);
+    private function createNewConnection(SessionConfiguration $config): BoltConnection
+    {
+        $factory = BoltFactory::fromVariables($this->uri, $this->auth, $this->config);
         [$bolt, $response] = $factory->build();
 
         $config = new ConnectionConfiguration(
