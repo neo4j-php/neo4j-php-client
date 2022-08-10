@@ -174,7 +174,7 @@ final class BoltConnection implements ConnectionInterface
         $this->boltProtocol = null; // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe
     }
 
-    private function consumeResults(): void
+    public function consumeResults(): void
     {
         foreach ($this->subscribedResults as $result) {
             $result = $result->get();

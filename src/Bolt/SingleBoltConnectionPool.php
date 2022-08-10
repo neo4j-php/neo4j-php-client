@@ -27,6 +27,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use function microtime;
 use Psr\Http\Message\UriInterface;
+use function random_int;
 use RuntimeException;
 
 class SingleBoltConnectionPool implements ConnectionPoolInterface
@@ -98,10 +99,23 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
 
     private function returnAnyAvailableConnection(): ?BoltConnection
     {
+        $streamingConnections = [];
         foreach ($this->activeConnections as $activeConnection) {
-            if ($activeConnection->getServerAgent() === 'READY') {
+            if ($activeConnection->getServerState() === 'READY') {
                 return $activeConnection;
             }
+
+            if ($activeConnection->getServerState() === 'STREAMING' || $activeConnection->getServerState() === 'TX_STREAMING') {
+                $streamingConnections[] = $activeConnection;
+            }
+        }
+
+        if (count($streamingConnections) > 0) {
+            $streamingConnection = $streamingConnections[random_int(0, count($streamingConnections) - 1)];
+
+            $streamingConnection->consumeResults();
+
+            return $streamingConnection;
         }
 
         return null;
