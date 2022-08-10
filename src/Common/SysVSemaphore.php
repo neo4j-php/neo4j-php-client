@@ -18,7 +18,7 @@ use RuntimeException;
 use function sem_get;
 use function sem_release;
 
-class MultiThreadedSemaphore implements SemaphoreInterface
+class SysVSemaphore implements SemaphoreInterface
 {
     /** @var resource */
     private $semaphore;

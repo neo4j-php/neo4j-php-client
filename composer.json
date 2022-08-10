@@ -41,6 +41,7 @@
     },
     "suggest": {
         "ext-bcmath": "Needed to implement bolt protocol",
+        "ext-sysvsem": "Needed for enabling connection pooling between processes",
         "composer-runtime-api": "Install composer 2 for auto detection of version in user agent"
     },
     "require-dev": {

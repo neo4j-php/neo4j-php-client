@@ -31,6 +31,10 @@ use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
+use function max;
+use function range;
+use function shuffle;
+use function str_replace;
 use const PHP_INT_MAX;
 use Psr\Http\Message\UriInterface;
 use function random_int;
@@ -213,5 +217,29 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
     {
         return $this->pool->canConnect($uri, $authenticate);
+    }
+
+    private function generateKeys(UriInterface $connectingTo): \Generator
+    {
+        // The idea of a randomized keys is to prevent a single connection from being used by multiple threads all at once.
+        // Round-robin or other algorithms are not suitable as there is no way to share the next connection between
+        // different standard php sessions without introducing a massive performance hit.
+        $key = $this->driverConfig->getUserAgent().'|'.$connectingTo->getHost().'|'.($connectingTo->getPort() ?? '7687');
+        $key = str_replace([
+            '{',
+            '}',
+            '(',
+            ')',
+            '/',
+            '\\',
+            '@',
+            ':',
+        ], '|', $key);
+        $ranges = range(0, max(0, $this->driverConfig->getMaxPoolSize() - 1));
+        shuffle($ranges);
+
+        foreach ($ranges as $range) {
+            yield $key.'|'.$range;
+        }
     }
 }

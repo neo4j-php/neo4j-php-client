@@ -31,7 +31,6 @@ use Laudis\Neo4j\Types\CypherList;
 use LogicException;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
-use Serializable;
 use function str_starts_with;
 use WeakReference;
 
@@ -40,7 +39,7 @@ use WeakReference;
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  */
-final class BoltConnection implements ConnectionInterface, Serializable
+final class BoltConnection implements ConnectionInterface
 {
     private ?V3 $boltProtocol;
     /** @psalm-readonly */
@@ -476,15 +475,5 @@ final class BoltConnection implements ConnectionInterface, Serializable
         }
 
         return $ctr;
-    }
-
-    public function serialize()
-    {
-        // TODO: Implement serialize() method.
-    }
-
-    public function unserialize($data)
-    {
-        // TODO: Implement unserialize() method.
     }
 }

@@ -18,6 +18,7 @@ use Exception;
 use function explode;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Common\SingleThreadedSemaphore;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
@@ -28,8 +29,6 @@ use Laudis\Neo4j\Neo4j\RoutingTable;
 use function microtime;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
-use function shuffle;
-use function str_replace;
 use Throwable;
 
 /**
@@ -40,6 +39,7 @@ use Throwable;
 final class BoltConnectionPool implements ConnectionPoolInterface
 {
     private DriverConfiguration $driverConfig;
+    /** @var array<string, list<BoltConnection>> */
     private static array $activeConnections = [];
 
     /**
@@ -61,43 +61,13 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         ?UriInterface $server = null
     ): BoltConnection {
         $connectingTo = $server ?? $uri;
-        $keys = $this->generateKeys($connectingTo);
-        $start = microtime(true);
-        while (true) {
-            $this->guardTiming($start, $connectingTo);
-            /**
-             * @var string              $key
-             * @var BoltConnection|null $connection
-             */
-            foreach ($this->driverConfig->getCache()->getMultiple($keys) as $key => $connection) {
-                // TODO - generate some locking of some sort.
-                // There are lots of ways to achieve this but none is perfect.
-                // The main contenders at the moment are:
-                // - leveraging the file system locks (slow, error prone, but no external dependencies)
-                // - use the semaphore (fast, but requires external dependencies)
-                // - use the lock library https://packagist.org/packages/malkusch/lock (flexible, but a lot more complicated)
-                $connection ??= $this->getConnection($uri, $authenticate, $config, $key);
-                if (!$connection->isOpen()) {
-                    if ($this->compare($connection, $authenticate)) {
-                        $connection = $this->getConnection($connectingTo, $authenticate, $config, $key);
 
-                        $this->driverConfig->getCache()->set($key, $connection);
+        $key = $this->generateKey($connectingTo);
+        $semaphore = SingleThreadedSemaphore::create($key, $this->driverConfig->getMaxPoolSize());
 
-                        return $connection;
-                    }
 
-                    $connection->open();
+        $connection ??= $this->getConnection($uri, $authenticate, $config, $key);
 
-                    return $connection;
-                }
-
-                if ($connection->getServerState() === 'READY' && $authenticate === $connection->getFactory()->getAuth()) {
-                    return $connection;
-                }
-
-                $this->guardTiming($start, $connectingTo);
-            }
-        }
     }
 
     public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
@@ -113,31 +83,7 @@ final class BoltConnectionPool implements ConnectionPoolInterface
         return true;
     }
 
-    private function getConnection(
-        UriInterface $connectingTo,
-        AuthenticateInterface $authenticate,
-        SessionConfiguration $config,
-        string $cacheKey
-    ): BoltConnection {
-        $factory = BoltFactory::fromVariables($connectingTo, $authenticate, $this->driverConfig);
-        [$bolt, $response] = $factory->build();
 
-        $config = new ConnectionConfiguration(
-            $response['server'],
-            $connectingTo,
-            explode('/', $response['server'])[1] ?? '',
-            ConnectionProtocol::determineBoltVersion($bolt),
-            $config->getAccessMode(),
-            $this->driverConfig,
-            $config->getDatabase() === null ? null : new DatabaseInfo($config->getDatabase())
-        );
-
-        $tbr = new BoltConnection($factory, $bolt, $config);
-
-        $this->driverConfig->getCache()->set($cacheKey, $tbr);
-
-        return $tbr;
-    }
 
     private function compare(BoltConnection $connection, AuthenticateInterface $authenticate): bool
     {
@@ -149,38 +95,9 @@ final class BoltConnectionPool implements ConnectionPoolInterface
             $authenticate !== $connection->getFactory()->getAuth();
     }
 
-    private function generateKeys(UriInterface $connectingTo): \Generator
-    {
-        // The idea of a randomized keys is to prevent a single connection from being used by multiple threads all at once.
-        // Round-robin or other algorithms are not suitable as there is no way to share the next connection between
-        // different standard php sessions without introducing a massive performance hit.
-        $key = $this->driverConfig->getUserAgent().'|'.$connectingTo->getHost().'|'.($connectingTo->getPort() ?? '7687');
-        $key = str_replace([
-            '{',
-            '}',
-            '(',
-            ')',
-            '/',
-            '\\',
-            '@',
-            ':',
-        ], '|', $key);
-        $ranges = range(0, max(0, $this->driverConfig->getMaxPoolSize() - 1));
-        shuffle($ranges);
 
-        foreach ($ranges as $range) {
-            yield $key.'|'.$range;
-        }
-    }
-
-    /**
-     * @throws RuntimeException
-     */
-    private function guardTiming(float $start, UriInterface $connectingTo): void
+    private function generateKey(UriInterface $connectingTo): string
     {
-        $elapsed = microtime(true) - $start;
-        if ($elapsed > $this->driverConfig->getAcquireConnectionTimeout()) {
-            throw new RuntimeException("Connection to {$connectingTo} timed out after {$elapsed} seconds");
-        }
+        return $this->driverConfig->getUserAgent().'|'.$connectingTo->getHost().'|'.($connectingTo->getPort() ?? '7687');
     }
 }
