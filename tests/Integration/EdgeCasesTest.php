@@ -41,7 +41,7 @@ final class EdgeCasesTest extends TestCase
         /** @var string|mixed $connections */
         $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
-            Dotenv::createImmutable(__DIR__ . '/../../')->load();
+            Dotenv::createImmutable(__DIR__.'/../../')->load();
             /** @var string|mixed $connections */
             $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
             if (!is_string($connections)) {
