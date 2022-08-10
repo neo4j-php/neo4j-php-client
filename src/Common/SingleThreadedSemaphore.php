@@ -12,14 +12,15 @@
 namespace Laudis\Neo4j\Common;
 
 use Generator;
+use Laudis\Neo4j\Contracts\SemaphoreInterface;
 
-class SingleThreadedSemaphore
+class SingleThreadedSemaphore implements SemaphoreInterface
 {
     private int $max;
     private int $amount = 0;
     private static array $instances = [];
 
-    public function __construct(int $max)
+    private function __construct(int $max)
     {
         $this->max = $max;
     }
