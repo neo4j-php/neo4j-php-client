@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+use Generator;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 
 /**
@@ -25,9 +26,19 @@ interface ConnectionPoolInterface
     /**
      * Acquires a connection from the pool.
      *
-     * @return ConnectionInterface<ProtocolImplementation>
+     * A key will be the amount of times you have fetched the value of the generator.
+     * The value will be the time in seconds that has passed since requesting the connection.
+     * You can abort the process of acquiring a connection by sending false to the generator.
+     * The returned value will be the actual connection.
+     *
+     * @return Generator<
+     *      int,
+     *      float,
+     *      bool,
+     *      ConnectionInterface<ProtocolImplementation>|null
+     * >
      */
-    public function acquire(SessionConfiguration $config): ConnectionInterface;
+    public function acquire(SessionConfiguration $config): Generator;
 
     /**
      * Releases a connection back to the pool.

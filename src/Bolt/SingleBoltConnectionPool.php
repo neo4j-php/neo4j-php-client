@@ -13,6 +13,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use function explode;
 use function extension_loaded;
+use Generator;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\SingleThreadedSemaphore;
@@ -30,6 +31,9 @@ use Psr\Http\Message\UriInterface;
 use RuntimeException;
 use function shuffle;
 
+/**
+ * @implements ConnectionPoolInterface<BoltConnection>
+ */
 class SingleBoltConnectionPool implements ConnectionPoolInterface
 {
     private SemaphoreInterface $semaphore;
@@ -61,7 +65,17 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         $this->auth = $auth;
     }
 
-    public function acquire(SessionConfiguration $config): BoltConnection
+    /**
+     * @param SessionConfiguration $config
+     *
+     * @return Generator<
+     *      int,
+     *      float,
+     *      bool,
+     *      BoltConnection|null
+     * >
+     */
+    public function acquire(SessionConfiguration $config): Generator
     {
         $generator = $this->semaphore->wait();
         $start = microtime(true);
@@ -71,6 +85,10 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         while ($generator->valid()) {
             $generator->next();
             $this->guardTiming($start);
+            $continue = yield microtime(true) - $start;
+            if ($continue === false) {
+                return null;
+            }
 
             $connection = $this->returnAnyAvailableConnection();
             if ($connection !== null) {
