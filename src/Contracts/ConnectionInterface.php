@@ -99,4 +99,11 @@ interface ConnectionInterface
      * @psalm-mutation-free
      */
     public function isOpen(): bool;
+
+    /**
+     * Encryption level can be either '', 's' or 'ssc', which stand for 'no encryption', 'full encryption' and 'self-signed encryption' respectively.
+     *
+     * @return string
+     */
+    public function getEncryptionLevel(): string;
 }

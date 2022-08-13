@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Exception;
+use Laudis\Neo4j\Common\SingleThreadedSemaphore;
+use Laudis\Neo4j\Common\SysVSemaphore;
+use function extension_loaded;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\Uri;
@@ -77,6 +80,20 @@ final class BoltDriver implements DriverInterface
 
         $configuration ??= DriverConfiguration::default();
         $authenticate ??= Authenticate::fromUrl($uri);
+
+        // Because interprocess switching of connections between PHP sessions is impossible,
+        // we have to build a key to limit the amount of open connections, potentially between ALL sessions.
+        // because of this we have to settle on a configuration basis to limit the connection pool,
+        // not on an object basis.
+        // The combination is between the server and the user agent as it most closely resembles an "application"
+        // connecting to a server. The application thus supports multiple authentication methods, but they have
+        // to be shared between the same connection pool.
+        $key = $uri->getHost().':'.$uri->getPort().':'.$config->getUserAgent();
+        if (extension_loaded('ext-sysvsem')) {
+            $semaphore = SysVSemaphore::create($key, $config->getMaxPoolSize());
+        } else {
+            $semaphore = SingleThreadedSemaphore::create($key, $config->getMaxPoolSize());
+        }
 
         if ($formatter !== null) {
             return new self(

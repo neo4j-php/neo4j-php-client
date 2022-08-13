@@ -33,7 +33,7 @@ use function str_starts_with;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<V3>
+ * @implements ConnectionInterface<array{0: V3, 1: AConnection}>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  */
@@ -77,20 +77,20 @@ final class BoltConnection implements ConnectionInterface
 
     /**
      * @psalm-mutation-free
+     *
+     * @return array{0: V3, 1: AConnection}
      */
-    public function getImplementation(): V3
+    public function getImplementation(): array
     {
         if (!$this->isOpen()) {
             throw new RuntimeException('Connection is closed');
         }
 
-        return $this->boltProtocol;
+        return [$this->boltProtocol, $this->connection];
     }
 
     /**
      * Encryption level can be either '', 's' or 'ssc', which stand for 'no encryption', 'full encryption' and 'self-signed encryption' respectively.
-     *
-     * @return string
      */
     public function getEncryptionLevel(): string
     {
@@ -184,7 +184,7 @@ final class BoltConnection implements ConnectionInterface
     public function reset(): void
     {
         try {
-            $this->getImplementation()->reset();
+            $this->protocol()->reset();
         } catch (MessageException $e) {
             $this->serverState = 'DEFUNCT';
 
@@ -206,7 +206,7 @@ final class BoltConnection implements ConnectionInterface
 
         $extra = $this->buildRunExtra($database, $timeout, $holder);
         try {
-            $this->getImplementation()->begin($extra);
+            $this->protocol()->begin($extra);
         } catch (IgnoredException $e) {
             $this->serverState = 'INTERRUPTED';
 
@@ -229,7 +229,7 @@ final class BoltConnection implements ConnectionInterface
     {
         try {
             $extra = $this->buildResultExtra(null, $qid);
-            $bolt = $this->getImplementation();
+            $bolt = $this->protocol();
 
             if ($bolt instanceof V4) {
                 $result = $bolt->discard($extra);
@@ -265,7 +265,7 @@ final class BoltConnection implements ConnectionInterface
         try {
             $extra = $this->buildRunExtra($database, $timeout, $holder);
 
-            $tbr = $this->getImplementation()->run($text, $parameters, $extra);
+            $tbr = $this->protocol()->run($text, $parameters, $extra);
 
             if (str_starts_with($this->serverState, 'TX_')) {
                 $this->serverState = 'TX_STREAMING';
@@ -296,7 +296,7 @@ final class BoltConnection implements ConnectionInterface
         $this->consumeResults();
 
         try {
-            $this->getImplementation()->commit();
+            $this->protocol()->commit();
         } catch (MessageException $e) {
             $this->serverState = 'FAILED';
 
@@ -320,7 +320,7 @@ final class BoltConnection implements ConnectionInterface
         $this->consumeResults();
 
         try {
-            $this->getImplementation()->rollback();
+            $this->protocol()->rollback();
         } catch (MessageException $e) {
             $this->serverState = 'FAILED';
 
@@ -334,6 +334,11 @@ final class BoltConnection implements ConnectionInterface
         $this->serverState = 'READY';
     }
 
+    public function protocol(): V3
+    {
+        return $this->getImplementation()[0];
+    }
+
     /**
      * Pulls a result set.
      *
@@ -345,7 +350,7 @@ final class BoltConnection implements ConnectionInterface
     {
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
-        $bolt = $this->getImplementation();
+        $bolt = $this->protocol();
         try {
             if (!$bolt instanceof V4) {
                 /** @var non-empty-list<list> $tbr */
@@ -374,7 +379,7 @@ final class BoltConnection implements ConnectionInterface
         if ($this->serverState !== 'FAILED' && $this->isOpen()) {
             $this->consumeResults();
 
-            $this->getImplementation()->goodbye();
+            $this->protocol()->goodbye();
 
             $this->serverState = 'DEFUNCT';
             unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;

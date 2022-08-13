@@ -13,22 +13,18 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\protocol\V3;
 use function explode;
-use function extension_loaded;
 use Generator;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
-use Laudis\Neo4j\Common\SingleThreadedSemaphore;
-use Laudis\Neo4j\Common\SysVSemaphore;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use function microtime;
-use Psr\Http\Message\UriInterface;
 use function shuffle;
 
 /**
@@ -37,31 +33,17 @@ use function shuffle;
 class SingleBoltConnectionPool implements ConnectionPoolInterface
 {
     private SemaphoreInterface $semaphore;
-    private UriInterface $uri;
 
     /** @var list<BoltConnection> */
     private array $activeConnections = [];
-    private DriverConfiguration $config;
     private AuthenticateInterface $auth;
+    private ConnectionFactoryInterface $factory;
 
-    public function __construct(UriInterface $uri, DriverConfiguration $config, AuthenticateInterface $auth)
+    public function __construct(AuthenticateInterface $auth, SemaphoreInterface $semaphore, ConnectionFactoryInterface $factory)
     {
-        // Because interprocess switching of connections between PHP sessions is impossible,
-        // we have to build a key to limit the amount of open connections, potentially between ALL sessions.
-        // because of this we have to settle on a configuration basis to limit the connection pool,
-        // not on an object basis.
-        // The combination is between the server and the user agent as it most closely resembles an "application"
-        // connecting to a server. The application thus supports multiple authentication methods, but they have
-        // to be shared between the same connection pool.
-        $key = $uri->getHost().':'.$uri->getPort().':'.$config->getUserAgent();
-        if (extension_loaded('ext-sysvsem')) {
-            $this->semaphore = SysVSemaphore::create($key, $config->getMaxPoolSize());
-        } else {
-            $this->semaphore = SingleThreadedSemaphore::create($key, $config->getMaxPoolSize());
-        }
-
-        $this->uri = $uri;
+        $this->semaphore = $semaphore;
         $this->auth = $auth;
+        $this->factory = $factory;
     }
 
     /**
@@ -92,7 +74,7 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
             }
         }
 
-        return $this->returnAnyAvailableConnection() ?? $this->createNewConnection($config);
+        return $this->returnAnyAvailableConnection() ?? $this->factory->createConnection($this->auth, $config);
     }
 
     public function release(ConnectionInterface $connection): void
@@ -150,37 +132,14 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         if ($requiresReconnectConnection) {
             $this->release($requiresReconnectConnection);
 
-            return $this->createNewConnection()
+            return $this->createNewConnection();
         }
 
         return null;
     }
 
-    private function createNewConnection(SessionConfiguration $config): BoltConnection
-    {
-        $factory = BoltFactory::fromVariables($this->uri, $this->auth, $this->config);
-        [$bolt, $response] = $factory->build();
-
-        $config = new ConnectionConfiguration(
-            $response['server'],
-            $this->uri,
-            explode('/', $response['server'])[1] ?? '',
-            ConnectionProtocol::determineBoltVersion($bolt),
-            $config->getAccessMode(),
-            $this->config,
-            $config->getDatabase() === null ? null : new DatabaseInfo($config->getDatabase())
-        );
-
-        $tbr = new BoltConnection($factory, $bolt, $config);
-
-        $this->activeConnections[] = $tbr;
-
-        return $tbr;
-    }
-
     private function requiresReconnect(BoltConnection $activeConnection, string $requiredEncryptionLevel): bool
     {
-        return $activeConnection->getAuthentication()->toString($this->uri) !== $this->auth->toString($this->uri) ||
-            $activeConnection->getEncryptionLevel() === $requiredEncryptionLevel;
+        return
     }
 }
