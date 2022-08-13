@@ -63,6 +63,13 @@ interface ConnectionInterface
     public function getServerVersion(): string;
 
     /**
+     * Returns the assumed server state.
+     *
+     * @psalm-mutation-free
+     */
+    public function getServerState(): string;
+
+    /**
      * Returns the protocol used to connect to the server.
      *
      * @psalm-mutation-free

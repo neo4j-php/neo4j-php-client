@@ -65,7 +65,7 @@ final class Session implements SessionInterface
 
     /**
      * @param FormatterInterface<ResultFormat>       $formatter
-     * @param SingleBoltConnectionPool|Neo4jConnectionPool $pool
+     * @param ConnectionPool|Neo4jConnectionPool $pool
      *
      * @psalm-mutation-free
      */

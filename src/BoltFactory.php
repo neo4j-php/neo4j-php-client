@@ -58,7 +58,7 @@ final class BoltFactory implements ConnectionFactoryInterface
         AuthenticateInterface $auth
     ): ConnectionInterface {
         [$connection, $encryptionLevel] = $this->connectionFactory->create($sslConfig);
-        [$protocol, $authResponse] = $this->protocolFactory->createProtocol($connection, $userAgent);
+        [$protocol, $authResponse] = $this->protocolFactory->createProtocol($connection, $auth, $userAgent);
 
         $sessionConfig = new ConnectionConfiguration(
             $authResponse['server'],

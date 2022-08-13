@@ -42,7 +42,7 @@ use Throwable;
 final class BoltDriver implements DriverInterface
 {
     private UriInterface $parsedUrl;
-    private SingleBoltConnectionPool $pool;
+    private ConnectionPool $pool;
     private FormatterInterface $formatter;
 
     /**
@@ -52,7 +52,7 @@ final class BoltDriver implements DriverInterface
      */
     public function __construct(
         UriInterface $parsedUrl,
-        SingleBoltConnectionPool $pool,
+        ConnectionPool $pool,
         FormatterInterface $formatter
     ) {
         $this->parsedUrl = $parsedUrl;
@@ -98,14 +98,14 @@ final class BoltDriver implements DriverInterface
         if ($formatter !== null) {
             return new self(
                 $uri,
-                new SingleBoltConnectionPool($uri, $configuration, $authenticate),
+                new ConnectionPool($uri, $configuration, $authenticate),
                 $formatter
             );
         }
 
         return new self(
             $uri,
-            new SingleBoltConnectionPool($uri, $configuration, $authenticate),
+            new ConnectionPool($uri, $configuration, $authenticate),
             OGMFormatter::create(),
         );
     }

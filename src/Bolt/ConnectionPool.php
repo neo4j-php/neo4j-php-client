@@ -11,49 +11,46 @@
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\protocol\V3;
-use function explode;
 use Generator;
-use Laudis\Neo4j\BoltFactory;
-use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
-use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Databags\SslConfiguration;
+use function method_exists;
 use function microtime;
 use function shuffle;
 
 /**
- * @implements ConnectionPoolInterface<V3>
+ * @template T
+ * @implements ConnectionPoolInterface<T>
  */
-class SingleBoltConnectionPool implements ConnectionPoolInterface
+class ConnectionPool implements ConnectionPoolInterface
 {
     private SemaphoreInterface $semaphore;
 
-    /** @var list<BoltConnection> */
+    /** @var list<ConnectionInterface<T>> */
     private array $activeConnections = [];
     private AuthenticateInterface $auth;
+    /** @var ConnectionFactoryInterface<T> */
     private ConnectionFactoryInterface $factory;
+    private string $userAgent;
+    private SslConfiguration $sslConfiguration;
 
-    public function __construct(AuthenticateInterface $auth, SemaphoreInterface $semaphore, ConnectionFactoryInterface $factory)
+    /**
+     * @param ConnectionFactoryInterface<T> $factory
+     */
+    public function __construct(AuthenticateInterface $auth, string $userAgent, SslConfiguration $sslConfiguration, SemaphoreInterface $semaphore, ConnectionFactoryInterface $factory)
     {
         $this->semaphore = $semaphore;
         $this->auth = $auth;
         $this->factory = $factory;
+        $this->userAgent = $userAgent;
+        $this->sslConfiguration = $sslConfiguration;
     }
 
-    /**
-     * @return Generator<
-     *      int,
-     *      float,
-     *      bool,
-     *      BoltConnection|null
-     * >
-     */
     public function acquire(SessionConfiguration $config): Generator
     {
         $generator = $this->semaphore->wait();
@@ -68,19 +65,19 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
                 return null;
             }
 
-            $connection = $this->returnAnyAvailableConnection();
+            $connection = $this->returnAnyAvailableConnection($config);
             if ($connection !== null) {
                 return $connection;
             }
         }
 
-        return $this->returnAnyAvailableConnection() ?? $this->factory->createConnection($this->auth, $config);
+        return $this->returnAnyAvailableConnection($config) ??
+               $this->factory->createConnection($this->userAgent, $this->sslConfiguration, $config, $this->auth);
     }
 
     public function release(ConnectionInterface $connection): void
     {
         $this->semaphore->post();
-        $connection->close();
 
         foreach ($this->activeConnections as $i => $activeConnection) {
             if ($connection === $activeConnection) {
@@ -91,7 +88,10 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         }
     }
 
-    private function returnAnyAvailableConnection(string $encryptionLevel): ?BoltConnection
+    /**
+     * @return ConnectionInterface<T>|null
+     */
+    private function returnAnyAvailableConnection(SessionConfiguration $config): ?ConnectionInterface
     {
         $streamingConnection = null;
         $requiresReconnectConnection = null;
@@ -101,8 +101,8 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         foreach ($this->activeConnections as $activeConnection) {
             // We prefer a connection that is just ready
             if ($activeConnection->getServerState() === 'READY') {
-                if ($this->factory->canReuseConnection($activeConnection)) {
-                    return $this->factory->reuseConnection($activeConnection);
+                if ($this->factory->canReuseConnection($activeConnection, $this->userAgent, $this->sslConfiguration, $this->auth)) {
+                    return $this->factory->reuseConnection($activeConnection, $config);
                 } else {
                     $requiresReconnectConnection = $activeConnection;
                 }
@@ -116,9 +116,11 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
             // https://github.com/neo4j-php/neo4j-php-client/issues/146
             // NOTE: we cannot work with TX_STREAMING as we cannot force the transaction to implicitly close.
             if ($streamingConnection === null && $activeConnection->getServerState() === 'STREAMING') {
-                if ($this->factory->canReuseConnection($activeConnection)) {
+                if ($this->factory->canReuseConnection($activeConnection, $this->userAgent, $this->sslConfiguration, $this->auth)) {
                     $streamingConnection = $activeConnection;
-                    $streamingConnection->consumeResults(); // State should now be ready
+                    if (method_exists($streamingConnection, 'consumeResults')) {
+                        $streamingConnection->consumeResults(); // State should now be ready
+                    }
                 } else {
                     $requiresReconnectConnection = $activeConnection;
                 }
@@ -126,13 +128,13 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         }
 
         if ($streamingConnection) {
-            return $this->factory->reuseConnection($streamingConnection);
+            return $this->factory->reuseConnection($streamingConnection, $config);
         }
 
         if ($requiresReconnectConnection) {
             $this->release($requiresReconnectConnection);
 
-            return $this->factory->createConnection($this->auth);
+            return $this->factory->createConnection($this->userAgent, $this->sslConfiguration, $config, $this->auth);
         }
 
         return null;
