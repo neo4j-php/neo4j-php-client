@@ -364,10 +364,10 @@ final class BoltConnection implements ConnectionInterface
         $bolt = $this->protocol();
         try {
             if (!$bolt instanceof V4) {
-                /** @var non-empty-list<list> */
+                /** @var non-empty-list<list> $tbr */
                 $tbr = $bolt->pullAll($extra);
             } else {
-                /** @var non-empty-list<list> */
+                /** @var non-empty-list<list> $tbr */
                 $tbr = $bolt->pull($extra);
             }
         } catch (MessageException $e) {

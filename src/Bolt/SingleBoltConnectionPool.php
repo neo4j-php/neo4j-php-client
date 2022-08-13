@@ -27,8 +27,8 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use function microtime;
 use Psr\Http\Message\UriInterface;
-use function random_int;
 use RuntimeException;
+use function shuffle;
 
 class SingleBoltConnectionPool implements ConnectionPoolInterface
 {
@@ -42,7 +42,14 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
 
     public function __construct(UriInterface $uri, DriverConfiguration $config, AuthenticateInterface $auth)
     {
-        $key = $uri->getHost().':'.$uri->getPort().':'.$config->getUserAgent().':'.$auth->toString($uri);
+        // Because interprocess switching of connections between PHP sessions is impossible,
+        // we have to build a key to limit the amount of open connections, potentially between ALL sessions.
+        // because of this we have to settle on a configuration basis to limit the connection pool,
+        // not on an object basis.
+        // The combination is between the server and the user agent as it most closely resembles an "application"
+        // connecting to a server. The application thus supports multiple authentication methods, but they have
+        // to be shared between the same connection pool.
+        $key = $uri->getHost().':'.$uri->getPort().':'.$config->getUserAgent();
         if (extension_loaded('ext-sysvsem')) {
             $this->semaphore = SysVSemaphore::create($key, $config->getMaxPoolSize());
         } else {
@@ -59,6 +66,8 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         $generator = $this->semaphore->wait();
         $start = microtime(true);
 
+        // If the generator is valid, it means we are waiting to acquire a new connection.
+        // This means we can use this time to check if we can reuse a connection or should throw a timeout exception.
         while ($generator->valid()) {
             $generator->next();
             $this->guardTiming($start);
@@ -93,32 +102,36 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
     {
         $elapsed = microtime(true) - $start;
         if ($elapsed > $this->config->getAcquireConnectionTimeout()) {
-            throw new RuntimeException(sprintf('Connection to %s timed out after %s seconds', $this->uri->__toString(), $elapsed));
+            throw new RuntimeException(sprintf('Cannot acquire connection to %s as it timed out after %s seconds', $this->uri->__toString(), $elapsed));
         }
     }
 
     private function returnAnyAvailableConnection(): ?BoltConnection
     {
-        $streamingConnections = [];
+        $streamingConnection = null;
+        // Ensure random connection reuse before picking one.
+        shuffle($this->activeConnections);
+
         foreach ($this->activeConnections as $activeConnection) {
+            // We prefer a connection that is just ready
             if ($activeConnection->getServerState() === 'READY') {
                 return $activeConnection;
             }
 
-            if ($activeConnection->getServerState() === 'STREAMING' || $activeConnection->getServerState() === 'TX_STREAMING') {
-                $streamingConnections[] = $activeConnection;
+            // We will store any streaming connections, so we can use that one
+            // as we can force the subscribed result sets to consume the results
+            // and become ready again.
+            // This code will make sure we never get stuck if the user has many
+            // results open that aren't consumed yet.
+            // https://github.com/neo4j-php/neo4j-php-client/issues/146
+            // NOTE: we cannot work with TX_STREAMING as we cannot force the transaction to implicitly close.
+            if ($streamingConnection === null && $activeConnection->getServerState() === 'STREAMING') {
+                $streamingConnection = $activeConnection;
+                $streamingConnection->consumeResults(); // State should now be ready
             }
         }
 
-        if (count($streamingConnections) > 0) {
-            $streamingConnection = $streamingConnections[random_int(0, count($streamingConnections) - 1)];
-
-            $streamingConnection->consumeResults();
-
-            return $streamingConnection;
-        }
-
-        return null;
+        return $streamingConnection;
     }
 
     private function createNewConnection(SessionConfiguration $config): BoltConnection

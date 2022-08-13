@@ -68,8 +68,6 @@ final class BoltDriver implements DriverInterface
      *           ? self<U>
      *           : self<OGMResults>
      *           )
-     *
-     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
     {
@@ -118,7 +116,7 @@ final class BoltDriver implements DriverInterface
     public function verifyConnectivity(): bool
     {
         try {
-            $this->pool->acquire();
+            $this->pool->acquire(SessionConfiguration::default());
         } catch (Throwable $e) {
             return false;
         }
