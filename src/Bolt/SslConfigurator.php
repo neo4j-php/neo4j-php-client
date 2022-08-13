@@ -14,29 +14,26 @@ namespace Laudis\Neo4j\Bolt;
 use function explode;
 use const FILTER_VALIDATE_IP;
 use function filter_var;
-use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
 use Psr\Http\Message\UriInterface;
 
 final class SslConfigurator
 {
     /**
-     * @param UriInterface $uri
-     * @param DriverConfiguration $config
-     *
      * @return array{0: ''|'s'|'ssc', 1: array|null}
      */
-    public function configure(UriInterface $uri, DriverConfiguration $config): array
+    public function configure(UriInterface $uri, SslConfiguration $config): array
     {
-        $sslMode = $config->getSslConfiguration()->getMode();
+        $mode = $config->getMode();
         $sslConfig = '';
-        if ($sslMode === SslMode::FROM_URL()) {
+        if ($mode === SslMode::FROM_URL()) {
             $scheme = $uri->getScheme();
             $explosion = explode('+', $scheme, 2);
             $sslConfig = $explosion[1] ?? '';
-        } elseif ($sslMode === SslMode::ENABLE()) {
+        } elseif ($mode === SslMode::ENABLE()) {
             $sslConfig = 's';
-        } elseif ($sslMode === SslMode::ENABLE_WITH_SELF_SIGNED()) {
+        } elseif ($mode === SslMode::ENABLE_WITH_SELF_SIGNED()) {
             $sslConfig = 'ssc';
         }
 
@@ -47,10 +44,10 @@ final class SslConfigurator
         return [$sslConfig, null];
     }
 
-    private function enableSsl(string $host, string $sslConfig, DriverConfiguration $config): ?array
+    private function enableSsl(string $host, string $sslConfig, SslConfiguration $config): ?array
     {
         $options = [
-            'verify_peer' => $config->getSslConfiguration()->isVerifyPeer(),
+            'verify_peer' => $config->isVerifyPeer(),
             'peer_name' => $host,
         ];
         if (!filter_var($host, FILTER_VALIDATE_IP)) {

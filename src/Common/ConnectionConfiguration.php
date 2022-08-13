@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Common;
 
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Psr\Http\Message\UriInterface;
@@ -29,7 +28,6 @@ final class ConnectionConfiguration
     private string $serverVersion;
     private ConnectionProtocol $protocol;
     private AccessMode $accessMode;
-    private DriverConfiguration $driverConfiguration;
     private ?DatabaseInfo $databaseInfo;
 
     public function __construct(
@@ -38,7 +36,6 @@ final class ConnectionConfiguration
         string $serverVersion,
         ConnectionProtocol $protocol,
         AccessMode $accessMode,
-        DriverConfiguration $driverConfiguration,
         ?DatabaseInfo $databaseInfo
     ) {
         $this->serverAgent = $serverAgent;
@@ -46,7 +43,6 @@ final class ConnectionConfiguration
         $this->serverVersion = $serverVersion;
         $this->protocol = $protocol;
         $this->accessMode = $accessMode;
-        $this->driverConfiguration = $driverConfiguration;
         $this->databaseInfo = $databaseInfo;
     }
 
@@ -73,11 +69,6 @@ final class ConnectionConfiguration
     public function getAccessMode(): AccessMode
     {
         return $this->accessMode;
-    }
-
-    public function getDriverConfiguration(): DriverConfiguration
-    {
-        return $this->driverConfiguration;
     }
 
     public function getDatabaseInfo(): ?DatabaseInfo

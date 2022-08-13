@@ -11,8 +11,8 @@
 
 namespace Laudis\Neo4j\Contracts;
 
-use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\SslConfiguration;
 
 /**
  * @template T
@@ -22,14 +22,14 @@ interface ConnectionFactoryInterface
     /**
      * @return ConnectionInterface<T>
      */
-    public function createConnection(AuthenticateInterface $auth, SessionConfiguration $config): ConnectionInterface;
+    public function createConnection(string $userAgent, SslConfiguration $sslConfig, SessionConfiguration $sessionConfig, AuthenticateInterface $auth): ConnectionInterface;
 
     /**
      * @param ConnectionInterface<T> $connection
      *
      * @return bool
      */
-    public function canReuseConnection(ConnectionInterface $connection): bool;
+    public function canReuseConnection(ConnectionInterface $connection, string $userAgent, SslConfiguration $sslConfig, AuthenticateInterface $auth): bool;
 
     /**
      * @param ConnectionInterface<T> $connection

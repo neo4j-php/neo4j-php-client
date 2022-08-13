@@ -106,4 +106,11 @@ interface ConnectionInterface
      * @return string
      */
     public function getEncryptionLevel(): string;
+
+    /**
+     * Returns the user agent handling this connection.
+     *
+     * @return string
+     */
+    public function getUserAgent(): string;
 }

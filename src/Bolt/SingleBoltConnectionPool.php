@@ -101,8 +101,8 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         foreach ($this->activeConnections as $activeConnection) {
             // We prefer a connection that is just ready
             if ($activeConnection->getServerState() === 'READY') {
-                if (!$this->requiresReconnect($activeConnection, $encryptionLevel)) {
-                    return $activeConnection;
+                if ($this->factory->canReuseConnection($activeConnection)) {
+                    return $this->factory->reuseConnection($activeConnection);
                 } else {
                     $requiresReconnectConnection = $activeConnection;
                 }
@@ -116,7 +116,7 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
             // https://github.com/neo4j-php/neo4j-php-client/issues/146
             // NOTE: we cannot work with TX_STREAMING as we cannot force the transaction to implicitly close.
             if ($streamingConnection === null && $activeConnection->getServerState() === 'STREAMING') {
-                if (!$this->requiresReconnect($activeConnection, $encryptionLevel)) {
+                if ($this->factory->canReuseConnection($activeConnection)) {
                     $streamingConnection = $activeConnection;
                     $streamingConnection->consumeResults(); // State should now be ready
                 } else {
@@ -126,20 +126,15 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         }
 
         if ($streamingConnection) {
-            return $streamingConnection;
+            return $this->factory->reuseConnection($streamingConnection);
         }
 
         if ($requiresReconnectConnection) {
             $this->release($requiresReconnectConnection);
 
-            return $this->createNewConnection();
+            return $this->factory->createConnection($this->auth);
         }
 
         return null;
-    }
-
-    private function requiresReconnect(BoltConnection $activeConnection, string $requiredEncryptionLevel): bool
-    {
-        return
     }
 }

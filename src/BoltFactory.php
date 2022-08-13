@@ -29,8 +29,8 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -45,8 +45,6 @@ use RuntimeException;
 final class BoltFactory implements ConnectionFactoryInterface
 {
     private UriInterface $uri;
-    private AuthenticateInterface $auth;
-    private DriverConfiguration $config;
     private SslConfigurator $sslConfigurator;
 
     /**
@@ -54,19 +52,15 @@ final class BoltFactory implements ConnectionFactoryInterface
      */
     public function __construct(
         UriInterface $uri,
-        AuthenticateInterface $authenticate,
-        DriverConfiguration $config,
         SslConfigurator $sslConfigurator
     ) {
         $this->uri = $uri;
-        $this->auth = $authenticate;
-        $this->config = $config;
         $this->sslConfigurator = $sslConfigurator;
     }
 
-    public function createConnection(AuthenticateInterface $auth, SessionConfiguration $config): ConnectionInterface
+    public function createConnection(string $userAgent, SslConfiguration $sslConfig, SessionConfiguration $sessionConfig, AuthenticateInterface $auth): ConnectionInterface
     {
-        [$encryptionLevel, $sslConfig] = $this->sslConfigurator->configure($this->uri, $this->config);
+        [$encryptionLevel, $sslConfig] = $this->sslConfigurator->configure($this->uri, $sslConfig);
         $port = $this->uri->getPort() ?? 7687;
         if (extension_loaded('sockets') && $sslConfig === null) {
             $connection = new Socket($this->uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
@@ -92,28 +86,30 @@ final class BoltFactory implements ConnectionFactoryInterface
                 throw new RuntimeException('Client only supports bolt version 3 and up.');
             }
 
-            $response = $auth->authenticateBolt($protocol, $this->config->getUserAgent());
+            $response = $auth->authenticateBolt($protocol, $userAgent);
         } catch (MessageException $e) {
             throw Neo4jException::fromMessageException($e);
         }
 
-        $config = new ConnectionConfiguration(
+        $sessionConfig = new ConnectionConfiguration(
             $response['server'],
             $this->uri,
             explode('/', $response['server'])[1] ?? '',
             ConnectionProtocol::determineBoltVersion($protocol),
-            $config->getAccessMode(),
-            $this->config,
-            $config->getDatabase() === null ? null : new DatabaseInfo($config->getDatabase())
+            $sessionConfig->getAccessMode(),
+            $sessionConfig->getDatabase() === null ? null : new DatabaseInfo($sessionConfig->getDatabase())
         );
 
-        return new BoltConnection($protocol, $connection, $config, $this->auth, $encryptionLevel);
+        return new BoltConnection($protocol, $connection, $sessionConfig, $auth, $encryptionLevel);
     }
 
-    public function canReuseConnection(ConnectionInterface $connection): bool
+    public function canReuseConnection(ConnectionInterface $connection, string $userAgent, SslConfiguration $sslConfig, AuthenticateInterface $auth): bool
     {
-        return $connection->getAuthentication()->toString($this->uri) == $this->auth->toString($this->uri) ||
-               $connection->getEncryptionLevel() === $this->sslConfigurator->configure($this->uri, $this->config)[0];
+        return $connection->getAuthentication()->toString($this->uri) === $auth->toString($this->uri) &&
+                $connection->getEncryptionLevel() === $this->sslConfigurator->configure($this->uri, $sslConfig)[0] &&
+                $connection->getUserAgent() === $userAgent &&
+                $connection->getServerAddress()->getHost() === $this->uri->getHost() &&
+                $connection->getServerAddress()->getPort() === $this->uri->getPort();
     }
 
     public function reuseConnection(ConnectionInterface $connection, SessionConfiguration $config): ConnectionInterface
@@ -124,12 +120,11 @@ final class BoltFactory implements ConnectionFactoryInterface
             $connection->getServerVersion(),
             $connection->getProtocol(),
             $config->getAccessMode(),
-            $this->config,
             $config->getDatabase() === null ? null : new DatabaseInfo($config->getDatabase())
         );
 
         [$protocol, $connectionImpl] = $connection->getImplementation();
 
-        return new BoltConnection($protocol, $connectionImpl, $config, $this->auth, $connection->getEncryptionLevel());
+        return new BoltConnection($protocol, $connectionImpl, $config, $connection->getAuthentication(), $connection->getEncryptionLevel());
     }
 }
