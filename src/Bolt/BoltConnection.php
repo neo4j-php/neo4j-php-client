@@ -13,22 +13,20 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use BadMethodCallException;
+use Bolt\connection\AConnection;
 use Bolt\error\IgnoredException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
-use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Types\CypherList;
-use LogicException;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
 use function str_starts_with;
@@ -41,13 +39,11 @@ use WeakReference;
  */
 final class BoltConnection implements ConnectionInterface
 {
-    private ?V3 $boltProtocol;
+    private V3 $boltProtocol;
     /** @psalm-readonly */
     private ConnectionConfiguration $config;
-    /** @psalm-readonly */
-    private BoltFactory $factory;
+    private string $serverState;
 
-    private string $serverState = 'DISCONNECTED';
     /**
      * @note We are using references to "subscribed results" to maintain backwards compatibility and try and strike
      *       a balance between performance and ease of use.
@@ -62,18 +58,21 @@ final class BoltConnection implements ConnectionInterface
      * @var list<WeakReference<CypherList>>
      */
     private array $subscribedResults = [];
+    private AuthenticateInterface $auth;
+    private AConnection $connection;
+    private string $encryptionLevel;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(BoltFactory $factory, ?V3 $boltProtocol, ConnectionConfiguration $config)
+    public function __construct(V3 $protocol, AConnection $connection, ConnectionConfiguration $config, AuthenticateInterface $auth, string $encryptionLevel)
     {
-        $this->factory = $factory;
-        $this->boltProtocol = $boltProtocol;
+        $this->boltProtocol = $protocol;
         $this->config = $config;
-        if ($boltProtocol) {
-            $this->serverState = 'READY';
-        }
+        $this->serverState = 'READY';
+        $this->auth = $auth;
+        $this->connection = $connection;
+        $this->encryptionLevel = $encryptionLevel;
     }
 
     /**
@@ -81,11 +80,21 @@ final class BoltConnection implements ConnectionInterface
      */
     public function getImplementation(): V3
     {
-        if ($this->boltProtocol === null) {
+        if (!$this->isOpen()) {
             throw new RuntimeException('Connection is closed');
         }
 
         return $this->boltProtocol;
+    }
+
+    /**
+     * Encryption level can be either '', 's' or 'ssc', which stand for 'no encryption', 'full encryption' and 'self-signed encryption' respectively.
+     *
+     * @return string
+     */
+    public function getEncryptionLevel(): string
+    {
+        return $this->encryptionLevel;
     }
 
     /**
@@ -136,6 +145,11 @@ final class BoltConnection implements ConnectionInterface
         return $this->config->getDatabaseInfo();
     }
 
+    public function getAuthentication(): AuthenticateInterface
+    {
+        return $this->auth;
+    }
+
     /**
      * @psalm-mutation-free
      */
@@ -146,7 +160,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function setTimeout(float $timeout): void
     {
-        $this->factory->getConnection()->setTimeout($timeout);
+        $this->connection->setTimeout($timeout);
     }
 
     public function consumeResults(): void
@@ -170,7 +184,7 @@ final class BoltConnection implements ConnectionInterface
     public function reset(): void
     {
         try {
-            $this->protocol()->reset();
+            $this->getImplementation()->reset();
         } catch (MessageException $e) {
             $this->serverState = 'DEFUNCT';
 
@@ -192,7 +206,7 @@ final class BoltConnection implements ConnectionInterface
 
         $extra = $this->buildRunExtra($database, $timeout, $holder);
         try {
-            $this->protocol()->begin($extra);
+            $this->getImplementation()->begin($extra);
         } catch (IgnoredException $e) {
             $this->serverState = 'INTERRUPTED';
 
@@ -206,11 +220,6 @@ final class BoltConnection implements ConnectionInterface
         $this->serverState = 'TX_READY';
     }
 
-    public function getFactory(): BoltFactory
-    {
-        return $this->factory;
-    }
-
     /**
      * Discards a result.
      *
@@ -220,7 +229,7 @@ final class BoltConnection implements ConnectionInterface
     {
         try {
             $extra = $this->buildResultExtra(null, $qid);
-            $bolt = $this->protocol();
+            $bolt = $this->getImplementation();
 
             if ($bolt instanceof V4) {
                 $result = $bolt->discard($extra);
@@ -256,7 +265,7 @@ final class BoltConnection implements ConnectionInterface
         try {
             $extra = $this->buildRunExtra($database, $timeout, $holder);
 
-            $tbr = $this->protocol()->run($text, $parameters, $extra);
+            $tbr = $this->getImplementation()->run($text, $parameters, $extra);
 
             if (str_starts_with($this->serverState, 'TX_')) {
                 $this->serverState = 'TX_STREAMING';
@@ -287,7 +296,7 @@ final class BoltConnection implements ConnectionInterface
         $this->consumeResults();
 
         try {
-            $this->protocol()->commit();
+            $this->getImplementation()->commit();
         } catch (MessageException $e) {
             $this->serverState = 'FAILED';
 
@@ -311,7 +320,7 @@ final class BoltConnection implements ConnectionInterface
         $this->consumeResults();
 
         try {
-            $this->protocol()->rollback();
+            $this->getImplementation()->rollback();
         } catch (MessageException $e) {
             $this->serverState = 'FAILED';
 
@@ -336,7 +345,7 @@ final class BoltConnection implements ConnectionInterface
     {
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
-        $bolt = $this->protocol();
+        $bolt = $this->getImplementation();
         try {
             if (!$bolt instanceof V4) {
                 /** @var non-empty-list<list> $tbr */
@@ -360,23 +369,15 @@ final class BoltConnection implements ConnectionInterface
         return $tbr;
     }
 
-    /**
-     * @psalm-mutation-free
-     */
-    public function getDriverConfiguration(): DriverConfiguration
-    {
-        return $this->config->getDriverConfiguration();
-    }
-
     public function __destruct()
     {
         if ($this->serverState !== 'FAILED' && $this->isOpen()) {
             $this->consumeResults();
 
-            $this->protocol()->goodbye();
+            $this->getImplementation()->goodbye();
 
             $this->serverState = 'DEFUNCT';
-            $this->boltProtocol = null; // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
+            unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
         }
     }
 
@@ -419,15 +420,6 @@ final class BoltConnection implements ConnectionInterface
     public function subscribeResult(CypherList $result): void
     {
         $this->subscribedResults[] = WeakReference::create($result);
-    }
-
-    private function protocol(): V3
-    {
-        if ($this->boltProtocol === null) {
-            throw new LogicException('Cannot use protocol if it is not created');
-        }
-
-        return $this->boltProtocol;
     }
 
     private function interpretResult(array $result): void

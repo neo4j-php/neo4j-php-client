@@ -20,7 +20,13 @@ use Psr\Http\Message\UriInterface;
 
 final class SslConfigurator
 {
-    public function configure(UriInterface $uri, DriverConfiguration $config): ?array
+    /**
+     * @param UriInterface $uri
+     * @param DriverConfiguration $config
+     *
+     * @return array{0: ''|'s'|'ssc', 1: array|null}
+     */
+    public function configure(UriInterface $uri, DriverConfiguration $config): array
     {
         $sslMode = $config->getSslConfiguration()->getMode();
         $sslConfig = '';
@@ -35,10 +41,10 @@ final class SslConfigurator
         }
 
         if (str_starts_with($sslConfig, 's')) {
-            return $this->enableSsl($uri->getHost(), $sslConfig, $config);
+            return [$sslConfig, $this->enableSsl($uri->getHost(), $sslConfig, $config)];
         }
 
-        return null;
+        return [$sslConfig, null];
     }
 
     private function enableSsl(string $host, string $sslConfig, DriverConfiguration $config): ?array

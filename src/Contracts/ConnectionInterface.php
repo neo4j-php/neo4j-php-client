@@ -35,6 +35,13 @@ interface ConnectionInterface
     public function getImplementation();
 
     /**
+     * Returns the authentication logic attached to this connection.
+     *
+     * @psalm-mutation-free
+     */
+    public function getAuthentication(): AuthenticateInterface;
+
+    /**
      * Returns the agent the servers uses to identify itself.
      *
      * @psalm-mutation-free

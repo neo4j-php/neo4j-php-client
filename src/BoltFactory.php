@@ -14,14 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use Bolt\Bolt;
-use Bolt\connection\IConnection;
 use Bolt\connection\Socket;
 use Bolt\connection\StreamSocket;
 use Bolt\error\ConnectException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
-use Exception;
-use Laudis\Neo4j\Databags\SessionConfiguration;
 use function explode;
 use function extension_loaded;
 use Laudis\Neo4j\Bolt\BoltConnection;
@@ -32,6 +29,7 @@ use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -56,13 +54,11 @@ final class BoltFactory implements ConnectionFactoryInterface
         UriInterface $uri,
         AuthenticateInterface $authenticate,
         DriverConfiguration $config
-    )
-    {
+    ) {
         $this->uri = $uri;
         $this->authenticate = $authenticate;
         $this->config = $config;
     }
-
 
     private static function configureSsl(UriInterface $uri, StreamSocket $socket, DriverConfiguration $config): void
     {

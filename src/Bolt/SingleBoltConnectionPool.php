@@ -29,7 +29,6 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use function microtime;
 use Psr\Http\Message\UriInterface;
-use RuntimeException;
 use function shuffle;
 
 /**
@@ -66,8 +65,6 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @param SessionConfiguration $config
-     *
      * @return Generator<
      *      int,
      *      float,
@@ -112,18 +109,21 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         }
     }
 
-
-
-    private function returnAnyAvailableConnection(): ?BoltConnection
+    private function returnAnyAvailableConnection(string $encryptionLevel): ?BoltConnection
     {
         $streamingConnection = null;
+        $requiresReconnectConnection = null;
         // Ensure random connection reuse before picking one.
         shuffle($this->activeConnections);
 
         foreach ($this->activeConnections as $activeConnection) {
             // We prefer a connection that is just ready
             if ($activeConnection->getServerState() === 'READY') {
-                return $activeConnection;
+                if (!$this->requiresReconnect($activeConnection, $encryptionLevel)) {
+                    return $activeConnection;
+                } else {
+                    $requiresReconnectConnection = $activeConnection;
+                }
             }
 
             // We will store any streaming connections, so we can use that one
@@ -134,12 +134,26 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
             // https://github.com/neo4j-php/neo4j-php-client/issues/146
             // NOTE: we cannot work with TX_STREAMING as we cannot force the transaction to implicitly close.
             if ($streamingConnection === null && $activeConnection->getServerState() === 'STREAMING') {
-                $streamingConnection = $activeConnection;
-                $streamingConnection->consumeResults(); // State should now be ready
+                if (!$this->requiresReconnect($activeConnection, $encryptionLevel)) {
+                    $streamingConnection = $activeConnection;
+                    $streamingConnection->consumeResults(); // State should now be ready
+                } else {
+                    $requiresReconnectConnection = $activeConnection;
+                }
             }
         }
 
-        return $streamingConnection;
+        if ($streamingConnection) {
+            return $streamingConnection;
+        }
+
+        if ($requiresReconnectConnection) {
+            $this->release($requiresReconnectConnection);
+
+            return $this->createNewConnection()
+        }
+
+        return null;
     }
 
     private function createNewConnection(SessionConfiguration $config): BoltConnection
@@ -162,5 +176,11 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         $this->activeConnections[] = $tbr;
 
         return $tbr;
+    }
+
+    private function requiresReconnect(BoltConnection $activeConnection, string $requiredEncryptionLevel): bool
+    {
+        return $activeConnection->getAuthentication()->toString($this->uri) !== $this->auth->toString($this->uri) ||
+            $activeConnection->getEncryptionLevel() === $requiredEncryptionLevel;
     }
 }
