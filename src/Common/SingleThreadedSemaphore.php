@@ -14,6 +14,8 @@ namespace Laudis\Neo4j\Common;
 use Generator;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 
+use function microtime;
+
 class SingleThreadedSemaphore implements SemaphoreInterface
 {
     private int $max;
@@ -34,13 +36,14 @@ class SingleThreadedSemaphore implements SemaphoreInterface
         return self::$instances[$key];
     }
 
-    /**
-     * @return Generator<int, void>
-     */
     public function wait(): Generator
     {
+        $start = microtime(true);
         while ($this->amount >= $this->max) {
-            yield;
+            $continue = yield $start - microtime(true);
+            if (!$continue) {
+                return;
+            }
         }
         ++$this->amount;
     }

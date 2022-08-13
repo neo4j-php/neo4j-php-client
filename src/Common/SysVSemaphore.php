@@ -15,6 +15,8 @@ use Generator;
 use function hash;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use RuntimeException;
+use function microtime;
+use function sem_acquire;
 use function sem_get;
 use function sem_release;
 
@@ -41,8 +43,12 @@ class SysVSemaphore implements SemaphoreInterface
 
     public function wait(): Generator
     {
+        $start = microtime(true);
         while (!sem_acquire($this->semaphore, true)) {
-            yield;
+            $continue = yield $start - microtime(true);
+            if (!$continue) {
+                return;
+            }
         }
     }
 

@@ -77,16 +77,6 @@ interface ConnectionInterface
     public function getDatabaseInfo(): ?DatabaseInfo;
 
     /**
-     * Opens the connection.
-     */
-    public function open(): void;
-
-    /**
-     * Closes the connection.
-     */
-    public function close(): void;
-
-    /**
      * Resets the connection.
      */
     public function reset(): void;

@@ -11,6 +11,7 @@
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\protocol\V3;
 use function explode;
 use function extension_loaded;
 use Generator;
@@ -32,7 +33,7 @@ use RuntimeException;
 use function shuffle;
 
 /**
- * @implements ConnectionPoolInterface<BoltConnection>
+ * @implements ConnectionPoolInterface<V3>
  */
 class SingleBoltConnectionPool implements ConnectionPoolInterface
 {
@@ -61,7 +62,6 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         }
 
         $this->uri = $uri;
-        $this->config = $config;
         $this->auth = $auth;
     }
 
@@ -83,9 +83,8 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         // If the generator is valid, it means we are waiting to acquire a new connection.
         // This means we can use this time to check if we can reuse a connection or should throw a timeout exception.
         while ($generator->valid()) {
-            $generator->next();
-            $this->guardTiming($start);
             $continue = yield microtime(true) - $start;
+            $generator->send($continue);
             if ($continue === false) {
                 return null;
             }
@@ -113,16 +112,7 @@ class SingleBoltConnectionPool implements ConnectionPoolInterface
         }
     }
 
-    /**
-     * @throws RuntimeException
-     */
-    private function guardTiming(float $start): void
-    {
-        $elapsed = microtime(true) - $start;
-        if ($elapsed > $this->config->getAcquireConnectionTimeout()) {
-            throw new RuntimeException(sprintf('Cannot acquire connection to %s as it timed out after %s seconds', $this->uri->__toString(), $elapsed));
-        }
-    }
+
 
     private function returnAnyAvailableConnection(): ?BoltConnection
     {

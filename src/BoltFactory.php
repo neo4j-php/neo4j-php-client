@@ -21,89 +21,48 @@ use Bolt\error\ConnectException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Exception;
+use Laudis\Neo4j\Databags\SessionConfiguration;
+use function explode;
 use function extension_loaded;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\SslConfigurator;
+use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
 
 /**
  * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.
+ *
+ * @implements ConnectionFactoryInterface<V3>
  */
-final class BoltFactory
+final class BoltFactory implements ConnectionFactoryInterface
 {
-    /** @psalm-readonly */
-    private Bolt $bolt;
-    /** @psalm-readonly */
-    private AuthenticateInterface $auth;
-    /** @psalm-readonly */
-    private string $userAgent;
-    /** @psalm-readonly */
-    private IConnection $connection;
+    private UriInterface $uri;
+    private AuthenticateInterface $authenticate;
+    private DriverConfiguration $config;
 
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(Bolt $bolt, AuthenticateInterface $auth, string $userAgent, IConnection $connection)
-    {
-        $this->bolt = $bolt;
-        $this->auth = $auth;
-        $this->userAgent = $userAgent;
-        $this->connection = $connection;
-    }
-
-    /**
-     * @throws Exception
-     *
-     * @return array{0: V3, 1: array{server: string, connection_id: string, hints: list}}
-     */
-    public function build(): array
-    {
-        try {
-            $this->bolt->setProtocolVersions(4.4, 4.3, 4.2, 3);
-            try {
-                $build = $this->bolt->build();
-            } catch (ConnectException $exception) {
-                $this->bolt->setProtocolVersions(4.1, 4.0, 4, 3);
-                $build = $this->bolt->build();
-            }
-
-            if (!$build instanceof V3) {
-                throw new RuntimeException('Client only supports bolt version 3 and up.');
-            }
-
-            $response = $this->auth->authenticateBolt($build, $this->userAgent);
-        } catch (MessageException $e) {
-            throw Neo4jException::fromMessageException($e);
-        }
-
-        return [$build, $response];
-    }
-
-    public function getConnection(): IConnection
-    {
-        return $this->connection;
-    }
-
-    public static function fromVariables(
+    public function __construct(
         UriInterface $uri,
         AuthenticateInterface $authenticate,
         DriverConfiguration $config
-    ): self {
-        $ssl = (new SslConfigurator())->configure($uri, $config);
-        $port = $uri->getPort() ?? 7687;
-        if (extension_loaded('sockets') && $ssl === null) {
-            $socket = new Socket($uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
-        } else {
-            $socket = new StreamSocket($uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
-            self::configureSsl($uri, $socket, $config);
-        }
-
-        return new self(new Bolt($socket), $authenticate, $config->getUserAgent(), $socket);
+    )
+    {
+        $this->uri = $uri;
+        $this->authenticate = $authenticate;
+        $this->config = $config;
     }
+
 
     private static function configureSsl(UriInterface $uri, StreamSocket $socket, DriverConfiguration $config): void
     {
@@ -114,8 +73,47 @@ final class BoltFactory
         }
     }
 
-    public function getAuth(): AuthenticateInterface
+    public function createConnection(AuthenticateInterface $auth, SessionConfiguration $config): ConnectionInterface
     {
-        return $this->auth;
+        $ssl = (new SslConfigurator())->configure($this->uri, $this->config);
+        $port = $this->uri->getPort() ?? 7687;
+        if (extension_loaded('sockets') && $ssl === null) {
+            $socket = new Socket($this->uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
+        } else {
+            $socket = new StreamSocket($this->uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
+            self::configureSsl($this->uri, $socket, $this->config);
+        }
+
+        $bolt = new Bolt($socket);
+
+        try {
+            $bolt->setProtocolVersions(4.4, 4.3, 4.2, 3);
+            try {
+                $build = $bolt->build();
+            } catch (ConnectException $exception) {
+                $bolt->setProtocolVersions(4.1, 4.0, 4, 3);
+                $build = $bolt->build();
+            }
+
+            if (!$build instanceof V3) {
+                throw new RuntimeException('Client only supports bolt version 3 and up.');
+            }
+
+            $response = $auth->authenticateBolt($build, $this->config->getUserAgent());
+        } catch (MessageException $e) {
+            throw Neo4jException::fromMessageException($e);
+        }
+
+        $config = new ConnectionConfiguration(
+            $response['server'],
+            $this->uri,
+            explode('/', $response['server'])[1] ?? '',
+            ConnectionProtocol::determineBoltVersion($bolt),
+            $config->getAccessMode(),
+            $this->config,
+            $config->getDatabase() === null ? null : new DatabaseInfo($config->getDatabase())
+        );
+
+        return new BoltConnection($factory, $bolt, $config);
     }
 }

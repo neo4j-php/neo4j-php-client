@@ -144,34 +144,9 @@ final class BoltConnection implements ConnectionInterface
         return $this->serverState !== 'DISCONNECTED' && $this->serverState !== 'DEFUNCT';
     }
 
-    public function open(): void
-    {
-        if ($this->boltProtocol !== null) {
-            throw new BadMethodCallException('Cannot open a connection that is already open');
-        }
-
-        $this->boltProtocol = $this->factory->build()[0];
-    }
-
     public function setTimeout(float $timeout): void
     {
         $this->factory->getConnection()->setTimeout($timeout);
-    }
-
-    /**
-     * Closes the connection.
-     *
-     * Any of the preconditioned states are: 'READY', 'STREAMING', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
-     * Sends signal: 'DISCONNECT'
-     */
-    public function close(): void
-    {
-        $this->consumeResults();
-
-        $this->protocol()->goodbye();
-
-        $this->serverState = 'DEFUNCT';
-        $this->boltProtocol = null; // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe
     }
 
     public function consumeResults(): void
@@ -396,7 +371,12 @@ final class BoltConnection implements ConnectionInterface
     public function __destruct()
     {
         if ($this->serverState !== 'FAILED' && $this->isOpen()) {
-            $this->close();
+            $this->consumeResults();
+
+            $this->protocol()->goodbye();
+
+            $this->serverState = 'DEFUNCT';
+            $this->boltProtocol = null; // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
         }
     }
 
