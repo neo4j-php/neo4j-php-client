@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\connection\AConnection;
+use Bolt\connection\IConnection;
 use Bolt\error\IgnoredException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
@@ -33,7 +33,7 @@ use function str_starts_with;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V3, 1: AConnection}>
+ * @implements ConnectionInterface<array{0: V3, 1: IConnection}>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  */
@@ -59,13 +59,14 @@ final class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
     private AuthenticateInterface $auth;
-    private AConnection $connection;
+    private IConnection $connection;
     private string $encryptionLevel;
+    private string $userAgent;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(V3 $protocol, AConnection $connection, ConnectionConfiguration $config, AuthenticateInterface $auth, string $encryptionLevel)
+    public function __construct(V3 $protocol, IConnection $connection, ConnectionConfiguration $config, AuthenticateInterface $auth, string $encryptionLevel, string $userAgent)
     {
         $this->boltProtocol = $protocol;
         $this->config = $config;
@@ -73,12 +74,13 @@ final class BoltConnection implements ConnectionInterface
         $this->auth = $auth;
         $this->connection = $connection;
         $this->encryptionLevel = $encryptionLevel;
+        $this->userAgent = $userAgent;
     }
 
     /**
      * @psalm-mutation-free
      *
-     * @return array{0: V3, 1: AConnection}
+     * @return array{0: V3, 1: IConnection}
      */
     public function getImplementation(): array
     {
@@ -452,5 +454,10 @@ final class BoltConnection implements ConnectionInterface
         }
 
         return $ctr;
+    }
+
+    public function getUserAgent(): string
+    {
+        return $this->userAgent;
     }
 }

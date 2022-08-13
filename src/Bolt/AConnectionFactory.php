@@ -11,19 +11,59 @@
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\connection\AConnection;
+use Bolt\connection\Socket;
+use Bolt\connection\StreamSocket;
 use function explode;
+use function extension_loaded;
 use const FILTER_VALIDATE_IP;
 use function filter_var;
 use Laudis\Neo4j\Databags\SslConfiguration;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
 use Psr\Http\Message\UriInterface;
 
-final class SslConfigurator
+class AConnectionFactory
 {
+    private bool $socketsLoaded;
+    private UriInterface $uri;
+
+    public function __construct(UriInterface $uri)
+    {
+        $this->socketsLoaded = extension_loaded('sockets');
+        $this->uri = $uri;
+    }
+
+    public function sameEncryptionLevel(string $level, UriInterface $uri, SslConfiguration $config): bool
+    {
+        return $level === $this->configure($uri, $config)[0];
+    }
+
+    /**
+     * @param SslConfiguration $config
+     *
+     * @return array{0: AConnection, 1: ''|'s'|'ssc'}
+     */
+    public function create(SslConfiguration $config): array
+    {
+        [$encryptionLevel, $sslConfig] = $this->configure($this->uri, $config);
+        $port = $this->uri->getPort() ?? 7687;
+        if ($this->socketsLoaded && $sslConfig === null) {
+            $connection = new Socket($this->uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
+        } else {
+            $connection = new StreamSocket($this->uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
+            if ($sslConfig !== null) {
+                $connection->setSslContextOptions($sslConfig);
+            }
+        }
+
+        return [$connection, $encryptionLevel];
+    }
+
     /**
      * @return array{0: ''|'s'|'ssc', 1: array|null}
      */
-    public function configure(UriInterface $uri, SslConfiguration $config): array
+    private function configure(UriInterface $uri, SslConfiguration $config): array
     {
         $mode = $config->getMode();
         $sslConfig = '';
