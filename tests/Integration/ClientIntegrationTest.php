@@ -21,6 +21,7 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -308,5 +309,42 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
     public function testValidConnectionCheck(string $alias): void
     {
         self::assertTrue($this->getClient()->verifyConnectivity($alias));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testFetchSize(string $connection): void
+    {
+        $session = $this->getClient()->getDriver($connection)->createSession(SessionConfiguration::default()->withFetchSize(1));
+        $session->run('MATCH (x) DETACH DELETE x');
+
+        // Add 4000 user nodes
+        for ($i = 0; $i < 4; ++$i) {
+            $session->run('CREATE (user:User)');
+        }
+
+        // Confirm that the database contains 4000 unique user nodes
+        $userCountResults = $session->run('MATCH (user:User) RETURN COUNT(DISTINCT(ID(user))) as user_count');
+        $userCount = $userCountResults->getAsCypherMap(0)->getAsInt('user_count');
+
+        $this->assertEquals(4, $userCount);
+
+        // Retrieve the ids of all user nodes
+        $results = $session->run('MATCH (user:User) RETURN ID(user) AS id');
+
+        // Loop through the results and add each id to an array
+        $userIds = [];
+        foreach ($results as $result) {
+            $userIds[] = $result->get('id');
+        }
+
+        $this->assertCount(4, $userIds);
+
+        // Check if we have any duplicate ids by removing duplicate values
+        // from the array.
+        $uniqueUserIds = array_unique($userIds);
+
+        $this->assertCount(4, $uniqueUserIds);
     }
 }
