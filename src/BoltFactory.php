@@ -17,7 +17,7 @@ use Bolt\Bolt;
 use Bolt\connection\IConnection;
 use Bolt\protocol\V3;
 use function explode;
-use Laudis\Neo4j\Bolt\AConnectionFactory;
+use Laudis\Neo4j\Bolt\SocketConnectionFactory;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
@@ -38,13 +38,13 @@ use Psr\Http\Message\UriInterface;
 final class BoltFactory implements ConnectionFactoryInterface
 {
     private UriInterface $uri;
-    private AConnectionFactory $connectionFactory;
+    private SocketConnectionFactory $connectionFactory;
     private ProtocolFactory $protocolFactory;
 
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(UriInterface $uri, AConnectionFactory $connectionFactory, ProtocolFactory $protocolFactory)
+    public function __construct(UriInterface $uri, SocketConnectionFactory $connectionFactory, ProtocolFactory $protocolFactory)
     {
         $this->uri = $uri;
         $this->connectionFactory = $connectionFactory;
