@@ -32,6 +32,7 @@ final class GeneratorHelper
             if ($timeout) {
                 self::guardTiming($start, $timeout);
             }
+            $generator->next();
         }
 
         return $generator->getReturn();

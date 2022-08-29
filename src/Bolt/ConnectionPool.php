@@ -14,16 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Generator;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\SslConfiguration;
-use Psr\Http\Message\UriInterface;
-
 use function method_exists;
 use function microtime;
 use function shuffle;
@@ -57,23 +53,32 @@ final class ConnectionPool implements ConnectionPoolInterface
         $generator = $this->semaphore->wait();
         $start = microtime(true);
 
-        // If the generator is valid, it means we are waiting to acquire a new connection.
-        // This means we can use this time to check if we can reuse a connection or should throw a timeout exception.
-        while ($generator->valid()) {
-            $continue = yield microtime(true) - $start;
-            $generator->send($continue);
-            if ($continue === false) {
-                return null;
+        return (function () use ($generator, $start, $config) {
+            // If the generator is valid, it means we are waiting to acquire a new connection.
+            // This means we can use this time to check if we can reuse a connection or should throw a timeout exception.
+            while ($generator->valid()) {
+                $continue = yield microtime(true) - $start;
+                $generator->send($continue);
+                if ($continue === false) {
+                    return null;
+                }
+
+                $connection = $this->returnAnyAvailableConnection($config);
+                if ($connection !== null) {
+                    return $connection;
+                }
             }
 
             $connection = $this->returnAnyAvailableConnection($config);
             if ($connection !== null) {
                 return $connection;
             }
-        }
 
-        return $this->returnAnyAvailableConnection($config) ??
-               $this->factory->createConnection($this->data, $config);
+            $connection = $this->factory->createConnection($this->data, $config);
+            $this->activeConnections[] = $connection;
+
+            return $connection;
+        })();
     }
 
     public function release(ConnectionInterface $connection): void
