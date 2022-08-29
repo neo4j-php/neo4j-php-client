@@ -28,12 +28,11 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
-use RuntimeException;
 use function str_starts_with;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V3, 1: IConnection}>
+ * @implements ConnectionInterface<array{0: V3, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  */
@@ -59,44 +58,30 @@ final class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
     private AuthenticateInterface $auth;
-    private IConnection $connection;
-    private string $encryptionLevel;
+    private Connection $connection;
     private string $userAgent;
 
-    /**
-     * @psalm-mutation-free
-     */
-    public function __construct(V3 $protocol, IConnection $connection, ConnectionConfiguration $config, AuthenticateInterface $auth, string $encryptionLevel, string $userAgent)
+    public function getImplementation()
     {
-        $this->boltProtocol = $protocol;
-        $this->config = $config;
-        $this->serverState = 'READY';
-        $this->auth = $auth;
-        $this->connection = $connection;
-        $this->encryptionLevel = $encryptionLevel;
-        $this->userAgent = $userAgent;
-    }
-
-    /**
-     * @psalm-mutation-free
-     *
-     * @return array{0: V3, 1: IConnection}
-     */
-    public function getImplementation(): array
-    {
-        if (!$this->isOpen()) {
-            throw new RuntimeException('Connection is closed');
-        }
-
         return [$this->boltProtocol, $this->connection];
     }
 
     /**
-     * Encryption level can be either '', 's' or 'ssc', which stand for 'no encryption', 'full encryption' and 'self-signed encryption' respectively.
+     * @psalm-mutation-free
      */
+    public function __construct(V3 $protocol, Connection $connection, AuthenticateInterface $auth, string $userAgent, ConnectionConfiguration $config)
+    {
+        $this->boltProtocol = $protocol;
+        $this->serverState = 'READY';
+        $this->auth = $auth;
+        $this->connection = $connection;
+        $this->userAgent = $userAgent;
+        $this->config = $config;
+    }
+
     public function getEncryptionLevel(): string
     {
-        return $this->encryptionLevel;
+        return $this->connection->getEncryptionLevel();
     }
 
     /**
@@ -338,7 +323,7 @@ final class BoltConnection implements ConnectionInterface
 
     public function protocol(): V3
     {
-        return $this->getImplementation()[0];
+        return $this->boltProtocol;
     }
 
     /**

@@ -14,15 +14,16 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\IConnection;
+use Bolt\protocol\AProtocol;
 
 class Connection
 {
     private IConnection $connection;
-    /** ''|'s'|'ssc' */
+    /** @var ''|'s'|'ssc' */
     private string $ssl;
+    private ?AProtocol $protocol = null;
 
     /**
-     * @param IConnection $connection
      * @param ''|'s'|'ssc' $ssl
      */
     public function __construct(IConnection $connection, string $ssl)
@@ -31,9 +32,9 @@ class Connection
         $this->ssl = $ssl;
     }
 
-    public function connect(): bool
+    public function getIConnection(): IConnection
     {
-        return $this->connection->connect();
+        return $this->connection;
     }
 
     public function write(string $buffer): void

@@ -7,12 +7,12 @@ namespace Laudis\Neo4j\Bolt;
 final class UriConfiguration
 {
     private string $host;
-    private int $port;
+    private ?int $port;
     private string $sslLevel;
     private array $sslConfiguration;
-    private int $timeout;
+    private ?float $timeout;
 
-    public function __construct(string $host, int $port, string $sslLevel, array $sslConfiguration, int $timeout)
+    public function __construct(string $host, ?int $port, string $sslLevel, array $sslConfiguration, ?float $timeout)
     {
         $this->host = $host;
         $this->port = $port;
@@ -21,42 +21,30 @@ final class UriConfiguration
         $this->timeout = $timeout;
     }
 
-    /**
-     * @return string
-     */
     public function getHost(): string
     {
         return $this->host;
     }
 
-    /**
-     * @return int
-     */
-    public function getPort(): int
+    public function getPort(): ?int
     {
         return $this->port;
     }
 
     /**
-     * @return string
+     * @return 's'|'ssc'|''
      */
     public function getSslLevel(): string
     {
         return $this->sslLevel;
     }
 
-    /**
-     * @return array
-     */
     public function getSslConfiguration(): array
     {
         return $this->sslConfiguration;
     }
 
-    /**
-     * @return int
-     */
-    public function getTimeout(): int
+    public function getTimeout(): ?float
     {
         return $this->timeout;
     }

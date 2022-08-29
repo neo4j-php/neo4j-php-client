@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Neo4j PHP Client and Driver package.
  *
@@ -17,8 +19,11 @@ use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
+use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SslConfiguration;
+use Psr\Http\Message\UriInterface;
+
 use function method_exists;
 use function microtime;
 use function shuffle;
@@ -27,28 +32,24 @@ use function shuffle;
  * @template T
  * @implements ConnectionPoolInterface<T>
  */
-class ConnectionPool implements ConnectionPoolInterface
+final class ConnectionPool implements ConnectionPoolInterface
 {
     private SemaphoreInterface $semaphore;
 
     /** @var list<ConnectionInterface<T>> */
     private array $activeConnections = [];
-    private AuthenticateInterface $auth;
     /** @var ConnectionFactoryInterface<T> */
     private ConnectionFactoryInterface $factory;
-    private string $userAgent;
-    private SslConfiguration $sslConfiguration;
+    private ConnectionRequestData $data;
 
     /**
      * @param ConnectionFactoryInterface<T> $factory
      */
-    public function __construct(AuthenticateInterface $auth, string $userAgent, SslConfiguration $sslConfiguration, SemaphoreInterface $semaphore, ConnectionFactoryInterface $factory)
+    public function __construct(SemaphoreInterface $semaphore, ConnectionFactoryInterface $factory, ConnectionRequestData $data)
     {
         $this->semaphore = $semaphore;
-        $this->auth = $auth;
         $this->factory = $factory;
-        $this->userAgent = $userAgent;
-        $this->sslConfiguration = $sslConfiguration;
+        $this->data = $data;
     }
 
     public function acquire(SessionConfiguration $config): Generator
@@ -72,7 +73,7 @@ class ConnectionPool implements ConnectionPoolInterface
         }
 
         return $this->returnAnyAvailableConnection($config) ??
-               $this->factory->createConnection($this->userAgent, $this->sslConfiguration, $config, $this->auth);
+               $this->factory->createConnection($this->data, $config);
     }
 
     public function release(ConnectionInterface $connection): void
@@ -101,7 +102,7 @@ class ConnectionPool implements ConnectionPoolInterface
         foreach ($this->activeConnections as $activeConnection) {
             // We prefer a connection that is just ready
             if ($activeConnection->getServerState() === 'READY') {
-                if ($this->factory->canReuseConnection($activeConnection, $this->userAgent, $this->sslConfiguration, $this->auth)) {
+                if ($this->factory->canReuseConnection($activeConnection, $this->data)) {
                     return $this->factory->reuseConnection($activeConnection, $config);
                 } else {
                     $requiresReconnectConnection = $activeConnection;
@@ -116,7 +117,7 @@ class ConnectionPool implements ConnectionPoolInterface
             // https://github.com/neo4j-php/neo4j-php-client/issues/146
             // NOTE: we cannot work with TX_STREAMING as we cannot force the transaction to implicitly close.
             if ($streamingConnection === null && $activeConnection->getServerState() === 'STREAMING') {
-                if ($this->factory->canReuseConnection($activeConnection, $this->userAgent, $this->sslConfiguration, $this->auth)) {
+                if ($this->factory->canReuseConnection($activeConnection, $this->data)) {
                     $streamingConnection = $activeConnection;
                     if (method_exists($streamingConnection, 'consumeResults')) {
                         $streamingConnection->consumeResults(); // State should now be ready
@@ -134,7 +135,7 @@ class ConnectionPool implements ConnectionPoolInterface
         if ($requiresReconnectConnection) {
             $this->release($requiresReconnectConnection);
 
-            return $this->factory->createConnection($this->userAgent, $this->sslConfiguration, $config, $this->auth);
+            return $this->factory->createConnection($this->data, $config);
         }
 
         return null;

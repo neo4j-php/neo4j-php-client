@@ -29,6 +29,8 @@ final class ConnectionConfiguration
     private ConnectionProtocol $protocol;
     private AccessMode $accessMode;
     private ?DatabaseInfo $databaseInfo;
+    /** @var 's'|'ssc'|'' */
+    private string $encryptionLevel;
 
     public function __construct(
         string $serverAgent,
@@ -36,7 +38,8 @@ final class ConnectionConfiguration
         string $serverVersion,
         ConnectionProtocol $protocol,
         AccessMode $accessMode,
-        ?DatabaseInfo $databaseInfo
+        ?DatabaseInfo $databaseInfo,
+        string $encryptionLevel
     ) {
         $this->serverAgent = $serverAgent;
         $this->serverAddress = $serverAddress;
@@ -44,6 +47,7 @@ final class ConnectionConfiguration
         $this->protocol = $protocol;
         $this->accessMode = $accessMode;
         $this->databaseInfo = $databaseInfo;
+        $this->encryptionLevel = $encryptionLevel;
     }
 
     public function getServerAgent(): string
@@ -74,5 +78,13 @@ final class ConnectionConfiguration
     public function getDatabaseInfo(): ?DatabaseInfo
     {
         return $this->databaseInfo;
+    }
+
+    /**
+     * @return ''|'s'|'ssc'
+     */
+    public function getEncryptionLevel(): string
+    {
+        return $this->encryptionLevel;
     }
 }

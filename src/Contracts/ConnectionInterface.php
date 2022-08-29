@@ -26,10 +26,6 @@ use Psr\Http\Message\UriInterface;
 interface ConnectionInterface
 {
     /**
-     * Returns the underlying protocol implementation to actually the connection.
-     *
-     * @psalm-mutation-free
-     *
      * @return ProtocolImplementation
      */
     public function getImplementation();
@@ -110,14 +106,12 @@ interface ConnectionInterface
     /**
      * Encryption level can be either '', 's' or 'ssc', which stand for 'no encryption', 'full encryption' and 'self-signed encryption' respectively.
      *
-     * @return string
+     * @return ''|'s'|'ssc'
      */
     public function getEncryptionLevel(): string;
 
     /**
      * Returns the user agent handling this connection.
-     *
-     * @return string
      */
     public function getUserAgent(): string;
 }

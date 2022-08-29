@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
@@ -130,5 +131,25 @@ final class HttpConnection implements ConnectionInterface
     public function setTimeout(float $timeout): void
     {
         // Impossible to actually set a timeout with PSR definition
+    }
+
+    public function getAuthentication(): AuthenticateInterface
+    {
+        // TODO: Implement getAuthentication() method.
+    }
+
+    public function getServerState(): string
+    {
+        // TODO: Implement getServerState() method.
+    }
+
+    public function getEncryptionLevel(): string
+    {
+        // TODO: Implement getEncryptionLevel() method.
+    }
+
+    public function getUserAgent(): string
+    {
+        // TODO: Implement getUserAgent() method.
     }
 }
