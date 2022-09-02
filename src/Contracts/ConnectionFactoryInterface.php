@@ -13,7 +13,6 @@ namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\SslConfiguration;
 
 /**
  * @template T
@@ -27,8 +26,6 @@ interface ConnectionFactoryInterface
 
     /**
      * @param ConnectionInterface<T> $connection
-     *
-     * @return bool
      */
     public function canReuseConnection(ConnectionInterface $connection, ConnectionRequestData $data): bool;
 

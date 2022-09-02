@@ -16,7 +16,6 @@ use Bolt\protocol\V3;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
-
 use function sprintf;
 
 final class OpenIDConnectAuth implements AuthenticateInterface

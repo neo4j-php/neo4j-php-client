@@ -19,11 +19,10 @@ use function explode;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
-use Laudis\Neo4j\Bolt\SocketConnectionFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
-use Laudis\Neo4j\Bolt\StreamConnectionFactory;
 use Laudis\Neo4j\Bolt\UriConfiguration;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
@@ -39,17 +38,14 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
  */
 final class BoltFactory implements ConnectionFactoryInterface
 {
-    /** @var SocketConnectionFactory|StreamConnectionFactory */
-    private $connectionFactory;
+    private BasicConnectionFactoryInterface $connectionFactory;
     private ProtocolFactory $protocolFactory;
     private SslConfigurationFactory $sslConfigurationFactory;
 
     /**
-     * @param StreamConnectionFactory|SocketConnectionFactory $connectionFactory
-     *
      * @psalm-external-mutation-free
      */
-    public function __construct($connectionFactory, ProtocolFactory $protocolFactory, SslConfigurationFactory $sslConfigurationFactory)
+    public function __construct(BasicConnectionFactoryInterface $connectionFactory, ProtocolFactory $protocolFactory, SslConfigurationFactory $sslConfigurationFactory)
     {
         $this->connectionFactory = $connectionFactory;
         $this->protocolFactory = $protocolFactory;

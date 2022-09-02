@@ -13,7 +13,6 @@ namespace Laudis\Neo4j\Common;
 
 use Generator;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
-
 use function microtime;
 
 class SingleThreadedSemaphore implements SemaphoreInterface

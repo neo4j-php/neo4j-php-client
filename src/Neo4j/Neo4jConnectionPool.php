@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Generator;
-use Laudis\Neo4j\Contracts\DriverInterface;
 use function array_slice;
 use function array_unique;
 use Bolt\error\MessageException;
@@ -24,22 +22,24 @@ use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use function count;
 use Exception;
+use Generator;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
+use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use function max;
-use function range;
-use function shuffle;
-use function str_replace;
 use const PHP_INT_MAX;
 use Psr\Http\Message\UriInterface;
 use function random_int;
+use function range;
+use function shuffle;
+use function str_replace;
 use function str_starts_with;
 use function time;
 

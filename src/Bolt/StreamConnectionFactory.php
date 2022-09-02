@@ -13,16 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\connection\IConnection;
 use Bolt\connection\StreamSocket;
-use function explode;
-use const FILTER_VALIDATE_IP;
-use function filter_var;
-use Laudis\Neo4j\Databags\SslConfiguration;
-use Laudis\Neo4j\Enum\SslMode;
-use Psr\Http\Message\UriInterface;
+use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 
-final class StreamConnectionFactory
+final class StreamConnectionFactory implements BasicConnectionFactoryInterface
 {
     public function create(UriConfiguration $config): Connection
     {

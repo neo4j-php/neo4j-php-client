@@ -14,8 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\Socket;
+use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 
-final class SocketConnectionFactory
+final class SocketConnectionFactory implements BasicConnectionFactoryInterface
 {
     private StreamConnectionFactory $factory;
 

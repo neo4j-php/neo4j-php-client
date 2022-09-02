@@ -14,11 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Exception;
-use Laudis\Neo4j\Common\SingleThreadedSemaphore;
-use Laudis\Neo4j\Common\SysVSemaphore;
 use function extension_loaded;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Common\SingleThreadedSemaphore;
+use Laudis\Neo4j\Common\SysVSemaphore;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;

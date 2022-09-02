@@ -2,23 +2,27 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Neo4j PHP Client and Driver package.
+ *
+ * (c) Nagels <https://nagels.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Laudis\Neo4j\Bolt;
 
+use function explode;
+use const FILTER_VALIDATE_IP;
+use function filter_var;
 use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
 use Psr\Http\Message\UriInterface;
 
-use function explode;
-use function filter_var;
-
-use const FILTER_VALIDATE_IP;
-
 class SslConfigurationFactory
 {
     /**
-     * @param UriInterface $uri
-     * @param SslConfiguration $config
-     *
      * @return array{0: 's'|'ssc'|'s', 1: array}
      */
     public function create(UriInterface $uri, SslConfiguration $config): array
@@ -39,10 +43,10 @@ class SslConfigurationFactory
             return [$sslConfig, $this->enableSsl($uri->getHost(), $sslConfig, $config)];
         }
 
-        return [$sslConfig, null];
+        return [$sslConfig, []];
     }
 
-    private function enableSsl(string $host, string $sslConfig, SslConfiguration $config): ?array
+    private function enableSsl(string $host, string $sslConfig, SslConfiguration $config): array
     {
         $options = [
             'verify_peer' => $config->isVerifyPeer(),
@@ -61,6 +65,6 @@ class SslConfigurationFactory
             return $options;
         }
 
-        return null;
+        return [];
     }
 }

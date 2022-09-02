@@ -23,10 +23,6 @@ use RuntimeException;
 class ProtocolFactory
 {
     /**
-     * @param IConnection $connection
-     * @param AuthenticateInterface $auth
-     * @param string $userAgent
-     *
      * @return array{0: V3, 1: array{server: string, connection_id: string, hints: list}}
      */
     public function createProtocol(IConnection $connection, AuthenticateInterface $auth, string $userAgent): array

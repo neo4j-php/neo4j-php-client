@@ -64,7 +64,7 @@ final class Session implements SessionInterface
     private BookmarkHolder $bookmarkHolder;
 
     /**
-     * @param FormatterInterface<ResultFormat>       $formatter
+     * @param FormatterInterface<ResultFormat>   $formatter
      * @param ConnectionPool|Neo4jConnectionPool $pool
      *
      * @psalm-mutation-free
