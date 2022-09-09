@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Neo4j PHP Client and Driver package.
  *
@@ -19,6 +21,7 @@ class SingleThreadedSemaphore implements SemaphoreInterface
 {
     private int $max;
     private int $amount = 0;
+    /** @var array<string, self> */
     private static array $instances = [];
 
     private function __construct(int $max)
@@ -39,6 +42,7 @@ class SingleThreadedSemaphore implements SemaphoreInterface
     {
         $start = microtime(true);
         while ($this->amount >= $this->max) {
+            /** @var bool $continue */
             $continue = yield $start - microtime(true);
             if (!$continue) {
                 return;

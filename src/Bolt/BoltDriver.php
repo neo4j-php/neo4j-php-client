@@ -24,6 +24,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -53,7 +54,7 @@ final class BoltDriver implements DriverInterface
     public function __construct(
         UriInterface $parsedUrl,
         ConnectionPool $pool,
-        FormatterInterface $formatter
+        FormatterInterface $formatter,
     ) {
         $this->parsedUrl = $parsedUrl;
         $this->pool = $pool;
@@ -80,6 +81,7 @@ final class BoltDriver implements DriverInterface
 
         $configuration ??= DriverConfiguration::default();
         $authenticate ??= Authenticate::fromUrl($uri);
+        $sslFactory = new SslConfigurationFactory();
 
         // Because interprocess switching of connections between PHP sessions is impossible,
         // we have to build a key to limit the amount of open connections, potentially between ALL sessions.
@@ -88,24 +90,36 @@ final class BoltDriver implements DriverInterface
         // The combination is between the server and the user agent as it most closely resembles an "application"
         // connecting to a server. The application thus supports multiple authentication methods, but they have
         // to be shared between the same connection pool.
-        $key = $uri->getHost().':'.$uri->getPort().':'.$config->getUserAgent();
+        $key = $uri->getHost().':'.($uri->getPort() ?? '').':'.$configuration->getUserAgent();
+
         if (extension_loaded('ext-sysvsem')) {
-            $semaphore = SysVSemaphore::create($key, $config->getMaxPoolSize());
+            $semaphore = SysVSemaphore::create($key, $configuration->getMaxPoolSize());
         } else {
-            $semaphore = SingleThreadedSemaphore::create($key, $config->getMaxPoolSize());
+            $semaphore = SingleThreadedSemaphore::create($key, $configuration->getMaxPoolSize());
         }
+
+        $pool = new ConnectionPool(
+            $semaphore,
+            SystemWideConnectionFactory::getInstance(),
+            new ConnectionRequestData(
+                $uri,
+                $authenticate,
+                $configuration->getUserAgent(),
+                $sslFactory->create($uri, $configuration->getSslConfiguration())
+            )
+        );
 
         if ($formatter !== null) {
             return new self(
                 $uri,
-                new ConnectionPool($uri, $configuration, $authenticate),
+                $pool,
                 $formatter
             );
         }
 
         return new self(
             $uri,
-            new ConnectionPool($uri, $configuration, $authenticate),
+            $pool,
             OGMFormatter::create(),
         );
     }
@@ -122,12 +136,7 @@ final class BoltDriver implements DriverInterface
             $sessionConfig = $sessionConfig->merge($config);
         }
 
-        return new Session(
-            $sessionConfig,
-            $this->pool,
-            $this->formatter,
-            $this->parsedUrl
-        );
+        return new Session($sessionConfig, $this->pool, $this->formatter);
     }
 
     public function verifyConnectivity(): bool

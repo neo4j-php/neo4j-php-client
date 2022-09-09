@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\Socket;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 
 final class SocketConnectionFactory implements BasicConnectionFactoryInterface
 {
@@ -31,7 +32,7 @@ final class SocketConnectionFactory implements BasicConnectionFactoryInterface
             return $this->factory->create($config);
         }
 
-        $connection = new Socket($config->getHost(), $config->getPort(), $config->getTimeout());
+        $connection = new Socket($config->getHost(), $config->getPort() ?? 7687, $config->getTimeout() ?? TransactionConfiguration::DEFAULT_TIMEOUT);
 
         return new Connection($connection, '');
     }

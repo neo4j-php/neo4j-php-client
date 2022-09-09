@@ -32,6 +32,9 @@ final class ConnectionConfiguration
     /** @var 's'|'ssc'|'' */
     private string $encryptionLevel;
 
+    /**
+     * @param ''|'s'|'ssc' $encryptionLevel
+     */
     public function __construct(
         string $serverAgent,
         UriInterface $serverAddress,

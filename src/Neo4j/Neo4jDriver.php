@@ -14,19 +14,25 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use Exception;
+use function extension_loaded;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Bolt\Session;
+use Laudis\Neo4j\Bolt\SslConfigurationFactory;
+use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
+use Laudis\Neo4j\Common\SingleThreadedSemaphore;
+use Laudis\Neo4j\Common\SysVSemaphore;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
+use Throwable;
 
 /**
  * Driver for auto client-side routing.
@@ -81,20 +87,46 @@ final class Neo4jDriver implements DriverInterface
         }
 
         $configuration ??= DriverConfiguration::default();
+        $authenticate ??= Authenticate::fromUrl($uri);
+        $sslFactory = new SslConfigurationFactory();
+
+        // Because interprocess switching of connections between PHP sessions is impossible,
+        // we have to build a key to limit the amount of open connections, potentially between ALL sessions.
+        // because of this we have to settle on a configuration basis to limit the connection pool,
+        // not on an object basis.
+        // The combination is between the server and the user agent as it most closely resembles an "application"
+        // connecting to a server. The application thus supports multiple authentication methods, but they have
+        // to be shared between the same connection pool.
+        $key = $uri->getHost().':'.($uri->getPort() ?? '').':'.$configuration->getUserAgent();
+
+        if (extension_loaded('ext-sysvsem')) {
+            $semaphore = SysVSemaphore::create($key, $configuration->getMaxPoolSize());
+        } else {
+            $semaphore = SingleThreadedSemaphore::create($key, $configuration->getMaxPoolSize());
+        }
+
+        $pool = new Neo4jConnectionPool(
+            $semaphore,
+            SystemWideConnectionFactory::getInstance(),
+            new ConnectionRequestData(
+                $uri,
+                $authenticate,
+                $configuration->getUserAgent(),
+                $sslFactory->create($uri, $configuration->getSslConfiguration())
+            )
+        );
 
         if ($formatter !== null) {
             return new self(
                 $uri,
-                $authenticate ?? Authenticate::fromUrl($uri),
-                new Neo4jConnectionPool(new BoltConnectionPool($configuration)),
-                $formatter,
+                $pool,
+                $formatter
             );
         }
 
         return new self(
             $uri,
-            $authenticate ?? Authenticate::fromUrl($uri),
-            new Neo4jConnectionPool(new BoltConnectionPool($configuration)),
+            $pool,
             OGMFormatter::create(),
         );
     }
@@ -109,17 +141,17 @@ final class Neo4jDriver implements DriverInterface
         $config ??= SessionConfiguration::default();
         $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl));
 
-        return new Session(
-            $config,
-            $this->pool,
-            $this->formatter,
-            $this->parsedUrl,
-            $this->auth
-        );
+        return new Session($config, $this->pool, $this->formatter);
     }
 
     public function verifyConnectivity(): bool
     {
-        return $this->pool->canConnect($this->parsedUrl, $this->auth);
+        try {
+            $this->pool->acquire(SessionConfiguration::default());
+        } catch (Throwable $e) {
+            return false;
+        }
+
+        return true;
     }
 }

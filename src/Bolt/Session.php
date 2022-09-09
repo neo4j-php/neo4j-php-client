@@ -47,7 +47,7 @@ final class Session implements SessionInterface
     /**
      * @psalm-readonly
      *
-     * @var BoltConnectionPool|Neo4jConnectionPool
+     * @var ConnectionPool|Neo4jConnectionPool
      */
     private ConnectionPoolInterface $pool;
     /**
@@ -56,10 +56,6 @@ final class Session implements SessionInterface
      * @var FormatterInterface<ResultFormat>
      */
     private FormatterInterface $formatter;
-    /** @psalm-readonly */
-    private UriInterface $uri;
-    /** @psalm-readonly */
-    private AuthenticateInterface $auth;
     /** @psalm-readonly */
     private BookmarkHolder $bookmarkHolder;
 
@@ -72,13 +68,11 @@ final class Session implements SessionInterface
     public function __construct(
         SessionConfiguration $config,
         ConnectionPoolInterface $pool,
-        FormatterInterface $formatter,
-        UriInterface $uri
+        FormatterInterface $formatter
     ) {
         $this->config = $config;
         $this->pool = $pool;
         $this->formatter = $formatter;
-        $this->uri = $uri;
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
 

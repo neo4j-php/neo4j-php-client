@@ -15,12 +15,13 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\StreamSocket;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 
 final class StreamConnectionFactory implements BasicConnectionFactoryInterface
 {
     public function create(UriConfiguration $config): Connection
     {
-        $connection = new StreamSocket($config->getHost(), $config->getPort(), $config->getTimeout());
+        $connection = new StreamSocket($config->getHost(), $config->getPort() ?? 7687, $config->getTimeout() ?? TransactionConfiguration::DEFAULT_TIMEOUT);
         if ($config->getSslLevel() !== '') {
             $connection->setSslContextOptions($config->getSslConfiguration());
         }

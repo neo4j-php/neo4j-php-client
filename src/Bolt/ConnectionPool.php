@@ -20,26 +20,26 @@ use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Bolt\protocol\V3;
+use Laudis\Neo4j\Bolt\Connection;
 use function method_exists;
 use function microtime;
 use function shuffle;
 
 /**
- * @template T
- * @implements ConnectionPoolInterface<T>
+ * @implements ConnectionPoolInterface<array{0: V3, 1: Connection}>
  */
 final class ConnectionPool implements ConnectionPoolInterface
 {
     private SemaphoreInterface $semaphore;
-
-    /** @var list<ConnectionInterface<T>> */
+    /** @var list<ConnectionInterface<array{0: V3, 1: Connection}>> */
     private array $activeConnections = [];
-    /** @var ConnectionFactoryInterface<T> */
+    /** @var ConnectionFactoryInterface<array{0: V3, 1: Connection}> */
     private ConnectionFactoryInterface $factory;
     private ConnectionRequestData $data;
 
     /**
-     * @param ConnectionFactoryInterface<T> $factory
+     * @param ConnectionFactoryInterface<array{0: V3, 1: Connection}> $factory
      */
     public function __construct(SemaphoreInterface $semaphore, ConnectionFactoryInterface $factory, ConnectionRequestData $data)
     {
@@ -57,6 +57,7 @@ final class ConnectionPool implements ConnectionPoolInterface
             // If the generator is valid, it means we are waiting to acquire a new connection.
             // This means we can use this time to check if we can reuse a connection or should throw a timeout exception.
             while ($generator->valid()) {
+                /** @var bool $continue */
                 $continue = yield microtime(true) - $start;
                 $generator->send($continue);
                 if ($continue === false) {
@@ -95,7 +96,7 @@ final class ConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @return ConnectionInterface<T>|null
+     * @return ConnectionInterface<array{0: V3, 1: Connection}>|null
      */
     private function returnAnyAvailableConnection(SessionConfiguration $config): ?ConnectionInterface
     {

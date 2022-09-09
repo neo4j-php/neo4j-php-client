@@ -45,6 +45,7 @@ class SysVSemaphore implements SemaphoreInterface
     {
         $start = microtime(true);
         while (!sem_acquire($this->semaphore, true)) {
+            /** @var bool $continue */
             $continue = yield $start - microtime(true);
             if (!$continue) {
                 return;

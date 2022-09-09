@@ -17,10 +17,18 @@ final class UriConfiguration
 {
     private string $host;
     private ?int $port;
+    /** @var ''|'s'|'ssc' */
     private string $sslLevel;
     private array $sslConfiguration;
     private ?float $timeout;
 
+    /**
+     * @param string $host
+     * @param int|null $port
+     * @param ''|'s'|'ssc' $sslLevel
+     * @param array $sslConfiguration
+     * @param float|null $timeout
+     */
     public function __construct(string $host, ?int $port, string $sslLevel, array $sslConfiguration, ?float $timeout)
     {
         $this->host = $host;

@@ -23,22 +23,23 @@ use Bolt\protocol\V4_4;
 use function count;
 use Exception;
 use Generator;
-use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Bolt\BoltConnectionPool;
+use Laudis\Neo4j\Bolt\Connection;
+use Laudis\Neo4j\Bolt\ConnectionPool;
+use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Contracts\SemaphoreInterface;
+use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
-use function max;
 use const PHP_INT_MAX;
 use Psr\Http\Message\UriInterface;
+use Psr\SimpleCache\CacheInterface;
 use function random_int;
-use function range;
-use function shuffle;
 use function str_replace;
 use function str_starts_with;
 use function time;
@@ -48,52 +49,68 @@ use function time;
  *
  * @psalm-import-type BasicDriver from DriverInterface
  *
- * @implements ConnectionPoolInterface<V3>
+ * @implements ConnectionPoolInterface<array{0:V3, 1: Connection}>
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
-    /**
-     * @psalm-readonly
-     *
-     * @var array<string, RoutingTable>
-     */
-    private static array $routingCache = [];
-    /** @psalm-readonly */
-    private BoltConnectionPool $pool;
+    /** @var array<string, ConnectionPool<array{0: V3, 1: Connection}>> */
+    private static array $pools = [];
+    private SemaphoreInterface $semaphore;
+    private ConnectionFactoryInterface $factory;
+    private ConnectionRequestData $data;
+    private CacheInterface $cache;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(BoltConnectionPool $pool)
+    public function __construct(SemaphoreInterface $semaphore, ConnectionFactoryInterface $factory, ConnectionRequestData $data, CacheInterface $cache)
     {
-        $this->pool = $pool;
+        $this->semaphore = $semaphore;
+        $this->factory = $factory;
+        $this->data = $data;
+        $this->cache = $cache;
+    }
+
+    public function createOrGetPool(UriInterface $uri): ConnectionPool
+    {
+        $data = new ConnectionRequestData(
+            $uri,
+            $this->data->getAuth(),
+            $this->data->getUserAgent(),
+            $this->data->getSslConfig()
+        );
+
+        $key = $this->createKey($data);
+        if (!array_key_exists($key, self::$pools)) {
+            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data);
+        }
+
+        return self::$pools[$key];
     }
 
     /**
      * @throws Exception
      */
-    public function acquire(
-        UriInterface $uri,
-        AuthenticateInterface $authenticate,
-        SessionConfiguration $config
-    ): BoltConnection {
-        $key = $uri->getHost().':'.($uri->getPort() ?? '7687');
+    public function acquire(SessionConfiguration $config): Generator
+    {
+        $key = $this->createKey($this->data);
 
-        $table = self::$routingCache[$key] ?? null;
-        if ($table === null || $table->getTtl() < time()) {
-            $connection = $this->pool->acquire($uri, $authenticate, $config);
+        $routing = $this->cache->get($key, null);
+        if ($routing == null) {
+            $pool = $this->createOrGetPool($this->data);
+            $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
             $table = $this->routingTable($connection, $config);
-            self::$routingCache[$key] = $table;
-            $connection->close();
+            $this->cache->set($key, $table);
+            $pool->release($connection);
         }
 
-        $server = $this->getNextServer($table, $config->getAccessMode()) ?? $uri;
+        $server = $this->getNextServer($table, $config->getAccessMode()) ?? $this->data->getUri();
 
         if ($server->getScheme() === '') {
-            $server = $server->withScheme($uri->getScheme());
+            $server = $server->withScheme($this->data->getUri()->getScheme());
         }
 
-        return $this->pool->acquire($uri, $authenticate, $config, $table, $server);
+        return $this->createOrGetPool($server)->acquire($config);
     }
 
     /**
@@ -216,18 +233,18 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         return new RoutingTable($servers, $ttl);
     }
 
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
+    public function release(ConnectionInterface $connection): void
     {
-        return $this->pool->canConnect($uri, $authenticate);
+        $this->createOrGetPool($connection->getServerAddress())->release($connection);
     }
 
-    private function generateKeys(UriInterface $connectingTo): Generator
+    private function createKey(ConnectionRequestData $data): string
     {
-        // The idea of a randomized keys is to prevent a single connection from being used by multiple threads all at once.
-        // Round-robin or other algorithms are not suitable as there is no way to share the next connection between
-        // different standard php sessions without introducing a massive performance hit.
-        $key = $this->driverConfig->getUserAgent().'|'.$connectingTo->getHost().'|'.($connectingTo->getPort() ?? '7687');
-        $key = str_replace([
+        $uri = $data->getUri();
+
+        $key = $data->getUserAgent().':'.$uri->getHost().':'.($uri->getPort() ?? '7687');
+
+        return str_replace([
             '{',
             '}',
             '(',
@@ -237,11 +254,5 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             '@',
             ':',
         ], '|', $key);
-        $ranges = range(0, max(0, $this->driverConfig->getMaxPoolSize() - 1));
-        shuffle($ranges);
-
-        foreach ($ranges as $range) {
-            yield $key.'|'.$range;
-        }
     }
 }
