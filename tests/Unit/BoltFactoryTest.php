@@ -24,7 +24,6 @@ use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;

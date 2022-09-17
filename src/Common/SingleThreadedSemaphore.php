@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Common;
 use Generator;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use function microtime;
+use RuntimeException;
 
 class SingleThreadedSemaphore implements SemaphoreInterface
 {
@@ -54,7 +55,7 @@ class SingleThreadedSemaphore implements SemaphoreInterface
     public function post(): void
     {
         if ($this->amount <= 0) {
-            throw new \RuntimeException('Semaphore underflow');
+            throw new RuntimeException('Semaphore underflow');
         }
         --$this->amount;
     }

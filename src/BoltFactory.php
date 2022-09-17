@@ -14,16 +14,14 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use Bolt\Bolt;
-use Bolt\protocol\V3;
+use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
 use function explode;
 use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
 use Laudis\Neo4j\Bolt\UriConfiguration;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
-use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DatabaseInfo;
@@ -33,10 +31,8 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 /**
  * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.
- *
- * @implements ConnectionFactoryInterface<array{0: V3, 1: Connection}>
  */
-final class BoltFactory implements ConnectionFactoryInterface
+final class BoltFactory
 {
     private BasicConnectionFactoryInterface $connectionFactory;
     private ProtocolFactory $protocolFactory;
@@ -52,7 +48,12 @@ final class BoltFactory implements ConnectionFactoryInterface
         $this->sslConfigurationFactory = $sslConfigurationFactory;
     }
 
-    public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig): ConnectionInterface
+    public static function create(): self
+    {
+        return new self(SystemWideConnectionFactory::getInstance(), new ProtocolFactory(), new SslConfigurationFactory());
+    }
+
+    public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig): BoltConnection
     {
         [$sslLevel, $sslConfig] = $this->sslConfigurationFactory->create($data->getUri(), $data->getSslConfig());
 
@@ -89,7 +90,7 @@ final class BoltFactory implements ConnectionFactoryInterface
                $connection->getUserAgent() === $data->getUserAgent();
     }
 
-    public function reuseConnection(ConnectionInterface $connection, SessionConfiguration $sessionConfig): ConnectionInterface
+    public function reuseConnection(BoltConnection $connection, SessionConfiguration $sessionConfig): BoltConnection
     {
         [$protocol, $connectionImpl] = $connection->getImplementation();
 

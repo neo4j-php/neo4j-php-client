@@ -23,16 +23,21 @@ use Bolt\protocol\V4_4;
 use function count;
 use Exception;
 use Generator;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
+use Laudis\Neo4j\BoltFactory;
+use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\GeneratorHelper;
+use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
@@ -49,26 +54,43 @@ use function time;
  *
  * @psalm-import-type BasicDriver from DriverInterface
  *
- * @implements ConnectionPoolInterface<array{0:V3, 1: Connection}>
+ * @implements ConnectionPoolInterface<BoltConnection>
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
-    /** @var array<string, ConnectionPool<array{0: V3, 1: Connection}>> */
+    /** @var array<string, ConnectionPool> */
     private static array $pools = [];
     private SemaphoreInterface $semaphore;
-    private ConnectionFactoryInterface $factory;
+    private BoltFactory $factory;
     private ConnectionRequestData $data;
     private CacheInterface $cache;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(SemaphoreInterface $semaphore, ConnectionFactoryInterface $factory, ConnectionRequestData $data, CacheInterface $cache)
+    public function __construct(SemaphoreInterface $semaphore, BoltFactory $factory, ConnectionRequestData $data, CacheInterface $cache)
     {
         $this->semaphore = $semaphore;
         $this->factory = $factory;
         $this->data = $data;
         $this->cache = $cache;
+    }
+
+    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf): self
+    {
+        $semaphore = SemaphoreFactory::getInstance()->create($uri, $conf);
+
+        return new self(
+            $semaphore,
+            BoltFactory::create(),
+            new ConnectionRequestData(
+                $uri,
+                $auth,
+                $conf->getUserAgent(),
+                $conf->getSslConfiguration()
+            ),
+            Cache::getInstance()
+        );
     }
 
     public function createOrGetPool(UriInterface $uri): ConnectionPool
@@ -95,12 +117,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         $key = $this->createKey($this->data);
 
-        $routing = $this->cache->get($key, null);
-        if ($routing == null) {
-            $pool = $this->createOrGetPool($this->data);
+        /** @var RoutingTable|null */
+        $table = $this->cache->get($key, null);
+        if ($table == null) {
+            $pool = $this->createOrGetPool($this->data->getUri());
+            /** @var BoltConnection $connection */
             $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
             $table = $this->routingTable($connection, $config);
-            $this->cache->set($key, $table);
+            $this->cache->set($key, $table, $table->getTtl());
             $pool->release($connection);
         }
 
@@ -133,13 +157,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @param ConnectionInterface<V3> $connection
-     *
      * @throws Exception
      */
-    private function routingTable(ConnectionInterface $connection, SessionConfiguration $config): RoutingTable
+    private function routingTable(BoltConnection $connection, SessionConfiguration $config): RoutingTable
     {
-        $bolt = $connection->getImplementation();
+        $bolt = $connection->getImplementation()[0];
 
         if ($bolt instanceof V4_4) {
             return $this->useRouteMessageNew($bolt, $config);

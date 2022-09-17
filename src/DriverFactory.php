@@ -45,8 +45,6 @@ final class DriverFactory
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
-     *
-     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): DriverInterface
     {
@@ -79,7 +77,6 @@ final class DriverFactory
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
-     * @pure
      */
     private static function createBoltDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
     {

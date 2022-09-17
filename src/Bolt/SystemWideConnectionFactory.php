@@ -14,11 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use function extension_loaded;
+use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 
 /**
  * Singleton connection factory based on the installed extensions.
  */
-class SystemWideConnectionFactory
+class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
 {
     /**
      * @var SocketConnectionFactory|StreamConnectionFactory

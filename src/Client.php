@@ -143,8 +143,6 @@ final class Client implements ClientInterface
     }
 
     /**
-     * @psalm-mutation-free
-     *
      * @param array<string, DriverSetup>       $driverSetups
      * @param FormatterInterface<ResultFormat> $formatter
      *

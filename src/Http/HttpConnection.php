@@ -133,23 +133,34 @@ final class HttpConnection implements ConnectionInterface
         // Impossible to actually set a timeout with PSR definition
     }
 
+    /**
+     * @psalm-immutable
+     */
     public function getAuthentication(): AuthenticateInterface
     {
         // TODO: Implement getAuthentication() method.
     }
 
+    /**
+     * @psalm-immutable
+     */
     public function getServerState(): string
     {
         // TODO: Implement getServerState() method.
     }
 
+    /**
+     * @psalm-immutable
+     */
     public function getEncryptionLevel(): string
     {
         // TODO: Implement getEncryptionLevel() method.
     }
 
+    /**
+     * @psalm-immutable
+     */
     public function getUserAgent(): string
     {
-        // TODO: Implement getUserAgent() method.
     }
 }

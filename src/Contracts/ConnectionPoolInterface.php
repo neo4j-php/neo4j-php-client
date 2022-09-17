@@ -19,7 +19,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 /**
  * A connection pool acts as a connection factory by managing multiple connections.
  *
- * @template ProtocolImplementation The implementation of the protocol used in the connection.
+ * @template Connection of ConnectionInterface
  */
 interface ConnectionPoolInterface
 {
@@ -35,7 +35,7 @@ interface ConnectionPoolInterface
      *      int,
      *      float,
      *      bool,
-     *      ConnectionInterface<ProtocolImplementation>|null
+     *      Connection|null
      * >
      */
     public function acquire(SessionConfiguration $config): Generator;

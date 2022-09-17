@@ -23,11 +23,7 @@ final class UriConfiguration
     private ?float $timeout;
 
     /**
-     * @param string $host
-     * @param int|null $port
      * @param ''|'s'|'ssc' $sslLevel
-     * @param array $sslConfiguration
-     * @param float|null $timeout
      */
     public function __construct(string $host, ?int $port, string $sslLevel, array $sslConfiguration, ?float $timeout)
     {

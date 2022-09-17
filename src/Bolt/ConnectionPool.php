@@ -14,38 +14,52 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Generator;
-use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
+use Laudis\Neo4j\BoltFactory;
+use Laudis\Neo4j\Common\SemaphoreFactory;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Bolt\protocol\V3;
-use Laudis\Neo4j\Bolt\Connection;
 use function method_exists;
 use function microtime;
+use Psr\Http\Message\UriInterface;
 use function shuffle;
 
 /**
- * @implements ConnectionPoolInterface<array{0: V3, 1: Connection}>
+ * @implements ConnectionPoolInterface<BoltConnection>
  */
 final class ConnectionPool implements ConnectionPoolInterface
 {
     private SemaphoreInterface $semaphore;
-    /** @var list<ConnectionInterface<array{0: V3, 1: Connection}>> */
+    /** @var list<BoltConnection> */
     private array $activeConnections = [];
-    /** @var ConnectionFactoryInterface<array{0: V3, 1: Connection}> */
-    private ConnectionFactoryInterface $factory;
+    private BoltFactory $factory;
     private ConnectionRequestData $data;
 
-    /**
-     * @param ConnectionFactoryInterface<array{0: V3, 1: Connection}> $factory
-     */
-    public function __construct(SemaphoreInterface $semaphore, ConnectionFactoryInterface $factory, ConnectionRequestData $data)
+    public function __construct(SemaphoreInterface $semaphore, BoltFactory $factory, ConnectionRequestData $data)
     {
         $this->semaphore = $semaphore;
         $this->factory = $factory;
         $this->data = $data;
+    }
+
+    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf): self
+    {
+        $semaphore = SemaphoreFactory::getInstance()->create($uri, $conf);
+
+        return new self(
+            $semaphore,
+            BoltFactory::create(),
+            new ConnectionRequestData(
+                $uri,
+                $auth,
+                $conf->getUserAgent(),
+                $conf->getSslConfiguration()
+            )
+        );
     }
 
     public function acquire(SessionConfiguration $config): Generator
@@ -96,7 +110,7 @@ final class ConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @return ConnectionInterface<array{0: V3, 1: Connection}>|null
+     * @return BoltConnection|null
      */
     private function returnAnyAvailableConnection(SessionConfiguration $config): ?ConnectionInterface
     {

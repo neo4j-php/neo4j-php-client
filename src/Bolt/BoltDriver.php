@@ -14,11 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Exception;
-use function extension_loaded;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\Common\SingleThreadedSemaphore;
-use Laudis\Neo4j\Common\SysVSemaphore;
+use Laudis\Neo4j\BoltFactory;
+use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
@@ -81,46 +80,11 @@ final class BoltDriver implements DriverInterface
 
         $configuration ??= DriverConfiguration::default();
         $authenticate ??= Authenticate::fromUrl($uri);
-        $sslFactory = new SslConfigurationFactory();
-
-        // Because interprocess switching of connections between PHP sessions is impossible,
-        // we have to build a key to limit the amount of open connections, potentially between ALL sessions.
-        // because of this we have to settle on a configuration basis to limit the connection pool,
-        // not on an object basis.
-        // The combination is between the server and the user agent as it most closely resembles an "application"
-        // connecting to a server. The application thus supports multiple authentication methods, but they have
-        // to be shared between the same connection pool.
-        $key = $uri->getHost().':'.($uri->getPort() ?? '').':'.$configuration->getUserAgent();
-
-        if (extension_loaded('ext-sysvsem')) {
-            $semaphore = SysVSemaphore::create($key, $configuration->getMaxPoolSize());
-        } else {
-            $semaphore = SingleThreadedSemaphore::create($key, $configuration->getMaxPoolSize());
-        }
-
-        $pool = new ConnectionPool(
-            $semaphore,
-            SystemWideConnectionFactory::getInstance(),
-            new ConnectionRequestData(
-                $uri,
-                $authenticate,
-                $configuration->getUserAgent(),
-                $sslFactory->create($uri, $configuration->getSslConfiguration())
-            )
-        );
-
-        if ($formatter !== null) {
-            return new self(
-                $uri,
-                $pool,
-                $formatter
-            );
-        }
 
         return new self(
             $uri,
-            $pool,
-            OGMFormatter::create(),
+            ConnectionPool::create($uri, $authenticate, $configuration),
+            $formatter ?? OGMFormatter::create(),
         );
     }
 

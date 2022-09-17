@@ -411,6 +411,7 @@ final class LegacyHttpOGMTranslator
             $microseconds = (int) str_pad((string) ((int) substr($secondsFraction, 0, 6)), 6, '0');
             $interval = new DateInterval($format.'S');
             $x = new DateTimeImmutable();
+            /** @psalm-suppress PossiblyFalseReference */
             $interval = $x->add($interval)->modify('+'.$microseconds.' microseconds')->diff($x);
         } else {
             $nanoseconds = 0;

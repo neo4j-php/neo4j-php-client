@@ -56,7 +56,6 @@ final class Driver implements DriverInterface
 
     /**
      * @param string|UriInterface $uri
-     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
