@@ -16,14 +16,11 @@ namespace Laudis\Neo4j\Bolt;
 use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\BoltFactory;
-use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
-use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -71,6 +68,8 @@ final class BoltDriver implements DriverInterface
      *           ? self<U>
      *           : self<OGMResults>
      *           )
+     *
+     * @psalm-suppress MixedReturnTypeCoercion
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
     {
@@ -81,6 +80,7 @@ final class BoltDriver implements DriverInterface
         $configuration ??= DriverConfiguration::default();
         $authenticate ??= Authenticate::fromUrl($uri);
 
+        /** @psalm-suppress InvalidArgument */
         return new self(
             $uri,
             ConnectionPool::create($uri, $authenticate, $configuration),

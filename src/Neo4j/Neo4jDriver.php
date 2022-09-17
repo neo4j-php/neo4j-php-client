@@ -17,15 +17,11 @@ use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\Session;
-use Laudis\Neo4j\BoltFactory;
-use Laudis\Neo4j\Common\Cache;
-use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
-use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -44,7 +40,6 @@ use Throwable;
 final class Neo4jDriver implements DriverInterface
 {
     private UriInterface $parsedUrl;
-    private AuthenticateInterface $auth;
     private Neo4jConnectionPool $pool;
     private FormatterInterface $formatter;
 
@@ -55,12 +50,10 @@ final class Neo4jDriver implements DriverInterface
      */
     public function __construct(
         UriInterface $parsedUrl,
-        AuthenticateInterface $auth,
         Neo4jConnectionPool $pool,
         FormatterInterface $formatter
     ) {
         $this->parsedUrl = $parsedUrl;
-        $this->auth = $auth;
         $this->pool = $pool;
         $this->formatter = $formatter;
     }
@@ -88,13 +81,9 @@ final class Neo4jDriver implements DriverInterface
         $configuration ??= DriverConfiguration::default();
         $authenticate ??= Authenticate::fromUrl($uri);
 
-        /**
-         * @psalm-suppress MixedReturnTypeCoercion
-         * @psalm-suppress InvalidArgument
-         */
+        /** @psalm-suppress InvalidArgument */
         return new self(
             $uri,
-            $authenticate,
             Neo4jConnectionPool::create($uri, $authenticate, $configuration),
             $formatter ?? OGMFormatter::create(),
         );

@@ -14,11 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use Bolt\Bolt;
-use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
 use function explode;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
+use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
 use Laudis\Neo4j\Bolt\UriConfiguration;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;

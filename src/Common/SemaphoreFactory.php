@@ -30,17 +30,11 @@ final class SemaphoreFactory
         $this->constructor = $constructor;
     }
 
-    public static function getInstance(): SemaphoreFactory
+    public static function getInstance(): self
     {
-        if (self::$instance === null) {
-            if (extension_loaded('ext-sysvsem')) {
-                self::$instance = new self([SysVSemaphore::class, 'create']);
-            } else {
-                self::$instance = new self([SingleThreadedSemaphore::class, 'create']);
-            }
-        }
-
-        return self::$instance;
+        return self::$instance ??= (extension_loaded('ext-sysvsem')) ?
+            new self([SysVSemaphore::class, 'create']) :
+            new self([SingleThreadedSemaphore::class, 'create']);
     }
 
     public function create(UriInterface $uri, DriverConfiguration $config): SemaphoreInterface

@@ -13,13 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use Generator;
 use function json_encode;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Formatter\BasicFormatter;
@@ -29,7 +30,7 @@ use Psr\Http\Message\UriInterface;
 use Throwable;
 
 /**
- * @implements ConnectionPoolInterface<ClientInterface>
+ * @implements ConnectionPoolInterface<HttpConnection>
  */
 final class HttpConnectionPool implements ConnectionPoolInterface
 {
@@ -48,32 +49,41 @@ final class HttpConnectionPool implements ConnectionPoolInterface
      * @psalm-readonly
      */
     private Resolvable $streamFactory;
-    /** @psalm-readonly */
-    private DriverConfiguration $config;
+    private UriInterface $uri;
+    private AuthenticateInterface $auth;
+    private string $userAgent;
 
     /**
      * @param Resolvable<StreamFactoryInterface> $streamFactory
      * @param Resolvable<RequestFactory>         $requestFactory
      * @param Resolvable<ClientInterface>        $client
+     *
      * @psalm-mutation-free
      */
-    public function __construct(Resolvable $client, Resolvable $requestFactory, Resolvable $streamFactory, DriverConfiguration $config)
-    {
+    public function __construct(
+        Resolvable $client,
+        Resolvable $requestFactory,
+        Resolvable $streamFactory,
+        UriInterface $uri,
+        AuthenticateInterface $auth,
+        string $userAgent
+    ) {
         $this->client = $client;
         $this->requestFactory = $requestFactory;
         $this->streamFactory = $streamFactory;
-        $this->config = $config;
+        $this->uri = $uri;
+        $this->auth = $auth;
+        $this->userAgent = $userAgent;
     }
 
-    public function acquire(
-        UriInterface $uri,
-        AuthenticateInterface $authenticate,
-        SessionConfiguration $config
-    ): HttpConnection {
-        $request = $this->requestFactory->resolve()->createRequest('POST', $uri);
+    public function acquire(SessionConfiguration $config): Generator
+    {
+        yield 0.0;
+
+        $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri);
 
         $path = $request->getUri()->getPath().'/commit';
-        $uri = $request->getUri()->withPath($path);
+        $uri = $this->uri->withPath($path);
         $request = $request->withUri($uri);
 
         $body = json_encode([
@@ -84,6 +94,7 @@ CALL dbms.components()
 YIELD name, versions, edition
 RETURN name, versions, edition
 CYPHER
+    ,
                 ],
             ],
             'resultDataContents' => [],
@@ -105,11 +116,11 @@ CYPHER
             $version,
             ConnectionProtocol::HTTP(),
             $config->getAccessMode(),
-            $this->config,
-            new DatabaseInfo($config->getDatabase() ?? '')
+            new DatabaseInfo($config->getDatabase() ?? ''),
+            ''
         );
 
-        return new HttpConnection($this->client->resolve(), $config);
+        return new HttpConnection($this->client->resolve(), $config, $this->auth, $this->userAgent);
     }
 
     public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool
@@ -122,5 +133,10 @@ CYPHER
         } catch (Throwable $e) {
             return false;
         }
+    }
+
+    public function release(ConnectionInterface $connection): void
+    {
+        // Nothing to release in the current HTTP Protocol implementation
     }
 }

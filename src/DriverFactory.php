@@ -21,6 +21,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Http\HttpDriver;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Psr\Http\Message\UriInterface;
@@ -28,9 +29,7 @@ use Psr\Http\Message\UriInterface;
 /**
  * Factory for creating drivers directly.
  *
- * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
- *
- * @psalm-immutable
+ * @psalm-import-type OGMResults from OGMFormatter
  */
 final class DriverFactory
 {
@@ -98,9 +97,6 @@ final class DriverFactory
      *           ? DriverInterface<U>
      *           : DriverInterface<OGMResults>
      *           )
-     * @psalm-mutation-free
-     *
-     * @pure
      */
     private static function createNeo4jDriver($uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
     {

@@ -33,14 +33,22 @@ final class HttpConnection implements ConnectionInterface
     private ConnectionConfiguration $config;
 
     private bool $isOpen = true;
+    private AuthenticateInterface $authenticate;
+    private string $userAgent;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(ClientInterface $client, ConnectionConfiguration $config)
-    {
+    public function __construct(
+        ClientInterface $client,
+        ConnectionConfiguration $config,
+        AuthenticateInterface $authenticate,
+        string $userAgent
+    ) {
         $this->client = $client;
         $this->config = $config;
+        $this->authenticate = $authenticate;
+        $this->userAgent = $userAgent;
     }
 
     /**
@@ -138,29 +146,30 @@ final class HttpConnection implements ConnectionInterface
      */
     public function getAuthentication(): AuthenticateInterface
     {
-        // TODO: Implement getAuthentication() method.
+        return $this->authenticate;
     }
 
     /**
-     * @psalm-immutable
+     * @psalm-mutation-free
      */
     public function getServerState(): string
     {
-        // TODO: Implement getServerState() method.
+        return 'UNKNOWN';
     }
 
     /**
-     * @psalm-immutable
+     * @psalm-mutation-free
      */
     public function getEncryptionLevel(): string
     {
-        // TODO: Implement getEncryptionLevel() method.
+        return $this->config->getEncryptionLevel();
     }
 
     /**
-     * @psalm-immutable
+     * @psalm-mutation-free
      */
     public function getUserAgent(): string
     {
+        return $this->userAgent;
     }
 }

@@ -159,7 +159,9 @@ final class HttpDriver implements DriverInterface
             Resolvable::once($this->key.':client', fn () => $this->config->getHttpPsrBindings()->getClient()),
             $this->resolvableFactory(),
             $this->streamFactory(),
-            $this->config
+            $this->uri,
+            $this->auth,
+            $this->config->getUserAgent()
         );
     }
 
