@@ -13,7 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Bolt\error\MessageException;
 use Generator;
+use Laudis\Neo4j\Basic\Driver;
+use Throwable;
 use function getenv;
 use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
@@ -468,6 +471,24 @@ CYPHER
         $this->expectNotToPerformAssertions();
         $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1000));
         $tsx->run('CALL apoc.util.sleep(20000)');
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testConstraintHandling(string $alias): void
+    {
+        $session = $this->getClient()->getDriver($alias)->createSession();
+
+        $session->run("CREATE (test:Test{id: '123'})");
+        try {
+            $session->run('CREATE CONSTRAINT ON (test:Test) ASSERT test.id IS UNIQUE');
+        } catch (Throwable $e) {
+            // We cannot use IF EXISTS on version 4.0
+            $session->run('DROP CONSTRAINT ON (test:Test) ASSERT test.id IS UNIQUE');
+        }
+        $this->expectException(MessageException::class);
+        $session->run("CREATE (test:Test {id: '123'}) RETURN test");
     }
 
     /**
