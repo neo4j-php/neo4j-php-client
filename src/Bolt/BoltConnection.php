@@ -35,7 +35,7 @@ use WeakReference;
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  */
-final class BoltConnection implements ConnectionInterface
+class BoltConnection implements ConnectionInterface
 {
     private V3 $boltProtocol;
     /** @psalm-readonly */

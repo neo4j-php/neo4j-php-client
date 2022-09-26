@@ -13,8 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Laudis\Neo4j\Bolt\BoltConnectionPool;
 use Laudis\Neo4j\Bolt\BoltDriver;
+use Laudis\Neo4j\Bolt\Connection;
+use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -24,7 +25,7 @@ use function str_starts_with;
 use Throwable;
 
 /**
- * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ * @psalm-import-type BasicResults from BasicFormatter
  *
  * @extends EnvironmentAwareIntegrationTest<BasicResults>
  */
@@ -377,7 +378,7 @@ CYPHER
             self::markTestSkipped('Can only white box test bolt driver');
         }
 
-        $poolReflection = new ReflectionClass(BoltConnectionPool::class);
+        $poolReflection = new ReflectionClass(Connection::class);
         $poolReflection->setStaticPropertyValue('connectionCache', []);
 
         $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
@@ -388,7 +389,7 @@ CYPHER
         $b = $this->getClient()->beginTransaction([], $alias);
         $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
 
-        $poolReflection = new ReflectionClass(BoltConnectionPool::class);
+        $poolReflection = new ReflectionClass(ConnectionPool::class);
         /** @var array $cache */
         $cache = $poolReflection->getStaticPropertyValue('connectionCache');
 

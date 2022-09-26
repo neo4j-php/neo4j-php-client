@@ -15,10 +15,11 @@ namespace Laudis\Neo4j\Tests\Unit;
 
 use Generator;
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
+use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\ConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
@@ -34,8 +35,8 @@ class BoltConnectionPoolTest extends TestCase
     private ConnectionPool $pool;
     /** @var SemaphoreInterface&MockObject */
     private SemaphoreInterface $semaphore;
-    /** @var ConnectionFactoryInterface&MockObject */
-    private ConnectionFactoryInterface $factory;
+    /** @var BoltFactory&MockObject */
+    private BoltFactory $factory;
 
     protected function setUp(): void
     {
@@ -142,9 +143,9 @@ class BoltConnectionPoolTest extends TestCase
         $this->semaphore->method('wait')
                         ->willReturn($semaphoreGenerator);
 
-        $this->factory = $this->createMock(ConnectionFactoryInterface::class);
+        $this->factory = $this->createMock(BoltFactory::class);
         $this->factory->method('createConnection')
-                      ->willReturn($this->createMock(ConnectionInterface::class));
+                      ->willReturn($this->createMock(BoltConnection::class));
 
         $this->pool = new ConnectionPool(
             $this->semaphore, $this->factory, new ConnectionRequestData(

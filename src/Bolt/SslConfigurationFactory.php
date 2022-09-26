@@ -23,7 +23,7 @@ use Psr\Http\Message\UriInterface;
 class SslConfigurationFactory
 {
     /**
-     * @return array{0: 's'|'ssc'|'s', 1: array}
+     * @return array{0: 's'|'ssc'|'', 1: array{verify_peer?: bool, peer_name?: string, SNI_enabled?: bool, allow_self_signed?: bool}}
      */
     public function create(UriInterface $uri, SslConfiguration $config): array
     {
@@ -46,6 +46,9 @@ class SslConfigurationFactory
         return [$sslConfig, []];
     }
 
+    /**
+     * @return array{verify_peer?: bool, peer_name?: string, SNI_enabled?: bool, allow_self_signed?: bool}
+     */
     private function enableSsl(string $host, string $sslConfig, SslConfiguration $config): array
     {
         $options = [

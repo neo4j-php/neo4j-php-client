@@ -14,9 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Dotenv\Dotenv;
-use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Basic\Driver;
+use Laudis\Neo4j\Basic\Session;
 use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
 use Laudis\Neo4j\Types\Node;
@@ -24,15 +24,13 @@ use PHPUnit\Framework\TestCase;
 
 final class EdgeCasesTest extends TestCase
 {
-    private ?ClientInterface $client = null;
+    private ?Session $session = null;
 
     protected function setUp(): void
     {
         parent::setUp();
         if (($uri = $this->getBoltUri()) !== null) {
-            $this->client = ClientBuilder::create()
-                ->withDriver('neo4j', $uri)
-                ->build();
+            $this->session = Driver::create($uri)->createSession();
         }
     }
 
@@ -60,15 +58,15 @@ final class EdgeCasesTest extends TestCase
 
     public function testRunALotOfStatements(): void
     {
-        if ($this->client === null) {
+        if ($this->session === null) {
             self::markTestSkipped('No neo4j uri provided');
         }
 
-        $this->client->run('MATCH (n) DETACH DELETE n');
-        $this->client->run(MoviesFixture::CQL);
+        $this->session->run('MATCH (n) DETACH DELETE n');
+        $this->session->run(MoviesFixture::CQL);
 
-        $persons = $this->client->run('MATCH (p:Person) RETURN p');
-        $movies = $this->client->run('MATCH (m:Movie) RETURN m');
+        $persons = $this->session->run('MATCH (p:Person) RETURN p');
+        $movies = $this->session->run('MATCH (m:Movie) RETURN m');
 
         $personIds = [];
         foreach ($persons->toArray() as $record) {
@@ -98,20 +96,20 @@ final class EdgeCasesTest extends TestCase
             }
         }
 
-        $this->client->runStatements($statements);
+        $this->session->runStatements($statements);
         self::assertCount(4978, $statements);
     }
 
     public function testGettingKeysFromArraylist(): void
     {
-        if ($this->client === null) {
+        if ($this->session === null) {
             self::markTestSkipped('No neo4j uri provided');
         }
 
-        $this->client->run('MATCH (n) DETACH DELETE n');
-        $this->client->run(MoviesFixture::CQL);
+        $this->session->run('MATCH (n) DETACH DELETE n');
+        $this->session->run(MoviesFixture::CQL);
 
-        $result = $this->client->run('MATCH (n:Person)-[r:ACTED_IN]->(m)
+        $result = $this->session->run('MATCH (n:Person)-[r:ACTED_IN]->(m)
         RETURN n, {roles: r.roles, movie: m} AS actInfo LIMIT 1');
 
         $resultKeys = [];
@@ -119,6 +117,7 @@ final class EdgeCasesTest extends TestCase
             $keys = $record->keys();
             foreach ($keys as $key) {
                 // Calling count inside foreach breaks it
+                /** @psalm-suppress UnusedFunctionCall */
                 count($keys);
                 $resultKeys[] = $key;
             }

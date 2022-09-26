@@ -32,7 +32,7 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 /**
  * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.
  */
-final class BoltFactory
+class BoltFactory
 {
     private BasicConnectionFactoryInterface $connectionFactory;
     private ProtocolFactory $protocolFactory;
