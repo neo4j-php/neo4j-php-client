@@ -17,6 +17,7 @@ use Generator;
 use function json_encode;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Resolvable;
+use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -49,14 +50,16 @@ final class HttpConnectionPool implements ConnectionPoolInterface
      * @psalm-readonly
      */
     private Resolvable $streamFactory;
-    private UriInterface $uri;
     private AuthenticateInterface $auth;
     private string $userAgent;
+    /** @var Resolvable<string> */
+    private Resolvable $tsxUrl;
 
     /**
      * @param Resolvable<StreamFactoryInterface> $streamFactory
      * @param Resolvable<RequestFactory>         $requestFactory
      * @param Resolvable<ClientInterface>        $client
+     * @param Resolvable<string>                 $tsxUrl
      *
      * @psalm-mutation-free
      */
@@ -64,26 +67,27 @@ final class HttpConnectionPool implements ConnectionPoolInterface
         Resolvable $client,
         Resolvable $requestFactory,
         Resolvable $streamFactory,
-        UriInterface $uri,
         AuthenticateInterface $auth,
-        string $userAgent
+        string $userAgent,
+        Resolvable $tsxUrl
     ) {
         $this->client = $client;
         $this->requestFactory = $requestFactory;
         $this->streamFactory = $streamFactory;
-        $this->uri = $uri;
         $this->auth = $auth;
         $this->userAgent = $userAgent;
+        $this->tsxUrl = $tsxUrl;
     }
 
     public function acquire(SessionConfiguration $config): Generator
     {
         yield 0.0;
 
-        $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri);
+        $uri = Uri::create($this->tsxUrl->resolve());
+        $request = $this->requestFactory->resolve()->createRequest('POST', $uri);
 
         $path = $request->getUri()->getPath().'/commit';
-        $uri = $this->uri->withPath($path);
+        $uri = $uri->withPath($path);
         $request = $request->withUri($uri);
 
         $body = json_encode([

@@ -69,10 +69,6 @@ final class HttpSession implements SessionInterface
      * @var Resolvable<string>
      */
     private Resolvable $uri;
-    /** @psalm-readonly */
-    private AuthenticateInterface $auth;
-    /** @psalm-readonly */
-    private string $userAgent;
 
     /**
      * @psalm-mutation-free
@@ -98,8 +94,6 @@ final class HttpSession implements SessionInterface
         $this->formatter = $formatter;
         $this->requestFactory = $requestFactory;
         $this->uri = $uri;
-        $this->auth = $auth;
-        $this->userAgent = $userAgent;
     }
 
     /**
