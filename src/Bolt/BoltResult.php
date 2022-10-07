@@ -13,13 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use function array_splice;
 use function count;
 use Generator;
 use Iterator;
 
 /**
- * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type BoltCypherStats from FormatterInterface
  *
  * @implements Iterator<int, list>
  */

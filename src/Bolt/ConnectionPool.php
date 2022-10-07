@@ -109,6 +109,11 @@ final class ConnectionPool implements ConnectionPoolInterface
         }
     }
 
+    public function __destruct()
+    {
+        echo 'Destructing connection pool';
+    }
+
     /**
      * @return BoltConnection|null
      */
@@ -117,7 +122,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         $streamingConnection = null;
         $requiresReconnectConnection = null;
         // Ensure random connection reuse before picking one.
-        shuffle($this->activeConnections);
+//        shuffle($this->activeConnections);
 
         foreach ($this->activeConnections as $activeConnection) {
             // We prefer a connection that is just ready

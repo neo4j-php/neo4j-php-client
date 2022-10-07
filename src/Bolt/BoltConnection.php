@@ -363,7 +363,9 @@ class BoltConnection implements ConnectionInterface
     public function __destruct()
     {
         if ($this->serverState !== 'FAILED' && $this->isOpen()) {
-            $this->consumeResults();
+            if (in_array($this->serverState, ['STREAMING', 'TX_STREAMING'])) {
+                $this->consumeResults();
+            }
 
             $this->protocol()->goodbye();
 
