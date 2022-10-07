@@ -194,9 +194,4 @@ final class Session implements SessionInterface
     {
         return $this->bookmarkHolder->getBookmark();
     }
-
-    public function __destruct()
-    {
-        echo 'destroyed session';
-    }
 }

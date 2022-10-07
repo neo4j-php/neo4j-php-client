@@ -17,6 +17,7 @@ use Bolt\error\IgnoredException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
+use function in_array;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -244,7 +245,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder): array
     {
-        if (!str_starts_with($this->serverState, 'TX_') || str_starts_with($this->getServerVersion(), '3')) {
+        if (in_array($this->serverState, ['STREAMING', 'TX_STREAMING'])) {
             $this->consumeResults();
         }
 

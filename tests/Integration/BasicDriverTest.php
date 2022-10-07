@@ -57,6 +57,8 @@ final class BasicDriverTest extends TestCase
     {
         $driver = Driver::create($connection);
 
+        global $session;
+
         $session = $driver->createSession();
 
         $session->run('MATCH (x) DETACH DELETE x');

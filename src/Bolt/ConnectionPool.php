@@ -109,11 +109,6 @@ final class ConnectionPool implements ConnectionPoolInterface
         }
     }
 
-    public function __destruct()
-    {
-        echo 'Destructing connection pool';
-    }
-
     /**
      * @return BoltConnection|null
      */
@@ -122,12 +117,12 @@ final class ConnectionPool implements ConnectionPoolInterface
         $streamingConnection = null;
         $requiresReconnectConnection = null;
         // Ensure random connection reuse before picking one.
-//        shuffle($this->activeConnections);
+        shuffle($this->activeConnections);
 
         foreach ($this->activeConnections as $activeConnection) {
             // We prefer a connection that is just ready
             if ($activeConnection->getServerState() === 'READY') {
-                if ($this->factory->canReuseConnection($activeConnection, $this->data)) {
+                if ($this->factory->canReuseConnection($activeConnection, $this->data, $config)) {
                     return $this->factory->reuseConnection($activeConnection, $config);
                 } else {
                     $requiresReconnectConnection = $activeConnection;
@@ -142,7 +137,7 @@ final class ConnectionPool implements ConnectionPoolInterface
             // https://github.com/neo4j-php/neo4j-php-client/issues/146
             // NOTE: we cannot work with TX_STREAMING as we cannot force the transaction to implicitly close.
             if ($streamingConnection === null && $activeConnection->getServerState() === 'STREAMING') {
-                if ($this->factory->canReuseConnection($activeConnection, $this->data)) {
+                if ($this->factory->canReuseConnection($activeConnection, $this->data, $config)) {
                     $streamingConnection = $activeConnection;
                     if (method_exists($streamingConnection, 'consumeResults')) {
                         $streamingConnection->consumeResults(); // State should now be ready
