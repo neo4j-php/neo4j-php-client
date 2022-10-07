@@ -17,6 +17,7 @@ use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\Session;
+use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
@@ -105,7 +106,7 @@ final class Neo4jDriver implements DriverInterface
     public function verifyConnectivity(): bool
     {
         try {
-            $this->pool->acquire(SessionConfiguration::default());
+            GeneratorHelper::getReturnFromGenerator($this->pool->acquire(SessionConfiguration::default()));
         } catch (Throwable $e) {
             return false;
         }

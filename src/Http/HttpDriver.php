@@ -34,7 +34,7 @@ use function uniqid;
  *
  * @implements DriverInterface<T>
  *
- * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMResults from OGMFormatter
  */
 final class HttpDriver implements DriverInterface
 {
