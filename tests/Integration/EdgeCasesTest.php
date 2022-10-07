@@ -123,6 +123,6 @@ final class EdgeCasesTest extends TestCase
             }
         }
 
-        self::assertCount(2, $resultKeys);
+        self::assertCount(1, $resultKeys);
     }
 }

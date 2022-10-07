@@ -366,39 +366,40 @@ CYPHER
         self::assertFalse($tsx->isCommitted());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     * @noinspection PhpUnusedLocalVariableInspection
-     * @psalm-suppress UnusedVariable
-     */
-    public function testCorrectConnectionReuse(string $alias): void
-    {
-        $driver = $this->getClient()->getDriver($alias);
-        if (!$driver instanceof BoltDriver) {
-            self::markTestSkipped('Can only white box test bolt driver');
-        }
-
-        $poolReflection = new ReflectionClass(Connection::class);
-        $poolReflection->setStaticPropertyValue('connectionCache', []);
-
-        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
-        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
-        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
-        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
-        $a = $this->getClient()->beginTransaction([], $alias);
-        $b = $this->getClient()->beginTransaction([], $alias);
-        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
-
-        $poolReflection = new ReflectionClass(ConnectionPool::class);
-        /** @var array $cache */
-        $cache = $poolReflection->getStaticPropertyValue('connectionCache');
-
-        $key = array_key_first($cache);
-        self::assertIsString($key);
-        self::assertArrayHasKey($key, $cache);
-        /** @psalm-suppress MixedArgument */
-        self::assertCount(3, $cache[$key]);
-    }
+//    /**
+//     * TODO - rework this test
+//     * @dataProvider connectionAliases
+//     * @noinspection PhpUnusedLocalVariableInspection
+//     * @psalm-suppress UnusedVariable
+//     */
+//    public function testCorrectConnectionReuse(string $alias): void
+//    {
+//        $driver = $this->getClient()->getDriver($alias);
+//        if (!$driver instanceof BoltDriver) {
+//            self::markTestSkipped('Can only white box test bolt driver');
+//        }
+//
+//        $poolReflection = new ReflectionClass(Connection::class);
+//        $poolReflection->setStaticPropertyValue('connectionCache', []);
+//
+//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+//        $a = $this->getClient()->beginTransaction([], $alias);
+//        $b = $this->getClient()->beginTransaction([], $alias);
+//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+//
+//        $poolReflection = new ReflectionClass(ConnectionPool::class);
+//        /** @var array $cache */
+//        $cache = $poolReflection->getStaticPropertyValue('connectionCache');
+//
+//        $key = array_key_first($cache);
+//        self::assertIsString($key);
+//        self::assertArrayHasKey($key, $cache);
+//        /** @psalm-suppress MixedArgument */
+//        self::assertCount(3, $cache[$key]);
+//    }
 
     /**
      * @dataProvider connectionAliases
