@@ -26,6 +26,8 @@ use function sprintf;
  * @psalm-immutable
  *
  * @extends AbstractPropertyObject<int|string, int|string>
+ *
+ * @psalm-suppress TypeDoesNotContainType
  */
 final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvertibleInterface
 {

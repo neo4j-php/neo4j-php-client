@@ -25,6 +25,8 @@ use UnexpectedValueException;
  * @psalm-immutable
  *
  * @extends AbstractPropertyObject<int, int>
+ *
+ * @psalm-suppress TypeDoesNotContainType
  */
 final class Date extends AbstractPropertyObject implements BoltConvertibleInterface
 {
