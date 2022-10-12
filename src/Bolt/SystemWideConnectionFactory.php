@@ -35,6 +35,9 @@ class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
         $this->factory = $factory;
     }
 
+    /**
+     * @psalm-suppress InvalidNullableReturnType
+     */
     public static function getInstance(): SystemWideConnectionFactory
     {
         if (self::$instance === null) {
@@ -46,6 +49,7 @@ class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
             }
         }
 
+        /** @psalm-suppress NullableReturnStatement */
         return self::$instance;
     }
 
