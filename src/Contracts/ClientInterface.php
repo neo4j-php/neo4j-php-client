@@ -70,9 +70,9 @@ interface ClientInterface extends TransactionInterface
     /**
      * Gets the driver with the provided alias. Gets the default driver if no alias is provided.
      *
-     * @return DriverInterface<ResultFormat>
+     * The driver is guaranteed to have its connectivity verified at least once during its lifetime.
      *
-     * @psalm-mutation-free
+     * @return DriverInterface<ResultFormat>
      */
     public function getDriver(?string $alias): DriverInterface;
 

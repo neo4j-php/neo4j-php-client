@@ -13,15 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use function array_key_exists;
-use InvalidArgumentException;
+use Laudis\Neo4j\Common\DriverSetupManager;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Databags\DriverConfiguration;
-use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -37,26 +33,24 @@ use Laudis\Neo4j\Types\CypherList;
  */
 final class Client implements ClientInterface
 {
-    private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
-    /** @var non-empty-array<string, DriverInterface<ResultFormat>> */
-    private array $drivers;
-    /** @psalm-readonly */
-    private ?string $default;
     private SessionConfiguration $defaultSessionConfiguration;
     private TransactionConfiguration $defaultTransactionConfiguration;
+    /** @var DriverSetupManager<ResultFormat> */
+    private DriverSetupManager $driverSetups;
 
     /**
      * @psalm-mutation-free
      *
-     * @param array<string, DriverSetup>       $driverSetups
-     * @param FormatterInterface<ResultFormat> $formatter
+     * @param DriverSetupManager<ResultFormat> $driverSetups
      */
-    public function __construct(array $driverSetups, DriverConfiguration $defaultDriverConfiguration, SessionConfiguration $defaultSessionConfiguration, TransactionConfiguration $defaultTransactionConfiguration, FormatterInterface $formatter, ?string $default)
-    {
-        $this->default = $default;
-        $this->drivers = $this->createDrivers($driverSetups, $formatter, $defaultDriverConfiguration);
+    public function __construct(
+        DriverSetupManager $driverSetups,
+        SessionConfiguration $defaultSessionConfiguration,
+        TransactionConfiguration $defaultTransactionConfiguration
+    ) {
         $this->defaultSessionConfiguration = $defaultSessionConfiguration;
         $this->defaultTransactionConfiguration = $defaultTransactionConfiguration;
+        $this->driverSetups = $driverSetups;
     }
 
     public function run(string $statement, iterable $parameters = [], ?string $alias = null)
@@ -84,23 +78,12 @@ final class Client implements ClientInterface
         return $session->beginTransaction($statements, $config);
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function getDriver(?string $alias): DriverInterface
     {
-        $alias = $this->decideAlias($alias);
-
-        if (!array_key_exists($alias, $this->drivers)) {
-            throw new InvalidArgumentException(sprintf('The provided alias: "%s" was not found in the client', $alias));
-        }
-
-        return $this->drivers[$alias];
+        return $this->driverSetups->getDriver($alias);
     }
 
     /**
-     * @psalm-mutation-free
-     *
      * @return SessionInterface<ResultFormat>
      */
     private function startSession(?string $alias, SessionConfiguration $configuration): SessionInterface
@@ -131,39 +114,7 @@ final class Client implements ClientInterface
 
     public function verifyConnectivity(?string $driver = null): bool
     {
-        return $this->getDriver($driver)->verifyConnectivity();
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    private function decideAlias(?string $alias): string
-    {
-        return $alias ?? $this->default ?? array_key_first($this->drivers);
-    }
-
-    /**
-     * @param array<string, DriverSetup>       $driverSetups
-     * @param FormatterInterface<ResultFormat> $formatter
-     *
-     * @return non-empty-array<string, DriverInterface<ResultFormat>>
-     */
-    private function createDrivers(array $driverSetups, FormatterInterface $formatter, DriverConfiguration $configuration): array
-    {
-        if (count($driverSetups) === 0) {
-            $drivers = ['default' => DriverFactory::create(self::DEFAULT_DRIVER_CONFIG, null, null, $formatter)];
-        } else {
-            $drivers = [];
-            foreach ($driverSetups as $alias => $setup) {
-                $uri = $setup->getUri();
-                $auth = $setup->getAuth();
-
-                $drivers[$alias] = DriverFactory::create($uri, $configuration, $auth, $formatter);
-            }
-        }
-
-        /** @var non-empty-array<string, DriverInterface<ResultFormat>> */
-        return $drivers;
+        return $this->driverSetups->verifyConnectivity($driver);
     }
 
     private function getTsxConfig(?TransactionConfiguration $config): TransactionConfiguration
