@@ -38,7 +38,7 @@ class ProtocolFactory
             }
 
             if (!$protocol instanceof V3) {
-                throw new RuntimeException('Client only supports bolt version 3 and up.');
+                throw new RuntimeException('Client only supports bolt version ^3.0 and ^4.0.');
             }
 
             $response = $auth->authenticateBolt($protocol, $userAgent);
