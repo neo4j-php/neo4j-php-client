@@ -17,9 +17,10 @@ use Exception;
 use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\Session;
-use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\DNSAddressResolver;
+use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -74,7 +75,7 @@ final class Neo4jDriver implements DriverInterface
      *
      * @psalm-suppress MixedReturnTypeCoercion
      */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
+    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null, ?AddressResolverInterface $resolver = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
@@ -82,11 +83,12 @@ final class Neo4jDriver implements DriverInterface
 
         $configuration ??= DriverConfiguration::default();
         $authenticate ??= Authenticate::fromUrl($uri);
+        $resolver ??= new DNSAddressResolver();
 
         /** @psalm-suppress InvalidArgument */
         return new self(
             $uri,
-            Neo4jConnectionPool::create($uri, $authenticate, $configuration),
+            Neo4jConnectionPool::create($uri, $authenticate, $configuration, $resolver),
             $formatter ?? OGMFormatter::create(),
         );
     }

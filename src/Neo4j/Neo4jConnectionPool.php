@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Laudis\Neo4j\Contracts\AddressResolverInterface;
-use RuntimeException;
 use function array_slice;
 use function array_unique;
 use Bolt\error\MessageException;
@@ -25,6 +23,7 @@ use Bolt\protocol\V4_4;
 use function count;
 use Exception;
 use Generator;
+use function implode;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
@@ -33,6 +32,7 @@ use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -43,14 +43,15 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
-use function implode;
-use function sprintf;
 use const PHP_INT_MAX;
 use Psr\Http\Message\UriInterface;
 use Psr\SimpleCache\CacheInterface;
 use function random_int;
+use RuntimeException;
+use function sprintf;
 use function str_replace;
 use function str_starts_with;
+use Throwable;
 use function time;
 
 /**
@@ -62,8 +63,6 @@ use function time;
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
-    /** @psalm-readonly */
-    private BoltConnectionPool $pool;
     private AddressResolverInterface $resolver;
     /** @var array<string, ConnectionPool> */
     private static array $pools = [];
@@ -75,15 +74,16 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(SemaphoreInterface $semaphore, BoltFactory $factory, ConnectionRequestData $data, CacheInterface $cache)
+    public function __construct(SemaphoreInterface $semaphore, BoltFactory $factory, ConnectionRequestData $data, CacheInterface $cache, AddressResolverInterface $resolver)
     {
         $this->semaphore = $semaphore;
         $this->factory = $factory;
         $this->data = $data;
         $this->cache = $cache;
+        $this->resolver = $resolver;
     }
 
-    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf): self
+    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver): self
     {
         $semaphore = SemaphoreFactory::getInstance()->create($uri, $conf);
 
@@ -96,7 +96,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 $conf->getUserAgent(),
                 $conf->getSslConfiguration()
             ),
-            Cache::getInstance()
+            Cache::getInstance(),
+            $resolver
         );
     }
 
@@ -129,17 +130,23 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $triedAddresses = [];
 
         if ($table == null) {
-            $addresses = $this->resolver->getAddresses($this->data->getUri());
+            $addresses = $this->resolver->getAddresses((string) $this->data->getUri());
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
-                $pool = $this->createOrGetPool($address);
-                if ($this->pool->canConnect($this->data->getUri()->withHost($address), $this->data->getAuth())) {
+                $pool = $this->createOrGetPool(Uri::create($address));
+                try {
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
-                    $table      = $this->routingTable($connection, $config);
-                    $this->cache->set($key, $table, $table->getTtl());
-                    $pool->release($connection);
+                    $table = $this->routingTable($connection, $config);
+                } catch (Throwable $e) {
+                    // todo - once client side logging is implemented it must be conveyed here.
+                    continue; // We continue if something is wrong with the current server
                 }
+
+                $this->cache->set($key, $table, $table->getTtl());
+                $pool->release($connection);
+
+                break;
             }
         }
 

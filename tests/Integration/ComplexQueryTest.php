@@ -15,8 +15,6 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Bolt\error\MessageException;
 use Generator;
-use Laudis\Neo4j\Basic\Driver;
-use Throwable;
 use function getenv;
 use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
@@ -33,6 +31,7 @@ use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
 use function str_starts_with;
+use Throwable;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
