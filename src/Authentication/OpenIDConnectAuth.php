@@ -16,6 +16,7 @@ use Bolt\protocol\V3;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
+use function sprintf;
 
 final class OpenIDConnectAuth implements AuthenticateInterface
 {
@@ -47,5 +48,10 @@ final class OpenIDConnectAuth implements AuthenticateInterface
     {
         /** @var array{server: string, connection_id: string, hints: list} */
         return $bolt->hello(Auth::bearer($this->token));
+    }
+
+    public function toString(UriInterface $uri): string
+    {
+        return sprintf('OpenId %s@%s:%s', $this->token, $uri->getHost(), $uri->getPort() ?? '');
     }
 }

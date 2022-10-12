@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use JsonException;
+use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -68,10 +69,6 @@ final class HttpSession implements SessionInterface
      * @var Resolvable<string>
      */
     private Resolvable $uri;
-    /** @psalm-readonly */
-    private AuthenticateInterface $auth;
-    /** @psalm-readonly */
-    private string $userAgent;
 
     /**
      * @psalm-mutation-free
@@ -97,8 +94,6 @@ final class HttpSession implements SessionInterface
         $this->formatter = $formatter;
         $this->requestFactory = $requestFactory;
         $this->uri = $uri;
-        $this->auth = $auth;
-        $this->userAgent = $userAgent;
     }
 
     /**
@@ -107,7 +102,9 @@ final class HttpSession implements SessionInterface
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
         $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve());
-        $connection = $this->pool->acquire($request->getUri(), $this->auth, $this->config);
+        $connection = $this->pool->acquire($this->config);
+        /** @var HttpConnection */
+        $connection = GeneratorHelper::getReturnFromGenerator($connection);
         $content = HttpHelper::statementsToJson($connection, $this->formatter, $statements);
         $request = $this->formatter->decorateRequest($request, $connection);
         $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->resolve()->createStream($content));
@@ -170,7 +167,9 @@ final class HttpSession implements SessionInterface
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         $request = $this->requestFactory->resolve()->createRequest('POST', $this->uri->resolve());
-        $connection = $this->pool->acquire($request->getUri(), $this->auth, $this->config);
+        $connection = $this->pool->acquire($this->config);
+        /** @var HttpConnection */
+        $connection = GeneratorHelper::getReturnFromGenerator($connection);
 
         $request = $this->formatter->decorateRequest($request, $connection);
         $request->getBody()->write(HttpHelper::statementsToJson($connection, $this->formatter, $statements ?? []));

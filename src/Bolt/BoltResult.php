@@ -17,9 +17,10 @@ use function array_splice;
 use function count;
 use Generator;
 use Iterator;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 
 /**
- * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type BoltCypherStats from FormatterInterface
  *
  * @implements Iterator<int, list>
  */

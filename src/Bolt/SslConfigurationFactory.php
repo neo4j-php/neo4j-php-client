@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Neo4j PHP Client and Driver package.
  *
@@ -14,37 +16,43 @@ namespace Laudis\Neo4j\Bolt;
 use function explode;
 use const FILTER_VALIDATE_IP;
 use function filter_var;
-use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
 use Psr\Http\Message\UriInterface;
 
-final class SslConfigurator
+class SslConfigurationFactory
 {
-    public function configure(UriInterface $uri, DriverConfiguration $config): ?array
+    /**
+     * @return array{0: 's'|'ssc'|'', 1: array{verify_peer?: bool, peer_name?: string, SNI_enabled?: bool, allow_self_signed?: bool}}
+     */
+    public function create(UriInterface $uri, SslConfiguration $config): array
     {
-        $sslMode = $config->getSslConfiguration()->getMode();
+        $mode = $config->getMode();
         $sslConfig = '';
-        if ($sslMode === SslMode::FROM_URL()) {
+        if ($mode === SslMode::FROM_URL()) {
             $scheme = $uri->getScheme();
             $explosion = explode('+', $scheme, 2);
             $sslConfig = $explosion[1] ?? '';
-        } elseif ($sslMode === SslMode::ENABLE()) {
+        } elseif ($mode === SslMode::ENABLE()) {
             $sslConfig = 's';
-        } elseif ($sslMode === SslMode::ENABLE_WITH_SELF_SIGNED()) {
+        } elseif ($mode === SslMode::ENABLE_WITH_SELF_SIGNED()) {
             $sslConfig = 'ssc';
         }
 
         if (str_starts_with($sslConfig, 's')) {
-            return $this->enableSsl($uri->getHost(), $sslConfig, $config);
+            return [$sslConfig, $this->enableSsl($uri->getHost(), $sslConfig, $config)];
         }
 
-        return null;
+        return [$sslConfig, []];
     }
 
-    private function enableSsl(string $host, string $sslConfig, DriverConfiguration $config): ?array
+    /**
+     * @return array{verify_peer?: bool, peer_name?: string, SNI_enabled?: bool, allow_self_signed?: bool}
+     */
+    private function enableSsl(string $host, string $sslConfig, SslConfiguration $config): array
     {
         $options = [
-            'verify_peer' => $config->getSslConfiguration()->isVerifyPeer(),
+            'verify_peer' => $config->isVerifyPeer(),
             'peer_name' => $host,
         ];
         if (!filter_var($host, FILTER_VALIDATE_IP)) {
@@ -60,6 +68,6 @@ final class SslConfigurator
             return $options;
         }
 
-        return null;
+        return [];
     }
 }

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Http;
 
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
@@ -32,14 +33,22 @@ final class HttpConnection implements ConnectionInterface
     private ConnectionConfiguration $config;
 
     private bool $isOpen = true;
+    private AuthenticateInterface $authenticate;
+    private string $userAgent;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(ClientInterface $client, ConnectionConfiguration $config)
-    {
+    public function __construct(
+        ClientInterface $client,
+        ConnectionConfiguration $config,
+        AuthenticateInterface $authenticate,
+        string $userAgent
+    ) {
         $this->client = $client;
         $this->config = $config;
+        $this->authenticate = $authenticate;
+        $this->userAgent = $userAgent;
     }
 
     /**
@@ -130,5 +139,37 @@ final class HttpConnection implements ConnectionInterface
     public function setTimeout(float $timeout): void
     {
         // Impossible to actually set a timeout with PSR definition
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function getAuthentication(): AuthenticateInterface
+    {
+        return $this->authenticate;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getServerState(): string
+    {
+        return 'UNKNOWN';
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getEncryptionLevel(): string
+    {
+        return $this->config->getEncryptionLevel();
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getUserAgent(): string
+    {
+        return $this->userAgent;
     }
 }

@@ -17,6 +17,8 @@ use function call_user_func;
 use Composer\InstalledVersions;
 use function function_exists;
 use function is_callable;
+use Laudis\Neo4j\Common\Cache;
+use Psr\SimpleCache\CacheInterface;
 use function sprintf;
 
 /**
@@ -27,20 +29,32 @@ use function sprintf;
 final class DriverConfiguration
 {
     public const DEFAULT_USER_AGENT = 'neo4j-php-client/%s';
+    public const DEFAULT_POOL_SIZE = 0x2F;
+    public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
+    public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
 
     private ?string $userAgent;
     /** @var pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
     private $httpPsrBindings;
     private SslConfiguration $sslConfig;
+    private ?int $maxPoolSize;
+    /** @var pure-callable():(CacheInterface|null)|CacheInterface|null */
+    private $cache;
+    /** @var ?float */
+    private ?float $acquireConnectionTimeout;
 
     /**
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
+     * @param pure-callable():(CacheInterface|null)|CacheInterface|null $cache
      */
-    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig)
+    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize, $cache, ?float $acquireConnectionTimeout)
     {
         $this->userAgent = $userAgent;
         $this->httpPsrBindings = $httpPsrBindings;
         $this->sslConfig = $sslConfig;
+        $this->maxPoolSize = $maxPoolSize;
+        $this->cache = $cache;
+        $this->acquireConnectionTimeout = $acquireConnectionTimeout;
     }
 
     /**
@@ -48,9 +62,9 @@ final class DriverConfiguration
      *
      * @pure
      */
-    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig): self
+    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize, CacheInterface $cache, float $acquireConnectionTimeout): self
     {
-        return new self($userAgent, $httpPsrBindings, $sslConfig);
+        return new self($userAgent, $httpPsrBindings, $sslConfig, $maxPoolSize, $cache, $acquireConnectionTimeout);
     }
 
     /**
@@ -61,7 +75,8 @@ final class DriverConfiguration
      */
     public static function default(): self
     {
-        return new self(self::DEFAULT_USER_AGENT, HttpPsrBindings::default(), SslConfiguration::default());
+        /** @psalm-suppress ImpureMethodCall */
+        return new self(null, HttpPsrBindings::default(), SslConfiguration::default(), null, null, null);
     }
 
     public function getUserAgent(): string
@@ -124,5 +139,50 @@ final class DriverConfiguration
         $bindings = (is_callable($this->httpPsrBindings)) ? call_user_func($this->httpPsrBindings) : $this->httpPsrBindings;
 
         return $bindings ?? HttpPsrBindings::default();
+    }
+
+    public function getMaxPoolSize(): int
+    {
+        return $this->maxPoolSize ?? self::DEFAULT_POOL_SIZE;
+    }
+
+    public function withMaxPoolSize(?int $maxPoolSize): self
+    {
+        $tbr = clone $this;
+        $tbr->maxPoolSize = $maxPoolSize;
+
+        return $tbr;
+    }
+
+    /**
+     * @param pure-callable():(CacheInterface|null)|CacheInterface|null $cache
+     */
+    public function withCache($cache): self
+    {
+        $tbr = clone $this;
+        $tbr->cache = $cache;
+
+        return $tbr;
+    }
+
+    public function getCache(): CacheInterface
+    {
+        $cache = (is_callable($this->cache)) ? call_user_func($this->cache) : $this->cache;
+
+        /** @psalm-suppress ImpureMethodCall */
+        return $cache ?? Cache::getInstance();
+    }
+
+    public function getAcquireConnectionTimeout(): float
+    {
+        return $this->acquireConnectionTimeout ?? self::DEFAULT_ACQUIRE_CONNECTION_TIMEOUT;
+    }
+
+    public function withAcquireConnectionTimeout(?float $acquireConnectionTimeout): self
+    {
+        $tbr = clone $this;
+        $tbr->acquireConnectionTimeout = $acquireConnectionTimeout;
+
+        return $tbr;
     }
 }

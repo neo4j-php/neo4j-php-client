@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\error\ConnectionTimeoutException;
 use Bolt\error\MessageException;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -92,8 +91,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->isCommitted = true;
         } catch (MessageException $e) {
             $this->handleMessageException($e);
-        } catch (ConnectionTimeoutException $e) {
-            $this->handleConnectionTimeoutException($e);
         }
 
         return $tbr;
@@ -106,8 +103,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->isRolledBack = true;
         } catch (MessageException $e) {
             $this->handleMessageException($e);
-        } catch (ConnectionTimeoutException $e) {
-            $this->handleConnectionTimeoutException($e);
         }
     }
 
@@ -138,8 +133,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $run = microtime(true);
         } catch (MessageException $e) {
             $this->handleMessageException($e);
-        } catch (ConnectionTimeoutException $e) {
-            $this->handleConnectionTimeoutException($e);
         }
 
         return $this->formatter->formatBoltResult(
@@ -182,18 +175,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->isRolledBack = true;
         }
         throw $exception;
-    }
-
-    /**
-     * @throws ConnectionTimeoutException
-     *
-     * @return never
-     */
-    private function handleConnectionTimeoutException(ConnectionTimeoutException $e): void
-    {
-        $this->connection->reset();
-
-        throw $e;
     }
 
     public function isRolledBack(): bool

@@ -13,13 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use Generator;
 use function json_encode;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Resolvable;
+use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Formatter\BasicFormatter;
@@ -29,7 +31,7 @@ use Psr\Http\Message\UriInterface;
 use Throwable;
 
 /**
- * @implements ConnectionPoolInterface<ClientInterface>
+ * @implements ConnectionPoolInterface<HttpConnection>
  */
 final class HttpConnectionPool implements ConnectionPoolInterface
 {
@@ -48,32 +50,44 @@ final class HttpConnectionPool implements ConnectionPoolInterface
      * @psalm-readonly
      */
     private Resolvable $streamFactory;
-    /** @psalm-readonly */
-    private DriverConfiguration $config;
+    private AuthenticateInterface $auth;
+    private string $userAgent;
+    /** @var Resolvable<string> */
+    private Resolvable $tsxUrl;
 
     /**
      * @param Resolvable<StreamFactoryInterface> $streamFactory
      * @param Resolvable<RequestFactory>         $requestFactory
      * @param Resolvable<ClientInterface>        $client
+     * @param Resolvable<string>                 $tsxUrl
+     *
      * @psalm-mutation-free
      */
-    public function __construct(Resolvable $client, Resolvable $requestFactory, Resolvable $streamFactory, DriverConfiguration $config)
-    {
+    public function __construct(
+        Resolvable $client,
+        Resolvable $requestFactory,
+        Resolvable $streamFactory,
+        AuthenticateInterface $auth,
+        string $userAgent,
+        Resolvable $tsxUrl
+    ) {
         $this->client = $client;
         $this->requestFactory = $requestFactory;
         $this->streamFactory = $streamFactory;
-        $this->config = $config;
+        $this->auth = $auth;
+        $this->userAgent = $userAgent;
+        $this->tsxUrl = $tsxUrl;
     }
 
-    public function acquire(
-        UriInterface $uri,
-        AuthenticateInterface $authenticate,
-        SessionConfiguration $config
-    ): HttpConnection {
+    public function acquire(SessionConfiguration $config): Generator
+    {
+        yield 0.0;
+
+        $uri = Uri::create($this->tsxUrl->resolve());
         $request = $this->requestFactory->resolve()->createRequest('POST', $uri);
 
         $path = $request->getUri()->getPath().'/commit';
-        $uri = $request->getUri()->withPath($path);
+        $uri = $uri->withPath($path);
         $request = $request->withUri($uri);
 
         $body = json_encode([
@@ -84,6 +98,7 @@ CALL dbms.components()
 YIELD name, versions, edition
 RETURN name, versions, edition
 CYPHER
+    ,
                 ],
             ],
             'resultDataContents' => [],
@@ -105,11 +120,11 @@ CYPHER
             $version,
             ConnectionProtocol::HTTP(),
             $config->getAccessMode(),
-            $this->config,
-            new DatabaseInfo($config->getDatabase() ?? '')
+            new DatabaseInfo($config->getDatabase() ?? ''),
+            ''
         );
 
-        return new HttpConnection($this->client->resolve(), $config);
+        return new HttpConnection($this->client->resolve(), $config, $this->auth, $this->userAgent);
     }
 
     public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate, ?string $userAgent = null): bool
@@ -122,5 +137,10 @@ CYPHER
         } catch (Throwable $e) {
             return false;
         }
+    }
+
+    public function release(ConnectionInterface $connection): void
+    {
+        // Nothing to release in the current HTTP Protocol implementation
     }
 }

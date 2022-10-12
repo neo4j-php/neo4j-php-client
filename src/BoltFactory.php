@@ -14,108 +14,90 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use Bolt\Bolt;
-use Bolt\connection\IConnection;
-use Bolt\connection\Socket;
-use Bolt\connection\StreamSocket;
-use Bolt\error\ConnectException;
-use Bolt\error\MessageException;
-use Bolt\protocol\V3;
-use Exception;
-use function extension_loaded;
-use Laudis\Neo4j\Bolt\SslConfigurator;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Databags\DriverConfiguration;
+use function explode;
+use Laudis\Neo4j\Bolt\BoltConnection;
+use Laudis\Neo4j\Bolt\ProtocolFactory;
+use Laudis\Neo4j\Bolt\SslConfigurationFactory;
+use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
+use Laudis\Neo4j\Bolt\UriConfiguration;
+use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Databags\ConnectionRequestData;
+use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
-use Laudis\Neo4j\Exception\Neo4jException;
-use Psr\Http\Message\UriInterface;
-use RuntimeException;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 /**
  * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.
  */
-final class BoltFactory
+class BoltFactory
 {
-    /** @psalm-readonly */
-    private Bolt $bolt;
-    /** @psalm-readonly */
-    private AuthenticateInterface $auth;
-    /** @psalm-readonly */
-    private string $userAgent;
-    /** @psalm-readonly */
-    private IConnection $connection;
+    private BasicConnectionFactoryInterface $connectionFactory;
+    private ProtocolFactory $protocolFactory;
+    private SslConfigurationFactory $sslConfigurationFactory;
 
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(Bolt $bolt, AuthenticateInterface $auth, string $userAgent, IConnection $connection)
+    public function __construct(BasicConnectionFactoryInterface $connectionFactory, ProtocolFactory $protocolFactory, SslConfigurationFactory $sslConfigurationFactory)
     {
-        $this->bolt = $bolt;
-        $this->auth = $auth;
-        $this->userAgent = $userAgent;
-        $this->connection = $connection;
+        $this->connectionFactory = $connectionFactory;
+        $this->protocolFactory = $protocolFactory;
+        $this->sslConfigurationFactory = $sslConfigurationFactory;
     }
 
-    /**
-     * @throws Exception
-     *
-     * @return array{0: V3, 1: array{server: string, connection_id: string, hints: list}}
-     */
-    public function build(): array
+    public static function create(): self
     {
-        try {
-            $this->bolt->setProtocolVersions(4.4, 4.3, 4.2, 3);
-            try {
-                $build = $this->bolt->build();
-            } catch (ConnectException $exception) {
-                $this->bolt->setProtocolVersions(4.1, 4.0, 4, 3);
-                $build = $this->bolt->build();
-            }
-
-            if (!$build instanceof V3) {
-                throw new RuntimeException('Client only supports bolt version 3 and up.');
-            }
-
-            $response = $this->auth->authenticateBolt($build, $this->userAgent);
-        } catch (MessageException $e) {
-            throw Neo4jException::fromMessageException($e);
-        }
-
-        return [$build, $response];
+        return new self(SystemWideConnectionFactory::getInstance(), new ProtocolFactory(), new SslConfigurationFactory());
     }
 
-    public function getConnection(): IConnection
+    public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig): BoltConnection
     {
-        return $this->connection;
+        [$sslLevel, $sslConfig] = $this->sslConfigurationFactory->create($data->getUri(), $data->getSslConfig());
+
+        $uriConfig = new UriConfiguration(
+            $data->getUri()->getHost(),
+            $data->getUri()->getPort(),
+            $sslLevel,
+            $sslConfig,
+            TransactionConfiguration::DEFAULT_TIMEOUT
+        );
+
+        $connection = $this->connectionFactory->create($uriConfig);
+        [$protocol, $authResponse] = $this->protocolFactory->createProtocol($connection->getIConnection(), $data->getAuth(), $data->getUserAgent());
+
+        $config = new ConnectionConfiguration(
+            $authResponse['server'],
+            $data->getUri(),
+            explode('/', $authResponse['server'])[1] ?? '',
+            ConnectionProtocol::determineBoltVersion($protocol),
+            $sessionConfig->getAccessMode(),
+            $sessionConfig->getDatabase() === null ? null : new DatabaseInfo($sessionConfig->getDatabase()),
+            $sslLevel
+        );
+
+        return new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config);
     }
 
-    public static function fromVariables(
-        UriInterface $uri,
-        AuthenticateInterface $authenticate,
-        DriverConfiguration $config
-    ): self {
-        $ssl = (new SslConfigurator())->configure($uri, $config);
-        $port = $uri->getPort() ?? 7687;
-        if (extension_loaded('sockets') && $ssl === null) {
-            $socket = new Socket($uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
-        } else {
-            $socket = new StreamSocket($uri->getHost(), $port, TransactionConfiguration::DEFAULT_TIMEOUT);
-            self::configureSsl($uri, $socket, $config);
-        }
+    public function canReuseConnection(ConnectionInterface $connection, ConnectionRequestData $data, SessionConfiguration $config): bool
+    {
+        $databaseInfo = $connection->getDatabaseInfo();
+        $database = $databaseInfo === null ? null : $databaseInfo->getName();
 
-        return new self(new Bolt($socket), $authenticate, $config->getUserAgent(), $socket);
+        return $connection->getServerAddress()->getHost() === $data->getUri()->getHost() &&
+               $connection->getServerAddress()->getPort() === $data->getUri()->getPort() &&
+               $connection->getAuthentication()->toString($data->getUri()) === $data->getAuth()->toString($data->getUri()) &&
+               $connection->getEncryptionLevel() === $this->sslConfigurationFactory->create($data->getUri(), $data->getSslConfig())[0] &&
+               $connection->getUserAgent() === $data->getUserAgent() &&
+            $connection->getAccessMode() === $config->getAccessMode() &&
+               $database === $config->getDatabase();
     }
 
-    private static function configureSsl(UriInterface $uri, StreamSocket $socket, DriverConfiguration $config): void
+    public function reuseConnection(BoltConnection $connection, SessionConfiguration $sessionConfig): BoltConnection
     {
-        $options = (new SslConfigurator())->configure($uri, $config);
-
-        if ($options !== null) {
-            $socket->setSslContextOptions($options);
-        }
-    }
-
-    public function getAuth(): AuthenticateInterface
-    {
-        return $this->auth;
+        // TODO make sure session config gets merged
+        return $connection;
     }
 }

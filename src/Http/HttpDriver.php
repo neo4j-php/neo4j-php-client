@@ -34,7 +34,7 @@ use function uniqid;
  *
  * @implements DriverInterface<T>
  *
- * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMResults from OGMFormatter
  */
 final class HttpDriver implements DriverInterface
 {
@@ -111,35 +111,15 @@ final class HttpDriver implements DriverInterface
         $config = $config->merge(SessionConfiguration::fromUri($this->uri));
         $streamFactoryResolve = $this->streamFactory();
 
+        $tsxUrl = $this->tsxUrl($config);
+
         return new HttpSession(
             $streamFactoryResolve,
-            $this->getHttpConnectionPool(),
+            $this->getHttpConnectionPool($tsxUrl),
             $config,
             $this->formatter,
             $factory,
-            Resolvable::once($this->key.':tsxUrl', function () use ($config, $factory) {
-                $database = $config->getDatabase() ?? 'neo4j';
-                $request = $factory->resolve()->createRequest('GET', $this->uri);
-                $client = $this->config->getHttpPsrBindings()->getClient();
-
-                $response = $client->sendRequest($request);
-
-                $discovery = HttpHelper::interpretResponse($response);
-                /** @var string|null */
-                $version = $discovery->neo4j_version ?? null;
-
-                if ($version === null) {
-                    /** @var string */
-                    $uri = $discovery->data;
-                    $request = $request->withUri(Uri::create($uri));
-                    $discovery = HttpHelper::interpretResponse($client->sendRequest($request));
-                }
-
-                /** @var string */
-                $tsx = $discovery->transaction;
-
-                return str_replace('{databaseName}', $database, $tsx);
-            }),
+            $tsxUrl,
             $this->auth,
             $this->config->getUserAgent()
         );
@@ -147,19 +127,24 @@ final class HttpDriver implements DriverInterface
 
     public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
-        return $this->getHttpConnectionPool()->canConnect($this->uri, $this->auth);
+        return $this->getHttpConnectionPool($this->tsxUrl($config ?? SessionConfiguration::default()))
+                    ->canConnect($this->uri, $this->auth);
     }
 
     /**
+     * @param Resolvable<string> $tsxUrl
+     *
      * @psalm-mutation-free
      */
-    private function getHttpConnectionPool(): HttpConnectionPool
+    private function getHttpConnectionPool(Resolvable $tsxUrl): HttpConnectionPool
     {
         return new HttpConnectionPool(
             Resolvable::once($this->key.':client', fn () => $this->config->getHttpPsrBindings()->getClient()),
             $this->resolvableFactory(),
             $this->streamFactory(),
-            $this->config
+            $this->auth,
+            $this->config->getUserAgent(),
+            $tsxUrl
         );
     }
 
@@ -185,5 +170,37 @@ final class HttpDriver implements DriverInterface
     private function streamFactory(): Resolvable
     {
         return Resolvable::once($this->key.':streamFactory', fn () => $this->config->getHttpPsrBindings()->getStreamFactory());
+    }
+
+    /**
+     * @return Resolvable<string>
+     *
+     * @psalm-mutation-free
+     */
+    private function tsxUrl(SessionConfiguration $config): Resolvable
+    {
+        return Resolvable::once($this->key.':tsxUrl', function () use ($config) {
+            $database = $config->getDatabase() ?? 'neo4j';
+            $request = $this->resolvableFactory()->resolve()->createRequest('GET', $this->uri);
+            $client = $this->config->getHttpPsrBindings()->getClient();
+
+            $response = $client->sendRequest($request);
+
+            $discovery = HttpHelper::interpretResponse($response);
+            /** @var string|null */
+            $version = $discovery->neo4j_version ?? null;
+
+            if ($version === null) {
+                /** @var string */
+                $uri = $discovery->data;
+                $request = $request->withUri(Uri::create($uri));
+                $discovery = HttpHelper::interpretResponse($client->sendRequest($request));
+            }
+
+            /** @var string */
+            $tsx = $discovery->transaction;
+
+            return str_replace('{databaseName}', $database, $tsx);
+        });
     }
 }
