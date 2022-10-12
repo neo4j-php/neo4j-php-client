@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use Laudis\Neo4j\Contracts\AddressResolverInterface;
+use RuntimeException;
 use function array_slice;
 use function array_unique;
 use Bolt\error\MessageException;
@@ -41,6 +43,8 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
+use function implode;
+use function sprintf;
 use const PHP_INT_MAX;
 use Psr\Http\Message\UriInterface;
 use Psr\SimpleCache\CacheInterface;
@@ -58,6 +62,9 @@ use function time;
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
+    /** @psalm-readonly */
+    private BoltConnectionPool $pool;
+    private AddressResolverInterface $resolver;
     /** @var array<string, ConnectionPool> */
     private static array $pools = [];
     private SemaphoreInterface $semaphore;
@@ -119,13 +126,25 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         /** @var RoutingTable|null */
         $table = $this->cache->get($key, null);
+        $triedAddresses = [];
+
         if ($table == null) {
-            $pool = $this->createOrGetPool($this->data->getUri());
-            /** @var BoltConnection $connection */
-            $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
-            $table = $this->routingTable($connection, $config);
-            $this->cache->set($key, $table, $table->getTtl());
-            $pool->release($connection);
+            $addresses = $this->resolver->getAddresses($this->data->getUri());
+            foreach ($addresses as $address) {
+                $triedAddresses[] = $address;
+                $pool = $this->createOrGetPool($address);
+                if ($this->pool->canConnect($this->data->getUri()->withHost($address), $this->data->getAuth())) {
+                    /** @var BoltConnection $connection */
+                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
+                    $table      = $this->routingTable($connection, $config);
+                    $this->cache->set($key, $table, $table->getTtl());
+                    $pool->release($connection);
+                }
+            }
+        }
+
+        if ($table === null) {
+            throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $this->data->getUri()->getHost(), implode('", "', $triedAddresses)));
         }
 
         $server = $this->getNextServer($table, $config->getAccessMode()) ?? $this->data->getUri();
