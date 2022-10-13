@@ -37,9 +37,8 @@ class DNSAddressResolverTest extends TestCase
     {
         $records = [...$this->resolver->getAddresses('8.8.8.8')];
 
-        $this->assertEqualsCanonicalizing(['8.8.8.8', 'dns.google'], $records);
         $this->assertNotEmpty($records);
-        $this->assertEquals('8.8.8.8', $records[0]);
+        $this->assertContains('8.8.8.8', $records);
     }
 
     public function testBogus(): void

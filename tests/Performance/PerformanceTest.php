@@ -50,7 +50,7 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
                 'id' => 'xyz',
             ];
 
-            for ($i = 0; $i < 100000; ++$i) {
+            for ($i = 0; $i < 50000; ++$i) {
                 $params[base64_encode(random_bytes(32))] = base64_encode(random_bytes(128));
             }
 
