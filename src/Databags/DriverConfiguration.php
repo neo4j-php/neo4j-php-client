@@ -220,4 +220,17 @@ final class DriverConfiguration
 
         return $tbr;
     }
+
+    /**
+     * @param callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null $factory
+     *
+     * @psalm-immutable
+     */
+    public function withSemaphoreFactory($factory): self
+    {
+        $tbr = clone $this;
+        $tbr->semaphoreFactory = $factory;
+
+        return $tbr;
+    }
 }
