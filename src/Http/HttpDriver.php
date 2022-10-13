@@ -102,7 +102,7 @@ final class HttpDriver implements DriverInterface
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {

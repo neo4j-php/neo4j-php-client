@@ -50,7 +50,7 @@ final class DriverConfiguration
      * @param callable():(CacheInterface|null)|CacheInterface|null $cache
      * @param callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null $semaphore
      *
-     * @psalm-immutable
+     * @psalm-external-mutation-free
      */
     public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize, $cache, ?float $acquireConnectionTimeout, $semaphore)
     {
@@ -66,7 +66,7 @@ final class DriverConfiguration
     /**
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      *
-     * @psalm-immutable
+     * @pure
      */
     public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize, CacheInterface $cache, float $acquireConnectionTimeout, SemaphoreFactoryInterface $semaphore): self
     {
@@ -77,13 +77,16 @@ final class DriverConfiguration
      * Creates a default configuration with a user agent based on the driver version
      * and HTTP PSR implementation auto detected from the environment.
      *
-     * @psalm-immutable
+     * @pure
      */
     public static function default(): self
     {
         return new self(null, HttpPsrBindings::default(), SslConfiguration::default(), null, null, null, null);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getUserAgent(): string
     {
         if ($this->userAgent === null) {
@@ -94,7 +97,7 @@ final class DriverConfiguration
                 $version = '2';
             }
 
-            $this->userAgent = sprintf(self::DEFAULT_USER_AGENT, $version);
+            return sprintf(self::DEFAULT_USER_AGENT, $version);
         }
 
         return $this->userAgent;

@@ -247,8 +247,6 @@ final class ClientBuilder
     /**
      * @deprecated
      * @see self::withDefaultDriverConfiguration
-     *
-     * @psalm-mutation-free
      */
     public function withHttpPsrBindings(HttpPsrBindings $bindings): self
     {
