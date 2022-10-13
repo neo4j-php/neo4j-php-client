@@ -510,6 +510,12 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     private function setupCache(): void
     {
         $generator = $this->getGenerator();
+
+        if (count($this->cache) % $this->cacheLimit === 0) {
+            $this->cache = [];
+            $this->keyCache = [];
+        }
+
         if ($this->cache === [] && $generator->valid()) {
             $this->cache[$generator->key()] = $generator->current();
             $this->keyCache[] = $generator->key();
