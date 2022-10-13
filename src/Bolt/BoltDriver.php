@@ -51,7 +51,7 @@ final class BoltDriver implements DriverInterface
     public function __construct(
         UriInterface $parsedUrl,
         ConnectionPool $pool,
-        FormatterInterface $formatter,
+        FormatterInterface $formatter
     ) {
         $this->parsedUrl = $parsedUrl;
         $this->pool = $pool;
