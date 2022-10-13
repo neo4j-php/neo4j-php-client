@@ -18,13 +18,13 @@ use Composer\InstalledVersions;
 use function function_exists;
 use function is_callable;
 use Laudis\Neo4j\Common\Cache;
+use Laudis\Neo4j\Common\SemaphoreFactory;
+use Laudis\Neo4j\Contracts\SemaphoreFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
 use function sprintf;
 
 /**
  * Configuration object for the driver.
- *
- * @psalm-immutable
  */
 final class DriverConfiguration
 {
@@ -34,20 +34,25 @@ final class DriverConfiguration
     public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
 
     private ?string $userAgent;
-    /** @var pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
+    /** @var callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
     private $httpPsrBindings;
     private SslConfiguration $sslConfig;
     private ?int $maxPoolSize;
-    /** @var pure-callable():(CacheInterface|null)|CacheInterface|null */
+    /** @var callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
+    /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
+    private $semaphoreFactory;
     /** @var ?float */
     private ?float $acquireConnectionTimeout;
 
     /**
-     * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
-     * @param pure-callable():(CacheInterface|null)|CacheInterface|null $cache
+     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
+     * @param callable():(CacheInterface|null)|CacheInterface|null $cache
+     * @param callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null $semaphore
+     *
+     * @psalm-immutable
      */
-    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize, $cache, ?float $acquireConnectionTimeout)
+    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize, $cache, ?float $acquireConnectionTimeout, $semaphore)
     {
         $this->userAgent = $userAgent;
         $this->httpPsrBindings = $httpPsrBindings;
@@ -55,28 +60,28 @@ final class DriverConfiguration
         $this->maxPoolSize = $maxPoolSize;
         $this->cache = $cache;
         $this->acquireConnectionTimeout = $acquireConnectionTimeout;
+        $this->semaphoreFactory = $semaphore;
     }
 
     /**
      * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      *
-     * @pure
+     * @psalm-immutable
      */
-    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize, CacheInterface $cache, float $acquireConnectionTimeout): self
+    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize, CacheInterface $cache, float $acquireConnectionTimeout, SemaphoreFactoryInterface $semaphore): self
     {
-        return new self($userAgent, $httpPsrBindings, $sslConfig, $maxPoolSize, $cache, $acquireConnectionTimeout);
+        return new self($userAgent, $httpPsrBindings, $sslConfig, $maxPoolSize, $cache, $acquireConnectionTimeout, $semaphore);
     }
 
     /**
      * Creates a default configuration with a user agent based on the driver version
      * and HTTP PSR implementation auto detected from the environment.
      *
-     * @pure
+     * @psalm-immutable
      */
     public static function default(): self
     {
-        /** @psalm-suppress ImpureMethodCall */
-        return new self(null, HttpPsrBindings::default(), SslConfiguration::default(), null, null, null);
+        return new self(null, HttpPsrBindings::default(), SslConfiguration::default(), null, null, null, null);
     }
 
     public function getUserAgent(): string
@@ -89,7 +94,7 @@ final class DriverConfiguration
                 $version = '2';
             }
 
-            return sprintf(self::DEFAULT_USER_AGENT, $version);
+            $this->userAgent = sprintf(self::DEFAULT_USER_AGENT, $version);
         }
 
         return $this->userAgent;
@@ -99,6 +104,8 @@ final class DriverConfiguration
      * Creates a new configuration with the provided user agent.
      *
      * @param string|null $userAgent
+     *
+     * @psalm-immutable
      */
     public function withUserAgent($userAgent): self
     {
@@ -111,7 +118,9 @@ final class DriverConfiguration
     /**
      * Creates a new configuration with the provided bindings.
      *
-     * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $bindings
+     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $bindings
+     *
+     * @psalm-immutable
      */
     public function withHttpPsrBindings($bindings): self
     {
@@ -121,6 +130,9 @@ final class DriverConfiguration
         return $tbr;
     }
 
+    /**
+     * @psalm-immutable
+     */
     public function withSslConfiguration(SslConfiguration $config): self
     {
         $tbr = clone $this;
@@ -129,6 +141,9 @@ final class DriverConfiguration
         return $tbr;
     }
 
+    /**
+     * @psalm-immutable
+     */
     public function getSslConfiguration(): SslConfiguration
     {
         return $this->sslConfig;
@@ -136,9 +151,9 @@ final class DriverConfiguration
 
     public function getHttpPsrBindings(): HttpPsrBindings
     {
-        $bindings = (is_callable($this->httpPsrBindings)) ? call_user_func($this->httpPsrBindings) : $this->httpPsrBindings;
+        $this->httpPsrBindings = (is_callable($this->httpPsrBindings)) ? call_user_func($this->httpPsrBindings) : $this->httpPsrBindings;
 
-        return $bindings ?? HttpPsrBindings::default();
+        return $this->httpPsrBindings ??= HttpPsrBindings::default();
     }
 
     public function getMaxPoolSize(): int
@@ -146,6 +161,9 @@ final class DriverConfiguration
         return $this->maxPoolSize ?? self::DEFAULT_POOL_SIZE;
     }
 
+    /**
+     * @psalm-immutable
+     */
     public function withMaxPoolSize(?int $maxPoolSize): self
     {
         $tbr = clone $this;
@@ -155,7 +173,9 @@ final class DriverConfiguration
     }
 
     /**
-     * @param pure-callable():(CacheInterface|null)|CacheInterface|null $cache
+     * @param callable():(CacheInterface|null)|CacheInterface|null $cache
+     *
+     * @psalm-immutable
      */
     public function withCache($cache): self
     {
@@ -167,17 +187,29 @@ final class DriverConfiguration
 
     public function getCache(): CacheInterface
     {
-        $cache = (is_callable($this->cache)) ? call_user_func($this->cache) : $this->cache;
+        $this->cache = (is_callable($this->cache)) ? call_user_func($this->cache) : $this->cache;
 
-        /** @psalm-suppress ImpureMethodCall */
-        return $cache ?? Cache::getInstance();
+        return $this->cache ??= Cache::getInstance();
     }
 
+    public function getSemaphoreInterface(): SemaphoreFactoryInterface
+    {
+        $this->semaphoreFactory = (is_callable($this->semaphoreFactory)) ? call_user_func($this->semaphoreFactory) : $this->semaphoreFactory;
+
+        return $this->semaphoreFactory ??= SemaphoreFactory::getInstance();
+    }
+
+    /**
+     * @psalm-immutable
+     */
     public function getAcquireConnectionTimeout(): float
     {
-        return $this->acquireConnectionTimeout ?? self::DEFAULT_ACQUIRE_CONNECTION_TIMEOUT;
+        return $this->acquireConnectionTimeout ??= self::DEFAULT_ACQUIRE_CONNECTION_TIMEOUT;
     }
 
+    /**
+     * @psalm-immutable
+     */
     public function withAcquireConnectionTimeout(?float $acquireConnectionTimeout): self
     {
         $tbr = clone $this;

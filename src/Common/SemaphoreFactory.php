@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Neo4j PHP Client and Driver package.
  *
@@ -12,11 +14,12 @@
 namespace Laudis\Neo4j\Common;
 
 use function extension_loaded;
+use Laudis\Neo4j\Contracts\SemaphoreFactoryInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Psr\Http\Message\UriInterface;
 
-final class SemaphoreFactory
+final class SemaphoreFactory implements SemaphoreFactoryInterface
 {
     private static ?SemaphoreFactory $instance = null;
     /** @var callable(string, int):SemaphoreInterface */
