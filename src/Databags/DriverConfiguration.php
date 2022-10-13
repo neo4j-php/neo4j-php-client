@@ -195,7 +195,7 @@ final class DriverConfiguration
         return $this->cache ??= Cache::getInstance();
     }
 
-    public function getSemaphoreInterface(): SemaphoreFactoryInterface
+    public function getSemaphoreFactory(): SemaphoreFactoryInterface
     {
         $this->semaphoreFactory = (is_callable($this->semaphoreFactory)) ? call_user_func($this->semaphoreFactory) : $this->semaphoreFactory;
 
