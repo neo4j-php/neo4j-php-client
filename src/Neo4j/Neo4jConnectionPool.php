@@ -30,7 +30,6 @@ use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\GeneratorHelper;
-use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;

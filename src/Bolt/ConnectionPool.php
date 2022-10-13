@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Generator;
 use Laudis\Neo4j\BoltFactory;
-use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
