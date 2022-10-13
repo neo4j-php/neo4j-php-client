@@ -84,11 +84,12 @@ final class Neo4jDriver implements DriverInterface
         $configuration ??= DriverConfiguration::default();
         $authenticate ??= Authenticate::fromUrl($uri);
         $resolver ??= new DNSAddressResolver();
+        $semaphore = $configuration->getSemaphoreInterface()->create($uri, $configuration);
 
         /** @psalm-suppress InvalidArgument */
         return new self(
             $uri,
-            Neo4jConnectionPool::create($uri, $authenticate, $configuration, $resolver),
+            Neo4jConnectionPool::create($uri, $authenticate, $configuration, $resolver, $semaphore),
             $formatter ?? OGMFormatter::create(),
         );
     }

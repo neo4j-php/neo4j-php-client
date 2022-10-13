@@ -80,11 +80,12 @@ final class BoltDriver implements DriverInterface
 
         $configuration ??= DriverConfiguration::default();
         $authenticate ??= Authenticate::fromUrl($uri);
+        $semaphore = $configuration->getSemaphoreInterface()->create($uri, $configuration);
 
         /** @psalm-suppress InvalidArgument */
         return new self(
             $uri,
-            ConnectionPool::create($uri, $authenticate, $configuration),
+            ConnectionPool::create($uri, $authenticate, $configuration, $semaphore),
             $formatter ?? OGMFormatter::create(),
         );
     }

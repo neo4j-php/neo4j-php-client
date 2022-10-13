@@ -83,10 +83,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $this->resolver = $resolver;
     }
 
-    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver): self
+    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self
     {
-        $semaphore = SemaphoreFactory::getInstance()->create($uri, $conf);
-
         return new self(
             $semaphore,
             BoltFactory::create(),

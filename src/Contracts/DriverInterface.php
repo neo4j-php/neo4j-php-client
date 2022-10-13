@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Formatter\CypherList;
+use Laudis\Neo4j\Formatter\CypherMap;
 
 /**
  * The driver creates sessions for carrying out work.
@@ -22,7 +24,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
  *
  * @psalm-type ParsedUrl = array{host: string, pass: string|null, path: string, port: int, query: array<string,string>, scheme: string, user: string|null}
  *
- * @psalm-type BasicDriver = DriverInterface<\Laudis\Neo4j\Formatter\CypherList<\Laudis\Neo4j\Formatter\CypherMap<string, scalar|array|null>>>
+ * @psalm-type BasicDriver = DriverInterface<CypherList<CypherMap<string, scalar|array|null>>>
  */
 interface DriverInterface
 {

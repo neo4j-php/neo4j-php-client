@@ -46,10 +46,8 @@ final class ConnectionPool implements ConnectionPoolInterface
         $this->data = $data;
     }
 
-    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf): self
+    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, SemaphoreInterface $semaphore): self
     {
-        $semaphore = SemaphoreFactory::getInstance()->create($uri, $conf);
-
         return new self(
             $semaphore,
             BoltFactory::create(),
