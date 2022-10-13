@@ -14,10 +14,13 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use function array_splice;
+use Bolt\error\MessageException;
 use function count;
 use Generator;
+use function in_array;
 use Iterator;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Exception\Neo4jException;
 
 /**
  * @psalm-import-type BoltCypherStats from FormatterInterface
@@ -99,7 +102,11 @@ final class BoltResult implements Iterator
 
     private function fetchResults(): void
     {
-        $meta = $this->connection->pull($this->qid, $this->fetchSize);
+        try {
+            $meta = $this->connection->pull($this->qid, $this->fetchSize);
+        } catch (MessageException $e) {
+            $this->handleMessageException($e);
+        }
 
         /** @var list<list> $rows */
         $rows = array_splice($meta, 0, count($meta) - 1);
@@ -148,6 +155,25 @@ final class BoltResult implements Iterator
 
     public function discard(): void
     {
-        $this->connection->discard($this->qid === -1 ? null : $this->qid);
+        try {
+            $this->connection->discard($this->qid === -1 ? null : $this->qid);
+        } catch (MessageException $e) {
+            $this->handleMessageException($e);
+        }
+    }
+
+    /**
+     * @throws Neo4jException
+     *
+     * @return never
+     */
+    private function handleMessageException(MessageException $e): void
+    {
+        $exception = Neo4jException::fromMessageException($e);
+        if (!($exception->getClassification() === 'ClientError' && $exception->getCategory() === 'Request')) {
+            $this->connection->reset();
+        }
+
+        throw $exception;
     }
 }

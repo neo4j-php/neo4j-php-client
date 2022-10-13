@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Bolt\error\MessageException;
 use Generator;
 use function getenv;
 use InvalidArgumentException;
@@ -30,6 +29,7 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
+use const PHP_EOL;
 use function str_starts_with;
 use Throwable;
 
@@ -479,14 +479,23 @@ CYPHER
     {
         $session = $this->getClient()->getDriver($alias)->createSession();
 
+        $session->run('MATCH (x) DETACH DELETE x');
         $session->run("CREATE (test:Test{id: '123'})");
+
+        // We cannot use IF EXISTS on version 4.0
+        try {
+            $session->run('DROP CONSTRAINT ON (test:Test) ASSERT test.id IS UNIQUE');
+        } catch (Throwable $e) {
+            echo $e->getMessage().PHP_EOL;
+        }
+
         try {
             $session->run('CREATE CONSTRAINT ON (test:Test) ASSERT test.id IS UNIQUE');
         } catch (Throwable $e) {
-            // We cannot use IF EXISTS on version 4.0
-            $session->run('DROP CONSTRAINT ON (test:Test) ASSERT test.id IS UNIQUE');
+            echo $e->getMessage().PHP_EOL;
         }
-        $this->expectException(MessageException::class);
+
+        $this->expectException(Neo4jException::class);
         $session->run("CREATE (test:Test {id: '123'}) RETURN test");
     }
 
