@@ -313,7 +313,6 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
 
     /**
      * @dataProvider connectionAliases
-     * @param string $alias
      */
     public function testFetchSize(string $alias): void
     {
@@ -322,11 +321,6 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
         $this->fetchSize($alias, 10);
     }
 
-    /**
-     * @param string $connection
-     * @param int $fetchSize
-     * @return void
-     */
     public function fetchSize(string $connection, int $fetchSize): void
     {
         $session = $this->getClient()->getDriver($connection)->createSession(SessionConfiguration::default()->withFetchSize($fetchSize));
