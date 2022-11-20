@@ -314,13 +314,21 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
     /**
      * @dataProvider connectionAliases
      */
-    public function testFetchSize(string $connection): void
+    public function testFetchSize(string $alias): void
     {
-        $session = $this->getClient()->getDriver($connection)->createSession(SessionConfiguration::default()->withFetchSize(1));
+        $this->fetchSize($alias, 1);
+        $this->fetchSize($alias, 4);
+        $this->fetchSize($alias, 10);
+    }
+
+    public function fetchSize(string $connection, int $fetchSize): void
+    {
+        $session = $this->getClient()->getDriver($connection)->createSession(SessionConfiguration::default()->withFetchSize($fetchSize));
         $session->run('MATCH (x) DETACH DELETE x');
 
-        // Add 4000 user nodes
-        for ($i = 0; $i < 4; ++$i) {
+        $nodesAmount = $fetchSize * 4;
+        // Add user nodes
+        for ($i = 0; $i < $nodesAmount; ++$i) {
             $session->run('CREATE (user:User)');
         }
 
@@ -328,7 +336,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
         $userCountResults = $session->run('MATCH (user:User) RETURN COUNT(DISTINCT(ID(user))) as user_count');
         $userCount = $userCountResults->getAsCypherMap(0)->getAsInt('user_count');
 
-        $this->assertEquals(4, $userCount);
+        $this->assertEquals($nodesAmount, $userCount);
 
         // Retrieve the ids of all user nodes
         $results = $session->run('MATCH (user:User) RETURN ID(user) AS id');
@@ -339,12 +347,12 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
             $userIds[] = $result->get('id');
         }
 
-        $this->assertCount(4, $userIds);
+        $this->assertCount($nodesAmount, $userIds);
 
         // Check if we have any duplicate ids by removing duplicate values
         // from the array.
         $uniqueUserIds = array_unique($userIds);
 
-        $this->assertCount(4, $uniqueUserIds);
+        $this->assertCount($nodesAmount, $uniqueUserIds);
     }
 }
