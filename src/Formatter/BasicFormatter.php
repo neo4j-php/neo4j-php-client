@@ -13,15 +13,18 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use function array_key_exists;
 use Bolt\structures\Path;
 use function get_class;
 use function gettype;
 use function is_array;
 use function is_object;
+use function is_string;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Types\CypherList;
@@ -56,17 +59,22 @@ final class BasicFormatter implements FormatterInterface
      *
      * @return CypherList<CypherMap<array|scalar|null>>
      */
-    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, ?float $runStart, ?float $resultAvailableAfter, ?Statement $statement, ?BookmarkHolder $holder = null): CypherList
+    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder): CypherList
     {
-        $result = (new CypherList(function () use ($meta, $result) {
+        $tbr = (new CypherList(function () use ($meta, $result) {
             foreach ($result as $row) {
                 yield $this->formatRow($meta, $row);
             }
         }))->withCacheLimit($result->getFetchSize());
 
-        $connection->subscribeResult($result);
+        $connection->subscribeResult($tbr);
+        $result->addFinishedCallback(function (array $response) use ($holder) {
+            if (array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
+                $holder->setBookmark(new Bookmark([$response['bookmark']]));
+            }
+        });
 
-        return $result;
+        return $tbr;
     }
 
     /**
