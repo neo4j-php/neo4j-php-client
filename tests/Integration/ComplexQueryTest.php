@@ -45,6 +45,14 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
         return SummarizedResultFormatter::create();
     }
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        foreach (self::connectionAliases() as $alias) {
+            $this->getClient()->run('MATCH (x) DETACH DELETE x', [], $alias[0]);
+        }
+    }
+
     protected static function createClient(): ClientInterface
     {
         $connections = self::buildConnections();
@@ -497,6 +505,42 @@ CYPHER
 
         $this->expectException(Neo4jException::class);
         $session->run("CREATE (test:Test {id: '123'}) RETURN test");
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testFetchSize(string $alias): void
+    {
+        $client = $this->getClient();
+
+        // Add 4000 user nodes
+        for ($i = 0; $i < 4000; ++$i) {
+            $client->run('CREATE (user:User)', [], $alias);
+        }
+
+        // Confirm that the database contains 4000 unique user nodes
+        $userCountResults = $client->run('MATCH (user:User) RETURN COUNT(DISTINCT(ID(user))) as user_count', [], $alias);
+        $userCount = $userCountResults->getAsMap(0)->getAsInt('user_count');
+
+        $this->assertEquals(4000, $userCount);
+
+        // Retrieve the ids of all user nodes
+        $results = $client->run('MATCH (user:User) RETURN ID(user) AS id', [], $alias);
+
+        // Loop through the results and add each id to an array
+        $userIds = [];
+        foreach ($results as $result) {
+            $userIds[] = $result->get('id');
+        }
+
+        $this->assertCount(4000, $userIds);
+
+        // Check if we have any duplicate ids by removing duplicate values
+        // from the array.
+        $uniqueUserIds = array_unique($userIds);
+
+        $this->assertEquals($userIds, $uniqueUserIds);
     }
 
     /**
