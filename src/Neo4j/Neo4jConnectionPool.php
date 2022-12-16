@@ -120,7 +120,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     public function acquire(SessionConfiguration $config): Generator
     {
-        $key = $this->createKey($this->data);
+        $key = $this->createKey($this->data, $config);
 
         /** @var RoutingTable|null */
         $table = $this->cache->get($key, null);
@@ -283,11 +283,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $this->createOrGetPool($connection->getServerAddress())->release($connection);
     }
 
-    private function createKey(ConnectionRequestData $data): string
+    private function createKey(ConnectionRequestData $data, ?SessionConfiguration $config = null): string
     {
         $uri = $data->getUri();
 
-        $key = $data->getUserAgent().':'.$uri->getHost().':'.($uri->getPort() ?? '7687');
+        $key = implode(
+            ':',
+            array_filter([$data->getUserAgent(), $uri->getHost(), $config?->getDatabase(), $uri->getPort() ?? '7687'])
+        );
 
         return str_replace([
             '{',
