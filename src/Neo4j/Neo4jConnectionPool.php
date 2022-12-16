@@ -289,7 +289,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $key = implode(
             ':',
-            array_filter([$data->getUserAgent(), $uri->getHost(), $config?->getDatabase(), $uri->getPort() ?? '7687'])
+            array_filter([$data->getUserAgent(), $uri->getHost(), $config ? $config->getDatabase() : null, $uri->getPort() ?? '7687'])
         );
 
         return str_replace([
