@@ -80,7 +80,7 @@ final class Client implements ClientInterface
 
     public function getDriver(?string $alias): DriverInterface
     {
-        return $this->driverSetups->getDriver($alias);
+        return $this->driverSetups->getDriver($this->defaultSessionConfiguration, $alias);
     }
 
     /**
@@ -114,7 +114,7 @@ final class Client implements ClientInterface
 
     public function verifyConnectivity(?string $driver = null): bool
     {
-        return $this->driverSetups->verifyConnectivity($driver);
+        return $this->driverSetups->verifyConnectivity($this->defaultSessionConfiguration, $driver);
     }
 
     private function getTsxConfig(?TransactionConfiguration $config): TransactionConfiguration
