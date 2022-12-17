@@ -38,5 +38,5 @@ interface DriverInterface
     /**
      * Returns true if the driver can make a valid connection with the server.
      */
-    public function verifyConnectivity(): bool;
+    public function verifyConnectivity(?SessionConfiguration $config = null): bool;
 }

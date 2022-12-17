@@ -11,6 +11,7 @@
 
 namespace Laudis\Neo4j\Common;
 
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use function array_key_exists;
 use function array_key_first;
 use function array_reduce;
@@ -76,7 +77,7 @@ class DriverSetupManager implements Countable
     /**
      * @return DriverInterface<ResultFormat>
      */
-    public function getDriver(?string $alias = null): DriverInterface
+    public function getDriver(SessionConfiguration $config, ?string $alias = null): DriverInterface
     {
         $alias ??= $this->decideAlias($alias);
 
@@ -90,7 +91,7 @@ class DriverSetupManager implements Countable
             $setup = new DriverSetup(Uri::create(self::DEFAULT_DRIVER_CONFIG), Authenticate::disabled());
             $this->driverSetups['default']->insert($setup, PHP_INT_MIN);
 
-            return $this->getDriver();
+            return $this->getDriver($config);
         }
 
         if (array_key_exists($alias, $this->drivers)) {
@@ -104,7 +105,7 @@ class DriverSetupManager implements Countable
 
             $driver = DriverFactory::create($uri, $this->configuration, $auth, $this->formatter);
             $urisTried[] = $uri->__toString();
-            if ($driver->verifyConnectivity()) {
+            if ($driver->verifyConnectivity($config)) {
                 $this->drivers[$alias] = $driver;
 
                 return $driver;
@@ -114,10 +115,10 @@ class DriverSetupManager implements Countable
         throw new RuntimeException(sprintf('Cannot connect to any server on alias: %s with Uris: (\'%s\')', $alias, implode('\', ', array_unique($urisTried))));
     }
 
-    public function verifyConnectivity(?string $alias = null): bool
+    public function verifyConnectivity(SessionConfiguration $config, ?string $alias = null): bool
     {
         try {
-            $this->getDriver($alias);
+            $this->getDriver($config, $alias);
         } catch (RuntimeException $e) {
             return false;
         }

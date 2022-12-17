@@ -105,10 +105,11 @@ final class BoltDriver implements DriverInterface
         return new Session($sessionConfig, $this->pool, $this->formatter);
     }
 
-    public function verifyConnectivity(): bool
+    public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
+        $config ??= SessionConfiguration::default();
         try {
-            GeneratorHelper::getReturnFromGenerator($this->pool->acquire(SessionConfiguration::default()));
+            GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
         } catch (Throwable $e) {
             return false;
         }
