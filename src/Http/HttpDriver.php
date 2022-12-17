@@ -128,6 +128,7 @@ final class HttpDriver implements DriverInterface
     public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
         $config ??= SessionConfiguration::default();
+
         return $this->getHttpConnectionPool($this->tsxUrl($config))
                     ->canConnect($this->uri, $this->auth);
     }
