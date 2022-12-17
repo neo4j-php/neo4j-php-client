@@ -387,11 +387,13 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
                 $reflection = new ReflectionClass($driver);
 
                 $poolProp = $reflection->getProperty('pool');
+                $poolProp->setAccessible(true);
                 /** @var ConnectionPool $pool */
                 $pool = $poolProp->getValue($driver);
 
                 $reflection = new ReflectionClass($pool);
                 $connectionProp = $reflection->getProperty('activeConnections');
+                $connectionProp->setAccessible(true);
                 /** @var array $activeConnections */
                 $activeConnections = $connectionProp->getValue($pool);
 
