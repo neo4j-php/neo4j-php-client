@@ -11,7 +11,6 @@
 
 namespace Laudis\Neo4j\Common;
 
-use Laudis\Neo4j\Databags\SessionConfiguration;
 use function array_key_exists;
 use function array_key_first;
 use function array_reduce;
@@ -22,6 +21,7 @@ use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\DriverSetup;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\DriverFactory;
 use const PHP_INT_MIN;
 use RuntimeException;
