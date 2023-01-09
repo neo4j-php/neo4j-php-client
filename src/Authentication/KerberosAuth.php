@@ -18,6 +18,7 @@ use Bolt\protocol\V3;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
+use function sprintf;
 
 /**
  * Authenticates connections using a kerberos token.
@@ -52,5 +53,10 @@ final class KerberosAuth implements AuthenticateInterface
     {
         /** @var array{server: string, connection_id: string, hints: list} */
         return $bolt->hello(Auth::bearer($this->token, $userAgent));
+    }
+
+    public function toString(UriInterface $uri): string
+    {
+        return sprintf('Kerberos %s@%s:%s', $this->token, $uri->getHost(), $uri->getPort() ?? '');
     }
 }

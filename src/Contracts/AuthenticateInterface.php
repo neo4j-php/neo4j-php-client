@@ -32,4 +32,9 @@ interface AuthenticateInterface
      * @return array{server: string, connection_id: string, hints: list}
      */
     public function authenticateBolt(V3 $bolt, string $userAgent): array;
+
+    /**
+     * Returns a string representation of the authentication.
+     */
+    public function toString(UriInterface $uri): string;
 }

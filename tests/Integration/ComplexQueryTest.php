@@ -29,7 +29,9 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
+use const PHP_EOL;
 use function str_starts_with;
+use Throwable;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -41,6 +43,14 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
     protected static function formatter(): FormatterInterface
     {
         return SummarizedResultFormatter::create();
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        foreach (self::connectionAliases() as $alias) {
+            $this->getClient()->run('MATCH (x) DETACH DELETE x', [], $alias[0]);
+        }
     }
 
     protected static function createClient(): ClientInterface
@@ -468,6 +478,69 @@ CYPHER
         $this->expectNotToPerformAssertions();
         $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1000));
         $tsx->run('CALL apoc.util.sleep(20000)');
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testConstraintHandling(string $alias): void
+    {
+        $session = $this->getClient()->getDriver($alias)->createSession();
+
+        $session->run('MATCH (x) DETACH DELETE x');
+        $session->run("CREATE (test:Test{id: '123'})");
+
+        // We cannot use IF EXISTS on version 4.0
+        try {
+            $session->run('DROP CONSTRAINT ON (test:Test) ASSERT test.id IS UNIQUE');
+        } catch (Throwable $e) {
+            echo $e->getMessage().PHP_EOL;
+        }
+
+        try {
+            $session->run('CREATE CONSTRAINT ON (test:Test) ASSERT test.id IS UNIQUE');
+        } catch (Throwable $e) {
+            echo $e->getMessage().PHP_EOL;
+        }
+
+        $this->expectException(Neo4jException::class);
+        $session->run("CREATE (test:Test {id: '123'}) RETURN test");
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testFetchSize(string $alias): void
+    {
+        $client = $this->getClient();
+
+        // Add 4000 user nodes
+        for ($i = 0; $i < 4000; ++$i) {
+            $client->run('CREATE (user:User)', [], $alias);
+        }
+
+        // Confirm that the database contains 4000 unique user nodes
+        $userCountResults = $client->run('MATCH (user:User) RETURN COUNT(DISTINCT(ID(user))) as user_count', [], $alias);
+        $userCount = $userCountResults->getAsMap(0)->getAsInt('user_count');
+
+        $this->assertEquals(4000, $userCount);
+
+        // Retrieve the ids of all user nodes
+        $results = $client->run('MATCH (user:User) RETURN ID(user) AS id', [], $alias);
+
+        // Loop through the results and add each id to an array
+        $userIds = [];
+        foreach ($results as $result) {
+            $userIds[] = $result->get('id');
+        }
+
+        $this->assertCount(4000, $userIds);
+
+        // Check if we have any duplicate ids by removing duplicate values
+        // from the array.
+        $uniqueUserIds = array_unique($userIds);
+
+        $this->assertEquals($userIds, $uniqueUserIds);
     }
 
     /**

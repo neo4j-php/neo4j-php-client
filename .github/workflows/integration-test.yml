@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEO4J_CONNECTIONS: bolt://neo4j:test@localhost,http://neo4j:test@localhost
-    name: "Running Integration tests for PHP 7.4 on Neo4j ${{ matrix.neo4j-version }} with simple config"
+    name: "Running Integration tests for PHP 8.0 on Neo4j ${{ matrix.neo4j-version }} with simple config"
     strategy:
       fail-fast: false
       matrix:
-        neo4j-version: ["4.2", "4.3", "4.4"]
+        neo4j-version: ["4.4", "5.1", "5.2"]
 
     services:
       neo4j:
@@ -43,11 +43,7 @@ jobs:
       - uses: php-actions/composer@v6
         with:
           progress: yes
-          php_version: 7.4
+          php_version: 8.0
           version: 2
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: phpunit.xml.dist
-          php_version: 7.4
-          bootstrap: vendor/autoload.php
-          args: --testsuite "Integration"
+      - name: Run unit tests
+        run: echo NEO4J_CONNECTIONS=bolt://neo4j:test@localhost,neo4j://neo4j:test@localhost,http://neo4j:test@localhost >> .env && php vendor/bin/phpunit --testsuite Integration --bootstrap tests/bootstrap_override_with_dotenv.php

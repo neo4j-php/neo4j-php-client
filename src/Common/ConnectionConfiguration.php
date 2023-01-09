@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Common;
 
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Psr\Http\Message\UriInterface;
@@ -29,25 +28,29 @@ final class ConnectionConfiguration
     private string $serverVersion;
     private ConnectionProtocol $protocol;
     private AccessMode $accessMode;
-    private DriverConfiguration $driverConfiguration;
     private ?DatabaseInfo $databaseInfo;
+    /** @var 's'|'ssc'|'' */
+    private string $encryptionLevel;
 
+    /**
+     * @param ''|'s'|'ssc' $encryptionLevel
+     */
     public function __construct(
         string $serverAgent,
         UriInterface $serverAddress,
         string $serverVersion,
         ConnectionProtocol $protocol,
         AccessMode $accessMode,
-        DriverConfiguration $driverConfiguration,
-        ?DatabaseInfo $databaseInfo
+        ?DatabaseInfo $databaseInfo,
+        string $encryptionLevel
     ) {
         $this->serverAgent = $serverAgent;
         $this->serverAddress = $serverAddress;
         $this->serverVersion = $serverVersion;
         $this->protocol = $protocol;
         $this->accessMode = $accessMode;
-        $this->driverConfiguration = $driverConfiguration;
         $this->databaseInfo = $databaseInfo;
+        $this->encryptionLevel = $encryptionLevel;
     }
 
     public function getServerAgent(): string
@@ -75,13 +78,16 @@ final class ConnectionConfiguration
         return $this->accessMode;
     }
 
-    public function getDriverConfiguration(): DriverConfiguration
-    {
-        return $this->driverConfiguration;
-    }
-
     public function getDatabaseInfo(): ?DatabaseInfo
     {
         return $this->databaseInfo;
+    }
+
+    /**
+     * @return ''|'s'|'ssc'
+     */
+    public function getEncryptionLevel(): string
+    {
+        return $this->encryptionLevel;
     }
 }

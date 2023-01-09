@@ -62,4 +62,9 @@ final class BasicAuth implements AuthenticateInterface
         /** @var array{server: string, connection_id: string, hints: list} */
         return $bolt->hello(Auth::basic($this->username, $this->password, $userAgent));
     }
+
+    public function toString(UriInterface $uri): string
+    {
+        return sprintf('Basic %s:%s@%s:%s', $this->username, '######', $uri->getHost(), $uri->getPort() ?? '');
+    }
 }

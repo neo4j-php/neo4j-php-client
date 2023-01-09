@@ -17,19 +17,23 @@ use function count;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
+use Laudis\Neo4j\Bolt\BoltDriver;
+use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use ReflectionClass;
 use function str_starts_with;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from OGMFormatter
  *
  * @extends EnvironmentAwareIntegrationTest<CypherList<CypherMap<OGMTypes>>>
  */
@@ -284,7 +288,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
     public function testInvalidConnection(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The provided alias: "gh" was not found in the client');
+        $this->expectExceptionMessage('Cannot find a driver setup with alias: "gh"');
 
         $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN 1 AS x'), 'gh');
     }
@@ -308,5 +312,93 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
     public function testValidConnectionCheck(string $alias): void
     {
         self::assertTrue($this->getClient()->verifyConnectivity($alias));
+    }
+
+    /**
+     * @dataProvider connectionAliases
+     */
+    public function testFetchSize(string $alias): void
+    {
+        $this->fetchSize($alias, 1);
+        $this->fetchSize($alias, 4);
+        $this->fetchSize($alias, 10);
+    }
+
+    public function fetchSize(string $connection, int $fetchSize): void
+    {
+        $session = $this->getClient()->getDriver($connection)->createSession(SessionConfiguration::default()->withFetchSize($fetchSize));
+        $session->run('MATCH (x) DETACH DELETE x');
+
+        $nodesAmount = $fetchSize * 4;
+        // Add user nodes
+        for ($i = 0; $i < $nodesAmount; ++$i) {
+            $session->run('CREATE (user:User)');
+        }
+
+        // Confirm that the database contains 4000 unique user nodes
+        $userCountResults = $session->run('MATCH (user:User) RETURN COUNT(DISTINCT(ID(user))) as user_count');
+        $userCount = $userCountResults->getAsCypherMap(0)->getAsInt('user_count');
+
+        $this->assertEquals($nodesAmount, $userCount);
+
+        // Retrieve the ids of all user nodes
+        $results = $session->run('MATCH (user:User) RETURN ID(user) AS id');
+
+        // Loop through the results and add each id to an array
+        $userIds = [];
+        foreach ($results as $result) {
+            $userIds[] = $result->get('id');
+        }
+
+        $this->assertCount($nodesAmount, $userIds);
+
+        // Check if we have any duplicate ids by removing duplicate values
+        // from the array.
+        $uniqueUserIds = array_unique($userIds);
+
+        $this->assertCount($nodesAmount, $uniqueUserIds);
+    }
+
+    public function testRedundantAcquire(): void
+    {
+        $connections = self::buildConnections();
+
+        $builder = ClientBuilder::create();
+        foreach ($connections as $i => $connection) {
+            $uri = Uri::create($connection);
+            $alias = $uri->getScheme().'_'.$i;
+            $builder = $builder->withDriver($alias, $connection);
+        }
+
+        $client = $builder->withFormatter(ClientIntegrationTest::formatter())
+            ->withDefaultSessionConfiguration(SessionConfiguration::default()->withDatabase('neo4j'))
+            ->build();
+
+        foreach ($connections as $i => $connection) {
+            $uri = Uri::create($connection);
+            $alias = $uri->getScheme().'_'.$i;
+            $client->run('MATCH (x) RETURN x', [], $alias);
+
+            $driver = $client->getDriver($alias);
+
+            // We make sure there is no redundant acquire by testing the amount of open connections.
+            // These may never exceed 1 in this simple case.
+            if ($driver instanceof BoltDriver) {
+                $reflection = new ReflectionClass($driver);
+
+                $poolProp = $reflection->getProperty('pool');
+                $poolProp->setAccessible(true);
+                /** @var ConnectionPool $pool */
+                $pool = $poolProp->getValue($driver);
+
+                $reflection = new ReflectionClass($pool);
+                $connectionProp = $reflection->getProperty('activeConnections');
+                $connectionProp->setAccessible(true);
+                /** @var array $activeConnections */
+                $activeConnections = $connectionProp->getValue($pool);
+
+                $this->assertCount(1, $activeConnections);
+            }
+        }
     }
 }

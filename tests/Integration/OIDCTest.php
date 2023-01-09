@@ -26,7 +26,7 @@ final class OIDCTest extends TestCase
     public function testConnect(): void
     {
         $this->expectNotToPerformAssertions();
-        if (!array_key_exists('ACCESS_TOKEN_BEARER', $_ENV) || !is_string($_ENV['ACCESS_TOKEN_BEARER'])) {
+        if (!array_key_exists('ACCESS_TOKEN_BEARER', $_ENV)) {
             $this->markTestSkipped('No OIDC token provided');
         }
 

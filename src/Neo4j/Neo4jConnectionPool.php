@@ -15,77 +15,149 @@ namespace Laudis\Neo4j\Neo4j;
 
 use function array_slice;
 use function array_unique;
+use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use function count;
 use Exception;
+use Generator;
+use function implode;
 use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Bolt\BoltConnectionPool;
+use Laudis\Neo4j\Bolt\Connection;
+use Laudis\Neo4j\Bolt\ConnectionPool;
+use Laudis\Neo4j\BoltFactory;
+use Laudis\Neo4j\Common\Cache;
+use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
+use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Contracts\SemaphoreInterface;
+use Laudis\Neo4j\Databags\ConnectionRequestData;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
+use const PHP_INT_MAX;
 use Psr\Http\Message\UriInterface;
+use Psr\SimpleCache\CacheInterface;
 use function random_int;
+use RuntimeException;
+use function sprintf;
+use function str_replace;
 use function str_starts_with;
+use Throwable;
 use function time;
 
 /**
  * Connection pool for with auto client-side routing.
  *
- * @psalm-import-type BasicDriver from \Laudis\Neo4j\Contracts\DriverInterface
+ * @psalm-import-type BasicDriver from DriverInterface
  *
- * @implements ConnectionPoolInterface<V3>
+ * @implements ConnectionPoolInterface<BoltConnection>
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
-    /**
-     * @psalm-readonly
-     *
-     * @var array<string, RoutingTable>
-     */
-    private static array $routingCache = [];
-    /** @psalm-readonly */
-    private BoltConnectionPool $pool;
+    private AddressResolverInterface $resolver;
+    /** @var array<string, ConnectionPool> */
+    private static array $pools = [];
+    private SemaphoreInterface $semaphore;
+    private BoltFactory $factory;
+    private ConnectionRequestData $data;
+    private CacheInterface $cache;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(BoltConnectionPool $pool)
+    public function __construct(SemaphoreInterface $semaphore, BoltFactory $factory, ConnectionRequestData $data, CacheInterface $cache, AddressResolverInterface $resolver)
     {
-        $this->pool = $pool;
+        $this->semaphore = $semaphore;
+        $this->factory = $factory;
+        $this->data = $data;
+        $this->cache = $cache;
+        $this->resolver = $resolver;
+    }
+
+    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self
+    {
+        return new self(
+            $semaphore,
+            BoltFactory::create(),
+            new ConnectionRequestData(
+                $uri,
+                $auth,
+                $conf->getUserAgent(),
+                $conf->getSslConfiguration()
+            ),
+            Cache::getInstance(),
+            $resolver
+        );
+    }
+
+    public function createOrGetPool(UriInterface $uri): ConnectionPool
+    {
+        $data = new ConnectionRequestData(
+            $uri,
+            $this->data->getAuth(),
+            $this->data->getUserAgent(),
+            $this->data->getSslConfig()
+        );
+
+        $key = $this->createKey($data);
+        if (!array_key_exists($key, self::$pools)) {
+            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data);
+        }
+
+        return self::$pools[$key];
     }
 
     /**
      * @throws Exception
      */
-    public function acquire(
-        UriInterface $uri,
-        AuthenticateInterface $authenticate,
-        SessionConfiguration $config
-    ): BoltConnection {
-        $key = $uri->getHost().':'.($uri->getPort() ?? '7687');
+    public function acquire(SessionConfiguration $config): Generator
+    {
+        $key = $this->createKey($this->data, $config);
 
-        $table = self::$routingCache[$key] ?? null;
-        if ($table === null || $table->getTtl() < time()) {
-            $connection = $this->pool->acquire($uri, $authenticate, $config);
-            $table = $this->routingTable($connection, $config);
-            self::$routingCache[$key] = $table;
-            $connection->close();
+        /** @var RoutingTable|null */
+        $table = $this->cache->get($key, null);
+        $triedAddresses = [];
+
+        if ($table == null) {
+            $addresses = $this->resolver->getAddresses((string) $this->data->getUri());
+            foreach ($addresses as $address) {
+                $triedAddresses[] = $address;
+                $pool = $this->createOrGetPool(Uri::create($address));
+                try {
+                    /** @var BoltConnection $connection */
+                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
+                    $table = $this->routingTable($connection, $config);
+                } catch (Throwable $e) {
+                    // todo - once client side logging is implemented it must be conveyed here.
+                    continue; // We continue if something is wrong with the current server
+                }
+
+                $this->cache->set($key, $table, $table->getTtl());
+                $pool->release($connection);
+
+                break;
+            }
         }
 
-        $server = $this->getNextServer($table, $config->getAccessMode()) ?? $uri;
+        if ($table === null) {
+            throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $this->data->getUri()->getHost(), implode('", "', $triedAddresses)));
+        }
+
+        $server = $this->getNextServer($table, $config->getAccessMode()) ?? $this->data->getUri();
 
         if ($server->getScheme() === '') {
-            $server = $server->withScheme($uri->getScheme());
+            $server = $server->withScheme($this->data->getUri()->getScheme());
         }
 
-        return $this->pool->acquire($uri, $authenticate, $config, $table, $server);
+        return $this->createOrGetPool($server)->acquire($config);
     }
 
     /**
@@ -108,13 +180,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @param ConnectionInterface<V3> $connection
-     *
      * @throws Exception
      */
-    private function routingTable(ConnectionInterface $connection, SessionConfiguration $config): RoutingTable
+    private function routingTable(BoltConnection $connection, SessionConfiguration $config): RoutingTable
     {
-        $bolt = $connection->getImplementation();
+        $bolt = $connection->getImplementation()[0];
 
         if ($bolt instanceof V4_4) {
             return $this->useRouteMessageNew($bolt, $config);
@@ -128,7 +198,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             return $this->useRoutingTable($bolt);
         }
 
-        return $this->useClusterOverview($bolt);
+        return $this->useClusterOverview($bolt, $connection);
     }
 
     private function useRouteMessage(V4_3 $bolt, SessionConfiguration $config): RoutingTable
@@ -172,9 +242,22 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    private function useClusterOverview(V3 $bolt): RoutingTable
+    private function useClusterOverview(V3 $bolt, ConnectionInterface $c): RoutingTable
     {
-        $bolt->run('CALL dbms.cluster.overview()');
+        try {
+            $bolt->run('CALL dbms.cluster.overview()');
+        } catch (MessageException $e) {
+            return new RoutingTable([
+                [
+                    'addresses' => [(string) $c->getServerAddress()],
+                    'role' => 'WRITE',
+                ],
+                [
+                    'addresses' => [(string) $c->getServerAddress()],
+                    'role' => 'READ',
+                ],
+            ], PHP_INT_MAX);
+        }
         /** @var list<array{0: string, 1: list<string>, 2: string, 4: list, 4:string}> */
         $response = $bolt->pullAll();
         $response = array_slice($response, 0, count($response) - 1);
@@ -195,8 +278,29 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         return new RoutingTable($servers, $ttl);
     }
 
-    public function canConnect(UriInterface $uri, AuthenticateInterface $authenticate): bool
+    public function release(ConnectionInterface $connection): void
     {
-        return $this->pool->canConnect($uri, $authenticate);
+        $this->createOrGetPool($connection->getServerAddress())->release($connection);
+    }
+
+    private function createKey(ConnectionRequestData $data, ?SessionConfiguration $config = null): string
+    {
+        $uri = $data->getUri();
+
+        $key = implode(
+            ':',
+            array_filter([$data->getUserAgent(), $uri->getHost(), $config ? $config->getDatabase() : null, $uri->getPort() ?? '7687'])
+        );
+
+        return str_replace([
+            '{',
+            '}',
+            '(',
+            ')',
+            '/',
+            '\\',
+            '@',
+            ':',
+        ], '|', $key);
     }
 }

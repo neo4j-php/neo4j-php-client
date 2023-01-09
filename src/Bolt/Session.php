@@ -15,8 +15,8 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\error\MessageException;
 use Exception;
+use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\TransactionHelper;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
@@ -31,7 +31,6 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Types\CypherList;
-use Psr\Http\Message\UriInterface;
 
 /**
  * A session using bolt connections.
@@ -47,7 +46,7 @@ final class Session implements SessionInterface
     /**
      * @psalm-readonly
      *
-     * @var BoltConnectionPool|Neo4jConnectionPool
+     * @var ConnectionPool|Neo4jConnectionPool
      */
     private ConnectionPoolInterface $pool;
     /**
@@ -57,30 +56,22 @@ final class Session implements SessionInterface
      */
     private FormatterInterface $formatter;
     /** @psalm-readonly */
-    private UriInterface $uri;
-    /** @psalm-readonly */
-    private AuthenticateInterface $auth;
-    /** @psalm-readonly */
     private BookmarkHolder $bookmarkHolder;
 
     /**
-     * @param FormatterInterface<ResultFormat>       $formatter
-     * @param BoltConnectionPool|Neo4jConnectionPool $pool
+     * @param FormatterInterface<ResultFormat>   $formatter
+     * @param ConnectionPool|Neo4jConnectionPool $pool
      *
      * @psalm-mutation-free
      */
     public function __construct(
         SessionConfiguration $config,
         ConnectionPoolInterface $pool,
-        FormatterInterface $formatter,
-        UriInterface $uri,
-        AuthenticateInterface $auth
+        FormatterInterface $formatter
     ) {
         $this->config = $config;
         $this->pool = $pool;
         $this->formatter = $formatter;
-        $this->uri = $uri;
-        $this->auth = $auth;
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
 
@@ -163,14 +154,16 @@ final class Session implements SessionInterface
      */
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
-        $connection = $this->pool->acquire($this->uri, $this->auth, $sessionConfig);
+        $connection = $this->pool->acquire($sessionConfig);
+        /** @var BoltConnection $connection */
+        $connection = GeneratorHelper::getReturnFromGenerator($connection);
 
         // We try and let the server do the timeout management.
-        // Since the client should not run indefinitely, we just multiply the client side by two, just in case
+        // Since the client should not run indefinitely, we just add the client side by two, just in case
         $timeout = $config->getTimeout();
         if ($timeout) {
             $timeout = ($timeout < 30) ? 30 : $timeout;
-            $connection->setTimeout($timeout * 2);
+            $connection->setTimeout($timeout + 2);
         }
 
         return $connection;

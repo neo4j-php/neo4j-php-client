@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Neo4j PHP Client and Driver package.
  *
@@ -24,6 +26,8 @@ use function sprintf;
  * @psalm-immutable
  *
  * @extends AbstractPropertyObject<int|string, int|string>
+ *
+ * @psalm-suppress TypeDoesNotContainType
  */
 final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvertibleInterface
 {
@@ -69,9 +73,14 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
      */
     public function toDateTime(): DateTimeImmutable
     {
-        return (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))
-                    ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000))
-                    ->setTimezone(new DateTimeZone($this->tzId));
+        $dateTimeImmutable = (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))
+            ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
+
+        if ($dateTimeImmutable === false) {
+            throw new \UnexpectedValueException('Expected DateTimeImmutable');
+        }
+
+        return $dateTimeImmutable->setTimezone(new DateTimeZone($this->tzId));
     }
 
     /**

@@ -49,14 +49,13 @@ final class Driver implements DriverInterface
         return new Session($this->driver->createSession($config));
     }
 
-    public function verifyConnectivity(): bool
+    public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
-        return $this->driver->verifyConnectivity();
+        return $this->driver->verifyConnectivity($config);
     }
 
     /**
      * @param string|UriInterface $uri
-     * @pure
      */
     public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {

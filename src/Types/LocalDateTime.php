@@ -18,6 +18,7 @@ use DateTimeImmutable;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use function sprintf;
+use UnexpectedValueException;
 
 /**
  * A date time represented in seconds and nanoseconds since the unix epoch.
@@ -25,6 +26,8 @@ use function sprintf;
  * @psalm-immutable
  *
  * @extends AbstractPropertyObject<int, int>
+ *
+ * @psalm-suppress TypeDoesNotContainType
  */
 final class LocalDateTime extends AbstractPropertyObject implements BoltConvertibleInterface
 {
@@ -58,8 +61,13 @@ final class LocalDateTime extends AbstractPropertyObject implements BoltConverti
      */
     public function toDateTime(): DateTimeImmutable
     {
-        return (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))
-                    ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
+        $dateTimeImmutable = (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
+
+        if ($dateTimeImmutable === false) {
+            throw new UnexpectedValueException('Expected DateTimeImmutable');
+        }
+
+        return $dateTimeImmutable;
     }
 
     /**

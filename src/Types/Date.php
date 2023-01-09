@@ -17,6 +17,7 @@ use Bolt\structures\IStructure;
 use DateTimeImmutable;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+use UnexpectedValueException;
 
 /**
  * A date represented by days since unix epoch.
@@ -24,6 +25,8 @@ use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
  * @psalm-immutable
  *
  * @extends AbstractPropertyObject<int, int>
+ *
+ * @psalm-suppress TypeDoesNotContainType
  */
 final class Date extends AbstractPropertyObject implements BoltConvertibleInterface
 {
@@ -49,7 +52,13 @@ final class Date extends AbstractPropertyObject implements BoltConvertibleInterf
      */
     public function toDateTime(): DateTimeImmutable
     {
-        return (new DateTimeImmutable('@0'))->modify(sprintf('+%s days', $this->days));
+        $dateTimeImmutable = (new DateTimeImmutable('@0'))->modify(sprintf('+%s days', $this->days));
+
+        if ($dateTimeImmutable === false) {
+            throw new UnexpectedValueException('Expected DateTimeImmutable');
+        }
+
+        return $dateTimeImmutable;
     }
 
     public function getProperties(): CypherMap

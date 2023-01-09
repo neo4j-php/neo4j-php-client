@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['7.4', '8.0', '8.1']
+        php-version: ['8.0', '8.1', '8.2']
 
     steps:
       - uses: actions/checkout@v2
@@ -27,9 +27,5 @@ jobs:
           progress: yes
           php_version: ${{ matrix.php-version }}
           version: 2
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: phpunit.xml.dist
-          php_version: ${{ matrix.php-version }}
-          bootstrap: vendor/autoload.php
-          args: --testsuite "Unit"
+      - name: Run unit tests
+        run: php vendor/bin/phpunit --testsuite Unit

@@ -13,38 +13,33 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use BadMethodCallException;
 use Bolt\error\IgnoredException;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
-use Laudis\Neo4j\BoltFactory;
+use function in_array;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Types\CypherList;
-use LogicException;
 use Psr\Http\Message\UriInterface;
-use RuntimeException;
 use function str_starts_with;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<V3>
+ * @implements ConnectionInterface<array{0: V3, 1: Connection}>
  *
- * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type BoltMeta from FormatterInterface
  */
-final class BoltConnection implements ConnectionInterface
+class BoltConnection implements ConnectionInterface
 {
-    private ?V3 $boltProtocol;
+    private V3 $boltProtocol;
     /** @psalm-readonly */
     private ConnectionConfiguration $config;
-    /** @psalm-readonly */
-    private BoltFactory $factory;
 
     /**
      * @note We are using references to "subscribed results" to maintain backwards compatibility and try and strike
@@ -60,27 +55,32 @@ final class BoltConnection implements ConnectionInterface
      * @var list<WeakReference<CypherList>>
      */
     private array $subscribedResults = [];
+    private AuthenticateInterface $auth;
+    private Connection $connection;
+    private string $userAgent;
 
-    /**
-     * @psalm-mutation-free
-     */
-    public function __construct(BoltFactory $factory, ?V3 $boltProtocol, ConnectionConfiguration $config)
+    public function getImplementation()
     {
-        $this->factory = $factory;
-        $this->boltProtocol = $boltProtocol;
-        $this->config = $config;
+        return [$this->boltProtocol, $this->connection];
     }
 
     /**
      * @psalm-mutation-free
      */
-    public function getImplementation(): V3
+    public function __construct(V3 $protocol, Connection $connection, AuthenticateInterface $auth, string $userAgent, ConnectionConfiguration $config)
     {
-        if ($this->boltProtocol === null) {
-            throw new RuntimeException('Connection is closed');
-        }
+        $this->config = $config;
+        $this->boltProtocol = $protocol;
+        $this->serverState = 'READY';
+        $this->auth = $auth;
+        $this->connection = $connection;
+        $this->userAgent = $userAgent;
+        $this->config = $config;
+    }
 
-        return $this->boltProtocol;
+    public function getEncryptionLevel(): string
+    {
+        return $this->connection->getEncryptionLevel();
     }
 
     /**
@@ -131,6 +131,11 @@ final class BoltConnection implements ConnectionInterface
         return $this->config->getDatabaseInfo();
     }
 
+    public function getAuthentication(): AuthenticateInterface
+    {
+        return $this->auth;
+    }
+
     /**
      * @psalm-mutation-free
      */
@@ -139,34 +144,12 @@ final class BoltConnection implements ConnectionInterface
         return !$this->protocol()->serverState->is('DISCONNECTED', 'DEFUNCT');
     }
 
-    public function open(): void
-    {
-        if ($this->boltProtocol !== null) {
-            throw new BadMethodCallException('Cannot open a connection that is already open');
-        }
-
-        $this->boltProtocol = $this->factory->build()[0];
-    }
-
     public function setTimeout(float $timeout): void
     {
-        $this->factory->getConnection()->setTimeout($timeout);
+        $this->connection->setTimeout($timeout);
     }
 
-    /**
-     * Closes the connection.
-     *
-     * Any of the preconditioned states are: 'READY', 'STREAMING', 'TX_READY', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
-     * Sends signal: 'DISCONNECT'
-     */
-    public function close(): void
-    {
-        $this->consumeResults();
-        $this->protocol()->goodbye();
-        $this->boltProtocol = null; // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe
-    }
-
-    private function consumeResults(): void
+    public function consumeResults(): void
     {
         foreach ($this->subscribedResults as $result) {
             $result = $result->get();
@@ -200,11 +183,6 @@ final class BoltConnection implements ConnectionInterface
         $this->consumeResults();
         $extra = $this->buildRunExtra($database, $timeout, $holder);
         $this->protocol()->begin($extra);
-    }
-
-    public function getFactory(): BoltFactory
-    {
-        return $this->factory;
     }
 
     /**
@@ -266,6 +244,11 @@ final class BoltConnection implements ConnectionInterface
         $this->protocol()->rollback();
     }
 
+    public function protocol(): V3
+    {
+        return $this->boltProtocol;
+    }
+
     /**
      * Pulls a result set.
      *
@@ -286,21 +269,22 @@ final class BoltConnection implements ConnectionInterface
             $tbr = $bolt->pull($extra);
         }
 
-        return $tbr;
-    }
+        $this->interpretResult($tbr[count($tbr) - 1]);
 
-    /**
-     * @psalm-mutation-free
-     */
-    public function getDriverConfiguration(): DriverConfiguration
-    {
-        return $this->config->getDriverConfiguration();
+        return $tbr;
     }
 
     public function __destruct()
     {
-        if ($this->protocol()->serverState->get() !== 'FAILED' && $this->isOpen()) {
-            $this->close();
+        if ($this->serverState !== 'FAILED' && $this->isOpen()) {
+            if (in_array($this->serverState, ['STREAMING', 'TX_STREAMING'])) {
+                $this->consumeResults();
+            }
+
+            $this->protocol()->goodbye();
+
+            $this->serverState = 'DEFUNCT';
+            unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
         }
     }
 
@@ -345,12 +329,35 @@ final class BoltConnection implements ConnectionInterface
         $this->subscribedResults[] = WeakReference::create($result);
     }
 
-    private function protocol(): V3
+    private function interpretResult(array $result): void
     {
-        if ($this->boltProtocol === null) {
-            throw new LogicException('Cannot use protocol if it is not created');
+        if (str_starts_with($this->serverState, 'TX_')) {
+            if ($result['has_more'] ?? ($this->countResults() > 1)) {
+                $this->serverState = 'TX_STREAMING';
+            } else {
+                $this->serverState = 'TX_READY';
+            }
+        } elseif ($result['has_more'] ?? false) {
+            $this->serverState = 'STREAMING';
+        } else {
+            $this->serverState = 'READY';
+        }
+    }
+
+    private function countResults(): int
+    {
+        $ctr = 0;
+        foreach ($this->subscribedResults as $result) {
+            if ($result->get() !== null) {
+                ++$ctr;
+            }
         }
 
-        return $this->boltProtocol;
+        return $ctr;
+    }
+
+    public function getUserAgent(): string
+    {
+        return $this->userAgent;
     }
 }
