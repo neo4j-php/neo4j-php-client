@@ -9,13 +9,13 @@ x-shared-cluster:
   &common-cluster
   <<: *common
   NEO4J_EDITION: 'enterprise'
-  NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+  NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
   EXTENDED_CONF: 'yes'
 
 x-shared-core:
   &common-core
   <<: *common-cluster
-  NEO4J_initial_server_mode__constraint: 'PRIMARY'
+  NEO4J_initial_server_mode__constraint: PRIMARY
 
 networks:
     neo4j:
@@ -77,91 +77,115 @@ services:
         env_file:
           - .env
 
-#    server1:
-#        image: neo4j:5
-#        hostname: server1
-#        networks:
-#          neo4j:
-#          neo4j-internal:
-#            aliases:
-#              - neo4j-network
-#        ports:
-#          - "7688:7687"
-#          - "7475:7474"
-#        healthcheck:
-#          test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
-#        user: ${USER_ID}:${GROUP_ID}
-#        volumes:
-#          - ./tests/resources:/import
-#          - ./neo4j.conf:/conf/neo4j.conf
-#        environment:
-#          <<: *common-core
-#        env_file:
-#          - .env
-#
-#    server2:
-#        image: neo4j:5
-#        hostname: server2
-#        networks:
-#          neo4j:
-#          neo4j-internal:
-#            aliases:
-#              - neo4j-network
-#        ports:
-#          - "7689:7687"
-#          - "7476:7474"
-#        healthcheck:
-#          test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
-#        user: ${USER_ID}:${GROUP_ID}
-#        environment:
-#          <<: *common-core
-#        volumes:
-#          - ./tests/resources:/import
-#          - ./neo4j.conf:/conf/neo4j.conf
-#        env_file:
-#          - .env
-#
-#    server3:
-#        image: neo4j:5
-#        hostname: server3
-#        networks:
-#          neo4j:
-#          neo4j-internal:
-#            aliases:
-#              - neo4j-network
-#        ports:
-#          - "7690:7687"
-#          - "7477:7474"
-#        healthcheck:
-#          test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
-#        user: ${USER_ID}:${GROUP_ID}
-#        environment:
-#          <<: *common-core
-#        volumes:
-#          - ./tests/resources:/import
-#          - ./neo4j.conf:/conf/neo4j.conf
-#        env_file:
-#          - .env
-#
-#    server4:
-#        image: neo4j:5
-#        hostname: server4
-#        networks:
-#          neo4j:
-#          neo4j-internal:
-#            aliases:
-#              - neo4j-network
-#        ports:
-#          - "7691:7687"
-#          - "7478:7474"
-#        healthcheck:
-#          test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
-#        user: ${USER_ID}:${GROUP_ID}
-#        environment:
-#          <<: *common-cluster
-#          NEO4J_initial_server_mode__constraint: SECONDARY
-#        env_file:
-#          - .env
-#        volumes:
-#          - ./tests/resources:/import
-#          - ./neo4j.conf:/conf/neo4j.conf
+    server1:
+        image: neo4j:5-enterprise
+        hostname: server1
+        networks:
+          neo4j:
+          neo4j-internal:
+            aliases:
+              - neo4j-network
+        ports:
+          - "7688:7687"
+          - "7475:7474"
+        healthcheck:
+          test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
+        user: ${USER_ID}:${GROUP_ID}
+        volumes:
+          - ./neo4j/neo4j-cluster.conf:/conf/neo4j.conf
+          - ./neo4j/data/server1:/var/lib/neo4j/data
+          - ./neo4j/logs/server1:/var/lib/neo4j/logs
+          - ./neo4j/conf/server1:/var/lib/neo4j/conf
+          - ./neo4j/import/server1:/var/lib/neo4j/import
+          - ./neo4j/metrics/server1:/var/lib/neo4j/metrics
+          - ./neo4j/licenses/server1:/var/lib/neo4j/licenses
+          - ./neo4j/ssl/server1:/var/lib/neo4j/ssl
+        environment:
+          <<: *common-core
+        env_file:
+          - .env
+
+    server2:
+        image: neo4j:5-enterprise
+        hostname: server2
+        networks:
+          neo4j:
+          neo4j-internal:
+            aliases:
+              - neo4j-network
+        ports:
+          - "7689:7687"
+          - "7476:7474"
+        healthcheck:
+          test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
+        user: ${USER_ID}:${GROUP_ID}
+        environment:
+          <<: *common-core
+        volumes:
+          - ./neo4j/neo4j-cluster.conf:/conf/neo4j.conf
+          - ./neo4j/data/server2:/var/lib/neo4j/data
+          - ./neo4j/logs/server2:/var/lib/neo4j/logs
+          - ./neo4j/conf/server2:/var/lib/neo4j/conf
+          - ./neo4j/import/server2:/var/lib/neo4j/import
+          - ./neo4j/metrics/server2:/var/lib/neo4j/metrics
+          - ./neo4j/licenses/server2:/var/lib/neo4j/licenses
+          - ./neo4j/ssl/server2:/var/lib/neo4j/ssl
+        env_file:
+          - .env
+
+    server3:
+        image: neo4j:5-enterprise
+        hostname: server3
+        networks:
+          neo4j:
+          neo4j-internal:
+            aliases:
+              - neo4j-network
+        ports:
+          - "7690:7687"
+          - "7477:7474"
+        healthcheck:
+          test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
+        user: ${USER_ID}:${GROUP_ID}
+        environment:
+          <<: *common-core
+        volumes:
+          - ./neo4j/neo4j-cluster.conf:/conf/neo4j.conf
+          - ./neo4j/data/server3:/var/lib/neo4j/data
+          - ./neo4j/logs/server3:/var/lib/neo4j/logs
+          - ./neo4j/conf/server3:/var/lib/neo4j/conf
+          - ./neo4j/import/server3:/var/lib/neo4j/import
+          - ./neo4j/metrics/server3:/var/lib/neo4j/metrics
+          - ./neo4j/licenses/server3:/var/lib/neo4j/licenses
+          - ./neo4j/ssl/server3:/var/lib/neo4j/ssl
+        env_file:
+          - .env
+
+    server4:
+        image: neo4j:5-enterprise
+        hostname: server4
+        networks:
+          neo4j:
+          neo4j-internal:
+            aliases:
+              - neo4j-network
+        ports:
+          - "7691:7687"
+          - "7478:7474"
+        healthcheck:
+          test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
+        user: ${USER_ID}:${GROUP_ID}
+        environment:
+          <<: *common-cluster
+          NEO4J_initial_server_mode__constraint: SECONDARY
+        env_file:
+          - .env
+        volumes:
+          - ./neo4j/neo4j-cluster.conf:/conf/neo4j.conf
+          - ./neo4j/data/server4:/var/lib/neo4j/data
+          - ./neo4j/logs/server4:/var/lib/neo4j/logs
+          - ./neo4j/conf/server4:/var/lib/neo4j/conf
+          - ./neo4j/import/server4:/var/lib/neo4j/import
+          - ./neo4j/metrics/server4:/var/lib/neo4j/metrics
+          - ./neo4j/licenses/server4:/var/lib/neo4j/licenses
+          - ./neo4j/ssl/server4:/var/lib/neo4j/ssl
