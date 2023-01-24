@@ -36,8 +36,11 @@ class BoltFactory
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(private BasicConnectionFactoryInterface $connectionFactory, private ProtocolFactory $protocolFactory, private SslConfigurationFactory $sslConfigurationFactory)
-    {
+    public function __construct(
+        private BasicConnectionFactoryInterface $connectionFactory,
+        private ProtocolFactory $protocolFactory,
+        private SslConfigurationFactory $sslConfigurationFactory
+    ) {
     }
 
     public static function create(): self
