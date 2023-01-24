@@ -21,6 +21,9 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use ReflectionClass;
+
+use function str_starts_with;
+
 use Throwable;
 
 /**
@@ -40,7 +43,7 @@ final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testValidRun(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -77,7 +80,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
      */
     public function testInvalidRun(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -105,7 +108,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
      */
     public function testValidStatement(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -134,7 +137,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
      */
     public function testInvalidStatement(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -154,7 +157,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
      */
     public function testStatements(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -190,7 +193,7 @@ CYPHER,
      */
     public function testInvalidStatements(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -231,7 +234,7 @@ CYPHER,
      */
     public function testCommitValidEmpty(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -254,7 +257,7 @@ CYPHER,
      */
     public function testCommitValidFilled(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -272,7 +275,7 @@ CYPHER
      */
     public function testCommitValidFilledWithInvalidStatement(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -295,7 +298,7 @@ CYPHER
      */
     public function testCommitInvalid(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -324,7 +327,7 @@ CYPHER
      */
     public function testRollbackValid(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -341,7 +344,7 @@ CYPHER
      */
     public function testRollbackInvalid(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 

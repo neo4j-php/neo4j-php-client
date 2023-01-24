@@ -13,9 +13,23 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use function array_sum;
+
+use ArrayIterator;
+use BadMethodCallException;
+use Generator;
+
+use function hexdec;
+use function json_encode;
+
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Types\CypherList;
+use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
+
+use function range;
+
+use stdClass;
 
 /**
  * @psalm-suppress MixedOperand
@@ -51,7 +65,7 @@ final class CypherListTest extends TestCase
 
     public function testFromIterable(): void
     {
-        $fromIterable = CypherList::fromIterable(new \ArrayIterator(['A', 'B', 'C']));
+        $fromIterable = CypherList::fromIterable(new ArrayIterator(['A', 'B', 'C']));
 
         self::assertNotSame($this->list, $fromIterable);
         self::assertEquals($this->list->toArray(), $fromIterable->toArray());
@@ -77,7 +91,7 @@ final class CypherListTest extends TestCase
 
     public function testCopyDepth(): void
     {
-        $list = new CypherList([new \stdClass()]);
+        $list = new CypherList([new stdClass()]);
         $copy = $list->copy();
 
         self::assertNotSame($list, $copy);
@@ -145,9 +159,9 @@ final class CypherListTest extends TestCase
 
     public function testReduce(): void
     {
-        $count = $this->list->reduce(static fn (?int $initial, string $value, int $key) => ($initial ?? 0) + $key * \hexdec($value), 5);
+        $count = $this->list->reduce(static fn (?int $initial, string $value, int $key) => ($initial ?? 0) + $key * hexdec($value), 5);
 
-        self::assertEquals(5 + \hexdec('B') + 2 * \hexdec('C'), $count);
+        self::assertEquals(5 + hexdec('B') + 2 * hexdec('C'), $count);
     }
 
     public function testFind(): void
@@ -209,7 +223,7 @@ final class CypherListTest extends TestCase
 
     public function testFirstInvalid(): void
     {
-        $this->expectException(\OutOfBoundsException::class);
+        $this->expectException(OutOfBoundsException::class);
         $this->expectExceptionMessage('Cannot grab first element of an empty list');
         (new CypherList())->first();
     }
@@ -221,21 +235,21 @@ final class CypherListTest extends TestCase
 
     public function testLastInvalid(): void
     {
-        $this->expectException(\OutOfBoundsException::class);
+        $this->expectException(OutOfBoundsException::class);
         $this->expectExceptionMessage('Cannot grab last element of an empty list');
         (new CypherList())->last();
     }
 
     public function testGetInvalid(): void
     {
-        $this->expectException(\OutOfBoundsException::class);
+        $this->expectException(OutOfBoundsException::class);
         $this->expectExceptionMessage('Offset: "3" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
         $this->list->get(3);
     }
 
     public function testGetNegative(): void
     {
-        $this->expectException(\OutOfBoundsException::class);
+        $this->expectException(OutOfBoundsException::class);
         $this->expectExceptionMessage('Offset: "-1" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
         $this->list->get(-1);
     }
@@ -262,7 +276,7 @@ final class CypherListTest extends TestCase
 
     public function testOffsetSet(): void
     {
-        $this->expectException(\BadMethodCallException::class);
+        $this->expectException(BadMethodCallException::class);
         $this->expectExceptionMessage('Laudis\Neo4j\Types\CypherList is immutable');
 
         $this->list[0] = 'a';
@@ -270,7 +284,7 @@ final class CypherListTest extends TestCase
 
     public function testOffsetUnset(): void
     {
-        $this->expectException(\BadMethodCallException::class);
+        $this->expectException(BadMethodCallException::class);
         $this->expectExceptionMessage('Laudis\Neo4j\Types\CypherList is immutable');
 
         unset($this->list[0]);
@@ -285,14 +299,14 @@ final class CypherListTest extends TestCase
 
     public function testOffsetGetInvalid(): void
     {
-        $this->expectException(\OutOfBoundsException::class);
+        $this->expectException(OutOfBoundsException::class);
         $this->expectExceptionMessage('Offset: "3" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
         $this->list[3];
     }
 
     public function testOffsetGetNegative(): void
     {
-        $this->expectException(\OutOfBoundsException::class);
+        $this->expectException(OutOfBoundsException::class);
         $this->expectExceptionMessage('Offset: "-1" does not exists in object of instance: Laudis\Neo4j\Types\CypherList');
         $this->list[-1];
     }
@@ -317,12 +331,12 @@ final class CypherListTest extends TestCase
 
     public function testJsonSerialize(): void
     {
-        self::assertEquals('["A","B","C"]', \json_encode($this->list, JSON_THROW_ON_ERROR));
+        self::assertEquals('["A","B","C"]', json_encode($this->list, JSON_THROW_ON_ERROR));
     }
 
     public function testJsonSerializeEmpty(): void
     {
-        self::assertEquals('[]', \json_encode(new CypherList(), JSON_THROW_ON_ERROR));
+        self::assertEquals('[]', json_encode(new CypherList(), JSON_THROW_ON_ERROR));
     }
 
     public function testJoin(): void
@@ -361,15 +375,15 @@ final class CypherListTest extends TestCase
     public function testMapTypings(): void
     {
         $map = CypherList::fromIterable(['a', 'b', 'c'])
-            ->map(static function (string $value, int $key): \stdClass {
-                $tbr = new \stdClass();
+            ->map(static function (string $value, int $key): stdClass {
+                $tbr = new stdClass();
 
                 $tbr->key = $key;
                 $tbr->value = $value;
 
                 return $tbr;
             })
-            ->map(static fn (\stdClass $class) => (string) $class->value)
+            ->map(static fn (stdClass $class) => (string) $class->value)
             ->toArray();
 
         self::assertEquals(['a', 'b', 'c'], $map);
@@ -377,7 +391,7 @@ final class CypherListTest extends TestCase
 
     public function testKeyBy(): void
     {
-        $object = new \stdClass();
+        $object = new stdClass();
         $object->x = 'stdClassX';
         $object->y = 'wrong';
         $list = CypherList::fromIterable([
@@ -435,20 +449,20 @@ final class CypherListTest extends TestCase
 
         self::assertEquals(5, $start);
 
-        self::assertEquals(\array_sum(\range(0, 5)), $sumBefore);
+        self::assertEquals(array_sum(range(0, 5)), $sumBefore);
         self::assertEquals(5, $sumAfter);
 
         $end = $range->get(2);
 
         self::assertEquals(7, $end);
-        self::assertEquals(\array_sum(\range(0, 7)), $sumBefore);
-        self::assertEquals(\array_sum(\range(5, 7)), $sumAfter);
+        self::assertEquals(array_sum(range(0, 7)), $sumBefore);
+        self::assertEquals(array_sum(range(5, 7)), $sumAfter);
     }
 
     /**
-     * @return \Generator<int, int>
+     * @return Generator<int, int>
      */
-    private function infiniteIterator(): \Generator
+    private function infiniteIterator(): Generator
     {
         $i = 0;
         while (true) {

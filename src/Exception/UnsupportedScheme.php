@@ -13,6 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Exception;
 
+use function implode;
+
+use RuntimeException;
+
 /**
  * Exception when a requested scheme cannot be handled by the drivers available in the client.
  *
@@ -20,13 +24,13 @@ namespace Laudis\Neo4j\Exception;
  *
  * @psalm-suppress MutableDependency
  */
-final class UnsupportedScheme extends \RuntimeException
+final class UnsupportedScheme extends RuntimeException
 {
     /**
      * @param list<string> $supportedSchemas
      */
     public static function make(string $schema, array $supportedSchemas): self
     {
-        return new self('Unsupported schema: '.$schema.', available schema\'s are: '.\implode(',', $supportedSchemas));
+        return new self('Unsupported schema: '.$schema.', available schema\'s are: '.implode(',', $supportedSchemas));
     }
 }

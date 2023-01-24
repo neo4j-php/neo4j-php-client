@@ -38,7 +38,7 @@ interface ConnectionPoolInterface
      *      Connection|null
      * >
      */
-    public function acquire(SessionConfiguration $config): \Generator;
+    public function acquire(SessionConfiguration $config): Generator;
 
     /**
      * Releases a connection back to the pool.

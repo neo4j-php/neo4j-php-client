@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use function count;
+
+use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\Bolt\BoltDriver;
@@ -27,6 +30,9 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use ReflectionClass;
+
+use function str_starts_with;
 
 /**
  * @psalm-import-type OGMTypes from OGMFormatter
@@ -57,7 +63,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 
     public function testEqualEffect(): void
     {
-        if (\count(self::connectionAliases()) === 1) {
+        if (count(self::connectionAliases()) === 1) {
             self::markTestSkipped('Only one connection alias provided. Comparison is impossible.');
         }
         $statement = new Statement(
@@ -67,7 +73,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 
         $prev = null;
         foreach (self::connectionAliases() as $current) {
-            if (\str_starts_with($current[0], 'neo4j')) {
+            if (str_starts_with($current[0], 'neo4j')) {
                 self::markTestSkipped('Cannot guarantee successful test in cluster');
             }
             if ($prev !== null) {
@@ -87,7 +93,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testAvailabilityFullImplementation(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -215,7 +221,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])), $alias);
      */
     public function testStatements(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -240,7 +246,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])), $alias);
      */
     public function testInvalidStatements(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -258,7 +264,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])), $alias);
      */
     public function testMultipleTransactions(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -271,7 +277,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])), $alias);
 
     public function testInvalidConnection(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Cannot find a driver setup with alias: "gh"');
 
         $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN 1 AS x'), 'gh');
@@ -368,14 +374,14 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])), $alias);
             // We make sure there is no redundant acquire by testing the amount of open connections.
             // These may never exceed 1 in this simple case.
             if ($driver instanceof BoltDriver) {
-                $reflection = new \ReflectionClass($driver);
+                $reflection = new ReflectionClass($driver);
 
                 $poolProp = $reflection->getProperty('pool');
                 $poolProp->setAccessible(true);
                 /** @var ConnectionPool $pool */
                 $pool = $poolProp->getValue($driver);
 
-                $reflection = new \ReflectionClass($pool);
+                $reflection = new ReflectionClass($pool);
                 $connectionProp = $reflection->getProperty('activeConnections');
                 $connectionProp->setAccessible(true);
                 /** @var array $activeConnections */

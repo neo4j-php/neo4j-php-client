@@ -14,6 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Dotenv\Dotenv;
+
+use function explode;
+use function is_string;
+
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
@@ -35,17 +39,17 @@ final class BoltResultIntegrationTest extends TestCase
     public function buildConnections(): array
     {
         $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
-        if (!\is_string($connections)) {
+        if (!is_string($connections)) {
             Dotenv::createImmutable(__DIR__.'/../../')->load();
             /** @var string|mixed $connections */
             $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
-            if (!\is_string($connections)) {
+            if (!is_string($connections)) {
                 return ['bolt://neo4j:test@neo4j' => ['bolt://neo4j:test@neo4j']];
             }
         }
 
         $tbr = [];
-        foreach (\explode(',', $connections) as $connection) {
+        foreach (explode(',', $connections) as $connection) {
             $tbr[$connection] = [$connection];
         }
 

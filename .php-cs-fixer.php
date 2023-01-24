@@ -5,7 +5,7 @@ declare(strict_types=1);
 /*
  * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Nagels <http://nagels.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -45,6 +45,11 @@ return (new Config())
         'phpdoc_to_comment' => false,
         'yoda_style' => false,
         'declare_strict_types' => true,
+        'global_namespace_import' => [
+            'import_classes' => true,
+            'import_constants' => true,
+            'import_functions' => true,
+        ],
     ])
     ->setFinder($finder)
 ;

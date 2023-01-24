@@ -19,6 +19,8 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
+use function sprintf;
+
 final class OpenIDConnectAuth implements AuthenticateInterface
 {
     /**
@@ -50,6 +52,6 @@ final class OpenIDConnectAuth implements AuthenticateInterface
 
     public function toString(UriInterface $uri): string
     {
-        return \sprintf('OpenId %s@%s:%s', $this->token, $uri->getHost(), $uri->getPort() ?? '');
+        return sprintf('OpenId %s@%s:%s', $this->token, $uri->getHost(), $uri->getPort() ?? '');
     }
 }

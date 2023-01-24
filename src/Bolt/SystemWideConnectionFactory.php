@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use function extension_loaded;
+
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 
 /**
@@ -36,7 +38,7 @@ class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
     {
         if (self::$instance === null) {
             $factory = new StreamConnectionFactory();
-            if (\extension_loaded('sockets')) {
+            if (extension_loaded('sockets')) {
                 self::$instance = new self(new SocketConnectionFactory($factory));
             } else {
                 self::$instance = new self($factory);

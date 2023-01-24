@@ -13,6 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use function bin2hex;
+use function dump;
+
+use Exception;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
@@ -20,6 +24,10 @@ use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+
+use function random_bytes;
+use function serialize;
+use function unserialize;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -46,18 +54,18 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
     /**
      * @dataProvider connectionAliases
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function testAcceptanceWrite(string $alias): void
     {
-        $counters = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('CREATE (x:X {y: $x}) RETURN x', ['x' => \bin2hex(\random_bytes(128))]), $alias)->getSummary()->getCounters();
+        $counters = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))]), $alias)->getSummary()->getCounters();
         self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $counters);
     }
 
     /**
      * @dataProvider connectionAliases
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function testGetResults(string $alias): void
     {
@@ -83,8 +91,8 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
     {
         $results = $this->getClient()->run('RETURN 1 AS one', [], $alias);
 
-        $serialise = \serialize($results);
-        $resultHasBeenSerialized = \unserialize($serialise);
+        $serialise = serialize($results);
+        $resultHasBeenSerialized = unserialize($serialise);
 
         self::assertInstanceOf(SummarizedResult::class, $resultHasBeenSerialized);
         self::assertEquals($results->toRecursiveArray(), $resultHasBeenSerialized->toRecursiveArray());
@@ -99,7 +107,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
     {
         $results = $this->getClient()->run('RETURN 1 AS one', [], $alias);
 
-        \dump($results);
+        dump($results);
     }
 
     public function testConsumedPositive(): void

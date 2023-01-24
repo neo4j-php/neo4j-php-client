@@ -13,6 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use Generator;
+
+use function json_encode;
+
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\Uri;
@@ -60,7 +64,7 @@ final class HttpConnectionPool implements ConnectionPoolInterface
     ) {
     }
 
-    public function acquire(SessionConfiguration $config): \Generator
+    public function acquire(SessionConfiguration $config): Generator
     {
         yield 0.0;
 
@@ -71,7 +75,7 @@ final class HttpConnectionPool implements ConnectionPoolInterface
         $uri = $uri->withPath($path);
         $request = $request->withUri($uri);
 
-        $body = \json_encode([
+        $body = json_encode([
             'statements' => [
                 [
                     'statement' => <<<'CYPHER'

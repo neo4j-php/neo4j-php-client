@@ -13,8 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use function call_user_func;
+
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
+
+use function is_callable;
+
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -73,8 +78,8 @@ final class HttpPsrBindings
 
     public function getClient(): ClientInterface
     {
-        if (\is_callable($this->client)) {
-            $this->client = \call_user_func($this->client);
+        if (is_callable($this->client)) {
+            $this->client = call_user_func($this->client);
         }
 
         return $this->client;
@@ -112,8 +117,8 @@ final class HttpPsrBindings
 
     public function getStreamFactory(): StreamFactoryInterface
     {
-        if (\is_callable($this->streamFactory)) {
-            $this->streamFactory = \call_user_func($this->streamFactory);
+        if (is_callable($this->streamFactory)) {
+            $this->streamFactory = call_user_func($this->streamFactory);
         }
 
         return $this->streamFactory;
@@ -121,8 +126,8 @@ final class HttpPsrBindings
 
     public function getRequestFactory(): RequestFactoryInterface
     {
-        if (\is_callable($this->requestFactory)) {
-            $this->requestFactory = \call_user_func($this->requestFactory);
+        if (is_callable($this->requestFactory)) {
+            $this->requestFactory = call_user_func($this->requestFactory);
         }
 
         return $this->requestFactory;

@@ -13,6 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use function explode;
+
+use const FILTER_VALIDATE_IP;
+
+use function filter_var;
+
 use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
 use Psr\Http\Message\UriInterface;
@@ -28,7 +34,7 @@ class SslConfigurationFactory
         $sslConfig = '';
         if ($mode === SslMode::FROM_URL()) {
             $scheme = $uri->getScheme();
-            $explosion = \explode('+', $scheme, 2);
+            $explosion = explode('+', $scheme, 2);
             $sslConfig = $explosion[1] ?? '';
         } elseif ($mode === SslMode::ENABLE()) {
             $sslConfig = 's';
@@ -52,7 +58,7 @@ class SslConfigurationFactory
             'verify_peer' => $config->isVerifyPeer(),
             'peer_name' => $host,
         ];
-        if (!\filter_var($host, \FILTER_VALIDATE_IP)) {
+        if (!filter_var($host, FILTER_VALIDATE_IP)) {
             $options['SNI_enabled'] = true;
         }
         if ($sslConfig === 's') {

@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Bolt\error\ConnectException;
 use Dotenv\Dotenv;
+use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Databags\SummarizedResult;
@@ -54,7 +55,7 @@ final class BoltDriverIntegrationTest extends TestCase
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function testValidHostname(): void
     {
@@ -69,7 +70,7 @@ CYPHER);
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function testValidUrl(): void
     {
@@ -85,7 +86,7 @@ CYPHER);
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function testInvalidIp(): void
     {
@@ -95,7 +96,7 @@ CYPHER);
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function testInvalidSocket(): void
     {

@@ -14,6 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use BadMethodCallException;
+
+use function json_encode;
+
+use JsonException;
 use Laudis\Neo4j\Types\AbstractCypherObject;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
@@ -50,7 +54,7 @@ final class BogusCypherObjectFilled extends AbstractCypherObject
 final class CypherTypeTest extends TestCase
 {
     /**
-     * @throws \JsonException
+     * @throws JsonException
      *
      * @psalm-suppress all
      */
@@ -58,7 +62,7 @@ final class CypherTypeTest extends TestCase
     {
         $empty = new BogusCypherObject();
 
-        self::assertEquals('[]', \json_encode($empty, JSON_THROW_ON_ERROR));
+        self::assertEquals('[]', json_encode($empty, JSON_THROW_ON_ERROR));
         self::assertFalse(isset($empty[0]));
         self::assertNull($empty[0] ?? null);
 
@@ -88,7 +92,7 @@ final class CypherTypeTest extends TestCase
     }
 
     /**
-     * @throws \JsonException
+     * @throws JsonException
      *
      * @psalm-suppress all
      */
@@ -96,7 +100,7 @@ final class CypherTypeTest extends TestCase
     {
         $filled = new BogusCypherObjectFilled();
 
-        self::assertEquals('{"a":"b","c":"d"}', \json_encode($filled, JSON_THROW_ON_ERROR));
+        self::assertEquals('{"a":"b","c":"d"}', json_encode($filled, JSON_THROW_ON_ERROR));
 
         self::assertFalse(isset($filled[0]));
         self::assertNull($filled[0] ?? null);

@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Dotenv\Dotenv;
+
+use function explode;
+
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use PHPUnit\Framework\TestCase;
@@ -32,7 +35,7 @@ final class ClientBuilderTest extends TestCase
                 $connections = '';
             }
         }
-        foreach (\explode(',', $connections) as $uri) {
+        foreach (explode(',', $connections) as $uri) {
             $psrUri = Uri::create($uri);
             if ($psrUri->getScheme() === 'bolt') {
                 return $psrUri->__toString();

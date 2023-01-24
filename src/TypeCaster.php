@@ -13,8 +13,16 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use function is_a;
+use function is_iterable;
+use function is_numeric;
+use function is_object;
+use function is_scalar;
+
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+
+use function method_exists;
 
 final class TypeCaster
 {
@@ -23,7 +31,7 @@ final class TypeCaster
      */
     public static function toString(mixed $value): ?string
     {
-        if ($value === null || \is_scalar($value) || (\is_object($value) && \method_exists($value, '__toString'))) {
+        if ($value === null || is_scalar($value) || (is_object($value) && method_exists($value, '__toString'))) {
             return (string) $value;
         }
 
@@ -36,7 +44,7 @@ final class TypeCaster
     public static function toFloat(mixed $value): ?float
     {
         $value = self::toString($value);
-        if (\is_numeric($value)) {
+        if (is_numeric($value)) {
             return (float) $value;
         }
 
@@ -90,7 +98,7 @@ final class TypeCaster
      */
     public static function toClass(mixed $value, string $class): ?object
     {
-        if (\is_a($value, $class)) {
+        if (is_a($value, $class)) {
             /** @var T */
             return $value;
         }
@@ -105,7 +113,7 @@ final class TypeCaster
      */
     public static function toArray(mixed $value): ?array
     {
-        if (\is_iterable($value)) {
+        if (is_iterable($value)) {
             $tbr = [];
             /** @var mixed $x */
             foreach ($value as $x) {
@@ -126,7 +134,7 @@ final class TypeCaster
      */
     public static function toCypherList(mixed $value): ?CypherList
     {
-        if (\is_iterable($value)) {
+        if (is_iterable($value)) {
             return CypherList::fromIterable($value);
         }
 
@@ -138,7 +146,7 @@ final class TypeCaster
      */
     public static function toCypherMap(mixed $value): ?CypherMap
     {
-        if (\is_iterable($value)) {
+        if (is_iterable($value)) {
             return CypherMap::fromIterable($value);
         }
 

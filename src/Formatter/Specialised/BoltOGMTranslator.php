@@ -26,6 +26,9 @@ use Bolt\structures\Point3D as BoltPoint3D;
 use Bolt\structures\Relationship as BoltRelationship;
 use Bolt\structures\Time as BoltTime;
 use Bolt\structures\UnboundRelationship as BoltUnboundRelationship;
+
+use function call_user_func;
+
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
@@ -45,6 +48,7 @@ use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
+use UnexpectedValueException;
 
 /**
  * Translates Bolt objects to Driver Types.
@@ -194,7 +198,7 @@ final class BoltOGMTranslator
         } elseif ($x->srid() === WGS84Point::SRID) {
             return new WGS84Point($x->x(), $x->y());
         }
-        throw new \UnexpectedValueException('An srid of '.$x->srid().' has been returned, which has not been implemented.');
+        throw new UnexpectedValueException('An srid of '.$x->srid().' has been returned, which has not been implemented.');
     }
 
     private function makeFromBoltPoint3D(BoltPoint3D $x): Abstract3DPoint
@@ -204,7 +208,7 @@ final class BoltOGMTranslator
         } elseif ($x->srid() === WGS843DPoint::SRID) {
             return new WGS843DPoint($x->x(), $x->y(), $x->z());
         }
-        throw new \UnexpectedValueException('An srid of '.$x->srid().' has been returned, which has not been implemented.');
+        throw new UnexpectedValueException('An srid of '.$x->srid().' has been returned, which has not been implemented.');
     }
 
     private function makeFromBoltPath(BoltPath $path): Path
@@ -268,10 +272,10 @@ final class BoltOGMTranslator
         /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         $type = get_debug_type($value);
         if (!isset($this->rawToTypes[$type])) {
-            throw new \UnexpectedValueException('Cannot handle value of debug type: '.$type);
+            throw new UnexpectedValueException('Cannot handle value of debug type: '.$type);
         }
 
         /** @psalm-suppress ImpureFunctionCall */
-        return \call_user_func($this->rawToTypes[$type], $value);
+        return call_user_func($this->rawToTypes[$type], $value);
     }
 }

@@ -13,12 +13,25 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Performance;
 
+use function array_pop;
+use function base64_encode;
+
 use Bolt\error\ConnectException;
+
+use function count;
+
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Formatter\BasicFormatter;
 use Laudis\Neo4j\Tests\Integration\EnvironmentAwareIntegrationTest;
+
+use function random_bytes;
+
+use RuntimeException;
+
+use function sleep;
+use function str_starts_with;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
@@ -37,7 +50,7 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
      */
     public function testBigRandomData(string $alias): void
     {
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectErrorMessage('Rollback please');
 
         $this->getClient()->transaction(static function (TSX $tsx) {
@@ -46,12 +59,12 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
             ];
 
             for ($i = 0; $i < 50000; ++$i) {
-                $params[\base64_encode(\random_bytes(32))] = \base64_encode(\random_bytes(128));
+                $params[base64_encode(random_bytes(32))] = base64_encode(random_bytes(128));
             }
 
             $tsx->run('MATCH (a :label {id:$id}) RETURN a', $params);
 
-            throw new \RuntimeException('Rollback please');
+            throw new RuntimeException('Rollback please');
         }, $alias);
     }
 
@@ -63,11 +76,11 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
         $aliases = array_values(self::connectionAliases());
         $tsxs = [];
         for ($i = 0; $i < 1000; ++$i) {
-            $alias = $aliases[$i % \count($aliases)][0];
+            $alias = $aliases[$i % count($aliases)][0];
 
             $tsxs = $this->addTransactionOrRun($i, $alias, $tsxs);
 
-            if (\count($tsxs) >= 50) {
+            if (count($tsxs) >= 50) {
                 shuffle($tsxs);
                 for ($j = 0; $j < 25; ++$j) {
                     $tsxs = $this->testAndDestructTransaction($tsxs, $j);
@@ -81,7 +94,7 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
      */
     public function testMultipleTransactionsCorrectness(string $alias): void
     {
-        if (\str_starts_with($alias, 'neo4j')) {
+        if (str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 
@@ -133,7 +146,7 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
                 throw $e;
             }
 
-            \sleep(5);
+            sleep(5);
 
             return $this->addTransactionOrRun($i, $alias, $tsxs, $retriesLeft);
         }
@@ -150,7 +163,7 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
      */
     private function testAndDestructTransaction(array $tsxs, int $j, int $retriesLeft = 10): array
     {
-        $tsx = \array_pop($tsxs);
+        $tsx = array_pop($tsxs);
         try {
             $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
 
@@ -165,7 +178,7 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
                 throw $e;
             }
 
-            \sleep(5);
+            sleep(5);
 
             return $this->testAndDestructTransaction($tsxs, $j, $retriesLeft);
         }

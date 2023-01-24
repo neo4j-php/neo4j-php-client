@@ -13,6 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use function array_key_first;
+use function array_merge;
+use function count;
+use function json_decode;
+use function json_encode;
+
+use const JSON_THROW_ON_ERROR;
+
+use JsonException;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
@@ -20,7 +29,9 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
 use stdClass;
+use UnexpectedValueException;
 
 /**
  * Helper functions for the http protocol.
@@ -32,19 +43,19 @@ final class HttpHelper
     /**
      * Checks the response and interprets it. Throws if an error is detected.
      *
-     * @throws \JsonException
-     * @throws \RuntimeException
-     * @throws \UnexpectedValueException
+     * @throws JsonException
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
      */
-    public static function interpretResponse(ResponseInterface $response): \stdClass
+    public static function interpretResponse(ResponseInterface $response): stdClass
     {
         if ($response->getStatusCode() >= 400) {
-            throw new \RuntimeException('HTTP Error: '.$response->getReasonPhrase());
+            throw new RuntimeException('HTTP Error: '.$response->getReasonPhrase());
         }
 
         $contents = $response->getBody()->getContents();
 
-        /** @var \stdClass $body */
+        /** @var stdClass $body */
         // Jolt is a Json sequence (rfc 7464), so it starts with a RS control character "\036"
         if ($contents[0] === "\036") {
             $body = self::getJoltBody($contents);
@@ -54,7 +65,7 @@ final class HttpHelper
         }
 
         $errors = [];
-        /** @var list<\stdClass> $bodyErrors */
+        /** @var list<stdClass> $bodyErrors */
         $bodyErrors = $body->errors ?? [];
         foreach ($bodyErrors as $error) {
             /** @var string */
@@ -64,7 +75,7 @@ final class HttpHelper
             $errors[] = Neo4jError::fromMessageAndCode($code, $message);
         }
 
-        if (\count($errors) !== 0) {
+        if (count($errors) !== 0) {
             throw new Neo4jException($errors);
         }
 
@@ -72,27 +83,27 @@ final class HttpHelper
     }
 
     /**
-     * @throws \JsonException
+     * @throws JsonException
      */
-    public static function getJsonBody(string $contents): \stdClass
+    public static function getJsonBody(string $contents): stdClass
     {
-        /** @var \stdClass */
-        return \json_decode($contents, false, 512, \JSON_THROW_ON_ERROR);
+        /** @var stdClass */
+        return json_decode($contents, false, 512, JSON_THROW_ON_ERROR);
     }
 
     /**
      * Converts a Jolt input (with JSON sequence separators) into a stdClass that contains the data of all jsons of the sequence.
      *
-     * @throws \JsonException
-     * @throws \RuntimeException
-     * @throws \UnexpectedValueException
+     * @throws JsonException
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
      *
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAssignment
      * @psalm-suppress MixedPropertyFetch
      * @psalm-suppress MixedArgument
      */
-    public static function getJoltBody(string $contents): \stdClass
+    public static function getJoltBody(string $contents): stdClass
     {
         // Split json sequence in single jsons, split on json sequence separators.
         $contents = explode("\036", $contents);
@@ -101,11 +112,11 @@ final class HttpHelper
         array_shift($contents);
 
         // stdClass to capture all the jsons
-        $rtr = new \stdClass();
+        $rtr = new stdClass();
         $rtr->results = [];
 
         // stdClass to capture the jsons of the results of a single statement that has been sent.
-        $data = new \stdClass();
+        $data = new stdClass();
         $data->data = [];
 
         foreach ($contents as $content) {
@@ -115,35 +126,35 @@ final class HttpHelper
             switch ($key) {
                 case 'header':
                     if (isset($data->header)) {
-                        throw new \UnexpectedValueException('Jolt response with second header before summary received');
+                        throw new UnexpectedValueException('Jolt response with second header before summary received');
                     }
                     $data->header = $value;
                     break;
                 case 'data':
                     if (!isset($data->header)) {
-                        throw new \UnexpectedValueException('Jolt response with data before new header received');
+                        throw new UnexpectedValueException('Jolt response with data before new header received');
                     }
                     $data->data[] = $value;
                     break;
                 case 'summary':
                     if (!isset($data->header)) {
-                        throw new \UnexpectedValueException('Jolt response with summary before new header received');
+                        throw new UnexpectedValueException('Jolt response with summary before new header received');
                     }
                     $data->summary = $value;
                     $rtr->results[] = $data;
-                    $data = new \stdClass();
+                    $data = new stdClass();
                     $data->data = [];
                     break;
 
                 case 'info':
                     if (isset($rtr->info)) {
-                        throw new \UnexpectedValueException('Jolt response with multiple info rows received');
+                        throw new UnexpectedValueException('Jolt response with multiple info rows received');
                     }
                     $rtr->info = $value;
                     break;
                 case 'error':
                     if (isset($rtr->errors)) {
-                        throw new \UnexpectedValueException('Jolt response with multiple error rows received');
+                        throw new UnexpectedValueException('Jolt response with multiple error rows received');
                     }
                     $rtr->errors = [];
                     foreach ($value->errors as $error) {
@@ -154,7 +165,7 @@ final class HttpHelper
                     }
                     break;
                 default:
-                    throw new \UnexpectedValueException('Jolt response with unknown key received: '.$key);
+                    throw new UnexpectedValueException('Jolt response with unknown key received: '.$key);
             }
         }
 
@@ -166,16 +177,16 @@ final class HttpHelper
      *
      * @return array{0: string, 1: mixed}
      */
-    public static function splitJoltSingleton(\stdClass $joltSingleton): array
+    public static function splitJoltSingleton(stdClass $joltSingleton): array
     {
         /** @var array<string, mixed> $joltSingleton */
         $joltSingleton = (array) $joltSingleton;
 
-        if (\count($joltSingleton) !== 1) {
-            throw new \UnexpectedValueException('stdClass with '.\count($joltSingleton).' elements is not a Jolt singleton.');
+        if (count($joltSingleton) !== 1) {
+            throw new UnexpectedValueException('stdClass with '.count($joltSingleton).' elements is not a Jolt singleton.');
         }
 
-        $key = \array_key_first($joltSingleton);
+        $key = array_key_first($joltSingleton);
 
         return [$key, $joltSingleton[$key]];
     }
@@ -185,7 +196,7 @@ final class HttpHelper
      *
      * @param iterable<Statement> $statements
      *
-     * @throws \JsonException
+     * @throws JsonException
      */
     public static function statementsToJson(ConnectionInterface $connection, FormatterInterface $formatter, iterable $statements): string
     {
@@ -196,14 +207,14 @@ final class HttpHelper
                 'resultDataContents' => [],
                 'includeStats' => false,
             ];
-            $st = \array_merge($st, $formatter->statementConfigOverride($connection));
+            $st = array_merge($st, $formatter->statementConfigOverride($connection));
             $parameters = ParameterHelper::formatParameters($statement->getParameters());
-            $st['parameters'] = $parameters->count() === 0 ? new \stdClass() : $parameters->toArray();
+            $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
             $tbr[] = $st;
         }
 
-        return \json_encode([
+        return json_encode([
             'statements' => $tbr,
-        ], \JSON_THROW_ON_ERROR);
+        ], JSON_THROW_ON_ERROR);
     }
 }

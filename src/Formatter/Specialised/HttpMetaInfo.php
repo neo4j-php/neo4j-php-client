@@ -13,15 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
+use function is_array;
+
+use stdClass;
+
 /**
  * @psalm-immutable
  */
 final class HttpMetaInfo
 {
     /**
-     * @param list<\stdClass> $relationships
-     * @param list<\stdClass> $meta
-     * @param list<\stdClass> $nodes
+     * @param list<stdClass> $relationships
+     * @param list<stdClass> $meta
+     * @param list<stdClass> $nodes
      */
     public function __construct(private array $meta, private array $nodes, private array $relationships, private int $currentMeta = 0)
     {
@@ -30,9 +34,9 @@ final class HttpMetaInfo
     /**
      * @pure
      */
-    public static function createFromData(\stdClass $data): self
+    public static function createFromData(stdClass $data): self
     {
-        /** @var \stdClass */
+        /** @var stdClass */
         $graph = $data->graph;
 
         /** @psalm-suppress MixedArgument */
@@ -40,17 +44,17 @@ final class HttpMetaInfo
     }
 
     /**
-     * @return \stdClass|list<\stdClass>|null
+     * @return stdClass|list<stdClass>|null
      */
     public function currentMeta()
     {
         return $this->meta[$this->currentMeta] ?? null;
     }
 
-    public function currentNode(): ?\stdClass
+    public function currentNode(): ?stdClass
     {
         $meta = $this->currentMeta();
-        if ($meta === null || \is_array($meta)) {
+        if ($meta === null || is_array($meta)) {
             return null;
         }
 
@@ -63,10 +67,10 @@ final class HttpMetaInfo
         return null;
     }
 
-    public function getCurrentRelationship(): ?\stdClass
+    public function getCurrentRelationship(): ?stdClass
     {
         $meta = $this->currentMeta();
-        if ($meta === null || \is_array($meta)) {
+        if ($meta === null || is_array($meta)) {
             return null;
         }
 
@@ -82,7 +86,7 @@ final class HttpMetaInfo
     public function getCurrentType(): ?string
     {
         $currentMeta = $this->currentMeta();
-        if (\is_array($currentMeta)) {
+        if (is_array($currentMeta)) {
             return 'path';
         }
 
@@ -99,7 +103,7 @@ final class HttpMetaInfo
         $tbr = clone $this;
 
         $currentMeta = $this->currentMeta();
-        if (\is_array($currentMeta)) {
+        if (is_array($currentMeta)) {
             $tbr->meta = $currentMeta;
             $tbr->currentMeta = 0;
         }

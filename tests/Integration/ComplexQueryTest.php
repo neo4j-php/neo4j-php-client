@@ -13,6 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Generator;
+
+use function getenv;
+
+use InvalidArgumentException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\ClientInterface;
@@ -27,7 +32,11 @@ use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
 
+use const PHP_EOL;
+
 use function str_starts_with;
+
+use Throwable;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -128,7 +137,7 @@ CYPHER, ['listOrMap' => []]), $alias);
      */
     public function testInvalidParameter(string $alias): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->getClient()->transaction(fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
@@ -136,7 +145,7 @@ MATCH (x) WHERE x.slug IN $listOrMap RETURN x
 CYPHER, ['listOrMap' => self::generate()]), $alias);
     }
 
-    private static function generate(): \Generator
+    private static function generate(): Generator
     {
         foreach (range(1, 3) as $x) {
             yield true => $x;
@@ -148,7 +157,7 @@ CYPHER, ['listOrMap' => self::generate()]), $alias);
      */
     public function testInvalidParameters(string $alias): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         /** @var iterable<string, iterable<mixed, mixed>|scalar|null> $generator */
         $generator = self::generate();
         $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
@@ -173,7 +182,7 @@ CYPHER, ['listOrMap' => $generator]), $alias);
      */
     public function testPath(string $alias): void
     {
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('Http cannot detected nested attributes');
         }
 
@@ -272,7 +281,7 @@ $x->getProperties()->toArray())->toArray());
      */
     public function testPeriodicCommit(string $alias): void
     {
-        if (\getenv('TESTING_ENVIRONMENT') !== 'local') {
+        if (getenv('TESTING_ENVIRONMENT') !== 'local') {
             self::markTestSkipped('Only local environment has access to local files');
         }
 
@@ -291,11 +300,11 @@ CYPHER, [], $alias);
      */
     public function testPeriodicCommitFail(string $alias): void
     {
-        if (\getenv('TESTING_ENVIRONMENT') !== 'local') {
+        if (getenv('TESTING_ENVIRONMENT') !== 'local') {
             self::markTestSkipped('Only local environment has access to local files');
         }
 
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('HTTP allows periodic commits during an actual transaction');
         }
 
@@ -316,7 +325,7 @@ CYPHER
      */
     public function testLongQueryFunction(string $alias): void
     {
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
 
@@ -331,7 +340,7 @@ CYPHER
      */
     public function testLongQueryFunctionNegative(string $alias): void
     {
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
 
@@ -349,7 +358,7 @@ CYPHER
      */
     public function testLongQueryUnmanaged(string $alias): void
     {
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
         $this->expectException(Neo4jException::class);
@@ -365,7 +374,7 @@ CYPHER
      */
     public function testSimpleTimeout(string $alias): void
     {
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
 
@@ -384,7 +393,7 @@ CYPHER
      */
     public function testDiscardAfterTimeout(string $alias): void
     {
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
 
@@ -422,7 +431,7 @@ CYPHER
      */
     public function testTimeout(string $alias): void
     {
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
 
@@ -441,7 +450,7 @@ CYPHER
      */
     public function testTimeoutRecovery(string $alias): void
     {
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('Http does not support timeouts at the moment');
         }
 
@@ -463,14 +472,14 @@ CYPHER
         // We cannot use IF EXISTS on version 4.0
         try {
             $session->run('DROP CONSTRAINT ON (test:Test) ASSERT test.id IS UNIQUE');
-        } catch (\Throwable $e) {
-            echo $e->getMessage().\PHP_EOL;
+        } catch (Throwable $e) {
+            echo $e->getMessage().PHP_EOL;
         }
 
         try {
             $session->run('CREATE CONSTRAINT ON (test:Test) ASSERT test.id IS UNIQUE');
-        } catch (\Throwable $e) {
-            echo $e->getMessage().\PHP_EOL;
+        } catch (Throwable $e) {
+            echo $e->getMessage().PHP_EOL;
         }
 
         $this->expectException(Neo4jException::class);
@@ -518,7 +527,7 @@ CYPHER
      */
     public function testLongQueryUnmanagedNegative(string $alias): void
     {
-        if (\str_starts_with($alias, 'http')) {
+        if (str_starts_with($alias, 'http')) {
             self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
         }
 

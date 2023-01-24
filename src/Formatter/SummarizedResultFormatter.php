@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use function in_array;
+use function is_int;
+
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -28,8 +31,13 @@ use Laudis\Neo4j\Enum\QueryTypeEnum;
 use Laudis\Neo4j\Http\HttpConnection;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+
+use function microtime;
+
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use stdClass;
+use UnexpectedValueException;
 
 /**
  * Decorates the result of the provided format with an extensive summary.
@@ -66,16 +74,16 @@ final class SummarizedResultFormatter implements FormatterInterface
      *
      * @psalm-mutation-free
      */
-    public function formatHttpStats(\stdClass $response, HttpConnection $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
+    public function formatHttpStats(stdClass $response, HttpConnection $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
     {
-        if (isset($response->summary) && $response->summary instanceof \stdClass) {
-            /** @var \stdClass $stats */
+        if (isset($response->summary) && $response->summary instanceof stdClass) {
+            /** @var stdClass $stats */
             $stats = $response->summary->stats;
         } elseif (isset($response->stats)) {
-            /** @var \stdClass $stats */
+            /** @var stdClass $stats */
             $stats = $response->stats;
         } else {
-            throw new \UnexpectedValueException('No stats found in the response set');
+            throw new UnexpectedValueException('No stats found in the response set');
         }
 
         /**
@@ -134,7 +142,7 @@ final class SummarizedResultFormatter implements FormatterInterface
 
         $updateCount = 0;
         foreach ($stats as $key => $value) {
-            if (\is_int($value) && !\in_array($key, ['system-updates', 'contains-system-updates'])) {
+            if (is_int($value) && !in_array($key, ['system-updates', 'contains-system-updates'])) {
                 $updateCount += $value;
             }
         }
@@ -164,7 +172,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         $result->addFinishedCallback(function (array $response) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
             /** @var BoltCypherStats $response */
             $stats = $this->formatBoltStats($response);
-            $resultConsumedAfter = \microtime(true) - $runStart;
+            $resultConsumedAfter = microtime(true) - $runStart;
             /** @var string */
             $db = $response['db'] ?? '';
             $summary = new ResultSummary(
@@ -200,7 +208,7 @@ final class SummarizedResultFormatter implements FormatterInterface
      *
      * @psalm-suppress ImpureMethodCall
      */
-    public function formatHttpResult(ResponseInterface $response, \stdClass $body, HttpConnection $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
+    public function formatHttpResult(ResponseInterface $response, stdClass $body, HttpConnection $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
     {
         /** @var list<SummarizedResult<CypherMap<OGMTypes>>> */
         $tbr = [];
@@ -208,7 +216,7 @@ final class SummarizedResultFormatter implements FormatterInterface
         $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);
         $i = 0;
         foreach ($statements as $statement) {
-            /** @var list<\stdClass> $results */
+            /** @var list<stdClass> $results */
             $results = $body->results;
             $result = $results[$i];
             $tbr[] = $this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i));

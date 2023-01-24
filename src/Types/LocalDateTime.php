@@ -14,7 +14,13 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use Bolt\structures\IStructure;
+use DateTimeImmutable;
+use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+
+use function sprintf;
+
+use UnexpectedValueException;
 
 /**
  * A date time represented in seconds and nanoseconds since the unix epoch.
@@ -48,14 +54,14 @@ final class LocalDateTime extends AbstractPropertyObject implements BoltConverti
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
-    public function toDateTime(): \DateTimeImmutable
+    public function toDateTime(): DateTimeImmutable
     {
-        $dateTimeImmutable = (new \DateTimeImmutable(\sprintf('@%s', $this->getSeconds())))->modify(\sprintf('+%s microseconds', $this->nanoseconds / 1000));
+        $dateTimeImmutable = (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
 
         if ($dateTimeImmutable === false) {
-            throw new \UnexpectedValueException('Expected DateTimeImmutable');
+            throw new UnexpectedValueException('Expected DateTimeImmutable');
         }
 
         return $dateTimeImmutable;

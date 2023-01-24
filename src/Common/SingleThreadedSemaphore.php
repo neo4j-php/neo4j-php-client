@@ -13,7 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use Generator;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
+
+use function microtime;
+
+use RuntimeException;
 
 class SingleThreadedSemaphore implements SemaphoreInterface
 {
@@ -34,12 +39,12 @@ class SingleThreadedSemaphore implements SemaphoreInterface
         return self::$instances[$key];
     }
 
-    public function wait(): \Generator
+    public function wait(): Generator
     {
-        $start = \microtime(true);
+        $start = microtime(true);
         while ($this->amount >= $this->max) {
             /** @var bool $continue */
-            $continue = yield $start - \microtime(true);
+            $continue = yield $start - microtime(true);
             if (!$continue) {
                 return;
             }
@@ -50,7 +55,7 @@ class SingleThreadedSemaphore implements SemaphoreInterface
     public function post(): void
     {
         if ($this->amount <= 0) {
-            throw new \RuntimeException('Semaphore underflow');
+            throw new RuntimeException('Semaphore underflow');
         }
         --$this->amount;
     }

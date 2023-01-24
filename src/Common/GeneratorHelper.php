@@ -13,18 +13,26 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use Generator;
+
+use function microtime;
+
+use RuntimeException;
+
+use function sprintf;
+
 final class GeneratorHelper
 {
     /**
      * @template T
      *
-     * @param \Generator<mixed, mixed, bool, T> $generator
+     * @param Generator<mixed, mixed, bool, T> $generator
      *
      * @return T
      */
-    public static function getReturnFromGenerator(\Generator $generator, float $timeout = null)
+    public static function getReturnFromGenerator(Generator $generator, float $timeout = null)
     {
-        $start = \microtime(true);
+        $start = microtime(true);
         while ($generator->valid()) {
             if ($timeout) {
                 self::guardTiming($start, $timeout);
@@ -37,9 +45,9 @@ final class GeneratorHelper
 
     public static function guardTiming(float $start, float $timeout): void
     {
-        $elapsed = \microtime(true) - $start;
+        $elapsed = microtime(true) - $start;
         if ($elapsed > $timeout) {
-            throw new \RuntimeException(\sprintf('Cannot generator timed out out after %s seconds', $elapsed));
+            throw new RuntimeException(sprintf('Cannot generator timed out out after %s seconds', $elapsed));
         }
     }
 }

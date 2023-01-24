@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use function array_key_exists;
+
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -27,6 +29,9 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use stdClass;
+
+use function version_compare;
 
 /**
  * Formats the result in a basic OGM (Object Graph Mapping) format by mapping al cypher types to types found in the \Laudis\Neo4j\Types namespace.
@@ -74,7 +79,7 @@ final class OGMFormatter implements FormatterInterface
 
         $connection->subscribeResult($tbr);
         $result->addFinishedCallback(function (array $response) use ($holder) {
-            if (\array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
+            if (array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
                 $holder->setBookmark(new Bookmark([$response['bookmark']]));
             }
         });
@@ -87,7 +92,7 @@ final class OGMFormatter implements FormatterInterface
      */
     public function formatHttpResult(
         ResponseInterface $response,
-        \stdClass $body,
+        stdClass $body,
         ConnectionInterface $connection,
         float $resultsAvailableAfter,
         float $resultsConsumedAfter,
@@ -108,7 +113,7 @@ final class OGMFormatter implements FormatterInterface
      */
     private function decideTranslator(ConnectionInterface $connection): LegacyHttpOGMTranslator|JoltHttpOGMTranslator
     {
-        if (\version_compare($connection->getServerAgent(), '4.2.5') <= 0) {
+        if (version_compare($connection->getServerAgent(), '4.2.5') <= 0) {
             return $this->legacyHttpTranslator;
         }
 

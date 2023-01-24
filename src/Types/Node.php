@@ -15,6 +15,8 @@ namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
 
+use function sprintf;
+
 /**
  * A Node class representing a Node in cypher.
  *
@@ -94,7 +96,7 @@ final class Node extends AbstractPropertyObject
     {
         /** @psalm-suppress ImpureMethodCall */
         if (!$this->properties->hasKey($key)) {
-            throw new PropertyDoesNotExistException(\sprintf('Property "%s" does not exist on node', $key));
+            throw new PropertyDoesNotExistException(sprintf('Property "%s" does not exist on node', $key));
         }
 
         /** @psalm-suppress ImpureMethodCall */

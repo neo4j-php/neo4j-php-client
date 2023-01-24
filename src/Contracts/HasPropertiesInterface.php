@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+use BadMethodCallException;
 use Laudis\Neo4j\Types\CypherMap;
 
 /**
@@ -44,7 +45,7 @@ interface HasPropertiesInterface
      * @param string $name
      * @param T      $value
      *
-     * @throws \BadMethodCallException
+     * @throws BadMethodCallException
      */
     public function __set($name, $value): void;
 

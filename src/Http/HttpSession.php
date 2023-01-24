@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use JsonException;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\TransactionHelper;
@@ -26,8 +27,15 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
+
+use function microtime;
+use function parse_url;
+
+use const PHP_URL_PATH;
+
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use stdClass;
 
 /**
  * @template T
@@ -71,7 +79,7 @@ final class HttpSession implements SessionInterface
     }
 
     /**
-     * @throws \JsonException
+     * @throws JsonException
      */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
@@ -83,9 +91,9 @@ final class HttpSession implements SessionInterface
         $request = $this->formatter->decorateRequest($request, $connection);
         $request = $this->instantCommitRequest($request)->withBody($this->streamFactory->resolve()->createStream($content));
 
-        $start = \microtime(true);
+        $start = microtime(true);
         $response = $connection->getImplementation()->sendRequest($request);
-        $time = \microtime(true) - $start;
+        $time = microtime(true) - $start;
 
         $data = HttpHelper::interpretResponse($response);
 
@@ -93,7 +101,7 @@ final class HttpSession implements SessionInterface
     }
 
     /**
-     * @throws \JsonException
+     * @throws JsonException
      */
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
@@ -120,7 +128,7 @@ final class HttpSession implements SessionInterface
     }
 
     /**
-     * @throws \JsonException
+     * @throws JsonException
      */
     public function runStatement(Statement $statement, ?TransactionConfiguration $config = null)
     {
@@ -128,7 +136,7 @@ final class HttpSession implements SessionInterface
     }
 
     /**
-     * @throws \JsonException
+     * @throws JsonException
      */
     public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null)
     {
@@ -136,7 +144,7 @@ final class HttpSession implements SessionInterface
     }
 
     /**
-     * @throws \JsonException
+     * @throws JsonException
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
@@ -150,14 +158,14 @@ final class HttpSession implements SessionInterface
         $response = $connection->getImplementation()->sendRequest($request);
 
         $response = HttpHelper::interpretResponse($response);
-        if (isset($response->info) && $response->info instanceof \stdClass) {
+        if (isset($response->info) && $response->info instanceof stdClass) {
             /** @var string */
             $url = $response->info->commit;
         } else {
             /** @var string */
             $url = $response->commit;
         }
-        $path = str_replace('/commit', '', \parse_url($url, \PHP_URL_PATH));
+        $path = str_replace('/commit', '', parse_url($url, PHP_URL_PATH));
         $uri = $request->getUri()->withPath($path);
         $request = $request->withUri($uri);
 

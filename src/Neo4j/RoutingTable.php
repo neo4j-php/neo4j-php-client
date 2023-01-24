@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use function in_array;
+
 use Laudis\Neo4j\Enum\RoutingRoles;
 
 /**
@@ -47,7 +49,7 @@ final class RoutingTable
         /** @psalm-var list<string> $tbr */
         $tbr = [];
         foreach ($this->servers as $server) {
-            if ($role === null || \in_array($server['role'], $role->getValue(), true)) {
+            if ($role === null || in_array($server['role'], $role->getValue(), true)) {
                 foreach ($server['addresses'] as $address) {
                     $tbr[] = $address;
                 }

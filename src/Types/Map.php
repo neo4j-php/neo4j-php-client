@@ -13,11 +13,28 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use function array_key_exists;
+use function array_key_last;
+
+use ArrayIterator;
+
+use function count;
 use function func_num_args;
+
+use Generator;
+
+use function is_array;
+use function is_callable;
+use function is_iterable;
 
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
+use OutOfBoundsException;
+
+use function sprintf;
+
+use stdClass;
 
 /**
  * An immutable ordered map of items.
@@ -29,13 +46,13 @@ use Laudis\Neo4j\TypeCaster;
 class Map extends AbstractCypherSequence
 {
     /**
-     * @param iterable<mixed, TValue>|callable():\Generator<mixed, TValue> $iterable
+     * @param iterable<mixed, TValue>|callable():Generator<mixed, TValue> $iterable
      *
      * @psalm-mutation-free
      */
     public function __construct($iterable = [])
     {
-        if (\is_array($iterable)) {
+        if (is_array($iterable)) {
             $i = 0;
             foreach ($iterable as $key => $value) {
                 if (!$this->isStringable($key)) {
@@ -47,15 +64,15 @@ class Map extends AbstractCypherSequence
                 $this->cache[$key] = $value;
                 ++$i;
             }
-            /** @var \ArrayIterator<string, TValue> */
-            $it = new \ArrayIterator([]);
+            /** @var ArrayIterator<string, TValue> */
+            $it = new ArrayIterator([]);
             $this->generator = $it;
-            $this->generatorPosition = \count($this->keyCache);
+            $this->generatorPosition = count($this->keyCache);
         } else {
-            $this->generator = function () use ($iterable): \Generator {
+            $this->generator = function () use ($iterable): Generator {
                 $i = 0;
-                /** @var \Generator<mixed, TValue> $it */
-                $it = \is_callable($iterable) ? $iterable() : $iterable;
+                /** @var Generator<mixed, TValue> $it */
+                $it = is_callable($iterable) ? $iterable() : $iterable;
                 /** @var mixed $key */
                 foreach ($it as $key => $value) {
                     if ($this->isStringable($key)) {
@@ -94,7 +111,7 @@ class Map extends AbstractCypherSequence
         foreach ($this as $key => $value) {
             return new Pair($key, $value);
         }
-        throw new \OutOfBoundsException('Cannot grab first element of an empty map');
+        throw new OutOfBoundsException('Cannot grab first element of an empty map');
     }
 
     /**
@@ -105,11 +122,11 @@ class Map extends AbstractCypherSequence
     public function last(): Pair
     {
         $array = $this->toArray();
-        if (\count($array) === 0) {
-            throw new \OutOfBoundsException('Cannot grab last element of an empty map');
+        if (count($array) === 0) {
+            throw new OutOfBoundsException('Cannot grab last element of an empty map');
         }
 
-        $key = \array_key_last($array);
+        $key = array_key_last($array);
 
         return new Pair($key, $array[$key]);
     }
@@ -129,7 +146,7 @@ class Map extends AbstractCypherSequence
             ++$i;
         }
 
-        throw new \OutOfBoundsException(\sprintf('Cannot skip to a pair at position: %s', $position));
+        throw new OutOfBoundsException(sprintf('Cannot skip to a pair at position: %s', $position));
     }
 
     /**
@@ -262,7 +279,7 @@ class Map extends AbstractCypherSequence
             yield from $x;
 
             foreach ($map as $key => $value) {
-                if (!\array_key_exists($key, $x)) {
+                if (!array_key_exists($key, $x)) {
                     yield $key => $value;
                 }
             }
@@ -281,7 +298,7 @@ class Map extends AbstractCypherSequence
         return $this->withOperation(function () use ($map) {
             $map = Map::fromIterable($map)->toArray();
             foreach ($this as $key => $value) {
-                if (\array_key_exists($key, $map)) {
+                if (array_key_exists($key, $map)) {
                     yield $key => $value;
                 }
             }
@@ -300,7 +317,7 @@ class Map extends AbstractCypherSequence
         return $this->withOperation(function () use ($map) {
             $map = Map::fromIterable($map)->toArray();
             foreach ($this as $key => $value) {
-                if (!\array_key_exists($key, $map)) {
+                if (!array_key_exists($key, $map)) {
                     yield $key => $value;
                 }
             }
@@ -314,15 +331,15 @@ class Map extends AbstractCypherSequence
      *
      * @param TDefault $default
      *
-     * @throws \OutOfBoundsException
+     * @throws OutOfBoundsException
      *
      * @return (func_num_args() is 1 ? TValue : TValue|TDefault)
      */
     public function get(string $key, $default = null)
     {
         if (!$this->offsetExists($key)) {
-            if (\func_num_args() === 1) {
-                throw new \OutOfBoundsException(\sprintf('Cannot get item in sequence with key: %s', $key));
+            if (func_num_args() === 1) {
+                throw new OutOfBoundsException(sprintf('Cannot get item in sequence with key: %s', $key));
             }
 
             return $default;
@@ -334,7 +351,7 @@ class Map extends AbstractCypherSequence
     public function jsonSerialize()
     {
         if ($this->isEmpty()) {
-            return new \stdClass();
+            return new stdClass();
         }
 
         return parent::jsonSerialize();
@@ -342,7 +359,7 @@ class Map extends AbstractCypherSequence
 
     public function getAsString(string $key, mixed $default = null): string
     {
-        if (\func_num_args() === 1) {
+        if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
             /** @var mixed */
@@ -358,7 +375,7 @@ class Map extends AbstractCypherSequence
 
     public function getAsInt(string $key, mixed $default = null): int
     {
-        if (\func_num_args() === 1) {
+        if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
             /** @var mixed */
@@ -374,7 +391,7 @@ class Map extends AbstractCypherSequence
 
     public function getAsFloat(string $key, mixed $default = null): float
     {
-        if (\func_num_args() === 1) {
+        if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
             /** @var mixed */
@@ -390,7 +407,7 @@ class Map extends AbstractCypherSequence
 
     public function getAsBool(string $key, mixed $default = null): bool
     {
-        if (\func_num_args() === 1) {
+        if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
             /** @var mixed */
@@ -409,7 +426,7 @@ class Map extends AbstractCypherSequence
      */
     public function getAsNull(string $key, mixed $default = null)
     {
-        if (\func_num_args() === 1) {
+        if (func_num_args() === 1) {
             /** @psalm-suppress UnusedMethodCall */
             $this->get($key);
         }
@@ -426,7 +443,7 @@ class Map extends AbstractCypherSequence
      */
     public function getAsObject(string $key, string $class, mixed $default = null): object
     {
-        if (\func_num_args() === 1) {
+        if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
             /** @var mixed */
@@ -445,14 +462,14 @@ class Map extends AbstractCypherSequence
      */
     public function getAsMap(string $key, mixed $default = null): Map
     {
-        if (\func_num_args() === 1) {
+        if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
             /** @var mixed */
             $value = $this->get($key, $default);
         }
 
-        if (!\is_iterable($value)) {
+        if (!is_iterable($value)) {
             throw new RuntimeTypeException($value, self::class);
         }
 
@@ -464,13 +481,13 @@ class Map extends AbstractCypherSequence
      */
     public function getAsArrayList(string $key, mixed $default = null): ArrayList
     {
-        if (\func_num_args() === 1) {
+        if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
             /** @var mixed */
             $value = $this->get($key, $default);
         }
-        if (!\is_iterable($value)) {
+        if (!is_iterable($value)) {
             throw new RuntimeTypeException($value, ArrayList::class);
         }
 

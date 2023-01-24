@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use function is_callable;
+
 /**
  * Configuration object for transactions.
  *
@@ -58,7 +60,7 @@ final class TransactionConfiguration
     public function getMetaData(): ?iterable
     {
         $tbr = $this->metaData;
-        if (\is_callable($tbr)) {
+        if (is_callable($tbr)) {
             $tbr = $tbr();
         }
 
@@ -71,7 +73,7 @@ final class TransactionConfiguration
     public function getTimeout(): ?float
     {
         $tbr = $this->timeout;
-        if (\is_callable($tbr)) {
+        if (is_callable($tbr)) {
             $tbr = $tbr();
         }
 

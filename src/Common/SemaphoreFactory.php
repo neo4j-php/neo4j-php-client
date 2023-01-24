@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use function extension_loaded;
+
 use Laudis\Neo4j\Contracts\SemaphoreFactoryInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -34,7 +36,7 @@ final class SemaphoreFactory implements SemaphoreFactoryInterface
 
     public static function getInstance(): self
     {
-        return self::$instance ??= (\extension_loaded('ext-sysvsem')) ?
+        return self::$instance ??= (extension_loaded('ext-sysvsem')) ?
             new self([SysVSemaphore::class, 'create']) :
             new self([SingleThreadedSemaphore::class, 'create']);
     }

@@ -13,7 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use BadMethodCallException;
 use Laudis\Neo4j\Contracts\HasPropertiesInterface;
+
+use function sprintf;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -37,7 +40,7 @@ abstract class AbstractPropertyObject extends AbstractCypherObject implements Ha
 
     public function __set($name, $value): void
     {
-        throw new \BadMethodCallException(\sprintf('%s is immutable', static::class));
+        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
 
     public function __isset($name): bool

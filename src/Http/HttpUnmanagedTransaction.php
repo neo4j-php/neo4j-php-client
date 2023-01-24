@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use function array_intersect;
+use function array_unique;
+
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -20,9 +23,13 @@ use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
+
+use function microtime;
+
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use stdClass;
 
 /**
  * @template T
@@ -71,9 +78,9 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $body = HttpHelper::statementsToJson($this->connection, $this->formatter, $statements);
 
         $request = $request->withBody($this->factory->createStream($body));
-        $start = \microtime(true);
+        $start = microtime(true);
         $response = $this->connection->getImplementation()->sendRequest($request);
-        $total = \microtime(true) - $start;
+        $total = microtime(true) - $start;
 
         $data = $this->handleResponse($response);
 
@@ -88,9 +95,9 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         $content = HttpHelper::statementsToJson($this->connection, $this->formatter, $statements);
         $request = $request->withBody($this->factory->createStream($content));
 
-        $start = \microtime(true);
+        $start = microtime(true);
         $response = $this->connection->getImplementation()->sendRequest($request);
-        $total = \microtime(true) - $start;
+        $total = microtime(true) - $start;
 
         $data = $this->handleResponse($response);
 
@@ -138,9 +145,9 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         if (!$this->isFinished()) {
             $classifications = array_map(static fn (Neo4jError $e) => $e->getClassification(), $e->getErrors());
-            $classifications = \array_unique($classifications);
+            $classifications = array_unique($classifications);
 
-            $intersection = \array_intersect($classifications, TransactionHelper::ROLLBACK_CLASSIFICATIONS);
+            $intersection = array_intersect($classifications, TransactionHelper::ROLLBACK_CLASSIFICATIONS);
             if ($intersection !== []) {
                 $this->isRolledBack = true;
             }
@@ -152,7 +159,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @throws Neo4jException
      */
-    private function handleResponse(ResponseInterface $response): \stdClass
+    private function handleResponse(ResponseInterface $response): stdClass
     {
         try {
             $data = HttpHelper::interpretResponse($response);

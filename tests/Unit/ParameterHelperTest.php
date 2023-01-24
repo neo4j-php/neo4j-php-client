@@ -14,8 +14,13 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use Bolt\structures\DateTimeZoneId;
+use DateTime;
+use DateTimeZone;
+use InvalidArgumentException;
+use Iterator;
 use Laudis\Neo4j\ParameterHelper;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 final class ParameterHelperTest extends TestCase
 {
@@ -26,7 +31,7 @@ final class ParameterHelperTest extends TestCase
     {
         parent::setUpBeforeClass();
         /** @psalm-suppress MixedPropertyTypeCoercion */
-        self::$invalidIterable = new class() implements \Iterator {
+        self::$invalidIterable = new class() implements Iterator {
             private bool $initial = true;
 
             public function current(): int
@@ -39,9 +44,9 @@ final class ParameterHelperTest extends TestCase
                 $this->initial = false;
             }
 
-            public function key(): \stdClass
+            public function key(): stdClass
             {
-                return new \stdClass();
+                return new stdClass();
             }
 
             public function valid(): bool
@@ -99,13 +104,13 @@ final class ParameterHelperTest extends TestCase
 
     public function testFormatParameterInvalidIterable(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         ParameterHelper::formatParameters(self::$invalidIterable);
     }
 
     public function testFormatParameterInvalidIterable2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         ParameterHelper::formatParameters([
             'a' => [
                 self::$invalidIterable,
@@ -145,14 +150,14 @@ final class ParameterHelperTest extends TestCase
 
     public function testInvalidType(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Cannot format parameter of type: stdClass to work with Neo4J');
-        ParameterHelper::asParameter(new \stdClass());
+        ParameterHelper::asParameter(new stdClass());
     }
 
     public function testDateTime(): void
     {
-        $date = ParameterHelper::asParameter(new \DateTime('now', new \DateTimeZone('Europe/Brussels')), true);
+        $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), true);
 
         self::assertInstanceOf(DateTimeZoneId::class, $date);
         self::assertEquals('Europe/Brussels', $date->tz_id());

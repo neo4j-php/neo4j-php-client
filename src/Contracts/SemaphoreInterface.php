@@ -25,9 +25,9 @@ interface SemaphoreInterface
      * You can stop the wait by sending false to the generator.
      * There is no return value in this generator.
      *
-     * @return \Generator<int, float, bool>
+     * @return Generator<int, float, bool>
      */
-    public function wait(): \Generator;
+    public function wait(): Generator;
 
     /**
      * Releases the semaphore.

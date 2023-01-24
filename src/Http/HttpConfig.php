@@ -13,8 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use function call_user_func;
+
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
+
+use function is_callable;
+use function is_string;
+
 use Laudis\Neo4j\Contracts\ConfigInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -73,8 +79,8 @@ final class HttpConfig implements ConfigInterface
 
     public function getClient(): ClientInterface
     {
-        if (\is_callable($this->client)) {
-            $this->client = \call_user_func($this->client);
+        if (is_callable($this->client)) {
+            $this->client = call_user_func($this->client);
         }
 
         return $this->client;
@@ -114,8 +120,8 @@ final class HttpConfig implements ConfigInterface
 
     public function getStreamFactory(): StreamFactoryInterface
     {
-        if (\is_callable($this->streamFactory)) {
-            $this->streamFactory = \call_user_func($this->streamFactory);
+        if (is_callable($this->streamFactory)) {
+            $this->streamFactory = call_user_func($this->streamFactory);
         }
 
         return $this->streamFactory;
@@ -123,8 +129,8 @@ final class HttpConfig implements ConfigInterface
 
     public function getRequestFactory(): RequestFactoryInterface
     {
-        if (\is_callable($this->requestFactory)) {
-            $this->requestFactory = \call_user_func($this->requestFactory);
+        if (is_callable($this->requestFactory)) {
+            $this->requestFactory = call_user_func($this->requestFactory);
         }
 
         return $this->requestFactory;
@@ -132,12 +138,12 @@ final class HttpConfig implements ConfigInterface
 
     public function getDatabase(): string
     {
-        if (\is_string($this->database)) {
+        if (is_string($this->database)) {
             return $this->database;
         }
 
         /** @var string */
-        $this->database = \call_user_func($this->database);
+        $this->database = call_user_func($this->database);
 
         return $this->database;
     }
@@ -158,8 +164,8 @@ final class HttpConfig implements ConfigInterface
 
     public function hasAutoRouting(): bool
     {
-        if (\is_callable($this->autoRouting)) {
-            $this->autoRouting = \call_user_func($this->autoRouting);
+        if (is_callable($this->autoRouting)) {
+            $this->autoRouting = call_user_func($this->autoRouting);
         }
 
         return $this->autoRouting;

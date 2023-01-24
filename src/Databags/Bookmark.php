@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use function array_unique;
+
 final class Bookmark
 {
     /** @var list<string> */
@@ -49,7 +51,7 @@ final class Bookmark
 
         foreach ($bookmarks as $bookmark) {
             array_push($values, ...$bookmark->values());
-            $values = array_values(\array_unique($values));
+            $values = array_values(array_unique($values));
         }
 
         return new self($values);

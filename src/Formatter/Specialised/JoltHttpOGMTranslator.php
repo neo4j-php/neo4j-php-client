@@ -13,6 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
+use Closure;
+
+use const DATE_ATOM;
+
+use DateInterval;
+use DateTimeImmutable;
+
+use function is_array;
+
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Formatter\OGMFormatter;
@@ -33,8 +42,23 @@ use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
+
+use function preg_match;
+
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
+use stdClass;
+
+use function str_pad;
+
+use const STR_PAD_RIGHT;
+
+use function str_replace;
+use function str_starts_with;
+use function strtolower;
+
+use UnexpectedValueException;
 
 /**
  * @psalm-immutable
@@ -50,19 +74,19 @@ final class JoltHttpOGMTranslator
     {
         /** @psalm-suppress InvalidPropertyAssignmentValue */
         $this->rawToTypes = [
-            '?' => static fn (string $value): bool => \strtolower($value) === 'true',
+            '?' => static fn (string $value): bool => strtolower($value) === 'true',
             'Z' => static fn (string $value): int => (int) $value,
             'R' => static fn (string $value): float => (float) $value,
             'U' => static fn (string $value): string => $value,
-            'T' => \Closure::fromCallable([$this, 'translateDateTime']),
-            '@' => \Closure::fromCallable([$this, 'translatePoint']),
-            '#' => \Closure::fromCallable([$this, 'translateBinary']),
-            '[]' => \Closure::fromCallable([$this, 'translateList']),
-            '{}' => \Closure::fromCallable([$this, 'translateMap']),
-            '()' => \Closure::fromCallable([$this, 'translateNode']),
-            '->' => \Closure::fromCallable([$this, 'translateRightRelationship']),
-            '<-' => \Closure::fromCallable([$this, 'translateLeftRelationship']),
-            '..' => \Closure::fromCallable([$this, 'translatePath']),
+            'T' => Closure::fromCallable([$this, 'translateDateTime']),
+            '@' => Closure::fromCallable([$this, 'translatePoint']),
+            '#' => Closure::fromCallable([$this, 'translateBinary']),
+            '[]' => Closure::fromCallable([$this, 'translateList']),
+            '{}' => Closure::fromCallable([$this, 'translateMap']),
+            '()' => Closure::fromCallable([$this, 'translateNode']),
+            '->' => Closure::fromCallable([$this, 'translateRightRelationship']),
+            '<-' => Closure::fromCallable([$this, 'translateLeftRelationship']),
+            '..' => Closure::fromCallable([$this, 'translatePath']),
         ];
     }
 
@@ -88,22 +112,22 @@ final class JoltHttpOGMTranslator
      */
     public function formatHttpResult(
         ResponseInterface $response,
-        \stdClass $body,
+        stdClass $body,
         ConnectionInterface $connection,
         float $resultsAvailableAfter,
         float $resultsConsumedAfter,
         iterable $statements
     ): CypherList {
         $allResults = [];
-        /** @var \stdClass $result */
+        /** @var stdClass $result */
         foreach ($body->results as $result) {
-            /** @var \stdClass $header */
+            /** @var stdClass $header */
             $header = $result->header;
             /** @var list<string> $fields */
             $fields = $header->fields;
             $rows = [];
 
-            /** @var list<\stdClass> $data */
+            /** @var list<stdClass> $data */
             foreach ($result->data as $data) {
                 $row = [];
                 foreach ($data as $key => $value) {
@@ -120,7 +144,7 @@ final class JoltHttpOGMTranslator
     /**
      * @return OGMTypes
      */
-    private function translateJoltType(?\stdClass $value)
+    private function translateJoltType(?stdClass $value)
     {
         if (is_null($value)) {
             return null;
@@ -129,7 +153,7 @@ final class JoltHttpOGMTranslator
         /** @var mixed $input */
         [$key, $input] = HttpHelper::splitJoltSingleton($value);
         if (!isset($this->rawToTypes[$key])) {
-            throw new \UnexpectedValueException('Unexpected Jolt key: '.$key);
+            throw new UnexpectedValueException('Unexpected Jolt key: '.$key);
         }
 
         return $this->rawToTypes[$key]($input);
@@ -138,7 +162,7 @@ final class JoltHttpOGMTranslator
     /**
      * Assumes that 2D points are of the form "SRID=$srid;POINT($x $y)" and 3D points are of the form "SRID=$srid;POINT Z($x $y $z)".
      *
-     * @throws \UnexpectedValueException
+     * @throws UnexpectedValueException
      */
     private function translatePoint(string $value): PointInterface
     {
@@ -173,14 +197,14 @@ final class JoltHttpOGMTranslator
                 (float) ($coordinates[2] ?? 0.0),
             );
         }
-        throw new \UnexpectedValueException('A point with srid '.$srid.' has been returned, which has not been implemented.');
+        throw new UnexpectedValueException('A point with srid '.$srid.' has been returned, which has not been implemented.');
     }
 
     private function getSRID(string $value): int
     {
         $matches = [];
-        if (!\preg_match('/^SRID=([0-9]+)$/', $value, $matches)) {
-            throw new \UnexpectedValueException('Unexpected SRID string: '.$value);
+        if (!preg_match('/^SRID=([0-9]+)$/', $value, $matches)) {
+            throw new UnexpectedValueException('Unexpected SRID string: '.$value);
         }
 
         /** @var array{0: string, 1: string} $matches */
@@ -193,17 +217,17 @@ final class JoltHttpOGMTranslator
     private function getCoordinates(string $value): array
     {
         $matches = [];
-        if (!\preg_match('/^POINT ?(Z?) ?\(([0-9. ]+)\)$/', $value, $matches)) {
-            throw new \UnexpectedValueException('Unexpected point coordinates string: '.$value);
+        if (!preg_match('/^POINT ?(Z?) ?\(([0-9. ]+)\)$/', $value, $matches)) {
+            throw new UnexpectedValueException('Unexpected point coordinates string: '.$value);
         }
         /** @var array{0: string, 1: string, 2: string} $matches */
         $coordinates = explode(' ', $matches[2]);
         if ($matches[1] === 'Z' && count($coordinates) !== 3) {
-            throw new \UnexpectedValueException('Expected 3 coordinates in string: '.$value);
+            throw new UnexpectedValueException('Expected 3 coordinates in string: '.$value);
         }
 
         if ($matches[1] !== 'Z' && count($coordinates) !== 2) {
-            throw new \UnexpectedValueException('Expected 2 coordinates in string: '.$value);
+            throw new UnexpectedValueException('Expected 2 coordinates in string: '.$value);
         }
 
         /** @var array{0: string, 1: string, 2?: string} */
@@ -213,17 +237,17 @@ final class JoltHttpOGMTranslator
     /**
      * @return CypherMap<OGMTypes>
      */
-    private function translateMap(\stdClass $value): CypherMap
+    private function translateMap(stdClass $value): CypherMap
     {
         return new CypherMap(
             function () use ($value) {
-                /** @var \stdClass|array|null $element */
+                /** @var stdClass|array|null $element */
                 foreach ((array) $value as $key => $element) {
                     // There is an odd case in the JOLT protocol when dealing with properties in a node.
                     // Lists appear not to receive a composite type label,
                     // which is why we have to handle them specifically here.
                     // @see https://github.com/neo4j/neo4j/issues/12858
-                    if (\is_array($element)) {
+                    if (is_array($element)) {
                         yield $key => new CypherList($element);
                     } else {
                         yield $key => $this->translateJoltType($element);
@@ -237,7 +261,7 @@ final class JoltHttpOGMTranslator
     {
         return new CypherList(
             function () use ($value) {
-                /** @var \stdClass|null $element */
+                /** @var stdClass|null $element */
                 foreach ($value as $element) {
                     yield $this->translateJoltType($element);
                 }
@@ -246,7 +270,7 @@ final class JoltHttpOGMTranslator
     }
 
     /**
-     * @param list<\stdClass> $value
+     * @param list<stdClass> $value
      */
     private function translatePath(array $value): Path
     {
@@ -271,7 +295,7 @@ final class JoltHttpOGMTranslator
     }
 
     /**
-     * @param array{0: int, 1: list<string>, 2: \stdClass} $value
+     * @param array{0: int, 1: list<string>, 2: stdClass} $value
      */
     private function translateNode(array $value): Node
     {
@@ -279,7 +303,7 @@ final class JoltHttpOGMTranslator
     }
 
     /**
-     * @param array{0:int, 1: int, 2: string, 3:int, 4: \stdClass} $value
+     * @param array{0:int, 1: int, 2: string, 3:int, 4: stdClass} $value
      */
     private function translateRightRelationship(array $value): Relationship
     {
@@ -287,16 +311,16 @@ final class JoltHttpOGMTranslator
     }
 
     /**
-     * @param array{0:int, 1: int, 2: string, 3:int, 4: \stdClass} $value
+     * @param array{0:int, 1: int, 2: string, 3:int, 4: stdClass} $value
      */
     private function translateLeftRelationship(array $value): Relationship
     {
         return new Relationship($value[0], $value[3], $value[1], $value[2], $this->translateMap($value[4]));
     }
 
-    private function translateBinary(): \Closure
+    private function translateBinary(): Closure
     {
-        throw new \UnexpectedValueException('Binary data has not been implemented');
+        throw new UnexpectedValueException('Binary data has not been implemented');
     }
 
     private const TIME_REGEX = '(?<hours>\d{2}):(?<minutes>\d{2}):(?<seconds>\d{2})((\.)(?<nanoseconds>\d+))?';
@@ -310,19 +334,19 @@ final class JoltHttpOGMTranslator
      */
     private function translateDateTime(string $datetime): Date|LocalDateTime|LocalTime|DateTime|Duration|Time
     {
-        if (\preg_match('/^'.self::DATE_REGEX.'$/u', $datetime, $matches)) {
+        if (preg_match('/^'.self::DATE_REGEX.'$/u', $datetime, $matches)) {
             $days = $this->daysFromMatches($matches);
 
             return new Date($days);
         }
 
-        if (\preg_match('/^'.self::TIME_REGEX.'$/u', $datetime, $matches)) {
+        if (preg_match('/^'.self::TIME_REGEX.'$/u', $datetime, $matches)) {
             $nanoseconds = $this->nanosecondsFromMatches($matches);
 
             return new LocalTime($nanoseconds);
         }
 
-        if (\preg_match('/^'.self::TIME_REGEX.self::ZONE_REGEX.'$/u', $datetime, $matches)) {
+        if (preg_match('/^'.self::TIME_REGEX.self::ZONE_REGEX.'$/u', $datetime, $matches)) {
             $nanoseconds = $this->nanosecondsFromMatches($matches);
 
             $offset = $this->offsetFromMatches($matches);
@@ -330,7 +354,7 @@ final class JoltHttpOGMTranslator
             return new Time($nanoseconds, $offset);
         }
 
-        if (\preg_match('/^'.self::DATE_REGEX.'T'.self::TIME_REGEX.'$/u', $datetime, $matches)) {
+        if (preg_match('/^'.self::DATE_REGEX.'T'.self::TIME_REGEX.'$/u', $datetime, $matches)) {
             $nanoseconds = $this->nanosecondsFromMatches($matches);
             $seconds = $this->secondsInDaysFromMatches($matches);
 
@@ -339,7 +363,7 @@ final class JoltHttpOGMTranslator
             return new LocalDateTime($seconds, $nanoseconds);
         }
 
-        if (\preg_match('/^'.self::DATE_REGEX.'T'.self::TIME_REGEX.self::ZONE_REGEX.'$/u', $datetime, $matches)) {
+        if (preg_match('/^'.self::DATE_REGEX.'T'.self::TIME_REGEX.self::ZONE_REGEX.'$/u', $datetime, $matches)) {
             $nanoseconds = $this->nanosecondsFromMatches($matches);
             $seconds = $this->secondsInDaysFromMatches($matches);
 
@@ -350,11 +374,11 @@ final class JoltHttpOGMTranslator
             return new DateTime($seconds, $nanoseconds, $offset);
         }
 
-        if (\str_starts_with($datetime, 'P')) {
+        if (str_starts_with($datetime, 'P')) {
             return $this->durationFromFormat($datetime);
         }
 
-        throw new \UnexpectedValueException(sprintf('Could not handle date/time "%s"', $datetime));
+        throw new UnexpectedValueException(sprintf('Could not handle date/time "%s"', $datetime));
     }
 
     private function nanosecondsFromMatches(array $matches): int
@@ -364,7 +388,7 @@ final class JoltHttpOGMTranslator
         $seconds = (((int) $hours) * 60 * 60) + (((int) $minutes) * 60) + ((int) $seconds);
 
         $nanoseconds = $matches['nanoseconds'] ?? '0';
-        $nanoseconds = \str_pad($nanoseconds, 9, '0', \STR_PAD_RIGHT);
+        $nanoseconds = str_pad($nanoseconds, 9, '0', STR_PAD_RIGHT);
 
         return $seconds * 1000 * 1000 * 1000 + (int) $nanoseconds;
     }
@@ -374,7 +398,7 @@ final class JoltHttpOGMTranslator
         /** @var array{zone: string} $matches */
         $zone = $matches['zone'];
 
-        if (\preg_match('/(\d{2}):(\d{2})/', $zone, $matches)) {
+        if (preg_match('/(\d{2}):(\d{2})/', $zone, $matches)) {
             /** @var array{0: string, 1: string, 2: string} $matches */
             return ((int) $matches[1]) * 60 * 60 + (int) $matches[2] * 60;
         }
@@ -385,21 +409,21 @@ final class JoltHttpOGMTranslator
     private function daysFromMatches(array $matches): int
     {
         /** @var array{date: string} $matches */
-        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $matches['date']);
+        $date = DateTimeImmutable::createFromFormat('Y-m-d', $matches['date']);
         if ($date === false) {
-            throw new \RuntimeException(sprintf('Cannot create DateTime from "%s" in format "Y-m-d"', $matches['date']));
+            throw new RuntimeException(sprintf('Cannot create DateTime from "%s" in format "Y-m-d"', $matches['date']));
         }
 
         /** @psalm-suppress ImpureMethodCall */
-        return (int) $date->diff(new \DateTimeImmutable('@0'))->format('%a');
+        return (int) $date->diff(new DateTimeImmutable('@0'))->format('%a');
     }
 
     private function secondsInDaysFromMatches(array $matches): int
     {
         /** @var array{date: string} $matches */
-        $date = \DateTimeImmutable::createFromFormat(\DATE_ATOM, $matches['date'].'T00:00:00+00:00');
+        $date = DateTimeImmutable::createFromFormat(DATE_ATOM, $matches['date'].'T00:00:00+00:00');
         if ($date === false) {
-            throw new \RuntimeException(sprintf('Cannot create DateTime from "%s" in format "Y-m-d"', $matches['date']));
+            throw new RuntimeException(sprintf('Cannot create DateTime from "%s" in format "Y-m-d"', $matches['date']));
         }
 
         return $date->getTimestamp();
@@ -423,14 +447,14 @@ final class JoltHttpOGMTranslator
     {
         $nanoseconds = 0;
         // PHP date interval does not understand fractions of a second.
-        if (\preg_match('/\.(?<nanoseconds>\d+)S/u', $datetime, $matches)) {
+        if (preg_match('/\.(?<nanoseconds>\d+)S/u', $datetime, $matches)) {
             /** @var array{0: string, nanoseconds: string} $matches */
-            $nanoseconds = (int) \str_pad($matches['nanoseconds'], 9, '0', \STR_PAD_RIGHT);
+            $nanoseconds = (int) str_pad($matches['nanoseconds'], 9, '0', STR_PAD_RIGHT);
 
-            $datetime = \str_replace($matches[0], 'S', $datetime);
+            $datetime = str_replace($matches[0], 'S', $datetime);
         }
 
-        $interval = new \DateInterval($datetime);
+        $interval = new DateInterval($datetime);
         $months = (int) $interval->format('%y') * 12 + (int) $interval->format('%m');
         $days = (int) $interval->format('%d');
         $seconds = (int) $interval->format('%h') * 60 * 60 + (int) $interval->format('%i') * 60 + (int) $interval->format('%s');

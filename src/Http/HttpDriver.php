@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use function is_string;
+
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\Resolvable;
 use Laudis\Neo4j\Common\Uri;
@@ -25,6 +27,9 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriInterface;
+
+use function str_replace;
+use function uniqid;
 
 /**
  * @template T
@@ -49,7 +54,7 @@ final class HttpDriver implements DriverInterface
         private AuthenticateInterface $auth
     ) {
         /** @psalm-suppress ImpureFunctionCall */
-        $this->key = \uniqid();
+        $this->key = uniqid();
     }
 
     /**
@@ -67,7 +72,7 @@ final class HttpDriver implements DriverInterface
      */
     public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
     {
-        if (\is_string($uri)) {
+        if (is_string($uri)) {
             $uri = Uri::create($uri);
         }
 
@@ -189,7 +194,7 @@ final class HttpDriver implements DriverInterface
             /** @var string */
             $tsx = $discovery->transaction;
 
-            return \str_replace('{databaseName}', $database, $tsx);
+            return str_replace('{databaseName}', $database, $tsx);
         });
     }
 }

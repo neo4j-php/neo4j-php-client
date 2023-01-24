@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Generator;
 use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
 
@@ -28,7 +29,7 @@ final class SummarizedResult extends CypherList
     private ?ResultSummary $summary = null;
 
     /**
-     * @param iterable<mixed, TValue>|callable():\Generator<mixed, TValue> $iterable
+     * @param iterable<mixed, TValue>|callable():Generator<mixed, TValue> $iterable
      *
      * @psalm-mutation-free
      */

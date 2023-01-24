@@ -14,7 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use Bolt\structures\IStructure;
+use DateTimeImmutable;
+use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+use UnexpectedValueException;
 
 /**
  * A date represented by days since unix epoch.
@@ -42,14 +45,14 @@ final class Date extends AbstractPropertyObject implements BoltConvertibleInterf
     /**
      * Casts to an immutable date time.
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function toDateTime(): \DateTimeImmutable
+    public function toDateTime(): DateTimeImmutable
     {
-        $dateTimeImmutable = (new \DateTimeImmutable('@0'))->modify(sprintf('+%s days', $this->days));
+        $dateTimeImmutable = (new DateTimeImmutable('@0'))->modify(sprintf('+%s days', $this->days));
 
         if ($dateTimeImmutable === false) {
-            throw new \UnexpectedValueException('Expected DateTimeImmutable');
+            throw new UnexpectedValueException('Expected DateTimeImmutable');
         }
 
         return $dateTimeImmutable;

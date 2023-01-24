@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use Error;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
@@ -20,14 +21,14 @@ use PHPUnit\Framework\TestCase;
 final class Neo4jExceptionTest extends TestCase
 {
     private array $errors;
-    private \Error $previous;
+    private Error $previous;
     private Neo4jException $exception;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->errors = [new Neo4jError('0', 'abc', '', '', ''), new Neo4jError('1', 'efg', '', '', '')];
-        $this->previous = new \Error();
+        $this->previous = new Error();
         $this->exception = new Neo4jException($this->errors, $this->previous);
     }
 

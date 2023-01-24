@@ -13,7 +13,22 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
+use function array_combine;
+use function array_key_exists;
+use function count;
 use function date;
+
+use DateInterval;
+use DateTimeImmutable;
+use Exception;
+
+use function explode;
+use function is_array;
+use function is_object;
+use function is_string;
+use function json_encode;
+
+use const JSON_THROW_ON_ERROR;
 
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
@@ -36,6 +51,16 @@ use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
+
+use function sprintf;
+
+use stdClass;
+
+use function str_pad;
+use function substr;
+
+use UnexpectedValueException;
 
 /**
  * @psalm-import-type OGMTypes from OGMFormatter
@@ -51,7 +76,7 @@ final class LegacyHttpOGMTranslator
      */
     public function formatHttpResult(
         ResponseInterface $response,
-        \stdClass $body,
+        stdClass $body,
         ConnectionInterface $connection,
         float $resultsAvailableAfter,
         float $resultsConsumedAfter,
@@ -60,7 +85,7 @@ final class LegacyHttpOGMTranslator
         /** @var list<CypherList<CypherMap<OGMTypes>>> $tbr */
         $tbr = [];
 
-        /** @var list<\stdClass> $results */
+        /** @var list<stdClass> $results */
         $results = $body->results;
         foreach ($results as $result) {
             $tbr[] = $this->translateResult($result);
@@ -85,26 +110,26 @@ final class LegacyHttpOGMTranslator
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      *
      * @return CypherList<CypherMap<OGMTypes>>
      */
-    public function translateResult(\stdClass $result): CypherList
+    public function translateResult(stdClass $result): CypherList
     {
         /** @var list<CypherMap<OGMTypes>> $tbr */
         $tbr = [];
 
         /** @var list<string> $columns */
         $columns = $result->columns;
-        /** @var list<\stdClass> $datas */
+        /** @var list<stdClass> $datas */
         $datas = $result->data;
         foreach ($datas as $data) {
             $meta = HttpMetaInfo::createFromData($data);
 
-            /** @var list<\stdClass> $row */
+            /** @var list<stdClass> $row */
             $row = $data->row;
-            /** @var array<string, \stdClass> $row */
-            $row = \array_combine($columns, $row);
+            /** @var array<string, stdClass> $row */
+            $row = array_combine($columns, $row);
             $tbr[] = $this->translateCypherMap($row, $meta)[0];
         }
 
@@ -112,7 +137,7 @@ final class LegacyHttpOGMTranslator
     }
 
     /**
-     * @param array<string, \stdClass> $row
+     * @param array<string, stdClass> $row
      *
      * @return array{0: CypherMap<OGMTypes>, 1: HttpMetaInfo}
      */
@@ -130,7 +155,7 @@ final class LegacyHttpOGMTranslator
     }
 
     /**
-     * @param \stdClass|array|scalar|null $value
+     * @param stdClass|array|scalar|null $value
      *
      * @return array{0: OGMTypes, 1: HttpMetaInfo}
      *
@@ -140,18 +165,18 @@ final class LegacyHttpOGMTranslator
      */
     private function translateValue($value, HttpMetaInfo $meta): array
     {
-        if (\is_object($value)) {
+        if (is_object($value)) {
             return $this->translateObject($value, $meta);
         }
 
-        if (\is_array($value)) {
+        if (is_array($value)) {
             if ($meta->getCurrentType() === 'path') {
                 /**
                  * There are edge cases where multiple paths are wrapped in a list.
                  *
                  * @see OGMFormatterIntegrationTest::testPathMultiple for an example
                  */
-                if (\array_key_exists(0, $value) && \is_array($value[0])) {
+                if (array_key_exists(0, $value) && is_array($value[0])) {
                     $tbr = [];
                     foreach ($value as $path) {
                         $tbr[] = $this->path($path, $meta->withNestedMeta());
@@ -170,7 +195,7 @@ final class LegacyHttpOGMTranslator
             return $this->translateCypherList($value, $meta);
         }
 
-        if (\is_string($value)) {
+        if (is_string($value)) {
             return $this->translateString($value, $meta);
         }
 
@@ -183,11 +208,11 @@ final class LegacyHttpOGMTranslator
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedArgumentTypeCoercion
      */
-    private function translateObject(\stdClass $value, HttpMetaInfo $meta): array
+    private function translateObject(stdClass $value, HttpMetaInfo $meta): array
     {
         $type = $meta->getCurrentType();
         if ($type === 'relationship') {
-            /** @var \stdClass $relationship */
+            /** @var stdClass $relationship */
             $relationship = $meta->getCurrentRelationship();
 
             return $this->relationship($relationship, $meta);
@@ -199,7 +224,7 @@ final class LegacyHttpOGMTranslator
 
         if ($type === 'node') {
             $node = $meta->currentNode();
-            if ($node && \json_encode($value, \JSON_THROW_ON_ERROR) === \json_encode($node->properties, \JSON_THROW_ON_ERROR)) {
+            if ($node && json_encode($value, JSON_THROW_ON_ERROR) === json_encode($node->properties, JSON_THROW_ON_ERROR)) {
                 $meta = $meta->incrementMeta();
                 $map = $this->translateProperties((array) $node->properties);
 
@@ -211,7 +236,7 @@ final class LegacyHttpOGMTranslator
     }
 
     /**
-     * @param array<string, array|\stdClass|scalar|null> $properties
+     * @param array<string, array|stdClass|scalar|null> $properties
      *
      * @return CypherMap<OGMTypes>
      */
@@ -219,12 +244,12 @@ final class LegacyHttpOGMTranslator
     {
         $tbr = [];
         foreach ($properties as $key => $value) {
-            if ($value instanceof \stdClass) {
-                /** @var array<string, array|\stdClass|scalar|null> $castedValue */
+            if ($value instanceof stdClass) {
+                /** @var array<string, array|stdClass|scalar|null> $castedValue */
                 $castedValue = (array) $value;
                 $tbr[$key] = $this->translateProperties($castedValue);
-            } elseif (\is_array($value)) {
-                /** @var array<string, array|\stdClass|scalar|null> $value */
+            } elseif (is_array($value)) {
+                /** @var array<string, array|stdClass|scalar|null> $value */
                 $tbr[$key] = new CypherList($this->translateProperties($value));
             } else {
                 $tbr[$key] = $value;
@@ -240,7 +265,7 @@ final class LegacyHttpOGMTranslator
      *
      * @return array{0: Relationship, 1: HttpMetaInfo}
      */
-    private function relationship(\stdClass $relationship, HttpMetaInfo $meta): array
+    private function relationship(stdClass $relationship, HttpMetaInfo $meta): array
     {
         $meta = $meta->incrementMeta();
         $map = $this->translateProperties((array) $relationship->properties);
@@ -274,7 +299,7 @@ final class LegacyHttpOGMTranslator
     }
 
     /**
-     * @param list<\stdClass> $value
+     * @param list<stdClass> $value
      */
     private function path(array $value, HttpMetaInfo $meta): Path
     {
@@ -286,7 +311,7 @@ final class LegacyHttpOGMTranslator
         $rels = [];
 
         foreach ($value as $x) {
-            /** @var \stdClass $currentMeta */
+            /** @var stdClass $currentMeta */
             $currentMeta = $meta->currentMeta();
             /** @var int $id */
             $id = $currentMeta->id;
@@ -305,9 +330,9 @@ final class LegacyHttpOGMTranslator
     /**
      * @return CartesianPoint|Cartesian3DPoint|WGS843DPoint|WGS84Point
      */
-    private function translatePoint(\stdClass $value): PointInterface
+    private function translatePoint(stdClass $value): PointInterface
     {
-        /** @var \stdClass $crs */
+        /** @var stdClass $crs */
         $crs = $value->crs;
         /** @var array{0: float, 1: float, 2:float} $coordinates */
         $coordinates = $value->coordinates;
@@ -341,11 +366,11 @@ final class LegacyHttpOGMTranslator
         }
         /** @var string $name */
         $name = $crs->name;
-        throw new \UnexpectedValueException('A point with srid '.$srid.' and name '.$name.' has been returned, which has not been implemented.');
+        throw new UnexpectedValueException('A point with srid '.$srid.' and name '.$name.' has been returned, which has not been implemented.');
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      *
      * @return array{0: string|Date|DateTime|Duration|LocalDateTime|LocalTime|Time, 1: HttpMetaInfo}
      */
@@ -385,22 +410,22 @@ final class LegacyHttpOGMTranslator
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private function translateDuration(string $value): Duration
     {
         /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         if (str_contains($value, '.')) {
-            [$format, $secondsFraction] = \explode('.', $value);
-            $nanoseconds = (int) \substr($secondsFraction, 6);
-            $microseconds = (int) \str_pad((string) ((int) \substr($secondsFraction, 0, 6)), 6, '0');
-            $interval = new \DateInterval($format.'S');
-            $x = new \DateTimeImmutable();
+            [$format, $secondsFraction] = explode('.', $value);
+            $nanoseconds = (int) substr($secondsFraction, 6);
+            $microseconds = (int) str_pad((string) ((int) substr($secondsFraction, 0, 6)), 6, '0');
+            $interval = new DateInterval($format.'S');
+            $x = new DateTimeImmutable();
             /** @psalm-suppress PossiblyFalseReference */
             $interval = $x->add($interval)->modify('+'.$microseconds.' microseconds')->diff($x);
         } else {
             $nanoseconds = 0;
-            $interval = new \DateInterval($value);
+            $interval = new DateInterval($value);
         }
 
         $months = $interval->y * 12 + $interval->m;
@@ -413,10 +438,10 @@ final class LegacyHttpOGMTranslator
 
     private function translateDate(string $value): Date
     {
-        $epoch = new \DateTimeImmutable('@0');
-        $dateTime = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+        $epoch = new DateTimeImmutable('@0');
+        $dateTime = DateTimeImmutable::createFromFormat('Y-m-d', $value);
         if ($dateTime === false) {
-            throw new \RuntimeException(\sprintf('Could not create date from format "Y-m-d" and %s', $value));
+            throw new RuntimeException(sprintf('Could not create date from format "Y-m-d" and %s', $value));
         }
 
         $diff = $dateTime->diff($epoch);
@@ -427,31 +452,31 @@ final class LegacyHttpOGMTranslator
 
     private function translateTime(string $value): Time
     {
-        $value = \substr($value, 0, 5);
-        $values = \explode(':', $value);
+        $value = substr($value, 0, 5);
+        $values = explode(':', $value);
 
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         return new Time((((int) $values[0]) * 60 * 60 + ((int) $values[1]) * 60) * 1_000_000_000, 0);
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private function translateDateTime(string $value): DateTime
     {
-        [$date, $time] = \explode('T', $value);
+        [$date, $time] = explode('T', $value);
         $tz = null;
         /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         if (str_contains($time, '+')) {
-            [$time, $timezone] = \explode('+', $time);
-            [$tzHours, $tzMinutes] = \explode(':', $timezone);
+            [$time, $timezone] = explode('+', $time);
+            [$tzHours, $tzMinutes] = explode(':', $timezone);
             $tz = (int) $tzHours * 60 * 60 + (int) $tzMinutes * 60;
         }
-        [$time, $milliseconds] = \explode('.', $time);
+        [$time, $milliseconds] = explode('.', $time);
 
-        $dateTime = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
+        $dateTime = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
         if ($dateTime === false) {
-            throw new \RuntimeException(\sprintf('Could not create date from format "Y-m-d H:i:s" and %s', $date.' '.$time));
+            throw new RuntimeException(sprintf('Could not create date from format "Y-m-d H:i:s" and %s', $date.' '.$time));
         }
 
         if ($tz !== null) {
@@ -463,12 +488,12 @@ final class LegacyHttpOGMTranslator
 
     private function translateLocalDateTime(string $value): LocalDateTime
     {
-        [$date, $time] = \explode('T', $value);
-        [$time, $milliseconds] = \explode('.', $time);
+        [$date, $time] = explode('T', $value);
+        [$time, $milliseconds] = explode('.', $time);
 
-        $dateTime = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
+        $dateTime = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
         if ($dateTime === false) {
-            throw new \RuntimeException(\sprintf('Could not create date from format "Y-m-d H:i:s" and %s', $date.' '.$time));
+            throw new RuntimeException(sprintf('Could not create date from format "Y-m-d H:i:s" and %s', $date.' '.$time));
         }
 
         return new LocalDateTime($dateTime->getTimestamp(), (int) $milliseconds * 1_000_000);
@@ -477,19 +502,19 @@ final class LegacyHttpOGMTranslator
     /**
      * @psalm-suppress all
      *
-     * @throws \Exception
+     * @throws Exception
      */
     private function translateLocalTime(string $value): LocalTime
     {
-        $timestamp = (new \DateTimeImmutable($value))->getTimestamp();
+        $timestamp = (new DateTimeImmutable($value))->getTimestamp();
 
-        $hours = (int) \date('H', $timestamp);
-        $minutes = (int) \date('i', $timestamp);
-        $seconds = (int) \date('s', $timestamp);
+        $hours = (int) date('H', $timestamp);
+        $minutes = (int) date('i', $timestamp);
+        $seconds = (int) date('s', $timestamp);
         $milliseconds = 0;
 
-        $values = \explode('.', $value);
-        if (\count($values) > 1) {
+        $values = explode('.', $value);
+        if (count($values) > 1) {
             $milliseconds = $values[1];
         }
 
