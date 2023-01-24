@@ -13,10 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use function call_user_func;
-use function is_callable;
 use Laudis\Neo4j\Enum\AccessMode;
-use function parse_str;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -106,7 +103,7 @@ final class SessionConfiguration
      */
     public function getFetchSize(): int
     {
-        $fetchSize = is_callable($this->fetchSize) ? call_user_func($this->fetchSize) : $this->fetchSize;
+        $fetchSize = \is_callable($this->fetchSize) ? \call_user_func($this->fetchSize) : $this->fetchSize;
 
         return $fetchSize ?? self::DEFAULT_FETCH_SIZE;
     }
@@ -118,7 +115,7 @@ final class SessionConfiguration
      */
     public function getAccessMode(): AccessMode
     {
-        $accessMode = is_callable($this->accessMode) ? call_user_func($this->accessMode) : $this->accessMode;
+        $accessMode = \is_callable($this->accessMode) ? \call_user_func($this->accessMode) : $this->accessMode;
 
         /** @psalm-suppress ImpureMethodCall */
         return $accessMode ?? AccessMode::WRITE();
@@ -139,7 +136,7 @@ final class SessionConfiguration
      */
     public function getBookmarks(): iterable
     {
-        $bookmarks = is_callable($this->bookmarks) ? call_user_func($this->bookmarks) : $this->bookmarks;
+        $bookmarks = \is_callable($this->bookmarks) ? \call_user_func($this->bookmarks) : $this->bookmarks;
 
         return $bookmarks ?? [];
     }
@@ -172,7 +169,7 @@ final class SessionConfiguration
          */
         $uri = $uri->getQuery();
         /** @psalm-suppress ImpureFunctionCall */
-        parse_str($uri, $query);
+        \parse_str($uri, $query);
         $tbr = SessionConfiguration::default();
         if (isset($query['database'])) {
             $database = (string) $query['database'];

@@ -25,8 +25,6 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
-use function microtime;
-use Throwable;
 
 /**
  * Manages a transaction over the bolt protocol.
@@ -58,8 +56,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private SessionConfiguration $config,
         private TransactionConfiguration $tsxConfig,
         private BookmarkHolder $bookmarkHolder
-    )
-    {
+    ) {
     }
 
     public function commit(iterable $statements = []): CypherList
@@ -93,7 +90,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @throws Throwable
+     * @throws \Throwable
      */
     public function run(string $statement, iterable $parameters = [])
     {
@@ -101,12 +98,12 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @throws Throwable
+     * @throws \Throwable
      */
     public function runStatement(Statement $statement)
     {
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), true);
-        $start = microtime(true);
+        $start = \microtime(true);
 
         try {
             $meta = $this->connection->run(
@@ -116,7 +113,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->tsxConfig->getTimeout(),
                 $this->bookmarkHolder
             );
-            $run = microtime(true);
+            $run = \microtime(true);
         } catch (MessageException $e) {
             $this->handleMessageException($e);
         }
@@ -133,7 +130,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @throws Throwable
+     * @throws \Throwable
      */
     public function runStatements(iterable $statements): CypherList
     {

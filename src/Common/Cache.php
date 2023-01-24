@@ -13,19 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use function array_key_exists;
-use DateInterval;
-use DateTimeImmutable;
 use Generator;
-use function is_int;
-use function is_iterable;
-use function is_object;
-use function is_string;
 use Laudis\Neo4j\Exception\InvalidCacheArgumentException;
-use const PHP_INT_MAX;
 use Psr\SimpleCache\CacheInterface;
-use function str_contains;
-use function time;
 
 /**
  * Basic Cache implementation based on an array.
@@ -79,7 +69,7 @@ class Cache implements CacheInterface
     {
         $this->assertValidKey($key);
 
-        return array_key_exists($key, $this->items) && $this->items[$key][1] > time();
+        return \array_key_exists($key, $this->items) && $this->items[$key][1] > \time();
     }
 
     public function clear(): bool
@@ -106,25 +96,25 @@ class Cache implements CacheInterface
     }
 
     /**
-     * @param string                $key
-     * @param T                     $value
-     * @param int|DateInterval|null $ttl
+     * @param string                 $key
+     * @param T                      $value
+     * @param int|\DateInterval|null $ttl
      */
     public function set($key, $value, $ttl = null): bool
     {
         $this->assertValidKey($key);
 
-        if ($ttl instanceof DateInterval) {
-            $ttl = (new DateTimeImmutable())->add($ttl)->getTimestamp();
+        if ($ttl instanceof \DateInterval) {
+            $ttl = (new \DateTimeImmutable())->add($ttl)->getTimestamp();
         } elseif ($ttl === null) {
-            $ttl = PHP_INT_MAX;
-        } elseif (is_int($ttl)) {
-            $ttl += time();
+            $ttl = \PHP_INT_MAX;
+        } elseif (\is_int($ttl)) {
+            $ttl += \time();
         } else {
             throw new InvalidCacheArgumentException();
         }
 
-        if (is_object($value)) {
+        if (\is_object($value)) {
             $value = clone $value;
         }
 
@@ -148,9 +138,9 @@ class Cache implements CacheInterface
      * @param iterable<string> $keys
      * @param U                $default
      *
-     * @return Generator<string, T|U>
+     * @return \Generator<string, T|U>
      */
-    public function getMultiple($keys, $default = null): Generator
+    public function getMultiple($keys, $default = null): \Generator
     {
         $this->assertIterable($keys);
 
@@ -169,8 +159,8 @@ class Cache implements CacheInterface
     }
 
     /**
-     * @param iterable<string, T>   $values
-     * @param int|DateInterval|null $ttl
+     * @param iterable<string, T>    $values
+     * @param int|\DateInterval|null $ttl
      *
      * @throws InvalidCacheArgumentException
      */
@@ -179,7 +169,7 @@ class Cache implements CacheInterface
         $this->assertIterable($values);
 
         foreach ($values as $key => $value) {
-            if (is_int($key)) {
+            if (\is_int($key)) {
                 $key = (string) $key;
             }
             $this->set($key, $value, $ttl);
@@ -189,22 +179,22 @@ class Cache implements CacheInterface
     }
 
     /**
-     *
      * @param-out string $key
+     *
      * @throws InvalidCacheArgumentException
      */
     private function assertValidKey(mixed $key): void
     {
-        if (is_string($key)) {
+        if (\is_string($key)) {
             if ($key === '' ||
-                str_contains($key, '{') ||
-                str_contains($key, '}') ||
-                str_contains($key, '(') ||
-                str_contains($key, ')') ||
-                str_contains($key, '/') ||
-                str_contains($key, '\\') ||
-                str_contains($key, '@') ||
-                str_contains($key, ':')
+                \str_contains($key, '{') ||
+                \str_contains($key, '}') ||
+                \str_contains($key, '(') ||
+                \str_contains($key, ')') ||
+                \str_contains($key, '/') ||
+                \str_contains($key, '\\') ||
+                \str_contains($key, '@') ||
+                \str_contains($key, ':')
             ) {
                 throw new InvalidCacheArgumentException();
             }
@@ -214,13 +204,13 @@ class Cache implements CacheInterface
     }
 
     /**
-     *
      * @param-out iterable<string> $keys
+     *
      * @throws InvalidCacheArgumentException
      */
     private function assertIterable(mixed $keys): void
     {
-        if (!is_iterable($keys)) {
+        if (!\is_iterable($keys)) {
             throw new InvalidCacheArgumentException();
         }
     }
@@ -234,7 +224,7 @@ class Cache implements CacheInterface
      */
     private function getNoAssert(string $key, $default)
     {
-        if (array_key_exists($key, $this->items) && $this->items[$key][1] > time()) {
+        if (\array_key_exists($key, $this->items) && $this->items[$key][1] > \time()) {
             return $this->items[$key][0];
         }
 

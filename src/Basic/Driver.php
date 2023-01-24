@@ -50,7 +50,7 @@ final class Driver implements DriverInterface
         return $this->driver->verifyConnectivity($config);
     }
 
-    public static function create(string|\Psr\Http\Message\UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
         /** @var DriverInterface<SummarizedResult<CypherMap>> */
         $driver = DriverFactory::create($uri, $configuration, $authenticate, SummarizedResultFormatter::create());

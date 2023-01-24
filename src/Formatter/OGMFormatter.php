@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use function array_key_exists;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -28,8 +27,6 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use stdClass;
-use function version_compare;
 
 /**
  * Formats the result in a basic OGM (Object Graph Mapping) format by mapping al cypher types to types found in the \Laudis\Neo4j\Types namespace.
@@ -37,7 +34,6 @@ use function version_compare;
  * @see https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-type-mapping
  *
  * @psalm-type OGMTypes = string|int|float|bool|null|\Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime|\Laudis\Neo4j\Types\Time|\Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap|\Laudis\Neo4j\Types\Node|\Laudis\Neo4j\Types\Relationship|\Laudis\Neo4j\Types\Path|\Laudis\Neo4j\Types\Cartesian3DPoint|\Laudis\Neo4j\Types\CartesianPoint|\Laudis\Neo4j\Types\WGS84Point|\Laudis\Neo4j\Types\WGS843DPoint
- *
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  *
  * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
@@ -78,7 +74,7 @@ final class OGMFormatter implements FormatterInterface
 
         $connection->subscribeResult($tbr);
         $result->addFinishedCallback(function (array $response) use ($holder) {
-            if (array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
+            if (\array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
                 $holder->setBookmark(new Bookmark([$response['bookmark']]));
             }
         });
@@ -91,7 +87,7 @@ final class OGMFormatter implements FormatterInterface
      */
     public function formatHttpResult(
         ResponseInterface $response,
-        stdClass $body,
+        \stdClass $body,
         ConnectionInterface $connection,
         float $resultsAvailableAfter,
         float $resultsConsumedAfter,
@@ -110,9 +106,9 @@ final class OGMFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    private function decideTranslator(ConnectionInterface $connection): \Laudis\Neo4j\Formatter\Specialised\LegacyHttpOGMTranslator|\Laudis\Neo4j\Formatter\Specialised\JoltHttpOGMTranslator
+    private function decideTranslator(ConnectionInterface $connection): LegacyHttpOGMTranslator|JoltHttpOGMTranslator
     {
-        if (version_compare($connection->getServerAgent(), '4.2.5') <= 0) {
+        if (\version_compare($connection->getServerAgent(), '4.2.5') <= 0) {
             return $this->legacyHttpTranslator;
         }
 

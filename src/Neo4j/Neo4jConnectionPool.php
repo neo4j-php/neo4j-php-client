@@ -13,17 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use function array_slice;
-use function array_unique;
 use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
-use function count;
-use Exception;
-use Generator;
-use function implode;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
@@ -42,16 +36,9 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
-use const PHP_INT_MAX;
 use Psr\Http\Message\UriInterface;
 use Psr\SimpleCache\CacheInterface;
-use function random_int;
-use RuntimeException;
-use function sprintf;
-use function str_replace;
-use function str_starts_with;
 use Throwable;
-use function time;
 
 /**
  * Connection pool for with auto client-side routing.
@@ -106,9 +93,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
-    public function acquire(SessionConfiguration $config): Generator
+    public function acquire(SessionConfiguration $config): \Generator
     {
         $key = $this->createKey($this->data, $config);
 
@@ -138,7 +125,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
 
         if ($table === null) {
-            throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $this->data->getUri()->getHost(), implode('", "', $triedAddresses)));
+            throw new \RuntimeException(\sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $this->data->getUri()->getHost(), \implode('", "', $triedAddresses)));
         }
 
         $server = $this->getNextServer($table, $config->getAccessMode()) ?? $this->data->getUri();
@@ -151,12 +138,12 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     private function getNextServer(RoutingTable $table, AccessMode $mode): ?Uri
     {
-        $servers = array_unique($table->getWithRole());
-        if (count($servers) === 1) {
+        $servers = \array_unique($table->getWithRole());
+        if (\count($servers) === 1) {
             return null;
         }
 
@@ -166,11 +153,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $servers = $table->getWithRole(RoutingRoles::FOLLOWER());
         }
 
-        return Uri::create($servers[random_int(0, count($servers) - 1)]);
+        return Uri::create($servers[\random_int(0, \count($servers) - 1)]);
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     private function routingTable(BoltConnection $connection, SessionConfiguration $config): RoutingTable
     {
@@ -196,7 +183,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $bolt->route([], [], $config->getDatabase());
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
-        $ttl += time();
+        $ttl += \time();
 
         return new RoutingTable($servers, $ttl);
     }
@@ -206,13 +193,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $bolt->route([], [], ['db' => $config->getDatabase()]);
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
-        $ttl += time();
+        $ttl += \time();
 
         return new RoutingTable($servers, $ttl);
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     private function useRoutingTable(V4 $bolt): RoutingTable
     {
@@ -221,7 +208,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $response = $bolt->pull(['n' => 1]);
         $response = $response[0];
         $servers = [];
-        $ttl = time() + $response[0];
+        $ttl = \time() + $response[0];
         foreach ($response[1] as $server) {
             $servers[] = ['addresses' => $server['addresses'], 'role' => $server['role']];
         }
@@ -230,7 +217,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     private function useClusterOverview(V3 $bolt, ConnectionInterface $c): RoutingTable
     {
@@ -246,17 +233,17 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                     'addresses' => [(string) $c->getServerAddress()],
                     'role' => 'READ',
                 ],
-            ], PHP_INT_MAX);
+            ], \PHP_INT_MAX);
         }
         /** @var list<array{0: string, 1: list<string>, 2: string, 4: list, 4:string}> */
         $response = $bolt->pullAll();
-        $response = array_slice($response, 0, count($response) - 1);
+        $response = \array_slice($response, 0, \count($response) - 1);
         $servers = [];
-        $ttl = time() + 3600;
+        $ttl = \time() + 3600;
 
         foreach ($response as $server) {
             $addresses = $server[1];
-            $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
+            $addresses = array_filter($addresses, static fn (string $x) => \str_starts_with($x, 'bolt://'));
             /**
              * @psalm-suppress InvalidArrayAssignment
              *
@@ -277,12 +264,12 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         $uri = $data->getUri();
 
-        $key = implode(
+        $key = \implode(
             ':',
             array_filter([$data->getUserAgent(), $uri->getHost(), $config ? $config->getDatabase() : null, $uri->getPort() ?? '7687'])
         );
 
-        return str_replace([
+        return \str_replace([
             '{',
             '}',
             '(',

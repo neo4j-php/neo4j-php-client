@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Types;
 
 use Bolt\structures\IStructure;
 use DateInterval;
-use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 
 /**
@@ -66,11 +65,11 @@ final class Duration extends AbstractPropertyObject implements BoltConvertibleIn
     /**
      * Casts to a DateInterval object.
      *
-     * @throws Exception
+     * @throws \Exception
      */
-    public function toDateInterval(): DateInterval
+    public function toDateInterval(): \DateInterval
     {
-        return new DateInterval(sprintf('P%dM%dDT%dS', $this->months, $this->days, $this->seconds));
+        return new \DateInterval(sprintf('P%dM%dDT%dS', $this->months, $this->days, $this->seconds));
     }
 
     /**

@@ -17,7 +17,6 @@ use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\BasicFormatter;
-use function str_starts_with;
 
 /**
  * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
@@ -55,7 +54,7 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
      */
     public function testConsistencyTransaction(string $alias): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
+        if (\str_starts_with($alias, 'neo4j')) {
             self::markTestSkipped('Cannot guarantee successful test in cluster');
         }
 

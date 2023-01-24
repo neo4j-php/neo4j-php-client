@@ -13,23 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use function array_key_exists;
 use ArrayAccess;
-use ArrayIterator;
-use BadMethodCallException;
-use const E_DEPRECATED;
-use function error_reporting;
 use IteratorAggregate;
-use JsonSerializable;
-use OutOfBoundsException;
-use function sprintf;
-use Traversable;
 
 /**
  * Turn of error reporting for class definition. PHP Users of 8.1 receive a deprectation warning otherwise but
  * it is not fixable from the minimum version 7.4 as it required the "mixed" keyword.
  */
-$oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
+$oldReporting = \error_reporting(\error_reporting() & ~\E_DEPRECATED);
 
 /**
  * Abstract immutable container with basic functionality to integrate easily into the driver ecosystem.
@@ -42,7 +33,7 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
  *
  * @psalm-immutable
  */
-abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, IteratorAggregate
+abstract class AbstractCypherObject implements \JsonSerializable, \ArrayAccess, \IteratorAggregate
 {
     /**
      * Represents the container as an array.
@@ -57,11 +48,11 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
     }
 
     /**
-     * @return Traversable<TKey, TValue>
+     * @return \Traversable<TKey, TValue>
      */
-    public function getIterator(): Traversable
+    public function getIterator(): \Traversable
     {
-        return new ArrayIterator($this->toArray());
+        return new \ArrayIterator($this->toArray());
     }
 
     /**
@@ -69,7 +60,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      */
     public function offsetExists($offset): bool
     {
-        return array_key_exists($offset, $this->toArray());
+        return \array_key_exists($offset, $this->toArray());
     }
 
     /**
@@ -80,8 +71,8 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
     public function offsetGet($offset)
     {
         $serialized = $this->toArray();
-        if (!array_key_exists($offset, $serialized)) {
-            throw new OutOfBoundsException("Offset: \"$offset\" does not exists in object of instance: ".static::class);
+        if (!\array_key_exists($offset, $serialized)) {
+            throw new \OutOfBoundsException("Offset: \"$offset\" does not exists in object of instance: ".static::class);
         }
 
         return $serialized[$offset];
@@ -93,7 +84,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      */
     final public function offsetSet($offset, $value): void
     {
-        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
+        throw new \BadMethodCallException(\sprintf('%s is immutable', static::class));
     }
 
     /**
@@ -101,11 +92,11 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      */
     final public function offsetUnset($offset): void
     {
-        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
+        throw new \BadMethodCallException(\sprintf('%s is immutable', static::class));
     }
 }
 
 /**
  * Turn back on old error reporting after class definition.
  */
-error_reporting($oldReporting);
+\error_reporting($oldReporting);

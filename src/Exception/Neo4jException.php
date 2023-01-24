@@ -15,8 +15,6 @@ namespace Laudis\Neo4j\Exception;
 
 use Bolt\error\MessageException;
 use Laudis\Neo4j\Databags\Neo4jError;
-use RuntimeException;
-use Throwable;
 
 /**
  * Exception when a Neo4j Error occurs.
@@ -25,7 +23,7 @@ use Throwable;
  *
  * @psalm-suppress MutableDependency
  */
-final class Neo4jException extends RuntimeException
+final class Neo4jException extends \RuntimeException
 {
     private const MESSAGE_TEMPLATE = 'Neo4j errors detected. First one with code "%s" and message "%s"';
     /** @var non-empty-list<Neo4jError> */
@@ -34,7 +32,7 @@ final class Neo4jException extends RuntimeException
     /**
      * @param non-empty-list<Neo4jError> $errors
      */
-    public function __construct(array $errors, Throwable $previous = null)
+    public function __construct(array $errors, \Throwable $previous = null)
     {
         $error = $errors[0];
         $message = sprintf(self::MESSAGE_TEMPLATE, $error->getCode(), $error->getMessage() ?? 'NULL');

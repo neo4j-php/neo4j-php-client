@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Exception;
-use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Common\DNSAddressResolver;
@@ -61,11 +59,12 @@ final class Neo4jDriver implements DriverInterface
      *           ? self<U>
      *           : self<OGMResults>
      *           )
+     *
      * @psalm-suppress MixedReturnTypeCoercion
      */
-    public static function create(string|\Psr\Http\Message\UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null, ?AddressResolverInterface $resolver = null): self
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null, ?AddressResolverInterface $resolver = null): self
     {
-        if (is_string($uri)) {
+        if (\is_string($uri)) {
             $uri = Uri::create($uri);
         }
 
@@ -85,7 +84,7 @@ final class Neo4jDriver implements DriverInterface
     /**
      * @psalm-mutation-free
      *
-     * @throws Exception
+     * @throws \Exception
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {

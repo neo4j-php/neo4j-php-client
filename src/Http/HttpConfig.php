@@ -13,11 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
-use function call_user_func;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
-use function is_callable;
-use function is_string;
 use Laudis\Neo4j\Contracts\ConfigInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -25,6 +22,7 @@ use Psr\Http\Message\StreamFactoryInterface;
 
 /**
  * @deprecated
+ *
  * @psalm-suppress DeprecatedInterface
  */
 final class HttpConfig implements ConfigInterface
@@ -49,10 +47,10 @@ final class HttpConfig implements ConfigInterface
      */
     public function __construct($database = null, $client = null, $streamFactory = null, $requestFactory = null, $autoRouting = null)
     {
-        $this->database = $database ?? static fn(): string => 'neo4j';
-        $this->client = $client ?? static fn(): ClientInterface => Psr18ClientDiscovery::find();
-        $this->streamFactory = $streamFactory ?? static fn(): StreamFactoryInterface => Psr17FactoryDiscovery::findStreamFactory();
-        $this->requestFactory = $requestFactory ?? static fn(): RequestFactoryInterface => Psr17FactoryDiscovery::findRequestFactory();
+        $this->database = $database ?? static fn (): string => 'neo4j';
+        $this->client = $client ?? static fn (): ClientInterface => Psr18ClientDiscovery::find();
+        $this->streamFactory = $streamFactory ?? static fn (): StreamFactoryInterface => Psr17FactoryDiscovery::findStreamFactory();
+        $this->requestFactory = $requestFactory ?? static fn (): RequestFactoryInterface => Psr17FactoryDiscovery::findRequestFactory();
         $this->autoRouting = $autoRouting ?? false;
     }
 
@@ -75,8 +73,8 @@ final class HttpConfig implements ConfigInterface
 
     public function getClient(): ClientInterface
     {
-        if (is_callable($this->client)) {
-            $this->client = call_user_func($this->client);
+        if (\is_callable($this->client)) {
+            $this->client = \call_user_func($this->client);
         }
 
         return $this->client;
@@ -85,7 +83,7 @@ final class HttpConfig implements ConfigInterface
     /**
      * @param ClientInterface|callable():ClientInterface $client
      */
-    public function withClient(\Psr\Http\Client\ClientInterface|callable $client): self
+    public function withClient(ClientInterface|callable $client): self
     {
         return new self($this->database, $client, $this->streamFactory, $this->requestFactory, $this->autoRouting);
     }
@@ -93,7 +91,7 @@ final class HttpConfig implements ConfigInterface
     /**
      * @param StreamFactoryInterface|callable():StreamFactoryInterface $factory
      */
-    public function withStreamFactory(\Psr\Http\Message\StreamFactoryInterface|callable $factory): self
+    public function withStreamFactory(StreamFactoryInterface|callable $factory): self
     {
         return new self($this->database, $this->client, $factory, $this->requestFactory, $this->autoRouting);
     }
@@ -101,7 +99,7 @@ final class HttpConfig implements ConfigInterface
     /**
      * @param RequestFactoryInterface|callable():RequestFactoryInterface $factory
      */
-    public function withRequestFactory(\Psr\Http\Message\RequestFactoryInterface|callable $factory): self
+    public function withRequestFactory(RequestFactoryInterface|callable $factory): self
     {
         return new self($this->database, $this->client, $this->streamFactory, $factory, $this->autoRouting);
     }
@@ -116,8 +114,8 @@ final class HttpConfig implements ConfigInterface
 
     public function getStreamFactory(): StreamFactoryInterface
     {
-        if (is_callable($this->streamFactory)) {
-            $this->streamFactory = call_user_func($this->streamFactory);
+        if (\is_callable($this->streamFactory)) {
+            $this->streamFactory = \call_user_func($this->streamFactory);
         }
 
         return $this->streamFactory;
@@ -125,8 +123,8 @@ final class HttpConfig implements ConfigInterface
 
     public function getRequestFactory(): RequestFactoryInterface
     {
-        if (is_callable($this->requestFactory)) {
-            $this->requestFactory = call_user_func($this->requestFactory);
+        if (\is_callable($this->requestFactory)) {
+            $this->requestFactory = \call_user_func($this->requestFactory);
         }
 
         return $this->requestFactory;
@@ -134,12 +132,12 @@ final class HttpConfig implements ConfigInterface
 
     public function getDatabase(): string
     {
-        if (is_string($this->database)) {
+        if (\is_string($this->database)) {
             return $this->database;
         }
 
         /** @var string */
-        $this->database = call_user_func($this->database);
+        $this->database = \call_user_func($this->database);
 
         return $this->database;
     }
@@ -160,8 +158,8 @@ final class HttpConfig implements ConfigInterface
 
     public function hasAutoRouting(): bool
     {
-        if (is_callable($this->autoRouting)) {
-            $this->autoRouting = call_user_func($this->autoRouting);
+        if (\is_callable($this->autoRouting)) {
+            $this->autoRouting = \call_user_func($this->autoRouting);
         }
 
         return $this->autoRouting;

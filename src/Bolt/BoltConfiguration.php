@@ -13,9 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use function call_user_func;
-use function is_callable;
-use function is_string;
 use Laudis\Neo4j\Client;
 use Laudis\Neo4j\Contracts\ConfigInterface;
 
@@ -39,8 +36,8 @@ use Laudis\Neo4j\Contracts\ConfigInterface;
  *     peer_fingerprint?: string|array,
  *     security_level?: int
  * }
- *
  * @psalm-type LazySSLContextOptions = callable():SSLContextOptions|SSLContextOptions
+ *
  * @psalm-suppress DeprecatedInterface
  *
  * @deprecated
@@ -64,7 +61,7 @@ final class BoltConfiguration implements ConfigInterface
      */
     public function __construct($database = null, $sslContextOptions = null, $autoRouting = false)
     {
-        $this->database = $database ?? static fn(): string => 'neo4j';
+        $this->database = $database ?? static fn (): string => 'neo4j';
         $this->sslContextOptions = $sslContextOptions;
         $this->autoRouting = $autoRouting;
     }
@@ -109,20 +106,20 @@ final class BoltConfiguration implements ConfigInterface
 
     public function getDatabase(): string
     {
-        if (is_string($this->database)) {
+        if (\is_string($this->database)) {
             return $this->database;
         }
 
         /** @var string */
-        $this->database = call_user_func($this->database);
+        $this->database = \call_user_func($this->database);
 
         return $this->database;
     }
 
     public function hasAutoRouting(): bool
     {
-        if (is_callable($this->autoRouting)) {
-            $this->autoRouting = call_user_func($this->autoRouting);
+        if (\is_callable($this->autoRouting)) {
+            $this->autoRouting = \call_user_func($this->autoRouting);
         }
 
         return $this->autoRouting;
@@ -133,8 +130,8 @@ final class BoltConfiguration implements ConfigInterface
      */
     public function getSslContextOptions(): ?array
     {
-        if (is_callable($this->sslContextOptions)) {
-            $this->sslContextOptions = call_user_func($this->sslContextOptions);
+        if (\is_callable($this->sslContextOptions)) {
+            $this->sslContextOptions = \call_user_func($this->sslContextOptions);
         }
 
         return $this->sslContextOptions;

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Bolt\Bolt;
-use JsonException;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Databags\BookmarkHolder;
@@ -23,7 +22,6 @@ use Laudis\Neo4j\Http\HttpConnection;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use stdClass;
 
 /**
  * A formatter (aka Hydrator) is reponsible for formatting the incoming results of the driver.
@@ -64,7 +62,6 @@ use stdClass;
  * @psalm-type CypherRowResponse = array{row: list<scalar|null|array<array-key,scalar|null|array>>}
  * @psalm-type CypherResponse = array{columns:list<string>, data:list<CypherRowResponse>, stats?:CypherStats}
  * @psalm-type CypherResponseSet = array{results: list<CypherResponse>, errors: list<CypherError>}
- *
  * @psalm-type BoltMeta = array{t_first: int, fields: list<string>, qid ?: int}
  *
  * @template ResultFormat
@@ -85,13 +82,13 @@ interface FormatterInterface
      *
      * @param iterable<Statement> $statements
      *
-     * @throws JsonException
+     * @throws \JsonException
      *
      * @return CypherList<ResultFormat>
      *
      * @psalm-mutation-free
      */
-    public function formatHttpResult(ResponseInterface $response, stdClass $body, HttpConnection $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
+    public function formatHttpResult(ResponseInterface $response, \stdClass $body, HttpConnection $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
 
     /**
      * Decorates a request to make make sure it requests the correct format.

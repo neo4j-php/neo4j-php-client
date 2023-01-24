@@ -13,16 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use AppendIterator;
-use function array_values;
-use ArrayIterator;
-use Generator;
-use function is_array;
-use function is_callable;
-use function is_iterable;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
-use OutOfBoundsException;
 
 /**
  * An immutable ordered sequence of items.
@@ -40,17 +32,17 @@ class ArrayList extends AbstractCypherSequence
      */
     public function __construct($iterable = [])
     {
-        if (is_array($iterable)) {
+        if (\is_array($iterable)) {
             /** @var array<array-key, TValue> $iterable */
             $this->keyCache = count($iterable) === 0 ? [] : range(0, count($iterable) - 1);
-            $this->cache = array_values($iterable);
-            $this->generator = new ArrayIterator([]);
+            $this->cache = \array_values($iterable);
+            $this->generator = new \ArrayIterator([]);
             $this->generatorPosition = count($this->keyCache);
         } else {
-            $this->generator = static function () use ($iterable): Generator {
+            $this->generator = static function () use ($iterable): \Generator {
                 $i = 0;
-                /** @var Generator<mixed, TValue> $it */
-                $it = is_callable($iterable) ? $iterable() : $iterable;
+                /** @var \Generator<mixed, TValue> $it */
+                $it = \is_callable($iterable) ? $iterable() : $iterable;
                 foreach ($it as $value) {
                     yield $i => $value;
                     ++$i;
@@ -85,7 +77,7 @@ class ArrayList extends AbstractCypherSequence
             return $value;
         }
 
-        throw new OutOfBoundsException('Cannot grab first element of an empty list');
+        throw new \OutOfBoundsException('Cannot grab first element of an empty list');
     }
 
     /**
@@ -96,7 +88,7 @@ class ArrayList extends AbstractCypherSequence
     public function last()
     {
         if ($this->isEmpty()) {
-            throw new OutOfBoundsException('Cannot grab last element of an empty list');
+            throw new \OutOfBoundsException('Cannot grab last element of an empty list');
         }
 
         $array = $this->toArray();
@@ -115,8 +107,8 @@ class ArrayList extends AbstractCypherSequence
      */
     public function merge($values): ArrayList
     {
-        return $this->withOperation(function () use ($values): Generator {
-            $iterator = new AppendIterator();
+        return $this->withOperation(function () use ($values): \Generator {
+            $iterator = new \AppendIterator();
 
             $iterator->append($this);
             $iterator->append(new self($values));
@@ -128,7 +120,7 @@ class ArrayList extends AbstractCypherSequence
     /**
      * Gets the nth element in the list.
      *
-     * @throws OutOfBoundsException
+     * @throws \OutOfBoundsException
      *
      * @return TValue
      */
@@ -216,7 +208,7 @@ class ArrayList extends AbstractCypherSequence
     public function getAsMap(int $key): Map
     {
         $value = $this->get($key);
-        if (!is_iterable($value)) {
+        if (!\is_iterable($value)) {
             throw new RuntimeTypeException($value, Map::class);
         }
 
@@ -230,7 +222,7 @@ class ArrayList extends AbstractCypherSequence
     public function getAsArrayList(int $key): ArrayList
     {
         $value = $this->get($key);
-        if (!is_iterable($value)) {
+        if (!\is_iterable($value)) {
             throw new RuntimeTypeException($value, self::class);
         }
 

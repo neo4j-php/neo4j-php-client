@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use function http_build_query;
-use function in_array;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\Common\DriverSetupManager;
@@ -58,8 +56,7 @@ final class ClientBuilder
         /** @psalm-readonly */
         private TransactionConfiguration $defaultTransactionConfig,
         private DriverSetupManager $driverSetups
-    )
-    {
+    ) {
     }
 
     /**
@@ -102,7 +99,7 @@ final class ClientBuilder
     {
         $scheme = $uri->getScheme();
 
-        if (!in_array($scheme, self::SUPPORTED_SCHEMES, true)) {
+        if (!\in_array($scheme, self::SUPPORTED_SCHEMES, true)) {
             throw UnsupportedScheme::make($scheme, self::SUPPORTED_SCHEMES);
         }
 
@@ -118,6 +115,7 @@ final class ClientBuilder
      * @return self<T>
      *
      * @deprecated
+     *
      * @psalm-suppress DeprecatedClass
      *
      * @see Client::withDriver()
@@ -140,7 +138,7 @@ final class ClientBuilder
         parse_str($parsedUrl->getQuery(), $query);
         /** @var array<string, string> */
         $query['database'] ??= $config->getDatabase();
-        $parsedUrl = $parsedUrl->withPath(http_build_query($query));
+        $parsedUrl = $parsedUrl->withPath(\http_build_query($query));
 
         if ($config->hasAutoRouting()) {
             $parsedUrl = $parsedUrl->withScheme('neo4j'.$postScheme);
@@ -186,6 +184,7 @@ final class ClientBuilder
      *
      * @deprecated
      * @see Driver::withDefaultDriver()
+     *
      * @psalm-mutation-free
      */
     public function setDefaultConnection(string $alias): self
@@ -197,6 +196,7 @@ final class ClientBuilder
      * Sets the default connection to the given alias.
      *
      * @return self<T>
+     *
      * @psalm-mutation-free
      */
     public function withDefaultDriver(string $alias): self
@@ -213,6 +213,7 @@ final class ClientBuilder
      * @param FormatterInterface<U> $formatter
      *
      * @return self<U>
+     *
      * @psalm-mutation-free
      */
     public function withFormatter(FormatterInterface $formatter): self

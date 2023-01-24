@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\error\MessageException;
-use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -137,7 +136,7 @@ final class Session implements SessionInterface
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {

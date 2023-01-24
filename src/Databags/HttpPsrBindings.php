@@ -13,10 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use function call_user_func;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
-use function is_callable;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -47,9 +45,9 @@ final class HttpPsrBindings
      */
     public function __construct($client = null, $streamFactory = null, $requestFactory = null)
     {
-        $this->client = $client ?? static fn(): ClientInterface => Psr18ClientDiscovery::find();
-        $this->streamFactory = $streamFactory ?? static fn(): StreamFactoryInterface => Psr17FactoryDiscovery::findStreamFactory();
-        $this->requestFactory = $requestFactory ?? static fn(): RequestFactoryInterface => Psr17FactoryDiscovery::findRequestFactory();
+        $this->client = $client ?? static fn (): ClientInterface => Psr18ClientDiscovery::find();
+        $this->streamFactory = $streamFactory ?? static fn (): StreamFactoryInterface => Psr17FactoryDiscovery::findStreamFactory();
+        $this->requestFactory = $requestFactory ?? static fn (): RequestFactoryInterface => Psr17FactoryDiscovery::findRequestFactory();
     }
 
     /**
@@ -75,8 +73,8 @@ final class HttpPsrBindings
 
     public function getClient(): ClientInterface
     {
-        if (is_callable($this->client)) {
-            $this->client = call_user_func($this->client);
+        if (\is_callable($this->client)) {
+            $this->client = \call_user_func($this->client);
         }
 
         return $this->client;
@@ -87,7 +85,7 @@ final class HttpPsrBindings
      *
      * @param ClientInterface|callable():ClientInterface $client
      */
-    public function withClient(\Psr\Http\Client\ClientInterface|callable $client): self
+    public function withClient(ClientInterface|callable $client): self
     {
         return new self($client, $this->streamFactory, $this->requestFactory);
     }
@@ -97,7 +95,7 @@ final class HttpPsrBindings
      *
      * @param StreamFactoryInterface|callable():StreamFactoryInterface $factory
      */
-    public function withStreamFactory(\Psr\Http\Message\StreamFactoryInterface|callable $factory): self
+    public function withStreamFactory(StreamFactoryInterface|callable $factory): self
     {
         return new self($this->client, $factory, $this->requestFactory);
     }
@@ -107,15 +105,15 @@ final class HttpPsrBindings
      *
      * @param RequestFactoryInterface|callable():RequestFactoryInterface $factory
      */
-    public function withRequestFactory(\Psr\Http\Message\RequestFactoryInterface|callable $factory): self
+    public function withRequestFactory(RequestFactoryInterface|callable $factory): self
     {
         return new self($this->client, $this->streamFactory, $factory);
     }
 
     public function getStreamFactory(): StreamFactoryInterface
     {
-        if (is_callable($this->streamFactory)) {
-            $this->streamFactory = call_user_func($this->streamFactory);
+        if (\is_callable($this->streamFactory)) {
+            $this->streamFactory = \call_user_func($this->streamFactory);
         }
 
         return $this->streamFactory;
@@ -123,8 +121,8 @@ final class HttpPsrBindings
 
     public function getRequestFactory(): RequestFactoryInterface
     {
-        if (is_callable($this->requestFactory)) {
-            $this->requestFactory = call_user_func($this->requestFactory);
+        if (\is_callable($this->requestFactory)) {
+            $this->requestFactory = \call_user_func($this->requestFactory);
         }
 
         return $this->requestFactory;

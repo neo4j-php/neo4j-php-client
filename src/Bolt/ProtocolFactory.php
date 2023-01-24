@@ -18,7 +18,6 @@ use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
-use RuntimeException;
 
 class ProtocolFactory
 {
@@ -38,7 +37,7 @@ class ProtocolFactory
             }
 
             if (!$protocol instanceof V3) {
-                throw new RuntimeException('Client only supports bolt version ^3.0 and ^4.0.');
+                throw new \RuntimeException('Client only supports bolt version ^3.0 and ^4.0.');
             }
 
             $response = $auth->authenticateBolt($protocol, $userAgent);

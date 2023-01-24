@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Exception;
 
-use RuntimeException;
-
 /**
  * Exception when accessing a property which does not exist.
  *
@@ -22,6 +20,6 @@ use RuntimeException;
  *
  * @psalm-suppress MutableDependency
  */
-final class PropertyDoesNotExistException extends RuntimeException
+final class PropertyDoesNotExistException extends \RuntimeException
 {
 }

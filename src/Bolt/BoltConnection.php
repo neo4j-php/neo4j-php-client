@@ -13,11 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\error\IgnoredException;
-use Bolt\error\MessageException;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
-use function in_array;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -27,8 +24,6 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
-use function str_starts_with;
-use WeakReference;
 
 /**
  * @implements ConnectionInterface<array{0: V3, 1: Connection}>
@@ -48,7 +43,7 @@ class BoltConnection implements ConnectionInterface
      *       A great moment to do this would be when neo4j 5 is released as it will presumably allow us to do more
      *       stuff with PULL and DISCARD messages.
      *
-     * @var list<WeakReference<CypherList>>
+     * @var list<\WeakReference<CypherList>>
      */
     private array $subscribedResults = [];
 
@@ -200,7 +195,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder): array
     {
-        if (!str_starts_with($this->protocol()->serverState->get(), 'TX_') || str_starts_with($this->getServerVersion(), '3')) {
+        if (!\str_starts_with($this->protocol()->serverState->get(), 'TX_') || \str_starts_with($this->getServerVersion(), '3')) {
             $this->consumeResults();
         }
 
@@ -266,7 +261,7 @@ class BoltConnection implements ConnectionInterface
     public function __destruct()
     {
         if ($this->serverState !== 'FAILED' && $this->isOpen()) {
-            if (in_array($this->serverState, ['STREAMING', 'TX_STREAMING'])) {
+            if (\in_array($this->serverState, ['STREAMING', 'TX_STREAMING'])) {
                 $this->consumeResults();
             }
 
@@ -284,7 +279,7 @@ class BoltConnection implements ConnectionInterface
             $extra['db'] = $database;
         }
         if ($timeout) {
-            $extra['tx_timeout'] = (int)($timeout * 1000);
+            $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
         if (!$holder->getBookmark()->isEmpty()) {
@@ -315,12 +310,12 @@ class BoltConnection implements ConnectionInterface
 
     public function subscribeResult(CypherList $result): void
     {
-        $this->subscribedResults[] = WeakReference::create($result);
+        $this->subscribedResults[] = \WeakReference::create($result);
     }
 
     private function interpretResult(array $result): void
     {
-        if (str_starts_with($this->serverState, 'TX_')) {
+        if (\str_starts_with($this->serverState, 'TX_')) {
             if ($result['has_more'] ?? ($this->countResults() > 1)) {
                 $this->serverState = 'TX_STREAMING';
             } else {

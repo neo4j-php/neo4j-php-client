@@ -35,8 +35,7 @@ final class RequestFactory implements RequestFactoryInterface
         private UriInterface $authUri,
         /** @readonly */
         private string $userAgent
-    )
-    {
+    ) {
     }
 
     public function createRequest(string $method, $uri): RequestInterface

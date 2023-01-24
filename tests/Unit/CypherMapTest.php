@@ -11,19 +11,11 @@
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use ArrayIterator;
-use BadMethodCallException;
-use Generator;
-use IteratorAggregate;
-use function json_encode;
-use const JSON_THROW_ON_ERROR;
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherMap;
-use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
-use stdClass;
 
 final class CypherMapTest extends TestCase
 {
@@ -55,7 +47,7 @@ final class CypherMapTest extends TestCase
 
     public function testFromIterable(): void
     {
-        $fromIterable = CypherMap::fromIterable(new ArrayIterator(['A' => 'x', 'B' => 'y', 'C' => 'z']));
+        $fromIterable = CypherMap::fromIterable(new \ArrayIterator(['A' => 'x', 'B' => 'y', 'C' => 'z']));
 
         self::assertNotSame($this->map, $fromIterable);
         self::assertEquals($this->map->toArray(), $fromIterable->toArray());
@@ -81,7 +73,7 @@ final class CypherMapTest extends TestCase
 
     public function testCopyDepth(): void
     {
-        $list = new CypherMap(['A' => new stdClass()]);
+        $list = new CypherMap(['A' => new \stdClass()]);
         $copy = $list->copy();
 
         self::assertNotSame($list, $copy);
@@ -155,7 +147,7 @@ final class CypherMapTest extends TestCase
 
     public function testReduce(): void
     {
-        $count = $this->map->reduce(static fn(?int $initial, string $key, string $value) => ($initial ?? 0) + ord($value) + ord($key), 5);
+        $count = $this->map->reduce(static fn (?int $initial, string $key, string $value) => ($initial ?? 0) + ord($value) + ord($key), 5);
 
         self::assertEquals(5 + ord('A') + ord('x') + ord('B') + ord('y') + ord('C') + ord('z'), $count);
     }
@@ -217,7 +209,7 @@ final class CypherMapTest extends TestCase
     {
         self::assertEquals('x', $this->map->get('A', null));
         self::assertNull($this->map->get('x', null));
-        self::assertEquals(new stdClass(), $this->map->get('Cd', new stdClass()));
+        self::assertEquals(new \stdClass(), $this->map->get('Cd', new \stdClass()));
     }
 
     public function testFirst(): void
@@ -227,7 +219,7 @@ final class CypherMapTest extends TestCase
 
     public function testFirstInvalid(): void
     {
-        $this->expectException(OutOfBoundsException::class);
+        $this->expectException(\OutOfBoundsException::class);
         $this->expectExceptionMessage('Cannot grab first element of an empty map');
         (new CypherMap())->first();
     }
@@ -239,14 +231,14 @@ final class CypherMapTest extends TestCase
 
     public function testLastInvalid(): void
     {
-        $this->expectException(OutOfBoundsException::class);
+        $this->expectException(\OutOfBoundsException::class);
         $this->expectExceptionMessage('Cannot grab last element of an empty map');
         (new CypherMap())->last();
     }
 
     public function testGetInvalid(): void
     {
-        $this->expectException(OutOfBoundsException::class);
+        $this->expectException(\OutOfBoundsException::class);
         $this->expectExceptionMessage('Cannot get item in sequence with key: a');
         $this->map->get('a');
     }
@@ -273,7 +265,7 @@ final class CypherMapTest extends TestCase
 
     public function testOffsetSet(): void
     {
-        $this->expectException(BadMethodCallException::class);
+        $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage('Laudis\Neo4j\Types\CypherMap is immutable');
 
         $this->map['A'] = 'a';
@@ -281,7 +273,7 @@ final class CypherMapTest extends TestCase
 
     public function testOffsetUnset(): void
     {
-        $this->expectException(BadMethodCallException::class);
+        $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage('Laudis\Neo4j\Types\CypherMap is immutable');
 
         unset($this->map['A']);
@@ -296,7 +288,7 @@ final class CypherMapTest extends TestCase
 
     public function testOffsetGetInvalid(): void
     {
-        $this->expectException(OutOfBoundsException::class);
+        $this->expectException(\OutOfBoundsException::class);
         $this->expectExceptionMessage('Offset: "AA" does not exists in object of instance: Laudis\Neo4j\Types\CypherMap');
         $this->map['AA'];
     }
@@ -320,12 +312,12 @@ final class CypherMapTest extends TestCase
 
     public function testJsonSerialize(): void
     {
-        self::assertEquals('{"A":"x","B":"y","C":"z"}', json_encode($this->map, JSON_THROW_ON_ERROR));
+        self::assertEquals('{"A":"x","B":"y","C":"z"}', \json_encode($this->map, \JSON_THROW_ON_ERROR));
     }
 
     public function testJsonSerializeEmpty(): void
     {
-        self::assertEquals('{}', json_encode(new CypherMap(), JSON_THROW_ON_ERROR));
+        self::assertEquals('{}', \json_encode(new CypherMap(), \JSON_THROW_ON_ERROR));
     }
 
     public function testJoin(): void
@@ -408,17 +400,17 @@ final class CypherMapTest extends TestCase
 
     public function testSkipInvalid(): void
     {
-        $this->expectException(OutOfBoundsException::class);
+        $this->expectException(\OutOfBoundsException::class);
         $this->expectExceptionMessage('Cannot skip to a pair at position: 4');
         self::assertEquals(new Pair('A', 'x'), $this->map->skip(4));
     }
 
     public function testInvalidConstruct(): void
     {
-        $map = new CypherMap(new class() implements IteratorAggregate {
-            public function getIterator(): Generator
+        $map = new CypherMap(new class() implements \IteratorAggregate {
+            public function getIterator(): \Generator
             {
-                yield new stdClass() => 'x';
+                yield new \stdClass() => 'x';
             }
         });
 
@@ -467,21 +459,21 @@ final class CypherMapTest extends TestCase
     {
         $map = CypherMap::fromIterable(['a' => 'b', 'c' => 'd'])
             ->map(static function (string $value, string $key) {
-                $tbr = new stdClass();
+                $tbr = new \stdClass();
 
                 $tbr->key = $key;
                 $tbr->value = $value;
 
                 return $tbr;
             })
-            ->map(static fn(stdClass $class) => (string) $class->value);
+            ->map(static fn (\stdClass $class) => (string) $class->value);
 
         self::assertEquals(CypherMap::fromIterable(['a' => 'b', 'c' => 'd']), $map);
     }
 
     public function testKeyBy(): void
     {
-        $object = new stdClass();
+        $object = new \stdClass();
         $object->x = 'stdClassX';
         $object->y = 'wrong';
         $list = CypherMap::fromIterable([

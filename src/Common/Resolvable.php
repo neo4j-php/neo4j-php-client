@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use function call_user_func;
-
 /**
  * @template Resolved
  */
@@ -53,7 +51,7 @@ final class Resolvable
         /** @psalm-suppress MissingClosureReturnType */
         $tbr = static function () use ($key, $toResolve) {
             if (!isset(self::$cache[$key])) {
-                self::$cache[$key] = call_user_func($toResolve);
+                self::$cache[$key] = \call_user_func($toResolve);
             }
 
             /** @var U */
@@ -70,7 +68,7 @@ final class Resolvable
     public function resolve()
     {
         if (!$this->isResolved) {
-            $this->resolved = call_user_func($this->toResolve);
+            $this->resolved = \call_user_func($this->toResolve);
             $this->isResolved = true;
         }
 

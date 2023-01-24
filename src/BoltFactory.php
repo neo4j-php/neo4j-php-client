@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j;
 
 use Bolt\Bolt;
-use function explode;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
@@ -64,7 +63,7 @@ class BoltFactory
         $config = new ConnectionConfiguration(
             $authResponse['server'],
             $data->getUri(),
-            explode('/', $authResponse['server'])[1] ?? '',
+            \explode('/', $authResponse['server'])[1] ?? '',
             ConnectionProtocol::determineBoltVersion($protocol),
             $sessionConfig->getAccessMode(),
             $sessionConfig->getDatabase() === null ? null : new DatabaseInfo($sessionConfig->getDatabase()),

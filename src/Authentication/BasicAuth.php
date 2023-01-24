@@ -13,10 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use function base64_encode;
 use Bolt\helpers\Auth;
 use Bolt\protocol\V3;
-use Exception;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -38,7 +36,7 @@ final class BasicAuth implements AuthenticateInterface
      */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
-        $combo = base64_encode($this->username.':'.$this->password);
+        $combo = \base64_encode($this->username.':'.$this->password);
 
         /**
          * @psalm-suppress ImpureMethodCall Request is a pure object:
@@ -50,7 +48,7 @@ final class BasicAuth implements AuthenticateInterface
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     public function authenticateBolt(V3 $bolt, string $userAgent): array
     {

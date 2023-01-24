@@ -13,11 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use function array_splice;
 use Bolt\error\MessageException;
-use function count;
-use Generator;
-use function in_array;
 use Iterator;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -27,7 +23,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
  *
  * @implements Iterator<int, list>
  */
-final class BoltResult implements Iterator
+final class BoltResult implements \Iterator
 {
     /** @var list<list> */
     private array $rows = [];
@@ -44,7 +40,7 @@ final class BoltResult implements Iterator
         return $this->fetchSize;
     }
 
-    private ?Generator $it = null;
+    private ?\Generator $it = null;
 
     /**
      * @param callable(array):void $finishedCallback
@@ -55,9 +51,9 @@ final class BoltResult implements Iterator
     }
 
     /**
-     * @return Generator<int, list>
+     * @return \Generator<int, list>
      */
-    public function getIt(): Generator
+    public function getIt(): \Generator
     {
         if ($this->it === null) {
             $this->it = $this->iterator();
@@ -67,9 +63,9 @@ final class BoltResult implements Iterator
     }
 
     /**
-     * @return Generator<int, list>
+     * @return \Generator<int, list>
      */
-    public function iterator(): Generator
+    public function iterator(): \Generator
     {
         $i = 0;
         while ($this->meta === null) {
@@ -103,7 +99,7 @@ final class BoltResult implements Iterator
         }
 
         /** @var list<list> $rows */
-        $rows = array_splice($meta, 0, count($meta) - 1);
+        $rows = \array_splice($meta, 0, \count($meta) - 1);
         $this->rows = $rows;
 
         /** @var array{0: array} $meta */
@@ -142,7 +138,7 @@ final class BoltResult implements Iterator
 
     public function __destruct()
     {
-        if ($this->meta === null && in_array($this->connection->getServerState(), ['STREAMING', 'TX_STREAMING'], true)) {
+        if ($this->meta === null && \in_array($this->connection->getServerState(), ['STREAMING', 'TX_STREAMING'], true)) {
             $this->discard();
         }
     }

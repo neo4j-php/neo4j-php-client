@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Generator;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
@@ -25,10 +24,8 @@ use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SslConfiguration;
-use function microtime;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use function sleep;
 
 class BoltConnectionPoolTest extends TestCase
 {
@@ -42,7 +39,7 @@ class BoltConnectionPoolTest extends TestCase
     {
         parent::setUp();
 
-        $this->setupPool((function (): Generator {
+        $this->setupPool((function (): \Generator {
             yield 1.0;
 
             return true;
@@ -61,12 +58,12 @@ class BoltConnectionPoolTest extends TestCase
     public function testTimingAcquire(): void
     {
         $generator = $this->pool->acquire(SessionConfiguration::default());
-        $time = microtime(true);
+        $time = \microtime(true);
 
-        sleep(1);
+        \sleep(1);
 
         $result = $generator->current();
-        $delta = microtime(true) - $time;
+        $delta = \microtime(true) - $time;
 
         $generator->next();
         $generator->getReturn();
@@ -77,7 +74,7 @@ class BoltConnectionPoolTest extends TestCase
 
     public function testMultipleWaits(): void
     {
-        $this->setupPool((function (): Generator {
+        $this->setupPool((function (): \Generator {
             yield 1.0;
             yield 2.0;
             yield 3.0;
@@ -137,7 +134,7 @@ class BoltConnectionPoolTest extends TestCase
         return $count - 3;
     }
 
-    private function setupPool(Generator $semaphoreGenerator): void
+    private function setupPool(\Generator $semaphoreGenerator): void
     {
         $this->semaphore = $this->createMock(SemaphoreInterface::class);
         $this->semaphore->method('wait')

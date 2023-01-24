@@ -11,11 +11,6 @@
 
 namespace Laudis\Neo4j\Common;
 
-use function array_key_exists;
-use function array_key_first;
-use function array_reduce;
-use Countable;
-use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -23,19 +18,16 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\DriverFactory;
-use const PHP_INT_MIN;
 use RuntimeException;
-use SplPriorityQueue;
-use function sprintf;
 
 /**
  * @template ResultFormat
  */
-class DriverSetupManager implements Countable
+class DriverSetupManager implements \Countable
 {
     private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
 
-    /** @var array<string, SplPriorityQueue<int, DriverSetup>> */
+    /** @var array<string, \SplPriorityQueue<int, DriverSetup>> */
     private array $driverSetups = [];
     /** @var array<string, DriverInterface<ResultFormat>> */
     private array $drivers = [];
@@ -59,8 +51,8 @@ class DriverSetupManager implements Countable
 
         $setups = $this->driverSetups;
 
-        /** @var SplPriorityQueue<int, DriverSetup> */
-        $setups[$alias] ??= new SplPriorityQueue();
+        /** @var \SplPriorityQueue<int, DriverSetup> */
+        $setups[$alias] ??= new \SplPriorityQueue();
         /** @psalm-suppress ImpureMethodCall */
         $setups[$alias]->insert($setup, $priority ?? 0);
 
@@ -77,20 +69,20 @@ class DriverSetupManager implements Countable
     {
         $alias ??= $this->decideAlias($alias);
 
-        if (!array_key_exists($alias, $this->driverSetups)) {
+        if (!\array_key_exists($alias, $this->driverSetups)) {
             if ($alias !== 'default') {
-                throw new InvalidArgumentException(sprintf('Cannot find a driver setup with alias: "%s"', $alias));
+                throw new \InvalidArgumentException(\sprintf('Cannot find a driver setup with alias: "%s"', $alias));
             }
 
-            /** @var SplPriorityQueue<int, DriverSetup> */
-            $this->driverSetups['default'] = new SplPriorityQueue();
+            /** @var \SplPriorityQueue<int, DriverSetup> */
+            $this->driverSetups['default'] = new \SplPriorityQueue();
             $setup = new DriverSetup(Uri::create(self::DEFAULT_DRIVER_CONFIG), Authenticate::disabled());
-            $this->driverSetups['default']->insert($setup, PHP_INT_MIN);
+            $this->driverSetups['default']->insert($setup, \PHP_INT_MIN);
 
             return $this->getDriver($config);
         }
 
-        if (array_key_exists($alias, $this->drivers)) {
+        if (\array_key_exists($alias, $this->drivers)) {
             return $this->drivers[$alias];
         }
 
@@ -108,7 +100,7 @@ class DriverSetupManager implements Countable
             }
         }
 
-        throw new RuntimeException(sprintf('Cannot connect to any server on alias: %s with Uris: (\'%s\')', $alias, implode('\', ', array_unique($urisTried))));
+        throw new \RuntimeException(\sprintf('Cannot connect to any server on alias: %s with Uris: (\'%s\')', $alias, implode('\', ', array_unique($urisTried))));
     }
 
     public function verifyConnectivity(SessionConfiguration $config, ?string $alias = null): bool
@@ -127,7 +119,7 @@ class DriverSetupManager implements Countable
      */
     private function decideAlias(?string $alias): string
     {
-        return $alias ?? $this->default ?? array_key_first($this->driverSetups) ?? 'default';
+        return $alias ?? $this->default ?? \array_key_first($this->driverSetups) ?? 'default';
     }
 
     /**
@@ -143,7 +135,7 @@ class DriverSetupManager implements Countable
 
     public function count(): int
     {
-        return array_reduce($this->driverSetups, static fn (int $acc, SplPriorityQueue $x) => $acc + $x->count(), 0);
+        return \array_reduce($this->driverSetups, static fn (int $acc, \SplPriorityQueue $x) => $acc + $x->count(), 0);
     }
 
     /**

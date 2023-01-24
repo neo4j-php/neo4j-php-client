@@ -13,13 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
-use function array_key_exists;
 use Bolt\structures\Path;
-use function get_class;
-use function gettype;
-use function is_array;
-use function is_object;
-use function is_string;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -31,8 +25,6 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use stdClass;
-use UnexpectedValueException;
 
 /**
  * Formats the result in basic CypherLists and CypherMaps. All cypher types are erased so that the map only contains scalar, null or array values.
@@ -69,7 +61,7 @@ final class BasicFormatter implements FormatterInterface
 
         $connection->subscribeResult($tbr);
         $result->addFinishedCallback(function (array $response) use ($holder) {
-            if (array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
+            if (\array_key_exists('bookmark', $response) && \is_string($response['bookmark'])) {
                 $holder->setBookmark(new Bookmark([$response['bookmark']]));
             }
         });
@@ -80,12 +72,12 @@ final class BasicFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    public function formatHttpResult(ResponseInterface $response, stdClass $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
+    public function formatHttpResult(ResponseInterface $response, \stdClass $body, ?ConnectionInterface $connection = null, ?float $resultsAvailableAfter = null, ?float $resultsConsumedAfter = null, ?iterable $statements = null): CypherList
     {
         /** @var list<CypherList<CypherMap<scalar|array|null>>> */
         $tbr = [];
 
-        /** @var stdClass $results */
+        /** @var \stdClass $results */
         foreach ($body->results as $results) {
             $tbr[] = $this->buildResult($results);
         }
@@ -95,20 +87,21 @@ final class BasicFormatter implements FormatterInterface
 
     /**
      * @return CypherList<CypherMap<scalar|array|null>>
+     *
      * @psalm-mutation-free
      */
-    private function buildResult(stdClass $result): CypherList
+    private function buildResult(\stdClass $result): CypherList
     {
         /** @var list<CypherMap<scalar|array|null>> */
         $tbr = [];
 
         /** @var list<string> $columns */
         $columns = (array) $result->columns;
-        /** @var stdClass $dataRow */
+        /** @var \stdClass $dataRow */
         foreach ($result->data as $dataRow) {
             /** @var array<string, scalar|array|null> $map */
             $map = [];
-            /** @var list<stdClass|scalar|array|null> */
+            /** @var list<\stdClass|scalar|array|null> */
             $vector = $dataRow->row;
             foreach ($columns as $index => $key) {
                 // Removes the stdClasses from the json objects
@@ -167,7 +160,7 @@ final class BasicFormatter implements FormatterInterface
             $value = $this->mapPath($value);
         }
 
-        if (is_object($value)) {
+        if (\is_object($value)) {
             return $this->objectToProperty($value);
         }
 
@@ -175,11 +168,11 @@ final class BasicFormatter implements FormatterInterface
             return $value;
         }
 
-        if (is_array($value)) {
+        if (\is_array($value)) {
             return $this->remapObjectsInArray($value);
         }
 
-        throw new UnexpectedValueException('Did not expect to receive value of type: '.gettype($value));
+        throw new \UnexpectedValueException('Did not expect to receive value of type: '.\gettype($value));
     }
 
     private function objectToProperty(object $object): array
@@ -190,7 +183,7 @@ final class BasicFormatter implements FormatterInterface
 
         if (!method_exists($object, 'properties')) {
             $message = 'Cannot handle objects without a properties method. Class given: '.$object::class;
-            throw new UnexpectedValueException($message);
+            throw new \UnexpectedValueException($message);
         }
 
         /** @var array */
@@ -203,7 +196,7 @@ final class BasicFormatter implements FormatterInterface
          * @psalm-var mixed $variable
          */
         foreach ($value as $key => $variable) {
-            if (is_object($variable)) {
+            if (\is_object($variable)) {
                 $value[$key] = $this->objectToProperty($variable);
             }
         }

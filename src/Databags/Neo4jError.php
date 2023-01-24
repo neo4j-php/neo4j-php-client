@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Bolt\error\MessageException;
-use InvalidArgumentException;
 
 /**
  * Contains the code and message of an error in a neo4j database.
@@ -40,13 +39,13 @@ final class Neo4jError
     /**
      * @pure
      *
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public static function fromMessageAndCode(string $code, ?string $message): Neo4jError
     {
         $parts = explode('.', $code, 4);
         if (count($parts) < 4) {
-            throw new InvalidArgumentException('Invalid message exception code');
+            throw new \InvalidArgumentException('Invalid message exception code');
         }
 
         return new self($code, $message, $parts[1], $parts[2], $parts[3]);

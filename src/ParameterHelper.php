@@ -16,20 +16,9 @@ namespace Laudis\Neo4j;
 use Bolt\structures\DateTimeZoneId;
 use Bolt\structures\Duration;
 use Bolt\structures\IStructure;
-use function count;
-use DateInterval;
-use DateTimeInterface;
-use function get_debug_type;
-use function gettype;
-use InvalidArgumentException;
-use function is_array;
-use function is_int;
-use function is_object;
-use function is_string;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-use stdClass;
 
 /**
  * Parameter helper class providing convenient functions for converting php objects to cypher parameters.
@@ -70,7 +59,7 @@ final class ParameterHelper
     }
 
     /**
-     * @return iterable|scalar|stdClass|IStructure|null
+     * @return iterable|scalar|\stdClass|IStructure|null
      */
     public static function asParameter(mixed $value, bool $boltDriver = false)
     {
@@ -88,7 +77,7 @@ final class ParameterHelper
      */
     private static function stringAbleToString(mixed $value): ?string
     {
-        if (is_object($value) && method_exists($value, '__toString')) {
+        if (\is_object($value) && method_exists($value, '__toString')) {
             return (string) $value;
         }
 
@@ -96,15 +85,15 @@ final class ParameterHelper
     }
 
     /**
-     *
      * @return scalar|null
+     *
      * @pure
      */
     private static function filterInvalidType(mixed $value)
     {
         if ($value !== null && !is_scalar($value)) {
             /** @psalm-suppress ImpureFunctionCall */
-            throw new InvalidArgumentException(sprintf('Cannot format parameter of type: %s to work with Neo4J', get_debug_type($value)));
+            throw new \InvalidArgumentException(sprintf('Cannot format parameter of type: %s to work with Neo4J', \get_debug_type($value)));
         }
 
         return $value;
@@ -113,7 +102,7 @@ final class ParameterHelper
     private static function emptySequenceToArray(mixed $value): ?array
     {
         if ((($value instanceof CypherList || $value instanceof CypherMap) && $value->count() === 0) ||
-            (is_array($value) && count($value) === 0)) {
+            (\is_array($value) && \count($value) === 0)) {
             return [];
         }
 
@@ -121,16 +110,15 @@ final class ParameterHelper
     }
 
     /**
-     *
      * @pure
      *
      * @psalm-suppress ImpureMethodCall
      * @psalm-suppress ImpurePropertyAssignment
      */
-    private static function cypherMapToStdClass(mixed $value): ?stdClass
+    private static function cypherMapToStdClass(mixed $value): ?\stdClass
     {
         if ($value instanceof CypherMap) {
-            $tbr = new stdClass();
+            $tbr = new \stdClass();
             foreach ($value as $key => $val) {
                 $tbr->$key = $val;
             }
@@ -153,20 +141,20 @@ final class ParameterHelper
     /**
      * @param iterable<mixed> $parameters
      *
-     * @return CypherMap<iterable|scalar|stdClass|null>
+     * @return CypherMap<iterable|scalar|\stdClass|null>
      */
     public static function formatParameters(iterable $parameters, bool $boltDriver = false): CypherMap
     {
-        /** @var array<string, iterable|scalar|stdClass|null> $tbr */
+        /** @var array<string, iterable|scalar|\stdClass|null> $tbr */
         $tbr = [];
         /**
          * @var mixed $key
          * @var mixed $value
          */
         foreach ($parameters as $key => $value) {
-            if (!(is_int($key) || is_string($key))) {
-                $msg = 'The parameters must have an integer or string as key values, '.gettype($key).' received.';
-                throw new InvalidArgumentException($msg);
+            if (!(\is_int($key) || \is_string($key))) {
+                $msg = 'The parameters must have an integer or string as key values, '.\gettype($key).' received.';
+                throw new \InvalidArgumentException($msg);
             }
             $tbr[(string) $key] = self::asParameter($value, $boltDriver);
         }
@@ -182,11 +170,11 @@ final class ParameterHelper
          * @var mixed $val
          */
         foreach ($value as $key => $val) {
-            if (is_int($key) || is_string($key)) {
+            if (\is_int($key) || \is_string($key)) {
                 $tbr[$key] = self::asParameter($val, $boltDriver);
             } else {
-                $msg = 'Iterable parameters must have an integer or string as key values, '.gettype($key).' received.';
-                throw new InvalidArgumentException($msg);
+                $msg = 'Iterable parameters must have an integer or string as key values, '.\gettype($key).' received.';
+                throw new \InvalidArgumentException($msg);
             }
         }
 
@@ -205,7 +193,7 @@ final class ParameterHelper
     private static function convertTemporalTypes(mixed $value, bool $boltDriver): ?IStructure
     {
         if ($boltDriver) {
-            if ($value instanceof DateTimeInterface) {
+            if ($value instanceof \DateTimeInterface) {
                 return new DateTimeZoneId(
                     $value->getTimestamp(),
                     ((int) $value->format('u')) * 1000,
@@ -213,7 +201,7 @@ final class ParameterHelper
                 );
             }
 
-            if ($value instanceof DateInterval) {
+            if ($value instanceof \DateInterval) {
                 return new Duration(
                     $value->y * 12 + $value->m,
                     $value->d,

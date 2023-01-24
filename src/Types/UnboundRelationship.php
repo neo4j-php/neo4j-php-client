@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
-use function sprintf;
 
 /**
  * A relationship without any nodes attached to it.
@@ -73,7 +72,7 @@ class UnboundRelationship extends AbstractPropertyObject
     {
         /** @psalm-suppress ImpureMethodCall */
         if (!$this->properties->hasKey($key)) {
-            throw new PropertyDoesNotExistException(sprintf('Property "%s" does not exist on relationship', $key));
+            throw new PropertyDoesNotExistException(\sprintf('Property "%s" does not exist on relationship', $key));
         }
 
         /** @psalm-suppress ImpureMethodCall */

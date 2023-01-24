@@ -11,14 +11,7 @@
 
 namespace Laudis\Neo4j\Common;
 
-use Generator;
-use function hash;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
-use function microtime;
-use RuntimeException;
-use function sem_acquire;
-use function sem_get;
-use function sem_release;
 
 class SysVSemaphore implements SemaphoreInterface
 {
@@ -31,18 +24,18 @@ class SysVSemaphore implements SemaphoreInterface
 
     public static function create(string $key, int $max): self
     {
-        $key = hash('sha512', $key, true);
+        $key = \hash('sha512', $key, true);
         $key = substr($key, 0, 8);
 
-        return new self(sem_get(hexdec($key), $max));
+        return new self(\sem_get(hexdec($key), $max));
     }
 
-    public function wait(): Generator
+    public function wait(): \Generator
     {
-        $start = microtime(true);
-        while (!sem_acquire($this->semaphore, true)) {
+        $start = \microtime(true);
+        while (!\sem_acquire($this->semaphore, true)) {
             /** @var bool $continue */
-            $continue = yield $start - microtime(true);
+            $continue = yield $start - \microtime(true);
             if (!$continue) {
                 return;
             }
@@ -51,8 +44,8 @@ class SysVSemaphore implements SemaphoreInterface
 
     public function post(): void
     {
-        if (!sem_release($this->semaphore)) {
-            throw new RuntimeException('Cannot release semaphore');
+        if (!\sem_release($this->semaphore)) {
+            throw new \RuntimeException('Cannot release semaphore');
         }
     }
 }

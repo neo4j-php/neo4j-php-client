@@ -13,14 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Exception;
 
-use function get_debug_type;
-use RuntimeException;
-
-final class RuntimeTypeException extends RuntimeException
+final class RuntimeTypeException extends \RuntimeException
 {
     public function __construct(mixed $value, string $type)
     {
-        $actualType = get_debug_type($value);
+        $actualType = \get_debug_type($value);
         $message = sprintf('Cannot cast %s to type: %s', $actualType, $type);
         parent::__construct($message);
     }

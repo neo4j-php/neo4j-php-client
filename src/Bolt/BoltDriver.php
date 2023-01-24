@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Exception;
-use function is_string;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Uri;
@@ -58,11 +56,12 @@ final class BoltDriver implements DriverInterface
      *           ? self<U>
      *           : self<OGMResults>
      *           )
+     *
      * @psalm-suppress MixedReturnTypeCoercion
      */
-    public static function create(string|\Psr\Http\Message\UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
     {
-        if (is_string($uri)) {
+        if (\is_string($uri)) {
             $uri = Uri::create($uri);
         }
 
@@ -79,7 +78,7 @@ final class BoltDriver implements DriverInterface
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      *
      * @psalm-mutation-free
      */

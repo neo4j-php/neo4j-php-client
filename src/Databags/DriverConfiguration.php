@@ -13,15 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use function call_user_func;
 use Composer\InstalledVersions;
-use function function_exists;
-use function is_callable;
 use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Contracts\SemaphoreFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
-use function sprintf;
 
 /**
  * Configuration object for the driver.
@@ -80,14 +76,14 @@ final class DriverConfiguration
     public function getUserAgent(): string
     {
         if ($this->userAgent === null) {
-            if (function_exists('InstalledVersions::getPrettyVersion')) {
+            if (\function_exists('InstalledVersions::getPrettyVersion')) {
                 /** @psalm-suppress ImpureMethodCall */
                 $version = InstalledVersions::getPrettyVersion('laudis/neo4j-php-client') ?? 'provided/replaced';
             } else {
                 $version = '2';
             }
 
-            return sprintf(self::DEFAULT_USER_AGENT, $version);
+            return \sprintf(self::DEFAULT_USER_AGENT, $version);
         }
 
         return $this->userAgent;
@@ -144,7 +140,7 @@ final class DriverConfiguration
 
     public function getHttpPsrBindings(): HttpPsrBindings
     {
-        $this->httpPsrBindings = (is_callable($this->httpPsrBindings)) ? call_user_func($this->httpPsrBindings) : $this->httpPsrBindings;
+        $this->httpPsrBindings = (\is_callable($this->httpPsrBindings)) ? \call_user_func($this->httpPsrBindings) : $this->httpPsrBindings;
 
         return $this->httpPsrBindings ??= HttpPsrBindings::default();
     }
@@ -180,14 +176,14 @@ final class DriverConfiguration
 
     public function getCache(): CacheInterface
     {
-        $this->cache = (is_callable($this->cache)) ? call_user_func($this->cache) : $this->cache;
+        $this->cache = (\is_callable($this->cache)) ? \call_user_func($this->cache) : $this->cache;
 
         return $this->cache ??= Cache::getInstance();
     }
 
     public function getSemaphoreFactory(): SemaphoreFactoryInterface
     {
-        $this->semaphoreFactory = (is_callable($this->semaphoreFactory)) ? call_user_func($this->semaphoreFactory) : $this->semaphoreFactory;
+        $this->semaphoreFactory = (\is_callable($this->semaphoreFactory)) ? \call_user_func($this->semaphoreFactory) : $this->semaphoreFactory;
 
         return $this->semaphoreFactory ??= SemaphoreFactory::getInstance();
     }

@@ -14,11 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use Bolt\structures\IStructure;
-use DateTimeImmutable;
-use DateTimeZone;
-use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
-use function sprintf;
 
 /**
  * A date represented by seconds and nanoseconds since unix epoch, enriched with a timezone identifier.
@@ -62,18 +58,18 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
     /**
      * Casts to an immutable date time.
      *
-     * @throws Exception
+     * @throws \Exception
      */
-    public function toDateTime(): DateTimeImmutable
+    public function toDateTime(): \DateTimeImmutable
     {
-        $dateTimeImmutable = (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))
-            ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
+        $dateTimeImmutable = (new \DateTimeImmutable(\sprintf('@%s', $this->getSeconds())))
+            ->modify(\sprintf('+%s microseconds', $this->nanoseconds / 1000));
 
         if ($dateTimeImmutable === false) {
             throw new \UnexpectedValueException('Expected DateTimeImmutable');
         }
 
-        return $dateTimeImmutable->setTimezone(new DateTimeZone($this->tzId));
+        return $dateTimeImmutable->setTimezone(new \DateTimeZone($this->tzId));
     }
 
     /**

@@ -22,10 +22,7 @@ use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use function method_exists;
-use function microtime;
 use Psr\Http\Message\UriInterface;
-use function shuffle;
 
 /**
  * @implements ConnectionPoolInterface<BoltConnection>
@@ -53,17 +50,17 @@ final class ConnectionPool implements ConnectionPoolInterface
         );
     }
 
-    public function acquire(SessionConfiguration $config): Generator
+    public function acquire(SessionConfiguration $config): \Generator
     {
         $generator = $this->semaphore->wait();
-        $start = microtime(true);
+        $start = \microtime(true);
 
         return (function () use ($generator, $start, $config) {
             // If the generator is valid, it means we are waiting to acquire a new connection.
             // This means we can use this time to check if we can reuse a connection or should throw a timeout exception.
             while ($generator->valid()) {
                 /** @var bool $continue */
-                $continue = yield microtime(true) - $start;
+                $continue = yield \microtime(true) - $start;
                 $generator->send($continue);
                 if ($continue === false) {
                     return null;
@@ -108,7 +105,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         $streamingConnection = null;
         $requiresReconnectConnection = null;
         // Ensure random connection reuse before picking one.
-        shuffle($this->activeConnections);
+        \shuffle($this->activeConnections);
 
         foreach ($this->activeConnections as $activeConnection) {
             // We prefer a connection that is just ready
@@ -130,7 +127,7 @@ final class ConnectionPool implements ConnectionPoolInterface
             if ($streamingConnection === null && $activeConnection->getServerState() === 'STREAMING') {
                 if ($this->factory->canReuseConnection($activeConnection, $this->data, $config)) {
                     $streamingConnection = $activeConnection;
-                    if (method_exists($streamingConnection, 'consumeResults')) {
+                    if (\method_exists($streamingConnection, 'consumeResults')) {
                         $streamingConnection->consumeResults(); // State should now be ready
                     }
                 } else {

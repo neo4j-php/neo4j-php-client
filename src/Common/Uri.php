@@ -13,12 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use InvalidArgumentException;
-use function ltrim;
-use function parse_url;
 use Psr\Http\Message\UriInterface;
-use function sprintf;
-use function strtolower;
 
 /**
  * @psalm-immutable
@@ -34,9 +29,9 @@ final class Uri implements UriInterface, \Stringable
      */
     public static function create(string $uri = ''): self
     {
-        $parsedUrl = parse_url($uri);
+        $parsedUrl = \parse_url($uri);
         if ($parsedUrl === false) {
-            throw new InvalidArgumentException("Unable to parse URI: $uri");
+            throw new \InvalidArgumentException("Unable to parse URI: $uri");
         }
 
         $userInfo = $parsedUrl['user'] ?? '';
@@ -45,9 +40,9 @@ final class Uri implements UriInterface, \Stringable
         }
 
         return new self(
-            isset($parsedUrl['scheme']) ? strtolower($parsedUrl['scheme']) : '',
+            isset($parsedUrl['scheme']) ? \strtolower($parsedUrl['scheme']) : '',
             $userInfo,
-            isset($parsedUrl['host']) ? strtolower($parsedUrl['host']) : '',
+            isset($parsedUrl['host']) ? \strtolower($parsedUrl['host']) : '',
             isset($parsedUrl['port']) ? self::filterPort($parsedUrl['port']) : null,
             $parsedUrl['path'] ?? '',
             $parsedUrl['query'] ?? '',
@@ -78,7 +73,7 @@ final class Uri implements UriInterface, \Stringable
                 if ($authority === '') {
                     // If the path is starting with more than one "/" and no authority is present, the
                     // starting slashes MUST be reduced to one.
-                    $path = '/'.ltrim($path, '/');
+                    $path = '/'.\ltrim($path, '/');
                 }
             }
 
@@ -152,7 +147,7 @@ final class Uri implements UriInterface, \Stringable
     public function withScheme($scheme)
     {
         return new self(
-            strtolower($scheme),
+            \strtolower($scheme),
             $this->userInfo,
             $this->host,
             $this->port,
@@ -185,7 +180,7 @@ final class Uri implements UriInterface, \Stringable
         return new self(
             $this->scheme,
             $this->userInfo,
-            strtolower($host),
+            \strtolower($host),
             $this->port,
             $this->path,
             $this->query,
@@ -255,7 +250,7 @@ final class Uri implements UriInterface, \Stringable
         }
 
         if (0 > $port || 0xFFFF < $port) {
-            throw new InvalidArgumentException(sprintf('Invalid port: %d. Must be between 0 and 65535', $port));
+            throw new \InvalidArgumentException(\sprintf('Invalid port: %d. Must be between 0 and 65535', $port));
         }
 
         return $port;

@@ -23,7 +23,6 @@ use Laudis\Neo4j\Formatter\CypherMap;
  * @template ResultFormat
  *
  * @psalm-type ParsedUrl = array{host: string, pass: string|null, path: string, port: int, query: array<string,string>, scheme: string, user: string|null}
- *
  * @psalm-type BasicDriver = DriverInterface<CypherList<CypherMap<string, scalar|array|null>>>
  */
 interface DriverInterface
