@@ -30,21 +30,12 @@ use function sprintf;
  */
 final class Node extends AbstractPropertyObject
 {
-    private int $id;
-    /** @var CypherList<string> */
-    private CypherList $labels;
-    /** @var CypherMap<OGMTypes> */
-    private CypherMap $properties;
-
     /**
      * @param CypherList<string>  $labels
      * @param CypherMap<OGMTypes> $properties
      */
-    public function __construct(int $id, CypherList $labels, CypherMap $properties)
+    public function __construct(private int $id, private CypherList $labels, private CypherMap $properties)
     {
-        $this->id = $id;
-        $this->labels = $labels;
-        $this->properties = $properties;
     }
 
     /**

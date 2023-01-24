@@ -9,18 +9,11 @@ use Symfony\Component\Uid\Uuid;
 
 final class RetryableNegativeRequest
 {
-    private Uuid $sessionId;
-    /** @var Uuid|string */
-    private $errorId;
-
     /**
-     * @param Uuid $sessionId
      * @param Uuid|string $errorId
      */
-    public function __construct(Uuid $sessionId, $errorId)
+    public function __construct(private Uuid $sessionId, private $errorId)
     {
-        $this->sessionId = $sessionId;
-        $this->errorId = $errorId;
     }
 
     public function getSessionId(): Uuid
@@ -28,10 +21,7 @@ final class RetryableNegativeRequest
         return $this->sessionId;
     }
 
-    /**
-     * @return Uuid|string
-     */
-    public function getErrorId()
+    public function getErrorId(): \Symfony\Component\Uid\Uuid|string
     {
         return $this->errorId;
     }

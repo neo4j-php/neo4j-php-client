@@ -22,18 +22,12 @@ namespace Laudis\Neo4j\Types;
  */
 final class Relationship extends UnboundRelationship
 {
-    private int $startNodeId;
-
-    private int $endNodeId;
-
     /**
      * @param CypherMap<OGMTypes> $properties
      */
-    public function __construct(int $id, int $startNodeId, int $endNodeId, string $type, CypherMap $properties)
+    public function __construct(int $id, private int $startNodeId, private int $endNodeId, string $type, CypherMap $properties)
     {
         parent::__construct($id, $type, $properties);
-        $this->startNodeId = $startNodeId;
-        $this->endNodeId = $endNodeId;
     }
 
     /**

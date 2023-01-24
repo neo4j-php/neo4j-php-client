@@ -64,7 +64,7 @@ final class BoltConfiguration implements ConfigInterface
      */
     public function __construct($database = null, $sslContextOptions = null, $autoRouting = false)
     {
-        $this->database = $database ?? static function (): string { return 'neo4j'; };
+        $this->database = $database ?? static fn(): string => 'neo4j';
         $this->sslContextOptions = $sslContextOptions;
         $this->autoRouting = $autoRouting;
     }
@@ -75,8 +75,6 @@ final class BoltConfiguration implements ConfigInterface
      * @see https://www.php.net/manual/en/context.ssl.php for ssl connections
      *
      * @pure
-     *
-     * @return static
      */
     public static function create(?string $database = null, ?array $sslContextOptions = null, bool $autoRouting = false): self
     {

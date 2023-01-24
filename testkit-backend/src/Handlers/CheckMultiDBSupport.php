@@ -18,11 +18,8 @@ use Laudis\Neo4j\TestkitBackend\Responses\MultiDBSupportResponse;
  */
 final class CheckMultiDBSupport implements RequestHandlerInterface
 {
-    private MainRepository $repository;
-
-    public function __construct(MainRepository $repository)
+    public function __construct(private MainRepository $repository)
     {
-        $this->repository = $repository;
     }
 
     /**
@@ -35,7 +32,7 @@ final class CheckMultiDBSupport implements RequestHandlerInterface
         try {
             $session = $driver->createSession(SessionConfiguration::default()->withDatabase('system'));
             $session->run('SHOW databases');
-        } catch (Exception $e) {
+        } catch (Exception) {
             return new MultiDBSupportResponse($request->getDriverId(), false);
         }
 

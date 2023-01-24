@@ -39,7 +39,7 @@ abstract class AbstractPropertyObject extends AbstractCypherObject implements Ha
 
     public function __set($name, $value): void
     {
-        throw new BadMethodCallException(sprintf('%s is immutable', get_class($this)));
+        throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
 
     public function __isset($name): bool

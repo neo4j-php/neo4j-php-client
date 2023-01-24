@@ -236,7 +236,7 @@ final class BoltOGMTranslator
     /**
      * @return CypherList<OGMTypes>|CypherMap<OGMTypes>
      */
-    private function mapArray(array $value)
+    private function mapArray(array $value): \Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap
     {
         if (array_key_exists(0, $value)) {
             /** @var array<OGMTypes> $vector */
@@ -263,11 +263,9 @@ final class BoltOGMTranslator
     }
 
     /**
-     * @param mixed $value
-     *
      * @return OGMTypes
      */
-    public function mapValueToType($value)
+    public function mapValueToType(mixed $value)
     {
         /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         $type = get_debug_type($value);

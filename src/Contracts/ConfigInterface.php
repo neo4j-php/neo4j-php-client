@@ -23,7 +23,7 @@ interface ConfigInterface
      *
      * @return static
      */
-    public function withDatabase($database): self;
+    public function withDatabase(string|callable $database): self;
 
     /**
      * @param callable():bool|bool $routing
@@ -32,14 +32,11 @@ interface ConfigInterface
      *
      * @deprecated enable auto routing by using the neo4j:// scheme as uri
      */
-    public function withAutoRouting($routing): self;
+    public function withAutoRouting(callable|bool $routing): self;
 
     public function getDatabase(): string;
 
     public function hasAutoRouting(): bool;
 
-    /**
-     * @return static
-     */
     public function mergeConfig(ConfigInterface $config): ConfigInterface;
 }

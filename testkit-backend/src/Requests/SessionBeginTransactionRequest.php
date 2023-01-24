@@ -18,22 +18,11 @@ use Symfony\Component\Uid\Uuid;
 
 final class SessionBeginTransactionRequest
 {
-    private Uuid $sessionId;
-    /** @var iterable<string, array|scalar|null>|null */
-    private ?iterable $txMeta;
-    private ?int $timeout;
-
     /**
      * @param iterable<string, array|scalar|null>|null $txMeta
      */
-    public function __construct(
-        Uuid $sessionId,
-        ?iterable $txMeta = null,
-        ?int $timeout = null
-    ) {
-        $this->sessionId = $sessionId;
-        $this->txMeta = $txMeta;
-        $this->timeout = $timeout;
+    public function __construct(private Uuid $sessionId, private ?iterable $txMeta = null, private ?int $timeout = null)
+    {
     }
 
     public function getSessionId(): Uuid

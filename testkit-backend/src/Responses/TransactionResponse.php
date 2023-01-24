@@ -21,11 +21,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class TransactionResponse implements TestkitResponseInterface
 {
-    private Uuid $id;
-
-    public function __construct(Uuid $id)
+    public function __construct(private Uuid $id)
     {
-        $this->id = $id;
     }
 
     public function jsonSerialize(): array

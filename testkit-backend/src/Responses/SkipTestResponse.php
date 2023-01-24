@@ -20,11 +20,8 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
  */
 final class SkipTestResponse implements TestkitResponseInterface
 {
-    private string $reason;
-
-    public function __construct(string $reason)
+    public function __construct(private string $reason)
     {
-        $this->reason = $reason;
     }
 
     public function jsonSerialize(): array

@@ -32,11 +32,8 @@ use ReflectionException;
  */
 final class GetRoutingTable implements RequestHandlerInterface
 {
-    private MainRepository $repository;
-
-    public function __construct(MainRepository $repository)
+    public function __construct(private MainRepository $repository)
     {
-        $this->repository = $repository;
     }
 
     /**

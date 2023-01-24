@@ -30,15 +30,8 @@ use function sprintf;
  */
 final class DateTime extends AbstractPropertyObject implements BoltConvertibleInterface
 {
-    private int $seconds;
-    private int $nanoseconds;
-    private int $tzOffsetSeconds;
-
-    public function __construct(int $seconds, int $nanoseconds, int $tzOffsetSeconds)
+    public function __construct(private int $seconds, private int $nanoseconds, private int $tzOffsetSeconds)
     {
-        $this->seconds = $seconds;
-        $this->nanoseconds = $nanoseconds;
-        $this->tzOffsetSeconds = $tzOffsetSeconds;
     }
 
     /**

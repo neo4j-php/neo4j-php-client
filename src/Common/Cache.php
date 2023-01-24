@@ -189,13 +189,11 @@ class Cache implements CacheInterface
     }
 
     /**
-     * @param mixed $key
      *
      * @param-out string $key
-     *
      * @throws InvalidCacheArgumentException
      */
-    private function assertValidKey($key): void
+    private function assertValidKey(mixed $key): void
     {
         if (is_string($key)) {
             if ($key === '' ||
@@ -216,13 +214,11 @@ class Cache implements CacheInterface
     }
 
     /**
-     * @param mixed $keys
      *
      * @param-out iterable<string> $keys
-     *
      * @throws InvalidCacheArgumentException
      */
-    private function assertIterable($keys): void
+    private function assertIterable(mixed $keys): void
     {
         if (!is_iterable($keys)) {
             throw new InvalidCacheArgumentException();

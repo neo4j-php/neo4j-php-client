@@ -28,17 +28,11 @@ use RuntimeException;
  */
 final class CypherObject implements TestkitResponseInterface
 {
-    /** @var CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null */
-    private $value;
-    private string $name;
-
     /**
      * @param CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null $value
      */
-    public function __construct(string $name, $value)
+    public function __construct(private string $name, private $value)
     {
-        $this->value = $value;
-        $this->name = $name;
     }
 
     /**

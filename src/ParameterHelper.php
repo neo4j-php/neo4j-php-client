@@ -70,11 +70,9 @@ final class ParameterHelper
     }
 
     /**
-     * @param mixed $value
-     *
      * @return iterable|scalar|stdClass|IStructure|null
      */
-    public static function asParameter($value, bool $boltDriver = false)
+    public static function asParameter(mixed $value, bool $boltDriver = false)
     {
         return self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
@@ -86,11 +84,9 @@ final class ParameterHelper
     }
 
     /**
-     * @param mixed $value
-     *
      * @pure
      */
-    private static function stringAbleToString($value): ?string
+    private static function stringAbleToString(mixed $value): ?string
     {
         if (is_object($value) && method_exists($value, '__toString')) {
             return (string) $value;
@@ -100,13 +96,11 @@ final class ParameterHelper
     }
 
     /**
-     * @param mixed $value
      *
      * @return scalar|null
-     *
      * @pure
      */
-    private static function filterInvalidType($value)
+    private static function filterInvalidType(mixed $value)
     {
         if ($value !== null && !is_scalar($value)) {
             /** @psalm-suppress ImpureFunctionCall */
@@ -116,10 +110,7 @@ final class ParameterHelper
         return $value;
     }
 
-    /**
-     * @param mixed $value
-     */
-    private static function emptySequenceToArray($value): ?array
+    private static function emptySequenceToArray(mixed $value): ?array
     {
         if ((($value instanceof CypherList || $value instanceof CypherMap) && $value->count() === 0) ||
             (is_array($value) && count($value) === 0)) {
@@ -130,14 +121,13 @@ final class ParameterHelper
     }
 
     /**
-     * @param mixed $value
      *
      * @pure
      *
      * @psalm-suppress ImpureMethodCall
      * @psalm-suppress ImpurePropertyAssignment
      */
-    private static function cypherMapToStdClass($value): ?stdClass
+    private static function cypherMapToStdClass(mixed $value): ?stdClass
     {
         if ($value instanceof CypherMap) {
             $tbr = new stdClass();
@@ -151,10 +141,7 @@ final class ParameterHelper
         return null;
     }
 
-    /**
-     * @param mixed $value
-     */
-    private static function filledIterableToArray($value, bool $boltDriver): ?array
+    private static function filledIterableToArray(mixed $value, bool $boltDriver): ?array
     {
         if (is_iterable($value)) {
             return self::iterableToArray($value, $boltDriver);
@@ -206,10 +193,7 @@ final class ParameterHelper
         return $tbr;
     }
 
-    /**
-     * @param mixed $value
-     */
-    private static function convertBoltConvertibles($value, bool $boltDriver): ?IStructure
+    private static function convertBoltConvertibles(mixed $value, bool $boltDriver): ?IStructure
     {
         if ($boltDriver && $value instanceof BoltConvertibleInterface) {
             return $value->convertToBolt();
@@ -218,10 +202,7 @@ final class ParameterHelper
         return null;
     }
 
-    /**
-     * @param mixed $value
-     */
-    private static function convertTemporalTypes($value, bool $boltDriver): ?IStructure
+    private static function convertTemporalTypes(mixed $value, bool $boltDriver): ?IStructure
     {
         if ($boltDriver) {
             if ($value instanceof DateTimeInterface) {

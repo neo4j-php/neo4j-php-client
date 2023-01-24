@@ -36,26 +36,6 @@ use Throwable;
 final class HttpConnectionPool implements ConnectionPoolInterface
 {
     /**
-     * @var Resolvable<ClientInterface>
-     * @psalm-readonly
-     */
-    private Resolvable $client;
-    /**
-     * @var Resolvable<RequestFactory>
-     * @psalm-readonly
-     */
-    private Resolvable $requestFactory;
-    /**
-     * @var Resolvable<StreamFactoryInterface>
-     * @psalm-readonly
-     */
-    private Resolvable $streamFactory;
-    private AuthenticateInterface $auth;
-    private string $userAgent;
-    /** @var Resolvable<string> */
-    private Resolvable $tsxUrl;
-
-    /**
      * @param Resolvable<StreamFactoryInterface> $streamFactory
      * @param Resolvable<RequestFactory>         $requestFactory
      * @param Resolvable<ClientInterface>        $client
@@ -64,19 +44,23 @@ final class HttpConnectionPool implements ConnectionPoolInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        Resolvable $client,
-        Resolvable $requestFactory,
-        Resolvable $streamFactory,
-        AuthenticateInterface $auth,
-        string $userAgent,
-        Resolvable $tsxUrl
-    ) {
-        $this->client = $client;
-        $this->requestFactory = $requestFactory;
-        $this->streamFactory = $streamFactory;
-        $this->auth = $auth;
-        $this->userAgent = $userAgent;
-        $this->tsxUrl = $tsxUrl;
+        /**
+         * @psalm-readonly
+         */
+        private Resolvable $client,
+        /**
+         * @psalm-readonly
+         */
+        private Resolvable $requestFactory,
+        /**
+         * @psalm-readonly
+         */
+        private Resolvable $streamFactory,
+        private AuthenticateInterface $auth,
+        private string $userAgent,
+        private Resolvable $tsxUrl
+    )
+    {
     }
 
     public function acquire(SessionConfiguration $config): Generator
@@ -134,7 +118,7 @@ CYPHER
 
         try {
             return $client->sendRequest($request)->getStatusCode() === 200;
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             return false;
         }
     }

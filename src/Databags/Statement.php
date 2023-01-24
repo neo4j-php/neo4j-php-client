@@ -24,17 +24,11 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
  */
 final class Statement extends AbstractCypherObject
 {
-    private string $text;
-    /** @var iterable<string, mixed> */
-    private iterable $parameters;
-
     /**
      * @param iterable<string, mixed> $parameters
      */
-    public function __construct(string $text, iterable $parameters)
+    public function __construct(private string $text, private iterable $parameters)
     {
-        $this->text = $text;
-        $this->parameters = $parameters;
     }
 
     /**

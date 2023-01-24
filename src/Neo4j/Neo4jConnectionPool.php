@@ -62,24 +62,14 @@ use function time;
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
-    private AddressResolverInterface $resolver;
     /** @var array<string, ConnectionPool> */
     private static array $pools = [];
-    private SemaphoreInterface $semaphore;
-    private BoltFactory $factory;
-    private ConnectionRequestData $data;
-    private CacheInterface $cache;
 
     /**
      * @psalm-mutation-free
      */
-    public function __construct(SemaphoreInterface $semaphore, BoltFactory $factory, ConnectionRequestData $data, CacheInterface $cache, AddressResolverInterface $resolver)
+    public function __construct(private SemaphoreInterface $semaphore, private BoltFactory $factory, private ConnectionRequestData $data, private CacheInterface $cache, private AddressResolverInterface $resolver)
     {
-        $this->semaphore = $semaphore;
-        $this->factory = $factory;
-        $this->data = $data;
-        $this->cache = $cache;
-        $this->resolver = $resolver;
     }
 
     public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self
@@ -135,7 +125,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
                     $table = $this->routingTable($connection, $config);
-                } catch (Throwable $e) {
+                } catch (Throwable) {
                     // todo - once client side logging is implemented it must be conveyed here.
                     continue; // We continue if something is wrong with the current server
                 }
@@ -246,7 +236,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         try {
             $bolt->run('CALL dbms.cluster.overview()');
-        } catch (MessageException $e) {
+        } catch (MessageException) {
             return new RoutingTable([
                 [
                     'addresses' => [(string) $c->getServerAddress()],

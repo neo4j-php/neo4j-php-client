@@ -28,17 +28,14 @@ use function stream_socket_shutdown;
 
 final class Socket
 {
-    /** @var resource */
-    private $streamSocketServer;
     /** @var resource|null */
     private $socket;
 
     /**
      * @param resource $streamSocketServer
      */
-    public function __construct($streamSocketServer)
+    public function __construct(private $streamSocketServer)
     {
-        $this->streamSocketServer = $streamSocketServer;
     }
 
     public static function fromEnvironment(): self

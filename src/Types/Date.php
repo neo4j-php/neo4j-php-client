@@ -30,11 +30,8 @@ use UnexpectedValueException;
  */
 final class Date extends AbstractPropertyObject implements BoltConvertibleInterface
 {
-    private int $days;
-
-    public function __construct(int $days)
+    public function __construct(private int $days)
     {
-        $this->days = $days;
     }
 
     /**

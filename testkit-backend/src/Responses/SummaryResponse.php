@@ -21,11 +21,8 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
  */
 final class SummaryResponse implements TestkitResponseInterface
 {
-    private SummarizedResult $result;
-
-    public function __construct(SummarizedResult $result)
+    public function __construct(private SummarizedResult $result)
     {
-        $this->result = $result;
     }
 
     public function jsonSerialize(): array

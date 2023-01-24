@@ -17,13 +17,8 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 
 final class CypherPath implements TestkitResponseInterface
 {
-    private CypherObject $nodes;
-    private CypherObject $relationships;
-
-    public function __construct(CypherObject $nodes, CypherObject $relationships)
+    public function __construct(private CypherObject $nodes, private CypherObject $relationships)
     {
-        $this->nodes = $nodes;
-        $this->relationships = $relationships;
     }
 
     public function jsonSerialize(): array

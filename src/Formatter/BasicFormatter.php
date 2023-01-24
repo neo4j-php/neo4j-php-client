@@ -159,11 +159,9 @@ final class BasicFormatter implements FormatterInterface
     }
 
     /**
-     * @param mixed $value
-     *
      * @return scalar|array|null
      */
-    private function mapValue($value)
+    private function mapValue(mixed $value)
     {
         if ($value instanceof Path) {
             $value = $this->mapPath($value);
@@ -191,7 +189,7 @@ final class BasicFormatter implements FormatterInterface
         }
 
         if (!method_exists($object, 'properties')) {
-            $message = 'Cannot handle objects without a properties method. Class given: '.get_class($object);
+            $message = 'Cannot handle objects without a properties method. Class given: '.$object::class;
             throw new UnexpectedValueException($message);
         }
 

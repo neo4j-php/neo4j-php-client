@@ -26,11 +26,8 @@ use Psr\Http\Message\ResponseInterface;
  */
 final class ResultConsume implements RequestHandlerInterface
 {
-    private MainRepository $repository;
-
-    public function __construct(MainRepository $repository)
+    public function __construct(private MainRepository $repository)
     {
-        $this->repository = $repository;
     }
 
     /**

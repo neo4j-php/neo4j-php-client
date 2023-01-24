@@ -49,8 +49,6 @@ use UnexpectedValueException;
  */
 final class SummarizedResultFormatter implements FormatterInterface
 {
-    private OGMFormatter $formatter;
-
     /**
      * @pure
      */
@@ -62,9 +60,8 @@ final class SummarizedResultFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(OGMFormatter $formatter)
+    public function __construct(private OGMFormatter $formatter)
     {
-        $this->formatter = $formatter;
     }
 
     /**

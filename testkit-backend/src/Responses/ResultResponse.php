@@ -21,16 +21,11 @@ use Symfony\Component\Uid\Uuid;
  */
 final class ResultResponse implements TestkitResponseInterface
 {
-    private Uuid $id;
-    private iterable $keys;
-
     /**
      * @param iterable<string> $keys
      */
-    public function __construct(Uuid $id, iterable $keys)
+    public function __construct(private Uuid $id, private iterable $keys)
     {
-        $this->id = $id;
-        $this->keys = $keys;
     }
 
     public function jsonSerialize(): array

@@ -34,14 +34,14 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
  *
  * @psalm-suppress MutableDependency
  */
-final class SslMode extends TypedEnum implements JsonSerializable
+final class SslMode extends TypedEnum implements JsonSerializable, \Stringable
 {
     private const ENABLE = 'enable';
     private const ENABLE_WITH_SELF_SIGNED = 'enable_with_self_signed';
     private const DISABLE = 'disable';
     private const FROM_URL = 'from_url';
 
-    public function __toString()
+    public function __toString(): string
     {
         /** @noinspection MagicMethodsValidityInspection */
         return $this->getValue();

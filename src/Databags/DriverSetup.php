@@ -23,13 +23,8 @@ use Psr\Http\Message\UriInterface;
  */
 final class DriverSetup
 {
-    private UriInterface $uri;
-    private AuthenticateInterface $auth;
-
-    public function __construct(UriInterface $uri, AuthenticateInterface $auth)
+    public function __construct(private UriInterface $uri, private AuthenticateInterface $auth)
     {
-        $this->uri = $uri;
-        $this->auth = $auth;
     }
 
     public function getAuth(): AuthenticateInterface

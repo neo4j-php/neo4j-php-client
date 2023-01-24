@@ -23,19 +23,12 @@ namespace Laudis\Neo4j\Databags;
  */
 final class Pair
 {
-    /** @var TKey */
-    private $key;
-    /** @var TValue */
-    private $value;
-
     /**
      * @param TKey   $key
      * @param TValue $value
      */
-    public function __construct($key, $value)
+    public function __construct(private $key, private $value)
     {
-        $this->key = $key;
-        $this->value = $value;
     }
 
     /**

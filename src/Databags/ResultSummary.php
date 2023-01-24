@@ -31,43 +31,11 @@ use Laudis\Neo4j\Types\CypherList;
  */
 final class ResultSummary extends AbstractCypherObject
 {
-    private SummaryCounters $counters;
-    private DatabaseInfo $databaseInfo;
-    /** @var CypherList<Notification> */
-    private CypherList $notifications;
-    private ?Plan $plan;
-    private ?ProfiledPlan $profiledPlan;
-    private Statement $statement;
-    private QueryTypeEnum $queryType;
-    private float $resultAvailableAfter;
-    private float $resultConsumedAfter;
-    private ServerInfo $serverInfo;
-
     /**
      * @param CypherList<Notification> $notifications
      */
-    public function __construct(
-        SummaryCounters $counters,
-        DatabaseInfo $databaseInfo,
-        CypherList $notifications,
-        ?Plan $plan,
-        ?ProfiledPlan $profiledPlan,
-        Statement $statement,
-        QueryTypeEnum $queryType,
-        float $resultAvailableAfter,
-        float $resultConsumedAfter,
-        ServerInfo $serverInfo
-    ) {
-        $this->counters = $counters;
-        $this->databaseInfo = $databaseInfo;
-        $this->notifications = $notifications;
-        $this->plan = $plan;
-        $this->profiledPlan = $profiledPlan;
-        $this->statement = $statement;
-        $this->queryType = $queryType;
-        $this->resultAvailableAfter = $resultAvailableAfter;
-        $this->resultConsumedAfter = $resultConsumedAfter;
-        $this->serverInfo = $serverInfo;
+    public function __construct(private SummaryCounters $counters, private DatabaseInfo $databaseInfo, private CypherList $notifications, private ?\Laudis\Neo4j\Databags\Plan $plan, private ?\Laudis\Neo4j\Databags\ProfiledPlan $profiledPlan, private Statement $statement, private QueryTypeEnum $queryType, private float $resultAvailableAfter, private float $resultConsumedAfter, private ServerInfo $serverInfo)
+    {
     }
 
     /**

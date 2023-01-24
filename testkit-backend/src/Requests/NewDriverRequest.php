@@ -15,27 +15,8 @@ namespace Laudis\Neo4j\TestkitBackend\Requests;
 
 final class NewDriverRequest
 {
-    private string $uri;
-    private AuthorizationTokenRequest $authToken;
-    private ?string $userAgent;
-    private ?bool $resolverRegistered;
-    private ?bool $domainNameResolverRegistered;
-    private ?int $connectionTimeoutMs;
-
-    public function __construct(
-        string $uri,
-        AuthorizationTokenRequest $authToken,
-        ?string $userAgent = null,
-        ?bool $resolverRegistered = null,
-        ?bool $domainNameResolverRegistered = null,
-        ?int $connectionTimeoutMs = null
-    ) {
-        $this->uri = $uri;
-        $this->authToken = $authToken;
-        $this->userAgent = $userAgent;
-        $this->resolverRegistered = $resolverRegistered;
-        $this->domainNameResolverRegistered = $domainNameResolverRegistered;
-        $this->connectionTimeoutMs = $connectionTimeoutMs;
+    public function __construct(private string $uri, private AuthorizationTokenRequest $authToken, private ?string $userAgent = null, private ?bool $resolverRegistered = null, private ?bool $domainNameResolverRegistered = null, private ?int $connectionTimeoutMs = null)
+    {
     }
 
     public function getUri(): string

@@ -26,16 +26,11 @@ use Psr\Http\Message\UriInterface;
  */
 final class BasicAuth implements AuthenticateInterface
 {
-    private string $username;
-    private string $password;
-
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(string $username, string $password)
+    public function __construct(private string $username, private string $password)
     {
-        $this->username = $username;
-        $this->password = $password;
     }
 
     /**

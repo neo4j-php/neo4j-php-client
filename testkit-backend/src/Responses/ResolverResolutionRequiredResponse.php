@@ -24,13 +24,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class ResolverResolutionRequiredResponse implements TestkitResponseInterface
 {
-    private Uuid $id;
-    private string $address;
-
-    public function __construct(Uuid $id, string $address)
+    public function __construct(private Uuid $id, private string $address)
     {
-        $this->id = $id;
-        $this->address = $address;
     }
 
     public function jsonSerialize(): array

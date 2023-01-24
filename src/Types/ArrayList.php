@@ -231,7 +231,7 @@ class ArrayList extends AbstractCypherSequence
     {
         $value = $this->get($key);
         if (!is_iterable($value)) {
-            throw new RuntimeTypeException($value, __CLASS__);
+            throw new RuntimeTypeException($value, self::class);
         }
 
         /** @psalm-suppress MixedArgumentTypeCoercion */

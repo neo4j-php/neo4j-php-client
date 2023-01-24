@@ -25,37 +25,11 @@ use Laudis\Neo4j\Types\CypherList;
  */
 final class ProfiledPlan extends AbstractCypherObject
 {
-    /** @var CypherList<ProfiledPlan> */
-    private CypherList $children;
-    private int $dbHits;
-    private bool $hasPageCacheStats;
-    private float $pageCacheHitRatio;
-    private int $pageCacheHits;
-    private int $pageCacheMisses;
-    private int $records;
-    private int $time;
-
     /**
      * @param CypherList<ProfiledPlan> $children
      */
-    public function __construct(
-        CypherList $children,
-        int $dbHits,
-        bool $hasPageCacheStats,
-        float $pageCacheHitRatio,
-        int $pageCacheHits,
-        int $pageCacheMisses,
-        int $records,
-        int $time
-    ) {
-        $this->children = $children;
-        $this->dbHits = $dbHits;
-        $this->hasPageCacheStats = $hasPageCacheStats;
-        $this->pageCacheHitRatio = $pageCacheHitRatio;
-        $this->pageCacheHits = $pageCacheHits;
-        $this->pageCacheMisses = $pageCacheMisses;
-        $this->records = $records;
-        $this->time = $time;
+    public function __construct(private CypherList $children, private int $dbHits, private bool $hasPageCacheStats, private float $pageCacheHitRatio, private int $pageCacheHits, private int $pageCacheMisses, private int $records, private int $time)
+    {
     }
 
     /**

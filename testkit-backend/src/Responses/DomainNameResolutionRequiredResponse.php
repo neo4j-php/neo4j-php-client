@@ -24,13 +24,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class DomainNameResolutionRequiredResponse implements TestkitResponseInterface
 {
-    private Uuid $id;
-    private string $name;
-
-    public function __construct(Uuid $id, string $name)
+    public function __construct(private Uuid $id, private string $name)
     {
-        $this->id = $id;
-        $this->name = $name;
     }
 
     public function jsonSerialize(): array

@@ -26,29 +26,13 @@ use Laudis\Neo4j\Types\CypherMap;
  */
 final class Plan extends AbstractCypherObject
 {
-    /** @var CypherMap<mixed> */
-    private CypherMap $arguments;
-    /** @var CypherList<Plan> */
-    private CypherList $list;
-    /** @var CypherList<string> */
-    private CypherList $identifiers;
-    private string $operator;
-
     /**
      * @param CypherMap<mixed>   $arguments
      * @param CypherList<Plan>   $list
      * @param CypherList<string> $identifiers
      */
-    public function __construct(
-        CypherMap $arguments,
-        CypherList $list,
-        CypherList $identifiers,
-        string $operator
-    ) {
-        $this->arguments = $arguments;
-        $this->list = $list;
-        $this->identifiers = $identifiers;
-        $this->operator = $operator;
+    public function __construct(private CypherMap $arguments, private CypherList $list, private CypherList $identifiers, private string $operator)
+    {
     }
 
     /**

@@ -54,10 +54,7 @@ final class TransactionHelper
         }
     }
 
-    /**
-     * @param mixed $tbr
-     */
-    private static function triggerLazyResult($tbr): void
+    private static function triggerLazyResult(mixed $tbr): void
     {
         if ($tbr instanceof AbstractCypherSequence) {
             $tbr->preload();

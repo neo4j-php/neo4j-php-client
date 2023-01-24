@@ -20,14 +20,11 @@ use function sprintf;
 
 final class OpenIDConnectAuth implements AuthenticateInterface
 {
-    private string $token;
-
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(string $token)
+    public function __construct(private string $token)
     {
-        $this->token = $token;
     }
 
     /**

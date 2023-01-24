@@ -21,16 +21,10 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 final class BookmarksResponse implements TestkitResponseInterface
 {
     /**
-     * @var iterable<string>
-     */
-    private iterable $bookmarks;
-
-    /**
      * @param iterable<string> $bookmarks
      */
-    public function __construct(iterable $bookmarks)
+    public function __construct(private iterable $bookmarks)
     {
-        $this->bookmarks = $bookmarks;
     }
 
     public function jsonSerialize(): array

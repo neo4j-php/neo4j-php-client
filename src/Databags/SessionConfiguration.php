@@ -31,31 +31,13 @@ final class SessionConfiguration
     public const DEFAULT_ACCESS_MODE = 'WRITE';
     public const DEFAULT_BOOKMARKS = '[]';
 
-    /** @var string|null */
-    private $database;
-    /** @var pure-callable():(int|null)|int|null */
-    private $fetchSize;
-    /** @var pure-callable():(AccessMode|null)|AccessMode|null */
-    private $accessMode;
-    /** @var pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark>|null */
-    private $bookmarks;
-
     /**
-     * @param string|null $database
      * @param pure-callable():(int|null)|int|null                           $fetchSize
-     * @param pure-callable():(AccessMode|null)|AccessMode|null             $defaultAccessMode
+     * @param pure-callable():((AccessMode | null))|AccessMode|null $accessMode
      * @param pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark>|null $bookmarks
      */
-    public function __construct(
-        $database = null,
-        $fetchSize = null,
-        $defaultAccessMode = null,
-        $bookmarks = null
-    ) {
-        $this->database = $database;
-        $this->fetchSize = $fetchSize;
-        $this->accessMode = $defaultAccessMode;
-        $this->bookmarks = $bookmarks;
+    public function __construct(private ?string $database = null, private $fetchSize = null, private $accessMode = null, private $bookmarks = null)
+    {
     }
 
     /**

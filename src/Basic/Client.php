@@ -26,15 +26,11 @@ use Laudis\Neo4j\Types\CypherMap;
  */
 final class Client implements ClientInterface
 {
-    /** @var ClientInterface<SummarizedResult<CypherMap>> */
-    private ClientInterface $client;
-
     /**
      * @param ClientInterface<SummarizedResult<CypherMap>> $client
      */
-    public function __construct(ClientInterface $client)
+    public function __construct(private ClientInterface $client)
     {
-        $this->client = $client;
     }
 
     public function run(string $statement, iterable $parameters = [], ?string $alias = null): SummarizedResult

@@ -533,11 +533,9 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     }
 
     /**
-     * @param mixed $key
-     *
      * @psalm-mutation-free
      */
-    protected function isStringable($key): bool
+    protected function isStringable(mixed $key): bool
     {
         return is_string($key) || is_numeric($key) || (is_object($key) && method_exists($key, '__toString'));
     }

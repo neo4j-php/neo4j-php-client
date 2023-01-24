@@ -20,14 +20,12 @@ use RuntimeException;
 
 class SingleThreadedSemaphore implements SemaphoreInterface
 {
-    private int $max;
     private int $amount = 0;
     /** @var array<string, self> */
     private static array $instances = [];
 
-    private function __construct(int $max)
+    private function __construct(private int $max)
     {
-        $this->max = $max;
     }
 
     public static function create(string $key, int $max): self

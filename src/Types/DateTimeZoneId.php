@@ -31,15 +31,8 @@ use function sprintf;
  */
 final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvertibleInterface
 {
-    private int $seconds;
-    private int $nanoseconds;
-    private string $tzId;
-
-    public function __construct(int $seconds, int $nanoseconds, string $tzId)
+    public function __construct(private int $seconds, private int $nanoseconds, private string $tzId)
     {
-        $this->seconds = $seconds;
-        $this->nanoseconds = $nanoseconds;
-        $this->tzId = $tzId;
     }
 
     /**

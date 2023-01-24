@@ -23,34 +23,11 @@ use Psr\Http\Message\UriInterface;
  */
 final class ConnectionConfiguration
 {
-    private string $serverAgent;
-    private UriInterface $serverAddress;
-    private string $serverVersion;
-    private ConnectionProtocol $protocol;
-    private AccessMode $accessMode;
-    private ?DatabaseInfo $databaseInfo;
-    /** @var 's'|'ssc'|'' */
-    private string $encryptionLevel;
-
     /**
      * @param ''|'s'|'ssc' $encryptionLevel
      */
-    public function __construct(
-        string $serverAgent,
-        UriInterface $serverAddress,
-        string $serverVersion,
-        ConnectionProtocol $protocol,
-        AccessMode $accessMode,
-        ?DatabaseInfo $databaseInfo,
-        string $encryptionLevel
-    ) {
-        $this->serverAgent = $serverAgent;
-        $this->serverAddress = $serverAddress;
-        $this->serverVersion = $serverVersion;
-        $this->protocol = $protocol;
-        $this->accessMode = $accessMode;
-        $this->databaseInfo = $databaseInfo;
-        $this->encryptionLevel = $encryptionLevel;
+    public function __construct(private string $serverAgent, private UriInterface $serverAddress, private string $serverVersion, private ConnectionProtocol $protocol, private AccessMode $accessMode, private ?\Laudis\Neo4j\Databags\DatabaseInfo $databaseInfo, private string $encryptionLevel)
+    {
     }
 
     public function getServerAgent(): string

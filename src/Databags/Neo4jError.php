@@ -25,19 +25,8 @@ use InvalidArgumentException;
  */
 final class Neo4jError
 {
-    private string $code;
-    private ?string $message;
-    private string $classification;
-    private string $category;
-    private string $title;
-
-    public function __construct(string $code, ?string $message, string $classification, string $category, string $title)
+    public function __construct(private string $code, private ?string $message, private string $classification, private string $category, private string $title)
     {
-        $this->code = $code;
-        $this->message = $message;
-        $this->classification = $classification;
-        $this->category = $category;
-        $this->title = $title;
     }
 
     /**

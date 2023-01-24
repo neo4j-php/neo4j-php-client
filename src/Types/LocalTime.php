@@ -25,11 +25,8 @@ use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
  */
 final class LocalTime extends AbstractPropertyObject implements BoltConvertibleInterface
 {
-    private int $nanoseconds;
-
-    public function __construct(int $nanoseconds)
+    public function __construct(private int $nanoseconds)
     {
-        $this->nanoseconds = $nanoseconds;
     }
 
     /**

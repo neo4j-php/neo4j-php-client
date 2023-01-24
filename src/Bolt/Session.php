@@ -42,20 +42,6 @@ use Laudis\Neo4j\Types\CypherList;
 final class Session implements SessionInterface
 {
     /** @psalm-readonly */
-    private SessionConfiguration $config;
-    /**
-     * @psalm-readonly
-     *
-     * @var ConnectionPool|Neo4jConnectionPool
-     */
-    private ConnectionPoolInterface $pool;
-    /**
-     * @psalm-readonly
-     *
-     * @var FormatterInterface<ResultFormat>
-     */
-    private FormatterInterface $formatter;
-    /** @psalm-readonly */
     private BookmarkHolder $bookmarkHolder;
 
     /**
@@ -65,13 +51,14 @@ final class Session implements SessionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        SessionConfiguration $config,
-        ConnectionPoolInterface $pool,
-        FormatterInterface $formatter
+        /** @psalm-readonly */
+        private SessionConfiguration $config,
+        private ConnectionPoolInterface $pool,
+        /**
+         * @psalm-readonly
+         */
+        private FormatterInterface $formatter
     ) {
-        $this->config = $config;
-        $this->pool = $pool;
-        $this->formatter = $formatter;
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
 

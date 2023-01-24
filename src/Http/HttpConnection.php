@@ -27,28 +27,20 @@ use Psr\Http\Message\UriInterface;
  */
 final class HttpConnection implements ConnectionInterface
 {
-    /** @psalm-readonly */
-    private ClientInterface $client;
-    /** @psalm-readonly */
-    private ConnectionConfiguration $config;
-
     private bool $isOpen = true;
-    private AuthenticateInterface $authenticate;
-    private string $userAgent;
 
     /**
      * @psalm-mutation-free
      */
     public function __construct(
-        ClientInterface $client,
-        ConnectionConfiguration $config,
-        AuthenticateInterface $authenticate,
-        string $userAgent
-    ) {
-        $this->client = $client;
-        $this->config = $config;
-        $this->authenticate = $authenticate;
-        $this->userAgent = $userAgent;
+        /** @psalm-readonly */
+        private ClientInterface $client,
+        /** @psalm-readonly */
+        private ConnectionConfiguration $config,
+        private AuthenticateInterface $authenticate,
+        private string $userAgent
+    )
+    {
     }
 
     /**

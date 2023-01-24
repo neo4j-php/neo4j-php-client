@@ -31,13 +31,8 @@ use UnexpectedValueException;
  */
 final class LocalDateTime extends AbstractPropertyObject implements BoltConvertibleInterface
 {
-    private int $seconds;
-    private int $nanoseconds;
-
-    public function __construct(int $seconds, int $nanoseconds)
+    public function __construct(private int $seconds, private int $nanoseconds)
     {
-        $this->seconds = $seconds;
-        $this->nanoseconds = $nanoseconds;
     }
 
     /**

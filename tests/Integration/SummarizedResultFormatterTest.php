@@ -44,9 +44,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
      */
     public function testAcceptanceRead(string $alias): void
     {
-        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN 1 AS one');
-        }, $alias);
+        $result = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN 1 AS one'), $alias);
         self::assertInstanceOf(SummarizedResult::class, $result);
         self::assertEquals(1, $result->first()->get('one'));
     }
@@ -58,9 +56,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
      */
     public function testAcceptanceWrite(string $alias): void
     {
-        $counters = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))]);
-        }, $alias)->getSummary()->getCounters();
+        $counters = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('CREATE (x:X {y: $x}) RETURN x', ['x' => bin2hex(random_bytes(128))]), $alias)->getSummary()->getCounters();
         self::assertEquals(new SummaryCounters(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, true), $counters);
     }
 

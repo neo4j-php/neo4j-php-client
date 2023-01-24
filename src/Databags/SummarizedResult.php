@@ -25,7 +25,7 @@ use Laudis\Neo4j\Types\CypherList;
  */
 final class SummarizedResult extends CypherList
 {
-    private ?ResultSummary $summary;
+    private ?ResultSummary $summary = null;
 
     /**
      * @param iterable<mixed, TValue>|callable():\Generator<mixed, TValue> $iterable

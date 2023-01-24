@@ -9,11 +9,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class DriverCloseRequest
 {
-    private Uuid $driverId;
-
-    public function __construct(Uuid $driverId)
+    public function __construct(private Uuid $driverId)
     {
-        $this->driverId = $driverId;
     }
 
     public function getDriverId(): Uuid

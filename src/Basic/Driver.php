@@ -28,17 +28,13 @@ use Psr\Http\Message\UriInterface;
  */
 final class Driver implements DriverInterface
 {
-    /** @var DriverInterface<SummarizedResult<CypherMap>> */
-    private DriverInterface $driver;
-
     /**
      * @param DriverInterface<SummarizedResult<CypherMap>> $driver
      *
      * @psalm-external-mutation-free
      */
-    public function __construct(DriverInterface $driver)
+    public function __construct(private DriverInterface $driver)
     {
-        $this->driver = $driver;
     }
 
     /**
@@ -54,10 +50,7 @@ final class Driver implements DriverInterface
         return $this->driver->verifyConnectivity($config);
     }
 
-    /**
-     * @param string|UriInterface $uri
-     */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
+    public static function create(string|\Psr\Http\Message\UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
         /** @var DriverInterface<SummarizedResult<CypherMap>> */
         $driver = DriverFactory::create($uri, $configuration, $authenticate, SummarizedResultFormatter::create());

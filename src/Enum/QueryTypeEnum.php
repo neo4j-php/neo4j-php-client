@@ -37,7 +37,7 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
  *
  * @psalm-suppress MutableDependency
  */
-final class QueryTypeEnum extends TypedEnum implements JsonSerializable
+final class QueryTypeEnum extends TypedEnum implements JsonSerializable, \Stringable
 {
     private const READ_ONLY = 'read_only';
     private const READ_WRITE = 'read_write';
@@ -64,10 +64,10 @@ final class QueryTypeEnum extends TypedEnum implements JsonSerializable
         return self::READ_ONLY();
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         /** @noinspection MagicMethodsValidityInspection */
-        return $this->getValue();
+        return (string) $this->getValue();
     }
 
     public function jsonSerialize()

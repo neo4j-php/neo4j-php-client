@@ -20,18 +20,8 @@ namespace Laudis\Neo4j\Databags;
  */
 final class InputPosition
 {
-    private int $column;
-    private int $line;
-    private int $offset;
-
-    public function __construct(
-        int $column,
-        int $line,
-        int $offset
-    ) {
-        $this->column = $column;
-        $this->line = $line;
-        $this->offset = $offset;
+    public function __construct(private int $column, private int $line, private int $offset)
+    {
     }
 
     /**

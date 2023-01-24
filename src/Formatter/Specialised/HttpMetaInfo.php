@@ -19,29 +19,13 @@ use stdClass;
  */
 final class HttpMetaInfo
 {
-    /** @var list<stdClass|list<stdClass>> */
-    private array $meta;
-    /** @var list<stdClass> */
-    private array $nodes;
-    /** @var list<stdClass> */
-    private array $relationships;
-    private int $currentMeta;
-
     /**
      * @param list<stdClass> $relationships
      * @param list<stdClass> $meta
      * @param list<stdClass> $nodes
      */
-    public function __construct(
-        array $meta,
-        array $nodes,
-        array $relationships,
-        int $currentMeta = 0
-    ) {
-        $this->meta = $meta;
-        $this->nodes = $nodes;
-        $this->relationships = $relationships;
-        $this->currentMeta = $currentMeta;
+    public function __construct(private array $meta, private array $nodes, private array $relationships, private int $currentMeta = 0)
+    {
     }
 
     /**

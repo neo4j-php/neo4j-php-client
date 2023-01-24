@@ -16,11 +16,8 @@ use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
  */
 final class DriverClose implements RequestHandlerInterface
 {
-    private MainRepository $repository;
-
-    public function __construct(MainRepository $repository)
+    public function __construct(private MainRepository $repository)
     {
-        $this->repository = $repository;
     }
 
     /**

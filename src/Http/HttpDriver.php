@@ -38,11 +38,6 @@ use function uniqid;
  */
 final class HttpDriver implements DriverInterface
 {
-    private UriInterface $uri;
-    private AuthenticateInterface $auth;
-    private DriverConfiguration $config;
-    /** @var FormatterInterface<T> */
-    private FormatterInterface $formatter;
     private string $key;
 
     /**
@@ -51,15 +46,11 @@ final class HttpDriver implements DriverInterface
      * @param FormatterInterface<T> $formatter
      */
     public function __construct(
-        UriInterface $uri,
-        DriverConfiguration $config,
-        FormatterInterface $formatter,
-        AuthenticateInterface $auth
+        private UriInterface $uri,
+        private DriverConfiguration $config,
+        private FormatterInterface $formatter,
+        private AuthenticateInterface $auth
     ) {
-        $this->uri = $uri;
-        $this->config = $config;
-        $this->formatter = $formatter;
-        $this->auth = $auth;
         /** @psalm-suppress ImpureFunctionCall */
         $this->key = uniqid();
     }
@@ -68,17 +59,15 @@ final class HttpDriver implements DriverInterface
      * @template U
      *
      * @param FormatterInterface<U> $formatter
-     * @param string|UriInterface   $uri
      *
      * @return (
      *           func_num_args() is 4
      *           ? self<U>
      *           : self<OGMResults>
      *           )
-     *
      * @pure
      */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
+    public static function create(string|\Psr\Http\Message\UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);

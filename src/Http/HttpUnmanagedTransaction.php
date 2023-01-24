@@ -35,19 +35,6 @@ use stdClass;
  */
 final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
 {
-    /** @psalm-readonly */
-    private RequestInterface $request;
-    /** @psalm-readonly */
-    private StreamFactoryInterface $factory;
-    /** @psalm-readonly */
-    private HttpConnection $connection;
-    /**
-     * @psalm-readonly
-     *
-     * @var FormatterInterface<T>
-     */
-    private FormatterInterface $formatter;
-
     private bool $isCommitted = false;
 
     private bool $isRolledBack = false;
@@ -58,15 +45,18 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
      * @param FormatterInterface<T> $formatter
      */
     public function __construct(
-        RequestInterface $request,
-        HttpConnection $connection,
-        StreamFactoryInterface $factory,
-        FormatterInterface $formatter
-    ) {
-        $this->request = $request;
-        $this->factory = $factory;
-        $this->connection = $connection;
-        $this->formatter = $formatter;
+        /** @psalm-readonly */
+        private RequestInterface $request,
+        /** @psalm-readonly */
+        private HttpConnection $connection,
+        /** @psalm-readonly */
+        private StreamFactoryInterface $factory,
+        /**
+         * @psalm-readonly
+         */
+        private FormatterInterface $formatter
+    )
+    {
     }
 
     public function run(string $statement, iterable $parameters = [])

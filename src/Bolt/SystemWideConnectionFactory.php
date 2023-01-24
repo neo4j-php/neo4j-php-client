@@ -21,18 +21,13 @@ use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
  */
 class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
 {
-    /**
-     * @var SocketConnectionFactory|StreamConnectionFactory
-     */
-    private $factory;
     private static ?SystemWideConnectionFactory $instance = null;
 
     /**
      * @param SocketConnectionFactory|StreamConnectionFactory $factory
      */
-    private function __construct($factory)
+    private function __construct(private $factory)
     {
-        $this->factory = $factory;
     }
 
     /**

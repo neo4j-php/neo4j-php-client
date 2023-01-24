@@ -30,11 +30,8 @@ use function var_export;
  */
 final class NewDriver implements RequestHandlerInterface
 {
-    private MainRepository $repository;
-
-    public function __construct(MainRepository $repository)
+    public function __construct(private MainRepository $repository)
     {
-        $this->repository = $repository;
     }
 
     /**

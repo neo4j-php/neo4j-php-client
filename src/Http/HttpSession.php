@@ -41,59 +41,39 @@ use stdClass;
  */
 final class HttpSession implements SessionInterface
 {
-    /** @psalm-readonly */
-    private SessionConfiguration $config;
-    /**
-     * @psalm-readonly
-     *
-     * @var Resolvable<StreamFactoryInterface>
-     */
-    private Resolvable $streamFactory;
-    /** @psalm-readonly */
-    private HttpConnectionPool $pool;
-    /**
-     * @psalm-readonly
-     *
-     * @var FormatterInterface<T>
-     */
-    private FormatterInterface $formatter;
-    /**
-     * @psalm-readonly
-     *
-     * @var Resolvable<RequestFactory>
-     */
-    private Resolvable $requestFactory;
-    /**
-     * @psalm-readonly
-     *
-     * @var Resolvable<string>
-     */
-    private Resolvable $uri;
-
     /**
      * @psalm-mutation-free
      *
      * @param FormatterInterface<T>              $formatter
-     * @param Resolvable<StreamFactoryInterface> $factory
+     * @param Resolvable<StreamFactoryInterface> $streamFactory
      * @param Resolvable<string>                 $uri
      * @param Resolvable<RequestFactory>         $requestFactory
      */
     public function __construct(
-        Resolvable $factory,
-        HttpConnectionPool $manager,
-        SessionConfiguration $config,
-        FormatterInterface $formatter,
-        Resolvable $requestFactory,
-        Resolvable $uri,
+        /**
+         * @psalm-readonly
+         */
+        private Resolvable $streamFactory,
+        /** @psalm-readonly */
+        private HttpConnectionPool $pool,
+        /** @psalm-readonly */
+        private SessionConfiguration $config,
+        /**
+         * @psalm-readonly
+         */
+        private FormatterInterface $formatter,
+        /**
+         * @psalm-readonly
+         */
+        private Resolvable $requestFactory,
+        /**
+         * @psalm-readonly
+         */
+        private Resolvable $uri,
         AuthenticateInterface $auth,
         string $userAgent
-    ) {
-        $this->streamFactory = $factory;
-        $this->config = $config;
-        $this->pool = $manager;
-        $this->formatter = $formatter;
-        $this->requestFactory = $requestFactory;
-        $this->uri = $uri;
+    )
+    {
     }
 
     /**

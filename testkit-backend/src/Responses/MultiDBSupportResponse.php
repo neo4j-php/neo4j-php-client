@@ -21,13 +21,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class MultiDBSupportResponse implements TestkitResponseInterface
 {
-    private Uuid $id;
-    private bool $available;
-
-    public function __construct(Uuid $id, bool $available)
+    public function __construct(private Uuid $id, private bool $available)
     {
-        $this->id = $id;
-        $this->available = $available;
     }
 
     public function jsonSerialize(): array

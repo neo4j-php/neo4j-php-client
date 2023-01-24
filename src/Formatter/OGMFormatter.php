@@ -46,18 +46,11 @@ use function version_compare;
  */
 final class OGMFormatter implements FormatterInterface
 {
-    private BoltOGMTranslator $boltTranslator;
-    private JoltHttpOGMTranslator $joltTranslator;
-    private LegacyHttpOGMTranslator $legacyHttpTranslator;
-
     /**
      * @psalm-mutation-free
      */
-    public function __construct(BoltOGMTranslator $boltTranslator, JoltHttpOGMTranslator $joltTranslator, LegacyHttpOGMTranslator $legacyHttpTranslator)
+    public function __construct(private BoltOGMTranslator $boltTranslator, private JoltHttpOGMTranslator $joltTranslator, private LegacyHttpOGMTranslator $legacyHttpTranslator)
     {
-        $this->boltTranslator = $boltTranslator;
-        $this->joltTranslator = $joltTranslator;
-        $this->legacyHttpTranslator = $legacyHttpTranslator;
     }
 
     /**
@@ -116,10 +109,8 @@ final class OGMFormatter implements FormatterInterface
 
     /**
      * @psalm-mutation-free
-     *
-     * @return LegacyHttpOGMTranslator|JoltHttpOGMTranslator
      */
-    private function decideTranslator(ConnectionInterface $connection)
+    private function decideTranslator(ConnectionInterface $connection): \Laudis\Neo4j\Formatter\Specialised\LegacyHttpOGMTranslator|\Laudis\Neo4j\Formatter\Specialised\JoltHttpOGMTranslator
     {
         if (version_compare($connection->getServerAgent(), '4.2.5') <= 0) {
             return $this->legacyHttpTranslator;

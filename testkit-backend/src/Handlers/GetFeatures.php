@@ -22,15 +22,11 @@ use Laudis\Neo4j\TestkitBackend\Responses\FeatureListResponse;
  */
 final class GetFeatures implements RequestHandlerInterface
 {
-    /** @var iterable<string, bool> */
-    private iterable $featuresConfig;
-
     /**
      * @param iterable<string, bool> $featuresConfig
      */
-    public function __construct(iterable $featuresConfig)
+    public function __construct(private iterable $featuresConfig)
     {
-        $this->featuresConfig = $featuresConfig;
     }
 
     /**

@@ -28,16 +28,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class MainRepository
 {
-    /** @var array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>> */
-    private array $drivers;
-    /** @var array<string, SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>> */
-    private array $sessions;
-    /** @var array<string, SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface> */
-    private array $records;
     /** @var array<string, Iterator<int, CypherMap<OGMTypes>>> */
-    private array $recordIterators;
-    /** @var array<string, UnmanagedTransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>> */
-    private array $transactions;
+    private array $recordIterators = [];
     /** @var array<string, Uuid> */
     private array $sessionToTransactions = [];
 
@@ -47,13 +39,8 @@ final class MainRepository
      * @param array<string, SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface>       $records
      * @param array<string, UnmanagedTransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>> $transactions
      */
-    public function __construct(array $drivers, array $sessions, array $records, array $transactions)
+    public function __construct(private array $drivers, private array $sessions, private array $records, private array $transactions)
     {
-        $this->drivers = $drivers;
-        $this->sessions = $sessions;
-        $this->records = $records;
-        $this->transactions = $transactions;
-        $this->recordIterators = [];
     }
 
     /**
@@ -109,7 +96,7 @@ final class MainRepository
     /**
      * @param SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface $result
      */
-    public function addRecords(Uuid $id, $result): void
+    public function addRecords(Uuid $id, \Laudis\Neo4j\Databags\SummarizedResult|\Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface $result): void
     {
         $this->records[$id->toRfc4122()] = $result;
         if ($result instanceof SummarizedResult) {
@@ -126,7 +113,7 @@ final class MainRepository
     /**
      * @return SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface
      */
-    public function getRecords(Uuid $id)
+    public function getRecords(Uuid $id): \Laudis\Neo4j\Databags\SummarizedResult|\Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface
     {
         return $this->records[$id->toRfc4122()];
     }

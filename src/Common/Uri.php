@@ -23,32 +23,10 @@ use function strtolower;
 /**
  * @psalm-immutable
  */
-final class Uri implements UriInterface
+final class Uri implements UriInterface, \Stringable
 {
-    private string $scheme;
-    private string $userInfo;
-    private string $host;
-    private ?int $port;
-    private string $path;
-    private string $query;
-    private string $fragment;
-
-    public function __construct(
-        string $scheme,
-        string $userInfo,
-        string $host,
-        ?int $port,
-        string $path,
-        string $query,
-        string $fragment
-    ) {
-        $this->scheme = $scheme;
-        $this->userInfo = $userInfo;
-        $this->host = $host;
-        $this->port = $port;
-        $this->path = $path;
-        $this->query = $query;
-        $this->fragment = $fragment;
+    public function __construct(private string $scheme, private string $userInfo, private string $host, private ?int $port, private string $path, private string $query, private string $fragment)
+    {
     }
 
     /**

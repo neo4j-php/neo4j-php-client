@@ -23,28 +23,20 @@ use Psr\Http\Message\UriInterface;
  */
 final class RequestFactory implements RequestFactoryInterface
 {
-    /** @readonly */
-    private RequestFactoryInterface $requestFactory;
-    /** @readonly */
-    private AuthenticateInterface $authenticate;
-    /** @readonly */
-    private string $userAgent;
-    /** @readonly */
-    private UriInterface $authUri;
-
     /**
      * @psalm-mutation-free
      */
     public function __construct(
-        RequestFactoryInterface $requestFactory,
-        AuthenticateInterface $authenticate,
-        UriInterface $authUri,
-        string $userAgent
-    ) {
-        $this->requestFactory = $requestFactory;
-        $this->authenticate = $authenticate;
-        $this->authUri = $authUri;
-        $this->userAgent = $userAgent;
+        /** @readonly */
+        private RequestFactoryInterface $requestFactory,
+        /** @readonly */
+        private AuthenticateInterface $authenticate,
+        /** @readonly */
+        private UriInterface $authUri,
+        /** @readonly */
+        private string $userAgent
+    )
+    {
     }
 
     public function createRequest(string $method, $uri): RequestInterface

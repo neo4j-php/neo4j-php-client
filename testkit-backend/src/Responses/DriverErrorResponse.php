@@ -21,15 +21,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class DriverErrorResponse implements TestkitResponseInterface
 {
-    private Uuid $id;
-    private string $errorType;
-    private ?string $message;
-
-    public function __construct(Uuid $id, string $errorType, ?string $message)
+    public function __construct(private Uuid $id, private string $errorType, private ?string $message)
     {
-        $this->id = $id;
-        $this->errorType = $errorType;
-        $this->message = $message;
     }
 
     public function jsonSerialize(): array

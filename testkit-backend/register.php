@@ -38,12 +38,10 @@ return [
         return new StartTest($acceptedTests);
     },
 
-    MainRepository::class => static function () {
-        return new MainRepository(
-            [],
-            [],
-            [],
-            [],
-        );
-    },
+    MainRepository::class => static fn() => new MainRepository(
+        [],
+        [],
+        [],
+        [],
+    ),
 ];

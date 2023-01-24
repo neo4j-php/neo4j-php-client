@@ -37,13 +37,8 @@ use Symfony\Component\Uid\Uuid;
  */
 abstract class AbstractRunner implements RequestHandlerInterface
 {
-    protected MainRepository $repository;
-    private LoggerInterface $logger;
-
-    public function __construct(MainRepository $repository, LoggerInterface $logger)
+    public function __construct(protected MainRepository $repository, private LoggerInterface $logger)
     {
-        $this->repository = $repository;
-        $this->logger = $logger;
     }
 
     public function handle($request): ResultResponse
@@ -127,7 +122,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
      *
      * @return SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>|TransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>
      */
-    abstract protected function getRunner($request);
+    abstract protected function getRunner($request): \Laudis\Neo4j\Contracts\SessionInterface|\Laudis\Neo4j\Contracts\TransactionInterface;
 
     /**
      * @param T $request

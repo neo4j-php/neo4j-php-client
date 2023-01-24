@@ -22,23 +22,13 @@ namespace Laudis\Neo4j\Types;
  */
 final class Path extends AbstractPropertyObject
 {
-    /** @var CypherList<Node> */
-    private CypherList $nodes;
-    /** @var CypherList<UnboundRelationship> */
-    private CypherList $relationships;
-    /** @var CypherList<int> */
-    private CypherList $ids;
-
     /**
      * @param CypherList<Node>                $nodes
      * @param CypherList<UnboundRelationship> $relationships
      * @param CypherList<int>                 $ids
      */
-    public function __construct(CypherList $nodes, CypherList $relationships, CypherList $ids)
+    public function __construct(private CypherList $nodes, private CypherList $relationships, private CypherList $ids)
     {
-        $this->nodes = $nodes;
-        $this->relationships = $relationships;
-        $this->ids = $ids;
     }
 
     /**

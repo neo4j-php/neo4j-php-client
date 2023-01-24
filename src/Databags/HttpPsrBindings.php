@@ -47,15 +47,9 @@ final class HttpPsrBindings
      */
     public function __construct($client = null, $streamFactory = null, $requestFactory = null)
     {
-        $this->client = $client ?? static function (): ClientInterface {
-            return Psr18ClientDiscovery::find();
-        };
-        $this->streamFactory = $streamFactory ?? static function (): StreamFactoryInterface {
-            return Psr17FactoryDiscovery::findStreamFactory();
-        };
-        $this->requestFactory = $requestFactory ?? static function (): RequestFactoryInterface {
-            return Psr17FactoryDiscovery::findRequestFactory();
-        };
+        $this->client = $client ?? static fn(): ClientInterface => Psr18ClientDiscovery::find();
+        $this->streamFactory = $streamFactory ?? static fn(): StreamFactoryInterface => Psr17FactoryDiscovery::findStreamFactory();
+        $this->requestFactory = $requestFactory ?? static fn(): RequestFactoryInterface => Psr17FactoryDiscovery::findRequestFactory();
     }
 
     /**
@@ -93,7 +87,7 @@ final class HttpPsrBindings
      *
      * @param ClientInterface|callable():ClientInterface $client
      */
-    public function withClient($client): self
+    public function withClient(\Psr\Http\Client\ClientInterface|callable $client): self
     {
         return new self($client, $this->streamFactory, $this->requestFactory);
     }
@@ -103,7 +97,7 @@ final class HttpPsrBindings
      *
      * @param StreamFactoryInterface|callable():StreamFactoryInterface $factory
      */
-    public function withStreamFactory($factory): self
+    public function withStreamFactory(\Psr\Http\Message\StreamFactoryInterface|callable $factory): self
     {
         return new self($this->client, $factory, $this->requestFactory);
     }
@@ -113,7 +107,7 @@ final class HttpPsrBindings
      *
      * @param RequestFactoryInterface|callable():RequestFactoryInterface $factory
      */
-    public function withRequestFactory($factory): self
+    public function withRequestFactory(\Psr\Http\Message\RequestFactoryInterface|callable $factory): self
     {
         return new self($this->client, $this->streamFactory, $factory);
     }

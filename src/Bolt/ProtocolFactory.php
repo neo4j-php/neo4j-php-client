@@ -32,7 +32,7 @@ class ProtocolFactory
             $bolt->setProtocolVersions(4.4, 4.3, 4.2, 3);
             try {
                 $protocol = $bolt->build();
-            } catch (ConnectException $exception) {
+            } catch (ConnectException) {
                 $bolt->setProtocolVersions(4.1, 4.0, 4, 3);
                 $protocol = $bolt->build();
             }

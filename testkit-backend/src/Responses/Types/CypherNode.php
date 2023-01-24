@@ -17,15 +17,8 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 
 final class CypherNode implements TestkitResponseInterface
 {
-    private CypherObject $id;
-    private CypherObject $labels;
-    private CypherObject $props;
-
-    public function __construct(CypherObject $id, CypherObject $labels, CypherObject $props)
+    public function __construct(private CypherObject $id, private CypherObject $labels, private CypherObject $props)
     {
-        $this->id = $id;
-        $this->labels = $labels;
-        $this->props = $props;
     }
 
     public function jsonSerialize(): array

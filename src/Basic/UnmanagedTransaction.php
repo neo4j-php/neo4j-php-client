@@ -22,15 +22,11 @@ use Laudis\Neo4j\Types\CypherMap;
  */
 final class UnmanagedTransaction implements UnmanagedTransactionInterface
 {
-    /** @var UnmanagedTransactionInterface<SummarizedResult<CypherMap>> */
-    private UnmanagedTransactionInterface $tsx;
-
     /**
      * @param UnmanagedTransactionInterface<SummarizedResult<CypherMap>> $tsx
      */
-    public function __construct(UnmanagedTransactionInterface $tsx)
+    public function __construct(private UnmanagedTransactionInterface $tsx)
     {
-        $this->tsx = $tsx;
     }
 
     /**

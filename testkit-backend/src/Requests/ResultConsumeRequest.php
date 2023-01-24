@@ -9,11 +9,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class ResultConsumeRequest
 {
-    private Uuid $resultId;
-
-    public function __construct(Uuid $resultId)
+    public function __construct(private Uuid $resultId)
     {
-        $this->resultId = $resultId;
     }
 
     public function getResultId(): Uuid

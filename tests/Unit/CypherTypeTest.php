@@ -65,7 +65,7 @@ final class CypherTypeTest extends TestCase
         $caught = null;
         try {
             $empty[0] = 'abc';
-        } catch (BadMethodCallException $e) {
+        } catch (BadMethodCallException) {
             $caught = true;
         }
         self::assertTrue($caught, 'Empty is writable');
@@ -73,7 +73,7 @@ final class CypherTypeTest extends TestCase
         $caught = null;
         try {
             unset($empty[0]);
-        } catch (BadMethodCallException $e) {
+        } catch (BadMethodCallException) {
             $caught = true;
         }
         self::assertTrue($caught, 'Empty is writable');
@@ -81,7 +81,7 @@ final class CypherTypeTest extends TestCase
         $caught = null;
         try {
             $empty[0];
-        } catch (OutOfBoundsException $e) {
+        } catch (OutOfBoundsException) {
             $caught = true;
         }
         self::assertTrue($caught, 'Empty has still valid access');
@@ -109,14 +109,14 @@ final class CypherTypeTest extends TestCase
         $caught = null;
         try {
             $filled[0] = 'abc';
-        } catch (BadMethodCallException $e) {
+        } catch (BadMethodCallException) {
             $caught = true;
         }
         self::assertTrue($caught, 'Filled is writable');
         $caught = null;
         try {
             unset($filled[0]);
-        } catch (BadMethodCallException $e) {
+        } catch (BadMethodCallException) {
             $caught = true;
         }
         self::assertTrue($caught, 'Filled is writable');
@@ -124,7 +124,7 @@ final class CypherTypeTest extends TestCase
         $caught = null;
         try {
             $filled[0];
-        } catch (OutOfBoundsException $e) {
+        } catch (OutOfBoundsException) {
             $caught = true;
         }
         self::assertTrue($caught, 'Filled has still valid access');

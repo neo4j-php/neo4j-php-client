@@ -33,24 +33,13 @@ use Laudis\Neo4j\Types\CypherList;
  */
 final class Client implements ClientInterface
 {
-    private SessionConfiguration $defaultSessionConfiguration;
-    private TransactionConfiguration $defaultTransactionConfiguration;
-    /** @var DriverSetupManager<ResultFormat> */
-    private DriverSetupManager $driverSetups;
-
     /**
      * @psalm-mutation-free
      *
      * @param DriverSetupManager<ResultFormat> $driverSetups
      */
-    public function __construct(
-        DriverSetupManager $driverSetups,
-        SessionConfiguration $defaultSessionConfiguration,
-        TransactionConfiguration $defaultTransactionConfiguration
-    ) {
-        $this->defaultSessionConfiguration = $defaultSessionConfiguration;
-        $this->defaultTransactionConfiguration = $defaultTransactionConfiguration;
-        $this->driverSetups = $driverSetups;
+    public function __construct(private DriverSetupManager $driverSetups, private SessionConfiguration $defaultSessionConfiguration, private TransactionConfiguration $defaultTransactionConfiguration)
+    {
     }
 
     public function run(string $statement, iterable $parameters = [], ?string $alias = null)

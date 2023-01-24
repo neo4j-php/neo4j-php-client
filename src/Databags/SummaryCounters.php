@@ -22,64 +22,8 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
  */
 final class SummaryCounters extends AbstractCypherObject
 {
-    private int $nodesCreated;
-
-    private int $nodesDeleted;
-
-    private int $relationshipsCreated;
-
-    private int $relationshipsDeleted;
-
-    private int $propertiesSet;
-
-    private int $labelsAdded;
-
-    private int $labelsRemoved;
-
-    private int $indexesAdded;
-
-    private int $indexesRemoved;
-
-    private int $constraintsAdded;
-
-    private int $constraintsRemoved;
-
-    private bool $containsUpdates;
-
-    private bool $containsSystemUpdates;
-
-    private int $systemUpdates;
-
-    public function __construct(
-        int $nodesCreated = 0,
-        int $nodesDeleted = 0,
-        int $relationshipsCreated = 0,
-        int $relationshipsDeleted = 0,
-        int $propertiesSet = 0,
-        int $labelsAdded = 0,
-        int $labelsRemoved = 0,
-        int $indexesAdded = 0,
-        int $indexesRemoved = 0,
-        int $constraintsAdded = 0,
-        int $constraintsRemoved = 0,
-        bool $containsUpdates = false,
-        bool $containsSystemUpdates = false,
-        int $systemUpdates = 0
-    ) {
-        $this->nodesCreated = $nodesCreated;
-        $this->nodesDeleted = $nodesDeleted;
-        $this->relationshipsCreated = $relationshipsCreated;
-        $this->relationshipsDeleted = $relationshipsDeleted;
-        $this->propertiesSet = $propertiesSet;
-        $this->labelsAdded = $labelsAdded;
-        $this->labelsRemoved = $labelsRemoved;
-        $this->indexesAdded = $indexesAdded;
-        $this->indexesRemoved = $indexesRemoved;
-        $this->constraintsAdded = $constraintsAdded;
-        $this->constraintsRemoved = $constraintsRemoved;
-        $this->containsUpdates = $containsUpdates;
-        $this->containsSystemUpdates = $containsSystemUpdates;
-        $this->systemUpdates = $systemUpdates;
+    public function __construct(private int $nodesCreated = 0, private int $nodesDeleted = 0, private int $relationshipsCreated = 0, private int $relationshipsDeleted = 0, private int $propertiesSet = 0, private int $labelsAdded = 0, private int $labelsRemoved = 0, private int $indexesAdded = 0, private int $indexesRemoved = 0, private int $constraintsAdded = 0, private int $constraintsRemoved = 0, private bool $containsUpdates = false, private bool $containsSystemUpdates = false, private int $systemUpdates = 0)
+    {
     }
 
     /**

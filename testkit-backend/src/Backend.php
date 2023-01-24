@@ -31,21 +31,8 @@ use UnexpectedValueException;
 
 final class Backend
 {
-    private Socket $socket;
-    private LoggerInterface $logger;
-    private ContainerInterface $container;
-    private RequestFactory $factory;
-
-    public function __construct(
-        Socket $socket,
-        LoggerInterface $logger,
-        ContainerInterface $container,
-        RequestFactory $factory
-    ) {
-        $this->socket = $socket;
-        $this->logger = $logger;
-        $this->container = $container;
-        $this->factory = $factory;
+    public function __construct(private Socket $socket, private LoggerInterface $logger, private ContainerInterface $container, private RequestFactory $factory)
+    {
     }
 
     /**

@@ -30,11 +30,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class TransactionCommit implements RequestHandlerInterface
 {
-    private MainRepository $repository;
-
-    public function __construct(MainRepository $repository)
+    public function __construct(private MainRepository $repository)
     {
-        $this->repository = $repository;
     }
 
     /**

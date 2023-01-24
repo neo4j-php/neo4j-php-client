@@ -18,18 +18,13 @@ use Bolt\protocol\AProtocol;
 
 class Connection
 {
-    private IConnection $connection;
-    /** @var ''|'s'|'ssc' */
-    private string $ssl;
     private ?AProtocol $protocol = null;
 
     /**
      * @param ''|'s'|'ssc' $ssl
      */
-    public function __construct(IConnection $connection, string $ssl)
+    public function __construct(private IConnection $connection, private string $ssl)
     {
-        $this->connection = $connection;
-        $this->ssl = $ssl;
     }
 
     public function getIConnection(): IConnection

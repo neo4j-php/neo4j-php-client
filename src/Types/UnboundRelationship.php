@@ -27,19 +27,11 @@ use function sprintf;
  */
 class UnboundRelationship extends AbstractPropertyObject
 {
-    private int $id;
-    private string $type;
-    /** @var CypherMap<OGMTypes> */
-    private CypherMap $properties;
-
     /**
      * @param CypherMap<OGMTypes> $properties
      */
-    public function __construct(int $id, string $type, CypherMap $properties)
+    public function __construct(private int $id, private string $type, private CypherMap $properties)
     {
-        $this->id = $id;
-        $this->type = $type;
-        $this->properties = $properties;
     }
 
     public function getId(): int

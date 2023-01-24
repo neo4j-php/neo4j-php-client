@@ -18,28 +18,11 @@ use Symfony\Component\Uid\Uuid;
 
 final class NewSessionRequest
 {
-    private Uuid $driverId;
-    private string $accessMode;
-    /** @var iterable<Bookmark>|null */
-    private ?iterable $bookmarks;
-    private ?string $database;
-    private ?int $fetchSize;
-
     /**
      * @param iterable<Bookmark>|null $bookmarks
      */
-    public function __construct(
-        Uuid $driverId,
-        string $accessMode,
-        ?iterable $bookmarks,
-        ?string $database,
-        ?int $fetchSize
-    ) {
-        $this->driverId = $driverId;
-        $this->accessMode = $accessMode;
-        $this->bookmarks = $bookmarks;
-        $this->database = $database;
-        $this->fetchSize = $fetchSize;
+    public function __construct(private Uuid $driverId, private string $accessMode, private ?iterable $bookmarks, private ?string $database, private ?int $fetchSize)
+    {
     }
 
     public function getDriverId(): Uuid

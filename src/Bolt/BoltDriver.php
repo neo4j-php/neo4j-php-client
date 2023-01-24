@@ -39,40 +39,28 @@ use Throwable;
  */
 final class BoltDriver implements DriverInterface
 {
-    private UriInterface $parsedUrl;
-    private ConnectionPool $pool;
-    private FormatterInterface $formatter;
-
     /**
      * @param FormatterInterface<T> $formatter
      *
      * @psalm-mutation-free
      */
-    public function __construct(
-        UriInterface $parsedUrl,
-        ConnectionPool $pool,
-        FormatterInterface $formatter
-    ) {
-        $this->parsedUrl = $parsedUrl;
-        $this->pool = $pool;
-        $this->formatter = $formatter;
+    public function __construct(private UriInterface $parsedUrl, private ConnectionPool $pool, private FormatterInterface $formatter)
+    {
     }
 
     /**
      * @template U
      *
      * @param FormatterInterface<U> $formatter
-     * @param string|UriInterface   $uri
      *
      * @return (
      *           func_num_args() is 5
      *           ? self<U>
      *           : self<OGMResults>
      *           )
-     *
      * @psalm-suppress MixedReturnTypeCoercion
      */
-    public static function create($uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
+    public static function create(string|\Psr\Http\Message\UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
@@ -110,7 +98,7 @@ final class BoltDriver implements DriverInterface
         $config ??= SessionConfiguration::default();
         try {
             GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             return false;
         }
 

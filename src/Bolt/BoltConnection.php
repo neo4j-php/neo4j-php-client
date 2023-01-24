@@ -37,10 +37,6 @@ use WeakReference;
  */
 class BoltConnection implements ConnectionInterface
 {
-    private V3 $boltProtocol;
-    /** @psalm-readonly */
-    private ConnectionConfiguration $config;
-
     /**
      * @note We are using references to "subscribed results" to maintain backwards compatibility and try and strike
      *       a balance between performance and ease of use.
@@ -55,9 +51,6 @@ class BoltConnection implements ConnectionInterface
      * @var list<WeakReference<CypherList>>
      */
     private array $subscribedResults = [];
-    private AuthenticateInterface $auth;
-    private Connection $connection;
-    private string $userAgent;
 
     public function getImplementation()
     {
@@ -67,14 +60,10 @@ class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(V3 $protocol, Connection $connection, AuthenticateInterface $auth, string $userAgent, ConnectionConfiguration $config)
+    public function __construct(private V3 $boltProtocol, private Connection $connection, private AuthenticateInterface $auth, private string $userAgent, /** @psalm-readonly */
+    private ConnectionConfiguration $config)
     {
-        $this->config = $config;
-        $this->boltProtocol = $protocol;
         $this->serverState = 'READY';
-        $this->auth = $auth;
-        $this->connection = $connection;
-        $this->userAgent = $userAgent;
         $this->config = $config;
     }
 

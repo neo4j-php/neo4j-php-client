@@ -32,17 +32,11 @@ use function shuffle;
  */
 final class ConnectionPool implements ConnectionPoolInterface
 {
-    private SemaphoreInterface $semaphore;
     /** @var list<BoltConnection> */
     private array $activeConnections = [];
-    private BoltFactory $factory;
-    private ConnectionRequestData $data;
 
-    public function __construct(SemaphoreInterface $semaphore, BoltFactory $factory, ConnectionRequestData $data)
+    public function __construct(private SemaphoreInterface $semaphore, private BoltFactory $factory, private ConnectionRequestData $data)
     {
-        $this->semaphore = $semaphore;
-        $this->factory = $factory;
-        $this->data = $data;
     }
 
     public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, SemaphoreInterface $semaphore): self

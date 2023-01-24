@@ -22,15 +22,11 @@ use function sem_release;
 
 class SysVSemaphore implements SemaphoreInterface
 {
-    /** @var resource */
-    private $semaphore;
-
     /**
      * @param resource $semaphore
      */
-    private function __construct($semaphore)
+    private function __construct(private $semaphore)
     {
-        $this->semaphore = $semaphore;
     }
 
     public static function create(string $key, int $max): self

@@ -17,25 +17,16 @@ use Symfony\Component\Uid\Uuid;
 
 final class SessionRunRequest
 {
-    private Uuid $sessionId;
-    private string $cypher;
     /** @var iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> */
     private iterable $params;
-    /** @var iterable<string, mixed>|null */
-    private ?iterable $txMeta;
-    private ?int $timeout;
 
     /**
      * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>|null $params
      * @param iterable<string, mixed>|null                                  $txMeta
      */
-    public function __construct(Uuid $sessionId, string $cypher, ?iterable $params, ?iterable $txMeta, ?int $timeout)
+    public function __construct(private Uuid $sessionId, private string $cypher, ?iterable $params, private ?iterable $txMeta, private ?int $timeout)
     {
-        $this->sessionId = $sessionId;
-        $this->cypher = $cypher;
         $this->params = $params ?? [];
-        $this->txMeta = $txMeta;
-        $this->timeout = $timeout;
     }
 
     public function getSessionId(): Uuid

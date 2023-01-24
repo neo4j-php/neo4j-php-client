@@ -110,21 +110,15 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testTransactionFunction(string $alias): void
     {
-        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x');
-        }, $alias);
+        $result = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x'), $alias);
 
         self::assertEquals(1, $result);
 
-        $result = $this->getClient()->readTransaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x');
-        }, $alias);
+        $result = $this->getClient()->readTransaction(static fn(TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x'), $alias);
 
         self::assertEquals(1, $result);
 
-        $result = $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x');
-        }, $alias);
+        $result = $this->getClient()->writeTransaction(static fn(TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x'), $alias);
 
         self::assertEquals(1, $result);
     }
@@ -134,15 +128,13 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testValidRun(string $alias): void
     {
-        $response = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run(<<<'CYPHER'
+        $response = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
 WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
-CYPHER, ['test' => 'a', 'otherTest' => 'b']);
-        }, $alias);
+CYPHER, ['test' => 'a', 'otherTest' => 'b']), $alias);
 
         self::assertEquals(1, $response->count());
         $map = $response->first();
@@ -161,10 +153,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
     {
         $exception = false;
         try {
-            $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-                return $tsx->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
-            }, $alias);
-        } catch (Neo4jException $e) {
+            $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']), $alias);
+        } catch (Neo4jException) {
             $exception = true;
         }
         self::assertTrue($exception);
@@ -178,7 +168,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
         $exception = false;
         try {
             $this->getClient()->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b'], $alias);
-        } catch (Neo4jException $e) {
+        } catch (Neo4jException) {
             $exception = true;
         }
         self::assertTrue($exception);
@@ -191,15 +181,13 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
      */
     public function testValidStatement(string $alias): void
     {
-        $response = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->runStatement(Statement::create(<<<'CYPHER'
+        $response = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->runStatement(Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
 WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
-CYPHER, ['test' => 'a', 'otherTest' => 'b']));
-        }, $alias);
+CYPHER, ['test' => 'a', 'otherTest' => 'b'])), $alias);
 
         self::assertEquals(1, $response->count());
         $map = $response->first();
@@ -220,7 +208,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
         try {
             $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
             $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->runStatement($statement), $alias);
-        } catch (Neo4jException $e) {
+        } catch (Neo4jException) {
             $exception = true;
         }
         self::assertTrue($exception);

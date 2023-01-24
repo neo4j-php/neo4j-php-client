@@ -42,12 +42,10 @@ final class BoltFactoryTest extends TestCase
             ->willReturn(new Connection($this->createMock(IConnection::class), ''));
         $protocolFactory = $this->createMock(ProtocolFactory::class);
         $protocolFactory->method('createProtocol')
-            ->willReturnCallback(static function (IConnection $connection) {
-                return [
-                    new V4(new Packer(), new Unpacker(), $connection),
-                    ['server' => 'abc', 'connection_id' => 'i'],
-                    ];
-            });
+            ->willReturnCallback(static fn(IConnection $connection) => [
+                new V4(new Packer(), new Unpacker(), $connection),
+                ['server' => 'abc', 'connection_id' => 'i'],
+                ]);
 
         $this->factory = new BoltFactory(
             $basicConnectionFactory,

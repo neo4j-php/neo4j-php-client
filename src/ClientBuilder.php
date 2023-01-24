@@ -45,26 +45,21 @@ final class ClientBuilder
 {
     public const SUPPORTED_SCHEMES = ['', 'bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https'];
 
-    /** @psalm-readonly */
-    private DriverConfiguration $defaultDriverConfig;
-    /** @psalm-readonly */
-    private TransactionConfiguration $defaultTransactionConfig;
-    /** @psalm-readonly */
-    private SessionConfiguration $defaultSessionConfig;
-    /** @var DriverSetupManager<T> */
-    private DriverSetupManager $driverSetups;
-
     /**
      * @psalm-mutation-free
      *
      * @param DriverSetupManager<T> $driverSetups
      */
-    public function __construct(DriverConfiguration $configuration, SessionConfiguration $sessionConfiguration, TransactionConfiguration $transactionConfiguration, DriverSetupManager $driverSetups)
+    public function __construct(
+        /** @psalm-readonly */
+        private DriverConfiguration $defaultDriverConfig,
+        /** @psalm-readonly */
+        private SessionConfiguration $defaultSessionConfig,
+        /** @psalm-readonly */
+        private TransactionConfiguration $defaultTransactionConfig,
+        private DriverSetupManager $driverSetups
+    )
     {
-        $this->defaultDriverConfig = $configuration;
-        $this->defaultSessionConfig = $sessionConfiguration;
-        $this->defaultTransactionConfig = $transactionConfiguration;
-        $this->driverSetups = $driverSetups;
     }
 
     /**

@@ -18,13 +18,8 @@ use Laudis\Neo4j\Enum\SslMode;
  */
 final class SslConfiguration
 {
-    private SslMode $mode;
-    private bool $verifyPeer;
-
-    public function __construct(SslMode $mode, bool $verifyPeer)
+    public function __construct(private SslMode $mode, private bool $verifyPeer)
     {
-        $this->mode = $mode;
-        $this->verifyPeer = $verifyPeer;
     }
 
     public function getMode(): SslMode

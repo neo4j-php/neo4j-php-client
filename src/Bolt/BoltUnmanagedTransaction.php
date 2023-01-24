@@ -39,41 +39,27 @@ use Throwable;
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
-    /**
-     * @psalm-readonly
-     *
-     * @var FormatterInterface<T>
-     */
-    private FormatterInterface $formatter;
-    /** @psalm-readonly */
-    private BoltConnection $connection;
-    /** @psalm-readonly */
-    private ?string $database;
-
     private bool $isRolledBack = false;
 
     private bool $isCommitted = false;
-    private SessionConfiguration $config;
-    private TransactionConfiguration $tsxConfig;
-    private BookmarkHolder $bookmarkHolder;
 
     /**
      * @param FormatterInterface<T> $formatter
      */
     public function __construct(
-        ?string $database,
-        FormatterInterface $formatter,
-        BoltConnection $connection,
-        SessionConfiguration $config,
-        TransactionConfiguration $tsxConfig,
-        BookmarkHolder $bookmarkHolder
-    ) {
-        $this->formatter = $formatter;
-        $this->connection = $connection;
-        $this->database = $database;
-        $this->config = $config;
-        $this->tsxConfig = $tsxConfig;
-        $this->bookmarkHolder = $bookmarkHolder;
+        /** @psalm-readonly */
+        private ?string $database,
+        /**
+         * @psalm-readonly
+         */
+        private FormatterInterface $formatter,
+        /** @psalm-readonly */
+        private BoltConnection $connection,
+        private SessionConfiguration $config,
+        private TransactionConfiguration $tsxConfig,
+        private BookmarkHolder $bookmarkHolder
+    )
+    {
     }
 
     public function commit(iterable $statements = []): CypherList

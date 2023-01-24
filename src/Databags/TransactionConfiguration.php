@@ -25,19 +25,12 @@ final class TransactionConfiguration
     public const DEFAULT_TIMEOUT = 60.0;
     public const DEFAULT_METADATA = '[]';
 
-    /** @var pure-callable():(float|null)|float|null */
-    private $timeout;
-    /** @var pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null */
-    private $metaData;
-
     /**
      * @param pure-callable():(float|null)|float|null                                                             $timeout  timeout in seconds
      * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
      */
-    public function __construct($timeout = null, $metaData = null)
+    public function __construct(private $timeout = null, private $metaData = null)
     {
-        $this->timeout = $timeout;
-        $this->metaData = $metaData;
     }
 
     /**

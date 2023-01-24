@@ -72,11 +72,9 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
      */
     public function testListParameterHelper(string $alias): void
     {
-        $result = $this->getClient()->transaction(static function (TSX $tsx) {
-            return $tsx->run('MATCH (x) WHERE x.slug IN $listOrMap RETURN x', [
-                'listOrMap' => ParameterHelper::asList([]),
-            ]);
-        }, $alias);
+        $result = $this->getClient()->transaction(static fn(TSX $tsx) => $tsx->run('MATCH (x) WHERE x.slug IN $listOrMap RETURN x', [
+            'listOrMap' => ParameterHelper::asList([]),
+        ]), $alias);
         self::assertEquals(0, $result->count());
     }
 
@@ -85,11 +83,9 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
      */
     public function testValidListParameterHelper(string $alias): void
     {
-        $result = $this->getClient()->transaction(static function (TSX $tsx) {
-            return $tsx->run('RETURN $listOrMap AS x', [
-                'listOrMap' => ParameterHelper::asList([1, 2, 3]),
-            ]);
-        }, $alias);
+        $result = $this->getClient()->transaction(static fn(TSX $tsx) => $tsx->run('RETURN $listOrMap AS x', [
+            'listOrMap' => ParameterHelper::asList([1, 2, 3]),
+        ]), $alias);
         self::assertEquals(1, $result->count());
         self::assertEquals([1, 2, 3], $result->first()->getAsArrayList('x')->toArray());
     }
@@ -100,12 +96,10 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
     public function testMergeTransactionFunction(string $alias): void
     {
         $this->expectException(Neo4jException::class);
-        $this->getClient()->writeTransaction(static function (TSX $tsx) {
-            /** @psalm-suppress ALL */
-            return $tsx->run('MERGE (x {y: "z"}:X) return x')->first()
-                ->getAsMap('x')
-                ->getAsString('y');
-        }, $alias);
+        $this->getClient()->writeTransaction(static fn(TSX $tsx) => /** @psalm-suppress ALL */
+$tsx->run('MERGE (x {y: "z"}:X) return x')->first()
+            ->getAsMap('x')
+            ->getAsString('y'), $alias);
     }
 
     /**
@@ -113,11 +107,9 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
      */
     public function testValidMapParameterHelper(string $alias): void
     {
-        $result = $this->getClient()->transaction(static function (TSX $tsx) {
-            return $tsx->run('RETURN $listOrMap AS x', [
-                'listOrMap' => ParameterHelper::asMap(['a' => 'b', 'c' => 'd']),
-            ]);
-        }, $alias);
+        $result = $this->getClient()->transaction(static fn(TSX $tsx) => $tsx->run('RETURN $listOrMap AS x', [
+            'listOrMap' => ParameterHelper::asMap(['a' => 'b', 'c' => 'd']),
+        ]), $alias);
         self::assertEquals(1, $result->count());
         self::assertEquals(['a' => 'b', 'c' => 'd'], $result->first()->getAsMap('x')->toArray());
     }
@@ -128,13 +120,11 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
     public function testArrayParameterHelper(string $alias): void
     {
         $this->expectNotToPerformAssertions();
-        $this->getClient()->transaction(static function (TSX $tsx) {
-            return $tsx->run(<<<'CYPHER'
+        $this->getClient()->transaction(static fn(TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
-CYPHER, ['listOrMap' => []]);
-        }, $alias);
+CYPHER, ['listOrMap' => []]), $alias);
     }
 
     /**
@@ -143,13 +133,11 @@ CYPHER, ['listOrMap' => []]);
     public function testInvalidParameter(string $alias): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->getClient()->transaction(function (TSX $tsx) {
-            return $tsx->run(<<<'CYPHER'
+        $this->getClient()->transaction(fn(TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
-CYPHER, ['listOrMap' => self::generate()]);
-        }, $alias);
+CYPHER, ['listOrMap' => self::generate()]), $alias);
     }
 
     private static function generate(): Generator
@@ -167,13 +155,11 @@ CYPHER, ['listOrMap' => self::generate()]);
         $this->expectException(InvalidArgumentException::class);
         /** @var iterable<string, iterable<mixed, mixed>|scalar|null> $generator */
         $generator = self::generate();
-        $this->getClient()->transaction(static function (TSX $tsx) use ($generator) {
-            return $tsx->run(<<<'CYPHER'
+        $this->getClient()->transaction(static fn(TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
-CYPHER, ['listOrMap' => $generator]);
-        }, $alias);
+CYPHER, ['listOrMap' => $generator]), $alias);
     }
 
     /**
@@ -181,9 +167,7 @@ CYPHER, ['listOrMap' => $generator]);
      */
     public function testCreationAndResult(string $alias): void
     {
-        $result = $this->getClient()->transaction(static function (TSX $tsx) {
-            return $tsx->run('MERGE (x:Node {x:$x}) RETURN x', ['x' => 'x']);
-        }, $alias)->first();
+        $result = $this->getClient()->transaction(static fn(TSX $tsx) => $tsx->run('MERGE (x:Node {x:$x}) RETURN x', ['x' => 'x']), $alias)->first();
 
         self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
     }
@@ -197,14 +181,12 @@ CYPHER, ['listOrMap' => $generator]);
             self::markTestSkipped('Http cannot detected nested attributes');
         }
 
-        $results = $this->getClient()->transaction(static function (TSX $tsx) {
-            return $tsx->run(<<<'CYPHER'
+        $results = $this->getClient()->transaction(static fn(TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
 WITH b
 MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
 RETURN x, y, z
-CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
-        }, $alias);
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alias);
 
         self::assertEquals(1, $results->count());
         $result = $results->first();
@@ -213,14 +195,12 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
         self::assertEquals(
             [['attribute' => 'xy'], ['attribute' => 'yz']],
             /** @psalm-suppress MissingClosureReturnType */
-            $result->getAsCypherList('y')->map(static function ($r) {
-                /**
+            $result->getAsCypherList('y')->map(static fn($r) => /**
                  * @psalm-suppress MixedMethodCall
                  *
                  * @var array <string, string>
                  */
-                return $r->getProperties()->toArray();
-            })->toArray()
+$r->getProperties()->toArray())->toArray()
         );
         self::assertEquals(['z' => 'z'], $result->getAsNode('z')->getProperties()->toArray());
     }
@@ -230,11 +210,9 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
      */
     public function testNullListAndMap(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TSX $tsx) {
-            return $tsx->run(<<<'CYPHER'
+        $results = $this->getClient()->transaction(static fn(TSX $tsx) => $tsx->run(<<<'CYPHER'
 RETURN null AS x, [1, 2, 3] AS y, {x: 'x', y: 'y', z: 'z'} AS z
-CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
-        }, $alias);
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alias);
 
         self::assertEquals(1, $results->count());
         $result = $results->first();
@@ -249,15 +227,13 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
      */
     public function testListAndMapInput(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TSX $tsx) {
-            return $tsx->run(<<<'CYPHER'
+        $results = $this->getClient()->transaction(static fn(TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:Node {x: $x.x})
 WITH x
 MERGE (y:Node {list: $y})
 RETURN x, y
 LIMIT 1
-CYPHER, ['x' => ['x' => 'x'], 'y' => [1, 2, 3]]);
-        }, $alias);
+CYPHER, ['x' => ['x' => 'x'], 'y' => [1, 2, 3]]), $alias);
 
         self::assertEquals(1, $results->count());
         $result = $results->first();
@@ -291,10 +267,8 @@ CYPHER);
             ['x' => 'x'],
             ['x' => 'y'],
             ['x' => 'z'],
-        ], $result->getAsPath('p')->getNodes()->map(static function (Node $x) {
-            /** @var array<string, string> */
-            return $x->getProperties()->toArray();
-        })->toArray());
+        ], $result->getAsPath('p')->getNodes()->map(static fn(Node $x) => /** @var array<string, string> */
+$x->getProperties()->toArray())->toArray());
     }
 
     /**

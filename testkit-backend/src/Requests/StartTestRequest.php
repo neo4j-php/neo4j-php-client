@@ -15,11 +15,8 @@ namespace Laudis\Neo4j\TestkitBackend\Requests;
 
 final class StartTestRequest
 {
-    private string $testName;
-
-    public function __construct(string $testName)
+    public function __construct(private string $testName)
     {
-        $this->testName = $testName;
     }
 
     public function getTestName(): string

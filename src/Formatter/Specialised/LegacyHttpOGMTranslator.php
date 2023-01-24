@@ -421,7 +421,7 @@ final class LegacyHttpOGMTranslator
         $months = $interval->y * 12 + $interval->m;
         $days = $interval->d;
         $seconds = $interval->h * 60 * 60 + $interval->i * 60 + $interval->s;
-        $nanoseconds = (int) ($interval->f * 1000000000) + $nanoseconds;
+        $nanoseconds = (int) ($interval->f * 1_000_000_000) + $nanoseconds;
 
         return new Duration($months, $days, $seconds, $nanoseconds);
     }
@@ -446,7 +446,7 @@ final class LegacyHttpOGMTranslator
         $values = explode(':', $value);
 
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
-        return new Time((((int) $values[0]) * 60 * 60 + ((int) $values[1]) * 60) * 1000000000, 0);
+        return new Time((((int) $values[0]) * 60 * 60 + ((int) $values[1]) * 60) * 1_000_000_000, 0);
     }
 
     /**
@@ -470,10 +470,10 @@ final class LegacyHttpOGMTranslator
         }
 
         if ($tz !== null) {
-            return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1000000, $tz);
+            return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1_000_000, $tz);
         }
 
-        return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1000000, 0);
+        return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1_000_000, 0);
     }
 
     private function translateLocalDateTime(string $value): LocalDateTime
@@ -486,7 +486,7 @@ final class LegacyHttpOGMTranslator
             throw new RuntimeException(sprintf('Could not create date from format "Y-m-d H:i:s" and %s', $date.' '.$time));
         }
 
-        return new LocalDateTime($dateTime->getTimestamp(), (int) $milliseconds * 1000000);
+        return new LocalDateTime($dateTime->getTimestamp(), (int) $milliseconds * 1_000_000);
     }
 
     /**
@@ -510,6 +510,6 @@ final class LegacyHttpOGMTranslator
 
         $totalSeconds = ($hours * 3600) + ($minutes * 60) + $seconds + ($milliseconds / 1000);
 
-        return new LocalTime((int) $totalSeconds * 1000000000);
+        return new LocalTime((int) $totalSeconds * 1_000_000_000);
     }
 }

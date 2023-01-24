@@ -9,20 +9,14 @@ use Symfony\Component\Uid\Uuid;
 
 final class TransactionRunRequest
 {
-    private Uuid $txId;
-    private string $cypher;
     /** @var iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> */
     private iterable $params;
 
     /**
-     * @param Uuid $txId
-     * @param string $cypher
      * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>|null $params
      */
-    public function __construct(Uuid $txId, string $cypher, ?iterable $params = null)
+    public function __construct(private Uuid $txId, private string $cypher, ?iterable $params = null)
     {
-        $this->txId = $txId;
-        $this->cypher = $cypher;
         $this->params = $params ?? [];
     }
 

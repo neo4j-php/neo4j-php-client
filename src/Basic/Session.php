@@ -24,15 +24,11 @@ use Laudis\Neo4j\Types\CypherMap;
  */
 final class Session implements SessionInterface
 {
-    /** @var SessionInterface<SummarizedResult<CypherMap>> */
-    private SessionInterface $session;
-
     /**
      * @param SessionInterface<SummarizedResult<CypherMap>> $session
      */
-    public function __construct(SessionInterface $session)
+    public function __construct(private SessionInterface $session)
     {
-        $this->session = $session;
     }
 
     /**

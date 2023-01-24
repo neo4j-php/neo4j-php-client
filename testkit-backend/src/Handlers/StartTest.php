@@ -25,15 +25,11 @@ use function is_string;
  */
 final class StartTest implements RequestHandlerInterface
 {
-    /** @var array<string, array|string|bool> */
-    private array $acceptedTests;
-
     /**
      * @param array<string, array|string|bool> $acceptedTests
      */
-    public function __construct(array $acceptedTests)
+    public function __construct(private array $acceptedTests)
     {
-        $this->acceptedTests = $acceptedTests;
     }
 
     /**

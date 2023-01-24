@@ -15,11 +15,8 @@ namespace Laudis\Neo4j\Databags;
 
 final class BookmarkHolder
 {
-    private Bookmark $bookmark;
-
-    public function __construct(Bookmark $bookmark)
+    public function __construct(private Bookmark $bookmark)
     {
-        $this->bookmark = $bookmark;
     }
 
     public function getBookmark(): Bookmark

@@ -9,19 +9,11 @@ use Symfony\Component\Uid\Uuid;
 
 final class ForcedRoutingTableUpdateRequest
 {
-    private Uuid $driverId;
-    private ?string $database;
-    /** @var iterable<string> */
-    private ?iterable $bookmarks;
-
     /**
      * @param iterable<string> $bookmarks
      */
-    public function __construct(Uuid $driverId, ?string $database, ?iterable $bookmarks)
+    public function __construct(private Uuid $driverId, private ?string $database, private ?iterable $bookmarks)
     {
-        $this->driverId = $driverId;
-        $this->database = $database;
-        $this->bookmarks = $bookmarks;
     }
 
     public function getDriverId(): Uuid

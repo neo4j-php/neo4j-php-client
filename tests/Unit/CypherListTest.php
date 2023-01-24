@@ -154,9 +154,7 @@ final class CypherListTest extends TestCase
 
     public function testReduce(): void
     {
-        $count = $this->list->reduce(static function (?int $initial, string $value, int $key) {
-            return ($initial ?? 0) + $key * hexdec($value);
-        }, 5);
+        $count = $this->list->reduce(static fn(?int $initial, string $value, int $key) => ($initial ?? 0) + $key * hexdec($value), 5);
 
         self::assertEquals(5 + hexdec('B') + 2 * hexdec('C'), $count);
     }
@@ -380,9 +378,7 @@ final class CypherListTest extends TestCase
 
                 return $tbr;
             })
-            ->map(static function (stdClass $class) {
-                return (string) $class->value;
-            })
+            ->map(static fn(stdClass $class) => (string) $class->value)
             ->toArray();
 
         self::assertEquals(['a', 'b', 'c'], $map);

@@ -20,24 +20,8 @@ namespace Laudis\Neo4j\Databags;
  */
 final class Notification
 {
-    private string $code;
-    private string $description;
-    private ?InputPosition $inputPosition;
-    private string $severity;
-    private string $title;
-
-    public function __construct(
-        string $code,
-        string $description,
-        ?InputPosition $inputPosition,
-        string $severity,
-        string $title
-    ) {
-        $this->code = $code;
-        $this->description = $description;
-        $this->inputPosition = $inputPosition;
-        $this->severity = $severity;
-        $this->title = $title;
+    public function __construct(private string $code, private string $description, private ?\Laudis\Neo4j\Databags\InputPosition $inputPosition, private string $severity, private string $title)
+    {
     }
 
     /**

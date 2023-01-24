@@ -23,17 +23,11 @@ use Laudis\Neo4j\Enum\RoutingRoles;
  */
 final class RoutingTable
 {
-    /** @var iterable<array{addresses: list<string>, role:string}> */
-    private iterable $servers;
-    private int $ttl;
-
     /**
      * @param iterable<array{addresses: list<string>, role:string}> $servers
      */
-    public function __construct(iterable $servers, int $ttl)
+    public function __construct(private iterable $servers, private int $ttl)
     {
-        $this->servers = $servers;
-        $this->ttl = $ttl;
     }
 
     /**

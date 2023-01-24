@@ -32,18 +32,12 @@ final class DriverConfiguration
     public const DEFAULT_POOL_SIZE = 0x2F;
     public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
     public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
-
-    private ?string $userAgent;
     /** @var callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
     private $httpPsrBindings;
-    private SslConfiguration $sslConfig;
-    private ?int $maxPoolSize;
     /** @var callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
     /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
     private $semaphoreFactory;
-    /** @var ?float */
-    private ?float $acquireConnectionTimeout;
 
     /**
      * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
@@ -52,14 +46,10 @@ final class DriverConfiguration
      *
      * @psalm-external-mutation-free
      */
-    public function __construct(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, ?int $maxPoolSize, $cache, ?float $acquireConnectionTimeout, $semaphore)
+    public function __construct(private ?string $userAgent, $httpPsrBindings, private SslConfiguration $sslConfig, private ?int $maxPoolSize, $cache, private ?float $acquireConnectionTimeout, $semaphore)
     {
-        $this->userAgent = $userAgent;
         $this->httpPsrBindings = $httpPsrBindings;
-        $this->sslConfig = $sslConfig;
-        $this->maxPoolSize = $maxPoolSize;
         $this->cache = $cache;
-        $this->acquireConnectionTimeout = $acquireConnectionTimeout;
         $this->semaphoreFactory = $semaphore;
     }
 

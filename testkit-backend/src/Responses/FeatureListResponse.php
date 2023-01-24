@@ -20,11 +20,8 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
  */
 final class FeatureListResponse implements TestkitResponseInterface
 {
-    private array $features;
-
-    public function __construct(array $features)
+    public function __construct(private array $features)
     {
-        $this->features = $features;
     }
 
     public function jsonSerialize(): array

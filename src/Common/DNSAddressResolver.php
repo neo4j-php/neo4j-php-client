@@ -35,7 +35,7 @@ class DNSAddressResolver implements AddressResolverInterface
         try {
             /** @var list<array{ip?: string|null}> $records */
             $records = dns_get_record($host, DNS_A | DNS_AAAA);
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $records = []; // Failed DNS queries should not halt execution
         }
 
@@ -56,7 +56,7 @@ class DNSAddressResolver implements AddressResolverInterface
         try {
             /** @var list<array{target?: string|null}> $records */
             $records = dns_get_record($host.'.in-addr.arpa');
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $records = []; // Failed DNS queries should not halt execution
         }
 

@@ -24,15 +24,8 @@ use Psr\Http\Message\UriInterface;
  */
 final class ServerInfo extends AbstractCypherObject
 {
-    private UriInterface $address;
-    private ConnectionProtocol $protocol;
-    private string $agent;
-
-    public function __construct(UriInterface $address, ConnectionProtocol $protocol, string $agent)
+    public function __construct(private UriInterface $address, private ConnectionProtocol $protocol, private string $agent)
     {
-        $this->address = $address;
-        $this->protocol = $protocol;
-        $this->agent = $agent;
     }
 
     /**

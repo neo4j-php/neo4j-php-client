@@ -40,18 +40,14 @@ class DriverSetupManager implements Countable
     /** @var array<string, DriverInterface<ResultFormat>> */
     private array $drivers = [];
     private ?string $default = null;
-    private FormatterInterface $formatter;
-    private DriverConfiguration $configuration;
 
     /**
      * @psalm-mutation-free
      *
      * @param FormatterInterface<ResultFormat> $formatter
      */
-    public function __construct(FormatterInterface $formatter, DriverConfiguration $configuration)
+    public function __construct(private FormatterInterface $formatter, private DriverConfiguration $configuration)
     {
-        $this->formatter = $formatter;
-        $this->configuration = $configuration;
     }
 
     /**
@@ -119,7 +115,7 @@ class DriverSetupManager implements Countable
     {
         try {
             $this->getDriver($config, $alias);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException) {
             return false;
         }
 

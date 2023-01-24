@@ -20,11 +20,8 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
  */
 final class FrontendErrorResponse implements TestkitResponseInterface
 {
-    private string $message;
-
-    public function __construct(string $message)
+    public function __construct(private string $message)
     {
-        $this->message = $message;
     }
 
     public function jsonSerialize(): array

@@ -58,9 +58,7 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testNull(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN null as x');
-        }, $alias);
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN null as x'), $alias);
 
         self::assertNull($results->first()->get('x'));
     }
@@ -75,9 +73,7 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testList(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN range(5, 15) as list, range(16, 35) as list2');
-        }, $alias);
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN range(5, 15) as list, range(16, 35) as list2'), $alias);
 
         $list = $results->first()->get('list');
         $list2 = $results->first()->get('list2');
@@ -97,9 +93,7 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testMap(string $alias): void
     {
-        $map = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN {a: "b", c: "d"} as map')->first()->get('map');
-        }, $alias);
+        $map = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN {a: "b", c: "d"} as map')->first()->get('map'), $alias);
         self::assertInstanceOf(CypherMap::class, $map);
         self::assertEquals(['a' => 'b', 'c' => 'd'], $map->toArray());
         self::assertEquals(json_encode(['a' => 'b', 'c' => 'd'], JSON_THROW_ON_ERROR), json_encode($map, JSON_THROW_ON_ERROR));
@@ -110,9 +104,7 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testBoolean(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN true as bool1, false as bool2');
-        }, $alias);
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN true as bool1, false as bool2'), $alias);
 
         self::assertEquals(1, $results->count());
         self::assertIsBool($results->first()->get('bool1'));
@@ -124,14 +116,12 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testInteger(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run(<<<CYPHER
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run(<<<CYPHER
 UNWIND [{num: 1}, {num: 2}, {num: 3}] AS x
 RETURN x.num
 ORDER BY x.num ASC
 CYPHER
-            );
-        }, $alias);
+        ), $alias);
 
         self::assertEquals(3, $results->count());
         self::assertEquals(1, $results[0]['x.num']);
@@ -144,9 +134,7 @@ CYPHER
      */
     public function testFloat(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN 0.1 AS float');
-        }, $alias);
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN 0.1 AS float'), $alias);
 
         self::assertIsFloat($results->first()->get('float'));
     }
@@ -156,9 +144,7 @@ CYPHER
      */
     public function testString(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN "abc" AS string');
-        }, $alias);
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN "abc" AS string'), $alias);
 
         self::assertIsString($results->first()->get('string'));
     }
@@ -205,14 +191,12 @@ CYPHER
      */
     public function testTime(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN time("12:00:00.000000000") AS time');
-        }, $alias);
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN time("12:00:00.000000000") AS time'), $alias);
 
         $time = $results->first()->get('time');
         self::assertInstanceOf(Time::class, $time);
-        self::assertEquals(12.0 * 60 * 60 * 1000000000, $time->getNanoSeconds());
-        self::assertEquals(12.0 * 60 * 60 * 1000000000, $time->nanoSeconds);
+        self::assertEquals(12.0 * 60 * 60 * 1_000_000_000, $time->getNanoSeconds());
+        self::assertEquals(12.0 * 60 * 60 * 1_000_000_000, $time->nanoSeconds);
     }
 
     /**
@@ -220,22 +204,20 @@ CYPHER
      */
     public function testLocalTime(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN localtime("12") AS time');
-        }, $alias);
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN localtime("12") AS time'), $alias);
 
         /** @var LocalTime $time */
         $time = $results->first()->get('time');
         self::assertInstanceOf(LocalTime::class, $time);
-        self::assertEquals(43200000000000, $time->getNanoseconds());
+        self::assertEquals(43_200_000_000_000, $time->getNanoseconds());
 
         $results = $this->getClient()->run('RETURN localtime("09:23:42.000") AS time', [], $alias);
 
         /** @var LocalTime $time */
         $time = $results->first()->get('time');
         self::assertInstanceOf(LocalTime::class, $time);
-        self::assertEquals(33822000000000, $time->getNanoseconds());
-        self::assertEquals(33822000000000, $time->nanoseconds);
+        self::assertEquals(33_822_000_000_000, $time->getNanoseconds());
+        self::assertEquals(33_822_000_000_000, $time->nanoseconds);
     }
 
     /**
@@ -257,17 +239,17 @@ CYPHER
 
         $createdAt = $results[0]['created_at'];
         self::assertInstanceOf(DateTime::class, $createdAt);
-        self::assertEquals(1559414432, $createdAt->getSeconds());
-        self::assertEquals(142000000, $createdAt->getNanoseconds());
+        self::assertEquals(1_559_414_432, $createdAt->getSeconds());
+        self::assertEquals(142_000_000, $createdAt->getNanoseconds());
         self::assertEquals(3600, $createdAt->getTimeZoneOffsetSeconds());
-        self::assertEquals(1559414432, $createdAt->seconds);
-        self::assertEquals(142000000, $createdAt->nanoseconds);
+        self::assertEquals(1_559_414_432, $createdAt->seconds);
+        self::assertEquals(142_000_000, $createdAt->nanoseconds);
         self::assertEquals(3600, $createdAt->tzOffsetSeconds);
         self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
 
         self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
-        self::assertEquals(1559471012, $results[1]['created_at']->getSeconds());
-        self::assertEquals(122000000, $results[1]['created_at']->getNanoseconds());
+        self::assertEquals(1_559_471_012, $results[1]['created_at']->getSeconds());
+        self::assertEquals(122_000_000, $results[1]['created_at']->getNanoseconds());
         self::assertEquals('{"seconds":1559471012,"nanoseconds":122000000,"tzOffsetSeconds":3600}', json_encode($results[1]['created_at'], JSON_THROW_ON_ERROR));
 
         self::assertInstanceOf(DateTime::class, $results[2]['created_at']);
@@ -280,9 +262,7 @@ CYPHER
      */
     public function testLocalDateTime(string $alias): void
     {
-        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN localdatetime() as local')->first()->get('local');
-        }, $alias);
+        $result = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN localdatetime() as local')->first()->get('local'), $alias);
 
         self::assertInstanceOf(LocalDateTime::class, $result);
         $date = $result->toDateTime();
@@ -297,8 +277,7 @@ CYPHER
      */
     public function testDuration(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run(<<<CYPHER
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run(<<<CYPHER
 UNWIND [
   duration({days: 14, hours:16, minutes: 12}),
   duration({months: 5, days: 1.5}),
@@ -309,8 +288,7 @@ UNWIND [
 ] AS aDuration
 RETURN aDuration
 CYPHER
-            );
-        }, $alias);
+        ), $alias);
 
         self::assertEquals(6, $results->count());
         self::assertEquals(new Duration(0, 14, 58320, 0), $results[0]['aDuration']);
@@ -321,10 +299,10 @@ CYPHER
         self::assertEquals(1, $duration->days);
         self::assertEquals(43200, $duration->seconds);
         self::assertEquals(0, $duration->nanoseconds);
-        self::assertEquals(new Duration(0, 22, 71509, 500000000), $results[2]['aDuration']);
+        self::assertEquals(new Duration(0, 22, 71509, 500_000_000), $results[2]['aDuration']);
         self::assertEquals(new Duration(0, 17, 43200, 0), $results[3]['aDuration']);
-        self::assertEquals(new Duration(0, 0, 91, 123456789), $results[4]['aDuration']);
-        self::assertEquals(new Duration(0, 0, 91, 123456789), $results[5]['aDuration']);
+        self::assertEquals(new Duration(0, 0, 91, 123_456_789), $results[4]['aDuration']);
+        self::assertEquals(new Duration(0, 0, 91, 123_456_789), $results[5]['aDuration']);
 
         self::assertEquals(5, $duration->getMonths());
         self::assertEquals(1, $duration->getDays());
@@ -342,9 +320,7 @@ CYPHER
      */
     public function testPoint(string $alias): void
     {
-        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run('RETURN point({x: 3, y: 4}) AS point');
-        }, $alias);
+        $result = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run('RETURN point({x: 3, y: 4}) AS point'), $alias);
         self::assertInstanceOf(CypherList::class, $result);
         $row = $result->first();
         self::assertInstanceOf(CypherMap::class, $row);
@@ -384,12 +360,10 @@ CYPHER
         $email = 'a@b.c';
         $type = 'pepperoni';
 
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) use ($email, $uuid, $type) {
-            return $tsx->run(
-                'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
-                compact('email', 'uuid', 'type')
-            );
-        }, $alias);
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run(
+            'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
+            compact('email', 'uuid', 'type')
+        ), $alias);
 
         self::assertEquals(1, $results->count());
 
@@ -460,14 +434,12 @@ CYPHER
      */
     public function testPath(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run(<<<'CYPHER'
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
 WITH b
 MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
 RETURN x, y, z
-CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
-        }, $alias);
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alias);
 
         self::assertEquals(1, $results->count());
     }
@@ -477,12 +449,10 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
      */
     public function testPath2(string $alias): void
     {
-        $results = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run(<<<'CYPHER'
+        $results = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
 CREATE path = ((a:Node {x:$x}) - [b:HasNode {attribute: $xy}] -> (c:Node {y:$y}) - [d:HasNode {attribute: $yz}] -> (e:Node {z:$z}))
 RETURN path
-CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
-        }, $alias);
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alias);
 
         self::assertEquals(1, $results->count());
         $path = $results->first()->get('path');
@@ -525,8 +495,7 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']);
      */
     public function testPropertyTypes(string $alias): void
     {
-        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            return $tsx->run(<<<CYPHER
+        $result = $this->getClient()->transaction(static fn(TransactionInterface $tsx) => $tsx->run(<<<CYPHER
 WITH
     point({x: 3, y: 4}) AS p,
     range(5, 15) AS l,
@@ -549,8 +518,7 @@ MERGE (a:AllInOne {
 
 RETURN a
 CYPHER
-            );
-        }, $alias);
+        ), $alias);
 
         $node = $result->first()->get('a');
 

@@ -29,20 +29,14 @@ use Laudis\Neo4j\Exception\Neo4jException;
  */
 final class BoltResult implements Iterator
 {
-    private BoltConnection $connection;
-    private int $fetchSize;
     /** @var list<list> */
     private array $rows = [];
     private ?array $meta = null;
     /** @var list<(callable(array):void)> */
     private array $finishedCallbacks = [];
-    private int $qid;
 
-    public function __construct(BoltConnection $connection, int $fetchSize, int $qid)
+    public function __construct(private BoltConnection $connection, private int $fetchSize, private int $qid)
     {
-        $this->connection = $connection;
-        $this->fetchSize = $fetchSize;
-        $this->qid = $qid;
     }
 
     public function getFetchSize(): int

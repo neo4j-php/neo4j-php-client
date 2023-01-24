@@ -49,18 +49,10 @@ final class HttpConfig implements ConfigInterface
      */
     public function __construct($database = null, $client = null, $streamFactory = null, $requestFactory = null, $autoRouting = null)
     {
-        $this->database = $database ?? static function (): string {
-            return 'neo4j';
-        };
-        $this->client = $client ?? static function (): ClientInterface {
-            return Psr18ClientDiscovery::find();
-        };
-        $this->streamFactory = $streamFactory ?? static function (): StreamFactoryInterface {
-            return Psr17FactoryDiscovery::findStreamFactory();
-        };
-        $this->requestFactory = $requestFactory ?? static function (): RequestFactoryInterface {
-            return Psr17FactoryDiscovery::findRequestFactory();
-        };
+        $this->database = $database ?? static fn(): string => 'neo4j';
+        $this->client = $client ?? static fn(): ClientInterface => Psr18ClientDiscovery::find();
+        $this->streamFactory = $streamFactory ?? static fn(): StreamFactoryInterface => Psr17FactoryDiscovery::findStreamFactory();
+        $this->requestFactory = $requestFactory ?? static fn(): RequestFactoryInterface => Psr17FactoryDiscovery::findRequestFactory();
         $this->autoRouting = $autoRouting ?? false;
     }
 
@@ -71,7 +63,7 @@ final class HttpConfig implements ConfigInterface
      * @param RequestFactoryInterface|callable():RequestFactoryInterface|null $requestFactory
      * @param bool|callable():bool                                            $autoRouting
      */
-    public static function create($database = null, $client = null, $streamFactory = null, $requestFactory = null, $autoRouting = null): HttpConfig
+    public static function create($database = null, $client = null, $streamFactory = null, $requestFactory = null, bool|callable $autoRouting = null): HttpConfig
     {
         return new self($database, $client, $streamFactory, $requestFactory, $autoRouting);
     }
@@ -93,7 +85,7 @@ final class HttpConfig implements ConfigInterface
     /**
      * @param ClientInterface|callable():ClientInterface $client
      */
-    public function withClient($client): self
+    public function withClient(\Psr\Http\Client\ClientInterface|callable $client): self
     {
         return new self($this->database, $client, $this->streamFactory, $this->requestFactory, $this->autoRouting);
     }
@@ -101,7 +93,7 @@ final class HttpConfig implements ConfigInterface
     /**
      * @param StreamFactoryInterface|callable():StreamFactoryInterface $factory
      */
-    public function withStreamFactory($factory): self
+    public function withStreamFactory(\Psr\Http\Message\StreamFactoryInterface|callable $factory): self
     {
         return new self($this->database, $this->client, $factory, $this->requestFactory, $this->autoRouting);
     }
@@ -109,7 +101,7 @@ final class HttpConfig implements ConfigInterface
     /**
      * @param RequestFactoryInterface|callable():RequestFactoryInterface $factory
      */
-    public function withRequestFactory($factory): self
+    public function withRequestFactory(\Psr\Http\Message\RequestFactoryInterface|callable $factory): self
     {
         return new self($this->database, $this->client, $this->streamFactory, $factory, $this->autoRouting);
     }

@@ -144,7 +144,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
         try {
             $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
             $transaction->runStatement($statement);
-        } catch (Neo4jException $e) {
+        } catch (Neo4jException) {
             $exception = true;
         }
         self::assertTrue($exception);
@@ -217,7 +217,7 @@ CYPHER,
                 ),
                 Statement::create('1 AS x;erns', []),
             ]);
-        } catch (Neo4jException $e) {
+        } catch (Neo4jException) {
             $exception = true;
         }
         self::assertTrue($exception);
@@ -282,7 +282,7 @@ CYPHER
         $exception = false;
         try {
             $tsx->commit([Statement::create('adkjbehqjk')]);
-        } catch (Neo4jException $e) {
+        } catch (Neo4jException) {
             $exception = true;
         }
         self::assertTrue($exception);
@@ -310,7 +310,7 @@ CYPHER
         $exception = false;
         try {
             $tsx->commit();
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $exception = true;
         }
         self::assertTrue($exception);
@@ -356,7 +356,7 @@ CYPHER
         $exception = false;
         try {
             $tsx->rollback();
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $exception = true;
         }
         self::assertTrue($exception);

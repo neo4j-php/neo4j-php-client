@@ -15,23 +15,11 @@ namespace Laudis\Neo4j\Bolt;
 
 final class UriConfiguration
 {
-    private string $host;
-    private ?int $port;
-    /** @var ''|'s'|'ssc' */
-    private string $sslLevel;
-    private array $sslConfiguration;
-    private ?float $timeout;
-
     /**
      * @param ''|'s'|'ssc' $sslLevel
      */
-    public function __construct(string $host, ?int $port, string $sslLevel, array $sslConfiguration, ?float $timeout)
+    public function __construct(private string $host, private ?int $port, private string $sslLevel, private array $sslConfiguration, private ?float $timeout)
     {
-        $this->host = $host;
-        $this->port = $port;
-        $this->sslLevel = $sslLevel;
-        $this->sslConfiguration = $sslConfiguration;
-        $this->timeout = $timeout;
     }
 
     public function getHost(): string

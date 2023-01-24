@@ -34,18 +34,11 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
  */
 class BoltFactory
 {
-    private BasicConnectionFactoryInterface $connectionFactory;
-    private ProtocolFactory $protocolFactory;
-    private SslConfigurationFactory $sslConfigurationFactory;
-
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(BasicConnectionFactoryInterface $connectionFactory, ProtocolFactory $protocolFactory, SslConfigurationFactory $sslConfigurationFactory)
+    public function __construct(private BasicConnectionFactoryInterface $connectionFactory, private ProtocolFactory $protocolFactory, private SslConfigurationFactory $sslConfigurationFactory)
     {
-        $this->connectionFactory = $connectionFactory;
-        $this->protocolFactory = $protocolFactory;
-        $this->sslConfigurationFactory = $sslConfigurationFactory;
     }
 
     public static function create(): self

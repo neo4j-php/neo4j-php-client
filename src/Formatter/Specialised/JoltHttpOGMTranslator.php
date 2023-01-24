@@ -318,13 +318,12 @@ final class JoltHttpOGMTranslator
     private const ZONE_REGEX = '(?<zone>.+)';
 
     /**
-     * @return Date|LocalDateTime|LocalTime|DateTime|Duration|Time
      *
      * @psalm-suppress ImpureMethodCall
      * @psalm-suppress ImpureFunctionCall
      * @psalm-suppress PossiblyFalseReference
      */
-    private function translateDateTime(string $datetime)
+    private function translateDateTime(string $datetime): \Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\Time
     {
         if (preg_match('/^'.self::DATE_REGEX.'$/u', $datetime, $matches)) {
             $days = $this->daysFromMatches($matches);
@@ -427,7 +426,7 @@ final class JoltHttpOGMTranslator
     private function addNanoSecondsToSeconds(int $nanoseconds, int $seconds): array
     {
         $seconds += (int) ($nanoseconds / 1000 / 1000 / 1000);
-        $nanoseconds %= 1000000000;
+        $nanoseconds %= 1_000_000_000;
 
         return [$seconds, $nanoseconds];
     }

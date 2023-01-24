@@ -29,8 +29,6 @@ use Laudis\Neo4j\Contracts\PointInterface;
  */
 abstract class Abstract3DPoint extends AbstractPoint implements PointInterface, BoltConvertibleInterface
 {
-    private float $z;
-
     public function convertToBolt(): IStructure
     {
         return new Point3D($this->getSrid(), $this->getX(), $this->getY(), $this->getZ());
@@ -39,10 +37,9 @@ abstract class Abstract3DPoint extends AbstractPoint implements PointInterface, 
     /**
      * @param Crs $crs
      */
-    public function __construct(float $x, float $y, float $z)
+    public function __construct(float $x, float $y, private float $z)
     {
         parent::__construct($x, $y);
-        $this->z = $z;
     }
 
     public function getZ(): float

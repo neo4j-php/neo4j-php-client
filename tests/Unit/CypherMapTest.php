@@ -155,9 +155,7 @@ final class CypherMapTest extends TestCase
 
     public function testReduce(): void
     {
-        $count = $this->map->reduce(static function (?int $initial, string $key, string $value) {
-            return ($initial ?? 0) + ord($value) + ord($key);
-        }, 5);
+        $count = $this->map->reduce(static fn(?int $initial, string $key, string $value) => ($initial ?? 0) + ord($value) + ord($key), 5);
 
         self::assertEquals(5 + ord('A') + ord('x') + ord('B') + ord('y') + ord('C') + ord('z'), $count);
     }
@@ -476,9 +474,7 @@ final class CypherMapTest extends TestCase
 
                 return $tbr;
             })
-            ->map(static function (stdClass $class) {
-                return (string) $class->value;
-            });
+            ->map(static fn(stdClass $class) => (string) $class->value);
 
         self::assertEquals(CypherMap::fromIterable(['a' => 'b', 'c' => 'd']), $map);
     }

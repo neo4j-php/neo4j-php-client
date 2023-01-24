@@ -25,11 +25,9 @@ use function method_exists;
 final class TypeCaster
 {
     /**
-     * @param mixed $value
-     *
      * @pure
      */
-    public static function toString($value): ?string
+    public static function toString(mixed $value): ?string
     {
         if ($value === null || is_scalar($value) || (is_object($value) && method_exists($value, '__toString'))) {
             return (string) $value;
@@ -39,11 +37,9 @@ final class TypeCaster
     }
 
     /**
-     * @param mixed $value
-     *
      * @pure
      */
-    public static function toFloat($value): ?float
+    public static function toFloat(mixed $value): ?float
     {
         $value = self::toString($value);
         if (is_numeric($value)) {
@@ -54,11 +50,9 @@ final class TypeCaster
     }
 
     /**
-     * @param mixed $value
-     *
      * @pure
      */
-    public static function toInt($value): ?int
+    public static function toInt(mixed $value): ?int
     {
         $value = self::toFloat($value);
         if ($value !== null) {
@@ -79,11 +73,9 @@ final class TypeCaster
     }
 
     /**
-     * @param mixed $value
-     *
      * @pure
      */
-    public static function toBool($value): ?bool
+    public static function toBool(mixed $value): ?bool
     {
         $value = self::toInt($value);
         if ($value !== null) {
@@ -96,14 +88,12 @@ final class TypeCaster
     /**
      * @template T
      *
-     * @param mixed           $value
      * @param class-string<T> $class
      *
      * @return T|null
-     *
      * @pure
      */
-    public static function toClass($value, string $class): ?object
+    public static function toClass(mixed $value, string $class): ?object
     {
         if (is_a($value, $class)) {
             /** @var T */
@@ -114,13 +104,11 @@ final class TypeCaster
     }
 
     /**
-     * @param mixed $value
      *
      * @return list<mixed>
-     *
      * @psalm-external-mutation-free
      */
-    public static function toArray($value): ?array
+    public static function toArray(mixed $value): ?array
     {
         if (is_iterable($value)) {
             $tbr = [];
@@ -137,13 +125,11 @@ final class TypeCaster
     }
 
     /**
-     * @param mixed $value
      *
      * @return CypherList<mixed>|null
-     *
      * @pure
      */
-    public static function toCypherList($value): ?CypherList
+    public static function toCypherList(mixed $value): ?CypherList
     {
         if (is_iterable($value)) {
             return CypherList::fromIterable($value);
@@ -153,11 +139,9 @@ final class TypeCaster
     }
 
     /**
-     * @param mixed $value
-     *
      * @return CypherMap<mixed>|null
      */
-    public static function toCypherMap($value): ?CypherMap
+    public static function toCypherMap(mixed $value): ?CypherMap
     {
         if (is_iterable($value)) {
             return CypherMap::fromIterable($value);
