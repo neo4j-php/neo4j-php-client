@@ -43,8 +43,7 @@ class BoltFactory
         private BasicConnectionFactoryInterface $connectionFactory,
         private ProtocolFactory $protocolFactory,
         private SslConfigurationFactory $sslConfigurationFactory
-    ) {
-    }
+    ) {}
 
     public static function create(): self
     {

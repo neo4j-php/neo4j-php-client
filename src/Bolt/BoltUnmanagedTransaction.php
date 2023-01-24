@@ -60,8 +60,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private SessionConfiguration $config,
         private TransactionConfiguration $tsxConfig,
         private BookmarkHolder $bookmarkHolder
-    ) {
-    }
+    ) {}
 
     public function commit(iterable $statements = []): CypherList
     {

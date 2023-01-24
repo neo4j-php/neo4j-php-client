@@ -53,9 +53,7 @@ class Cache implements CacheInterface
     private array $items = [];
     private static ?self $instance = null;
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 
     public static function getInstance(): self
     {

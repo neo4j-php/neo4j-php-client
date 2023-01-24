@@ -24,9 +24,11 @@ use Psr\Http\Message\UriInterface;
  */
 final class ServerInfo extends AbstractCypherObject
 {
-    public function __construct(private UriInterface $address, private ConnectionProtocol $protocol, private string $agent)
-    {
-    }
+    public function __construct(
+        private UriInterface $address,
+        private ConnectionProtocol $protocol,
+        private string $agent
+    ) {}
 
     /**
      * Returns the uri of the server the query was executed.

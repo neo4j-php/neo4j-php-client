@@ -34,11 +34,11 @@ abstract class Abstract3DPoint extends AbstractPoint implements PointInterface, 
         return new Point3D($this->getSrid(), $this->getX(), $this->getY(), $this->getZ());
     }
 
-    /**
-     * @param Crs $crs
-     */
-    public function __construct(float $x, float $y, private float $z)
-    {
+    public function __construct(
+        float $x,
+        float $y,
+        private float $z
+    ) {
         parent::__construct($x, $y);
     }
 

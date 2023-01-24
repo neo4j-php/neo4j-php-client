@@ -31,9 +31,12 @@ final class Plan extends AbstractCypherObject
      * @param CypherList<Plan>   $list
      * @param CypherList<string> $identifiers
      */
-    public function __construct(private CypherMap $arguments, private CypherList $list, private CypherList $identifiers, private string $operator)
-    {
-    }
+    public function __construct(
+        private CypherMap $arguments,
+        private CypherList $list,
+        private CypherList $identifiers,
+        private string $operator
+    ) {}
 
     /**
      * Returns the arguments for the operator.

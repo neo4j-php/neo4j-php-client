@@ -29,15 +29,16 @@ final class TransactionConfiguration
      * @param pure-callable():(float|null)|float|null                                                             $timeout  timeout in seconds
      * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
      */
-    public function __construct(private $timeout = null, private $metaData = null)
-    {
-    }
+    public function __construct(
+        private $timeout = null,
+        private $metaData = null
+    ) {}
 
     /**
      * @pure
      *
-     * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
      * @param pure-callable():(float|null)|float|null                                                             $timeout  timeout in seconds
+     * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
      */
     public static function create($timeout = null, $metaData = null): self
     {

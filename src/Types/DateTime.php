@@ -31,9 +31,11 @@ use function sprintf;
  */
 final class DateTime extends AbstractPropertyObject implements BoltConvertibleInterface
 {
-    public function __construct(private int $seconds, private int $nanoseconds, private int $tzOffsetSeconds)
-    {
-    }
+    public function __construct(
+        private int $seconds,
+        private int $nanoseconds,
+        private int $tzOffsetSeconds
+    ) {}
 
     /**
      * Returns the amount of seconds since unix epoch.

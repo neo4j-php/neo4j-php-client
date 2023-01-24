@@ -102,7 +102,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         });
     }
 
-    /**mixed
+    /**
+     * mixed
      * Returns whether the sequence is empty.
      *
      * @psalm-suppress UnusedForeachValue
@@ -195,8 +196,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      *
      * @template TInitial
      *
-     * @param callable(TInitial|null, TValue, TKey):TInitial $callback
      * @param TInitial|null                                  $initial
+     * @param callable(TInitial|null, TValue, TKey):TInitial $callback
      *
      * @return TInitial
      */

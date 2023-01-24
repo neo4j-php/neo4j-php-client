@@ -50,8 +50,15 @@ final class DriverConfiguration
      *
      * @psalm-external-mutation-free
      */
-    public function __construct(private ?string $userAgent, $httpPsrBindings, private SslConfiguration $sslConfig, private ?int $maxPoolSize, $cache, private ?float $acquireConnectionTimeout, $semaphore)
-    {
+    public function __construct(
+        private ?string $userAgent,
+        $httpPsrBindings,
+        private SslConfiguration $sslConfig,
+        private ?int $maxPoolSize,
+        $cache,
+        private ?float $acquireConnectionTimeout,
+        $semaphore
+    ) {
         $this->httpPsrBindings = $httpPsrBindings;
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;

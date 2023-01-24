@@ -34,9 +34,18 @@ final class ResultSummary extends AbstractCypherObject
     /**
      * @param CypherList<Notification> $notifications
      */
-    public function __construct(private SummaryCounters $counters, private DatabaseInfo $databaseInfo, private CypherList $notifications, private ?Plan $plan, private ?ProfiledPlan $profiledPlan, private Statement $statement, private QueryTypeEnum $queryType, private float $resultAvailableAfter, private float $resultConsumedAfter, private ServerInfo $serverInfo)
-    {
-    }
+    public function __construct(
+        private SummaryCounters $counters,
+        private DatabaseInfo $databaseInfo,
+        private CypherList $notifications,
+        private ?Plan $plan,
+        private ?ProfiledPlan $profiledPlan,
+        private Statement $statement,
+        private QueryTypeEnum $queryType,
+        private float $resultAvailableAfter,
+        private float $resultConsumedAfter,
+        private ServerInfo $serverInfo
+    ) {}
 
     /**
      * The counters for amount of operations the query triggered.

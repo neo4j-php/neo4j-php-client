@@ -52,9 +52,10 @@ class DriverSetupManager implements Countable
      *
      * @param FormatterInterface<ResultFormat> $formatter
      */
-    public function __construct(private FormatterInterface $formatter, private DriverConfiguration $configuration)
-    {
-    }
+    public function __construct(
+        private FormatterInterface $formatter,
+        private DriverConfiguration $configuration
+    ) {}
 
     /**
      * @psalm-mutation-free
@@ -154,10 +155,6 @@ class DriverSetupManager implements Countable
 
     /**
      * @template U
-     *
-     * @param FormatterInterface<U>
-     *
-     * return self<U>
      *
      * @psalm-mutation-free
      */

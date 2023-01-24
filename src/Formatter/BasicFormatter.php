@@ -57,7 +57,6 @@ final class BasicFormatter implements FormatterInterface
 
     /**
      * @param array{fields: array<int, string>} $meta
-     * @param array<array-key, array>           $results
      *
      * @return CypherList<CypherMap<array|scalar|null>>
      */
@@ -152,7 +151,7 @@ final class BasicFormatter implements FormatterInterface
         foreach ($nodes as $i => $node) {
             /** @var mixed */
             $tbr[] = $node;
-            if (isset($relationships[$i])) {
+            if (array_key_exists($i, $relationships)) {
                 /** @var mixed */
                 $tbr[] = $relationships[$i];
             }

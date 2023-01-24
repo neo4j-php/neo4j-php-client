@@ -22,9 +22,22 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
  */
 final class SummaryCounters extends AbstractCypherObject
 {
-    public function __construct(private int $nodesCreated = 0, private int $nodesDeleted = 0, private int $relationshipsCreated = 0, private int $relationshipsDeleted = 0, private int $propertiesSet = 0, private int $labelsAdded = 0, private int $labelsRemoved = 0, private int $indexesAdded = 0, private int $indexesRemoved = 0, private int $constraintsAdded = 0, private int $constraintsRemoved = 0, private bool $containsUpdates = false, private bool $containsSystemUpdates = false, private int $systemUpdates = 0)
-    {
-    }
+    public function __construct(
+        private int $nodesCreated = 0,
+        private int $nodesDeleted = 0,
+        private int $relationshipsCreated = 0,
+        private int $relationshipsDeleted = 0,
+        private int $propertiesSet = 0,
+        private int $labelsAdded = 0,
+        private int $labelsRemoved = 0,
+        private int $indexesAdded = 0,
+        private int $indexesRemoved = 0,
+        private int $constraintsAdded = 0,
+        private int $constraintsRemoved = 0,
+        private bool $containsUpdates = false,
+        private bool $containsSystemUpdates = false,
+        private int $systemUpdates = 0
+    ) {}
 
     /**
      * Whether or not the query contained any updates.

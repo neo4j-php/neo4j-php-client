@@ -26,13 +26,13 @@ class SingleThreadedSemaphore implements SemaphoreInterface
     /** @var array<string, self> */
     private static array $instances = [];
 
-    private function __construct(private int $max)
-    {
-    }
+    private function __construct(
+        private int $max
+    ) {}
 
     public static function create(string $key, int $max): self
     {
-        if (!isset(self::$instances[$key])) {
+        if (!array_key_exists($key, self::$instances)) {
             self::$instances[$key] = new self($max);
         }
 

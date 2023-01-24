@@ -50,9 +50,11 @@ final class OGMFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(private BoltOGMTranslator $boltTranslator, private JoltHttpOGMTranslator $joltTranslator, private LegacyHttpOGMTranslator $legacyHttpTranslator)
-    {
-    }
+    public function __construct(
+        private BoltOGMTranslator $boltTranslator,
+        private JoltHttpOGMTranslator $joltTranslator,
+        private LegacyHttpOGMTranslator $legacyHttpTranslator
+    ) {}
 
     /**
      * Creates a new instance of itself.

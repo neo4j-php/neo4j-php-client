@@ -29,9 +29,9 @@ final class Client implements ClientInterface
     /**
      * @param ClientInterface<SummarizedResult<CypherMap>> $client
      */
-    public function __construct(private ClientInterface $client)
-    {
-    }
+    public function __construct(
+        private ClientInterface $client
+    ) {}
 
     public function run(string $statement, iterable $parameters = [], ?string $alias = null): SummarizedResult
     {

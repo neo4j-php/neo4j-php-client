@@ -27,9 +27,10 @@ final class Pair
      * @param TKey   $key
      * @param TValue $value
      */
-    public function __construct(private $key, private $value)
-    {
-    }
+    public function __construct(
+        private $key,
+        private $value
+    ) {}
 
     /**
      * @return TKey

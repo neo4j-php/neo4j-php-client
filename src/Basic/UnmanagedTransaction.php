@@ -27,9 +27,9 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @param UnmanagedTransactionInterface<SummarizedResult<CypherMap>> $tsx
      */
-    public function __construct(private UnmanagedTransactionInterface $tsx)
-    {
-    }
+    public function __construct(
+        private UnmanagedTransactionInterface $tsx
+    ) {}
 
     /**
      * @param iterable<string, mixed> $parameters
@@ -42,8 +42,6 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @param iterable<Statement> $statements
-     *
      * @return SummarizedResult<CypherMap>
      */
     public function runStatement(Statement $statement): SummarizedResult

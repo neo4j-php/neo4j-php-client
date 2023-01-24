@@ -38,9 +38,9 @@ use Throwable;
 final class HttpConnectionPool implements ConnectionPoolInterface
 {
     /**
-     * @param Resolvable<StreamFactoryInterface> $streamFactory
-     * @param Resolvable<RequestFactory>         $requestFactory
      * @param Resolvable<ClientInterface>        $client
+     * @param Resolvable<RequestFactory>         $requestFactory
+     * @param Resolvable<StreamFactoryInterface> $streamFactory
      * @param Resolvable<string>                 $tsxUrl
      *
      * @psalm-mutation-free
@@ -61,8 +61,7 @@ final class HttpConnectionPool implements ConnectionPoolInterface
         private AuthenticateInterface $auth,
         private string $userAgent,
         private Resolvable $tsxUrl
-    ) {
-    }
+    ) {}
 
     public function acquire(SessionConfiguration $config): Generator
     {

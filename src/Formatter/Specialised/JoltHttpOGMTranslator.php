@@ -152,7 +152,7 @@ final class JoltHttpOGMTranslator
 
         /** @var mixed $input */
         [$key, $input] = HttpHelper::splitJoltSingleton($value);
-        if (!isset($this->rawToTypes[$key])) {
+        if (!array_key_exists($key, $this->rawToTypes)) {
             throw new UnexpectedValueException('Unexpected Jolt key: '.$key);
         }
 

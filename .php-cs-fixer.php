@@ -12,6 +12,14 @@ declare(strict_types=1);
  */
 
 use PhpCsFixer\Config;
+use PhpCsFixerCustomFixers\Fixer\ConstructorEmptyBracesFixer;
+use PhpCsFixerCustomFixers\Fixer\IssetToArrayKeyExistsFixer;
+use PhpCsFixerCustomFixers\Fixer\MultilineCommentOpeningClosingAloneFixer;
+use PhpCsFixerCustomFixers\Fixer\MultilinePromotedPropertiesFixer;
+use PhpCsFixerCustomFixers\Fixer\PhpdocNoSuperfluousParamFixer;
+use PhpCsFixerCustomFixers\Fixer\PhpdocParamOrderFixer;
+use PhpCsFixerCustomFixers\Fixer\PhpUnitAssertArgumentsOrderFixer;
+use PhpCsFixerCustomFixers\Fixer\StringableInterfaceFixer;
 
 $header = <<<'EOF'
 This file is part of the Neo4j PHP Client and Driver package.
@@ -50,6 +58,15 @@ return (new Config())
             'import_constants' => true,
             'import_functions' => true,
         ],
+        ConstructorEmptyBracesFixer::name() => true,
+        IssetToArrayKeyExistsFixer::name() => true,
+        MultilineCommentOpeningClosingAloneFixer::name() => true,
+        MultilinePromotedPropertiesFixer::name() => true,
+        PhpUnitAssertArgumentsOrderFixer::name() => true,
+        PhpdocNoSuperfluousParamFixer::name() => true,
+        PhpdocParamOrderFixer::name() => true,
+        StringableInterfaceFixer::name() => true,
     ])
     ->setFinder($finder)
+    ->registerCustomFixers(new PhpCsFixerCustomFixers\Fixers())
 ;

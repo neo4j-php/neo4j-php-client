@@ -27,9 +27,11 @@ final class Path extends AbstractPropertyObject
      * @param CypherList<UnboundRelationship> $relationships
      * @param CypherList<int>                 $ids
      */
-    public function __construct(private CypherList $nodes, private CypherList $relationships, private CypherList $ids)
-    {
-    }
+    public function __construct(
+        private CypherList $nodes,
+        private CypherList $relationships,
+        private CypherList $ids
+    ) {}
 
     /**
      * Returns the node in the path.

@@ -62,9 +62,14 @@ class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(private V3 $boltProtocol, private Connection $connection, private AuthenticateInterface $auth, private string $userAgent, /** @psalm-readonly */
-    private ConnectionConfiguration $config)
-    {
+    public function __construct(
+        private V3 $boltProtocol,
+        private Connection $connection,
+        private AuthenticateInterface $auth,
+        private string $userAgent,
+    /** @psalm-readonly */
+    private ConnectionConfiguration $config
+    ) {
         $this->serverState = 'READY';
         $this->config = $config;
     }

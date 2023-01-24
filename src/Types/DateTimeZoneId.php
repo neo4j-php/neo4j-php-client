@@ -34,9 +34,11 @@ use UnexpectedValueException;
  */
 final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvertibleInterface
 {
-    public function __construct(private int $seconds, private int $nanoseconds, private string $tzId)
-    {
-    }
+    public function __construct(
+        private int $seconds,
+        private int $nanoseconds,
+        private string $tzId
+    ) {}
 
     /**
      * Returns the amount of seconds since unix epoch.

@@ -21,6 +21,7 @@ use Iterator;
 use Laudis\Neo4j\ParameterHelper;
 use PHPUnit\Framework\TestCase;
 use stdClass;
+use Stringable;
 
 final class ParameterHelperTest extends TestCase
 {
@@ -139,7 +140,7 @@ final class ParameterHelperTest extends TestCase
 
     public function testStringable(): void
     {
-        $result = ParameterHelper::asParameter(new class() {
+        $result = ParameterHelper::asParameter(new class() implements Stringable {
             public function __toString(): string
             {
                 return 'abc';

@@ -23,7 +23,6 @@ use function is_callable;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
-use Psr\Http\Message\UriFactoryInterface;
 
 /**
  * Class containing all relevant implementation of the PSR-18 and PSR-17.
@@ -61,7 +60,6 @@ final class HttpPsrBindings
      * @param ClientInterface|callable():ClientInterface|null                 $client
      * @param StreamFactoryInterface|callable():StreamFactoryInterface|null   $streamFactory
      * @param RequestFactoryInterface|callable():RequestFactoryInterface|null $requestFactory
-     * @param UriFactoryInterface|callable():UriFactoryInterface|null         $uriFactory
      */
     public static function create($client = null, $streamFactory = null, $requestFactory = null): self
     {

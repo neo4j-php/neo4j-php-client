@@ -36,12 +36,15 @@ final class SessionConfiguration
 
     /**
      * @param pure-callable():(int|null)|int|null                           $fetchSize
-     * @param pure-callable():((AccessMode | null))|AccessMode|null $accessMode
      * @param pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark>|null $bookmarks
+     * @param pure-callable():((AccessMode | null))|AccessMode|null $accessMode
      */
-    public function __construct(private ?string $database = null, private $fetchSize = null, private $accessMode = null, private $bookmarks = null)
-    {
-    }
+    public function __construct(
+        private ?string $database = null,
+        private $fetchSize = null,
+        private $accessMode = null,
+        private $bookmarks = null
+    ) {}
 
     /**
      * @pure
@@ -177,7 +180,7 @@ final class SessionConfiguration
         /** @psalm-suppress ImpureFunctionCall */
         parse_str($uri, $query);
         $tbr = SessionConfiguration::default();
-        if (isset($query['database'])) {
+        if (array_key_exists('database', $query)) {
             $database = (string) $query['database'];
             $tbr = $tbr->withDatabase($database);
         }

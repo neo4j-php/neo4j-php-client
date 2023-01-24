@@ -40,9 +40,11 @@ final class BoltResult implements Iterator
     /** @var list<(callable(array):void)> */
     private array $finishedCallbacks = [];
 
-    public function __construct(private BoltConnection $connection, private int $fetchSize, private int $qid)
-    {
-    }
+    public function __construct(
+        private BoltConnection $connection,
+        private int $fetchSize,
+        private int $qid
+    ) {}
 
     public function getFetchSize(): int
     {

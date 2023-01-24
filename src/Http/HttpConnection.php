@@ -39,8 +39,7 @@ final class HttpConnection implements ConnectionInterface
         private ConnectionConfiguration $config,
         private AuthenticateInterface $authenticate,
         private string $userAgent
-    ) {
-    }
+    ) {}
 
     /**
      * @psalm-mutation-free

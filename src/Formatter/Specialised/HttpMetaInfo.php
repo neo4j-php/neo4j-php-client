@@ -23,13 +23,16 @@ use stdClass;
 final class HttpMetaInfo
 {
     /**
-     * @param list<stdClass> $relationships
      * @param list<stdClass> $meta
      * @param list<stdClass> $nodes
+     * @param list<stdClass> $relationships
      */
-    public function __construct(private array $meta, private array $nodes, private array $relationships, private int $currentMeta = 0)
-    {
-    }
+    public function __construct(
+        private array $meta,
+        private array $nodes,
+        private array $relationships,
+        private int $currentMeta = 0
+    ) {}
 
     /**
      * @pure

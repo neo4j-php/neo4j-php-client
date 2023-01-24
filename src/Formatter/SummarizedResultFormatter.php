@@ -63,9 +63,9 @@ final class SummarizedResultFormatter implements FormatterInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(private OGMFormatter $formatter)
-    {
-    }
+    public function __construct(
+        private OGMFormatter $formatter
+    ) {}
 
     /**
      * @param CypherList<CypherMap<OGMTypes>> $results

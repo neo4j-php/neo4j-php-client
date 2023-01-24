@@ -27,9 +27,10 @@ final class RoutingTable
     /**
      * @param iterable<array{addresses: list<string>, role:string}> $servers
      */
-    public function __construct(private iterable $servers, private int $ttl)
-    {
-    }
+    public function __construct(
+        private iterable $servers,
+        private int $ttl
+    ) {}
 
     /**
      * Returns the time to live in seconds.

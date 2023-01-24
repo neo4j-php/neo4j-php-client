@@ -27,9 +27,9 @@ class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
     /**
      * @param SocketConnectionFactory|StreamConnectionFactory $factory
      */
-    private function __construct(private $factory)
-    {
-    }
+    private function __construct(
+        private $factory
+    ) {}
 
     /**
      * @psalm-suppress InvalidNullableReturnType

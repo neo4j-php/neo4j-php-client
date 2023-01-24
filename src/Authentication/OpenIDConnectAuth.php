@@ -26,9 +26,9 @@ final class OpenIDConnectAuth implements AuthenticateInterface
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(private string $token)
-    {
-    }
+    public function __construct(
+        private string $token
+    ) {}
 
     /**
      * @psalm-mutation-free

@@ -31,9 +31,15 @@ use function strtolower;
  */
 final class Uri implements UriInterface, Stringable
 {
-    public function __construct(private string $scheme, private string $userInfo, private string $host, private ?int $port, private string $path, private string $query, private string $fragment)
-    {
-    }
+    public function __construct(
+        private string $scheme,
+        private string $userInfo,
+        private string $host,
+        private ?int $port,
+        private string $path,
+        private string $query,
+        private string $fragment
+    ) {}
 
     /**
      * @pure
@@ -46,15 +52,15 @@ final class Uri implements UriInterface, Stringable
         }
 
         $userInfo = $parsedUrl['user'] ?? '';
-        if (isset($parsedUrl['pass'])) {
+        if (array_key_exists('pass', $parsedUrl)) {
             $userInfo .= ':'.$parsedUrl['pass'];
         }
 
         return new self(
-            isset($parsedUrl['scheme']) ? strtolower($parsedUrl['scheme']) : '',
+            array_key_exists('scheme', $parsedUrl) ? strtolower($parsedUrl['scheme']) : '',
             $userInfo,
-            isset($parsedUrl['host']) ? strtolower($parsedUrl['host']) : '',
-            isset($parsedUrl['port']) ? self::filterPort($parsedUrl['port']) : null,
+            array_key_exists('host', $parsedUrl) ? strtolower($parsedUrl['host']) : '',
+            array_key_exists('port', $parsedUrl) ? self::filterPort($parsedUrl['port']) : null,
             $parsedUrl['path'] ?? '',
             $parsedUrl['query'] ?? '',
             $parsedUrl['fragment'] ?? ''
@@ -80,7 +86,7 @@ final class Uri implements UriInterface, Stringable
                     // If the path is rootless and an authority is present, the path MUST be prefixed by "/"
                     $path = '/'.$path;
                 }
-            } elseif (isset($path[1]) && $path[1] === '/') {
+            } elseif (array_key_exists(1, $path) && $path[1] === '/') {
                 if ($authority === '') {
                     // If the path is starting with more than one "/" and no authority is present, the
                     // starting slashes MUST be reduced to one.

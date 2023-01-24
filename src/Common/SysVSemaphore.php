@@ -32,9 +32,9 @@ class SysVSemaphore implements SemaphoreInterface
     /**
      * @param resource $semaphore
      */
-    private function __construct(private $semaphore)
-    {
-    }
+    private function __construct(
+        private $semaphore
+    ) {}
 
     public static function create(string $key, int $max): self
     {

@@ -34,9 +34,11 @@ final class Node extends AbstractPropertyObject
      * @param CypherList<string>  $labels
      * @param CypherMap<OGMTypes> $properties
      */
-    public function __construct(private int $id, private CypherList $labels, private CypherMap $properties)
-    {
-    }
+    public function __construct(
+        private int $id,
+        private CypherList $labels,
+        private CypherMap $properties
+    ) {}
 
     /**
      * @deprecated

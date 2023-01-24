@@ -47,10 +47,10 @@ final class HttpSession implements SessionInterface
     /**
      * @psalm-mutation-free
      *
-     * @param FormatterInterface<T>              $formatter
      * @param Resolvable<StreamFactoryInterface> $streamFactory
-     * @param Resolvable<string>                 $uri
+     * @param FormatterInterface<T>              $formatter
      * @param Resolvable<RequestFactory>         $requestFactory
+     * @param Resolvable<string>                 $uri
      */
     public function __construct(
         /**
@@ -75,8 +75,7 @@ final class HttpSession implements SessionInterface
         private Resolvable $uri,
         AuthenticateInterface $auth,
         string $userAgent
-    ) {
-    }
+    ) {}
 
     /**
      * @throws JsonException

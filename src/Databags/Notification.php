@@ -20,9 +20,13 @@ namespace Laudis\Neo4j\Databags;
  */
 final class Notification
 {
-    public function __construct(private string $code, private string $description, private ?InputPosition $inputPosition, private string $severity, private string $title)
-    {
-    }
+    public function __construct(
+        private string $code,
+        private string $description,
+        private ?InputPosition $inputPosition,
+        private string $severity,
+        private string $title
+    ) {}
 
     /**
      * Returns a notification code for the discovered issue.

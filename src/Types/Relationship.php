@@ -25,8 +25,13 @@ final class Relationship extends UnboundRelationship
     /**
      * @param CypherMap<OGMTypes> $properties
      */
-    public function __construct(int $id, private int $startNodeId, private int $endNodeId, string $type, CypherMap $properties)
-    {
+    public function __construct(
+        int $id,
+        private int $startNodeId,
+        private int $endNodeId,
+        string $type,
+        CypherMap $properties
+    ) {
         parent::__construct($id, $type, $properties);
     }
 

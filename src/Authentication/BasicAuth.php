@@ -30,9 +30,10 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @psalm-external-mutation-free
      */
-    public function __construct(private string $username, private string $password)
-    {
-    }
+    public function __construct(
+        private string $username,
+        private string $password
+    ) {}
 
     /**
      * @psalm-mutation-free

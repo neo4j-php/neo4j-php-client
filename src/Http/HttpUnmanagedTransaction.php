@@ -58,8 +58,7 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
          * @psalm-readonly
          */
         private FormatterInterface $formatter
-    ) {
-    }
+    ) {}
 
     public function run(string $statement, iterable $parameters = [])
     {

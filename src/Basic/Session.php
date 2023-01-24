@@ -29,9 +29,9 @@ final class Session implements SessionInterface
     /**
      * @param SessionInterface<SummarizedResult<CypherMap>> $session
      */
-    public function __construct(private SessionInterface $session)
-    {
-    }
+    public function __construct(
+        private SessionInterface $session
+    ) {}
 
     /**
      * @param iterable<Statement> $statements
@@ -44,8 +44,6 @@ final class Session implements SessionInterface
     }
 
     /**
-     * @param iterable<Statement> $statements
-     *
      * @return SummarizedResult<CypherMap>
      */
     public function runStatement(Statement $statement, ?TransactionConfiguration $config = null): SummarizedResult

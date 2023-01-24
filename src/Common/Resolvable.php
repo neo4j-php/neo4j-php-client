@@ -52,7 +52,7 @@ final class Resolvable
     {
         /** @psalm-suppress MissingClosureReturnType */
         $tbr = static function () use ($key, $toResolve) {
-            if (!isset(self::$cache[$key])) {
+            if (!array_key_exists($key, self::$cache)) {
                 self::$cache[$key] = call_user_func($toResolve);
             }
 

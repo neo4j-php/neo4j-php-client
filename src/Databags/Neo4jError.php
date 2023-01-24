@@ -25,9 +25,13 @@ use InvalidArgumentException;
  */
 final class Neo4jError
 {
-    public function __construct(private string $code, private ?string $message, private string $classification, private string $category, private string $title)
-    {
-    }
+    public function __construct(
+        private string $code,
+        private ?string $message,
+        private string $classification,
+        private string $category,
+        private string $title
+    ) {}
 
     /**
      * @pure

@@ -30,9 +30,9 @@ use UnexpectedValueException;
  */
 final class Date extends AbstractPropertyObject implements BoltConvertibleInterface
 {
-    public function __construct(private int $days)
-    {
-    }
+    public function __construct(
+        private int $days
+    ) {}
 
     /**
      * The amount of days since unix epoch.
