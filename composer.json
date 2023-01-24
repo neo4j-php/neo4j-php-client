@@ -10,7 +10,8 @@
         "client",
         "bolt",
         "http",
-        "high-availability"
+        "high-availability",
+        "driver"
     ],
     "license": "MIT",
     "authors": [
