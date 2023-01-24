@@ -33,6 +33,7 @@ try {
 }
 
 return (new Config())
+    ->setRiskyAllowed(true)
     ->setRules([
         '@Symfony' => true,
 
@@ -43,6 +44,7 @@ return (new Config())
         'phpdoc_order' => true,
         'phpdoc_to_comment' => false,
         'yoda_style' => false,
+        'declare_strict_types' => true,
     ])
     ->setFinder($finder)
 ;
