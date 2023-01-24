@@ -17,6 +17,8 @@ use function count;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
+use Laudis\Neo4j\Bolt\BoltDriver;
+use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -27,10 +29,11 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use ReflectionClass;
 use function str_starts_with;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from OGMFormatter
  *
  * @extends EnvironmentAwareIntegrationTest<CypherList<CypherMap<OGMTypes>>>
  */
@@ -354,5 +357,48 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
         $uniqueUserIds = array_unique($userIds);
 
         $this->assertCount($nodesAmount, $uniqueUserIds);
+    }
+
+    public function testRedundantAcquire(): void
+    {
+        $connections = self::buildConnections();
+
+        $builder = ClientBuilder::create();
+        foreach ($connections as $i => $connection) {
+            $uri = Uri::create($connection);
+            $alias = $uri->getScheme().'_'.$i;
+            $builder = $builder->withDriver($alias, $connection);
+        }
+
+        $client = $builder->withFormatter(ClientIntegrationTest::formatter())
+            ->withDefaultSessionConfiguration(SessionConfiguration::default()->withDatabase('neo4j'))
+            ->build();
+
+        foreach ($connections as $i => $connection) {
+            $uri = Uri::create($connection);
+            $alias = $uri->getScheme().'_'.$i;
+            $client->run('MATCH (x) RETURN x', [], $alias);
+
+            $driver = $client->getDriver($alias);
+
+            // We make sure there is no redundant acquire by testing the amount of open connections.
+            // These may never exceed 1 in this simple case.
+            if ($driver instanceof BoltDriver) {
+                $reflection = new ReflectionClass($driver);
+
+                $poolProp = $reflection->getProperty('pool');
+                $poolProp->setAccessible(true);
+                /** @var ConnectionPool $pool */
+                $pool = $poolProp->getValue($driver);
+
+                $reflection = new ReflectionClass($pool);
+                $connectionProp = $reflection->getProperty('activeConnections');
+                $connectionProp->setAccessible(true);
+                /** @var array $activeConnections */
+                $activeConnections = $connectionProp->getValue($pool);
+
+                $this->assertCount(1, $activeConnections);
+            }
+        }
     }
 }
