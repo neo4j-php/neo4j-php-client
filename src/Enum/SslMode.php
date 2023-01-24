@@ -45,4 +45,3 @@ final class SslMode extends TypedEnum implements JsonSerializable
         return $this->getValue();
     }
 }
-

@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
-use const E_DEPRECATED;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 
