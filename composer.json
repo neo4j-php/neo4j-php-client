@@ -20,9 +20,6 @@
             "email": "ghlen@pm.me"
         }
     ],
-    "scripts": {
-        "cs": " docker run --rm -it -w=/app -v ${PWD}:/app oskarstark/php-cs-fixer-ga:2.19.0"
-    },
     "require": {
         "php": "^8.0",
         "laudis/typed-enum": "^1.3.2",
