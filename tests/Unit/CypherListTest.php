@@ -313,20 +313,20 @@ final class CypherListTest extends TestCase
 
     public function testIssetValid(): void
     {
-        self::assertTrue(array_key_exists(0, $this->list));
-        self::assertTrue(array_key_exists(1, $this->list));
-        self::assertTrue(array_key_exists(2, $this->list));
+        self::assertTrue(array_key_exists(0, $this->list->toArray()));
+        self::assertTrue(array_key_exists(1, $this->list->toArray()));
+        self::assertTrue(array_key_exists(2, $this->list->toArray()));
     }
 
     public function testIssetInValid(): void
     {
-        self::assertFalse(array_key_exists(-1, $this->list));
-        self::assertFalse(array_key_exists(3, $this->list));
+        self::assertFalse(array_key_exists(-1, $this->list->toArray()));
+        self::assertFalse(array_key_exists(3, $this->list->toArray()));
     }
 
     public function testIssetValidNull(): void
     {
-        self::assertTrue(array_key_exists(0, (new CypherList([null]))));
+        self::assertTrue(array_key_exists(0, (new CypherList([null]))->toArray()));
     }
 
     public function testJsonSerialize(): void

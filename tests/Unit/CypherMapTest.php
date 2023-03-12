@@ -308,19 +308,19 @@ final class CypherMapTest extends TestCase
 
     public function testIssetValid(): void
     {
-        self::assertTrue(array_key_exists('A', $this->map));
-        self::assertTrue(array_key_exists('B', $this->map));
-        self::assertTrue(array_key_exists('C', $this->map));
+        self::assertTrue(array_key_exists('A', $this->map->toArray()));
+        self::assertTrue(array_key_exists('B', $this->map->toArray()));
+        self::assertTrue(array_key_exists('C', $this->map->toArray()));
     }
 
     public function testIssetInValid(): void
     {
-        self::assertFalse(array_key_exists('a', $this->map));
+        self::assertFalse(array_key_exists('a', $this->map->toArray()));
     }
 
     public function testIssetValidNull(): void
     {
-        self::assertTrue(array_key_exists('a', (new CypherMap(['a' => null]))));
+        self::assertTrue(array_key_exists('a', (new CypherMap(['a' => null]))->toArray()));
     }
 
     public function testJsonSerialize(): void
