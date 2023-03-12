@@ -117,7 +117,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->bookmarkHolder
             );
             $run = microtime(true);
-        } catch (MessageException $e) {
+        } catch (\Exception $e) {
             $this->handleMessageException($e);
         }
 
@@ -151,16 +151,17 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      *
      * @return never
      */
-    private function handleMessageException(MessageException $e): void
+    private function handleMessageException(Neo4jException $e): void
     {
-        $exception = Neo4jException::fromMessageException($e);
+        $exception = $e->getErrors()[0];
         if (!($exception->getClassification() === 'ClientError' && $exception->getCategory() === 'Request')) {
             $this->connection->reset();
         }
         if (!$this->isFinished() && in_array($exception->getClassification(), TransactionHelper::ROLLBACK_CLASSIFICATIONS)) {
             $this->isRolledBack = true;
         }
-        throw $exception;
+
+        throw $e;
     }
 
     public function isRolledBack(): bool

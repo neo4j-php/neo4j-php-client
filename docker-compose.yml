@@ -53,8 +53,6 @@ services:
       - neo4j-cluster
     volumes:
       - .:/opt/project
-    expose:
-      - 9000
     env_file:
       - .env
   testkit-backend:

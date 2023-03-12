@@ -156,25 +156,6 @@ final class BoltResult implements Iterator
 
     public function discard(): void
     {
-        try {
-            $this->connection->discard($this->qid === -1 ? null : $this->qid);
-        } catch (MessageException $e) {
-            $this->handleMessageException($e);
-        }
-    }
-
-    /**
-     * @throws Neo4jException
-     *
-     * @return never
-     */
-    private function handleMessageException(MessageException $e): void
-    {
-        $exception = Neo4jException::fromMessageException($e);
-        if (!($exception->getClassification() === 'ClientError' && $exception->getCategory() === 'Request')) {
-            $this->connection->reset();
-        }
-
-        throw $exception;
+        $this->connection->discard($this->qid === -1 ? null : $this->qid);
     }
 }

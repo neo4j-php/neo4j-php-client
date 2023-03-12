@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Bolt\error\MessageException;
+use Bolt\protocol\Response;
 use InvalidArgumentException;
 
 /**
@@ -36,9 +36,12 @@ final class Neo4jError
     /**
      * @pure
      */
-    public static function fromMessageException(MessageException $e): self
+    public static function fromBoltResponse(Response $response): self
     {
-        return self::fromMessageAndCode($e->getServerCode(), $e->getServerMessage());
+        /** @var array{code: string, message:string} $content */
+        $content = $response->getContent();
+
+        return self::fromMessageAndCode($content['code'], $content['message']);
     }
 
     /**

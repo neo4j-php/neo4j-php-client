@@ -103,7 +103,7 @@ final class BoltDriver implements DriverInterface
         $config ??= SessionConfiguration::default();
         try {
             GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
-        } catch (Throwable) {
+        } catch (Throwable $e) {
             return false;
         }
 

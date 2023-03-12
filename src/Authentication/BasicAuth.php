@@ -13,10 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
+use Bolt\protocol\Response;
+use Bolt\protocol\V4_4;
+use Bolt\protocol\V5;
+use Laudis\Neo4j\Exception\Neo4jException;
 use function base64_encode;
 
 use Bolt\helpers\Auth;
-use Bolt\protocol\V3;
 use Exception;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
@@ -54,10 +57,15 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @throws Exception
      */
-    public function authenticateBolt(V3 $bolt, string $userAgent): array
+    public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
     {
+        $response = $bolt->hello(Auth::basic($this->username, $this->password, $userAgent));
+        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
+            throw Neo4jException::fromBoltResponse($response);
+        }
+
         /** @var array{server: string, connection_id: string, hints: list} */
-        return $bolt->hello(Auth::basic($this->username, $this->password, $userAgent));
+        return $response->getContent();
     }
 
     public function toString(UriInterface $uri): string

@@ -13,28 +13,22 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\protocol\Response;
+use Bolt\protocol\ServerState;
 use Bolt\protocol\V3;
-use Bolt\protocol\V4;
-
-use Bolt\protocol\V4_1;
-use Bolt\protocol\V4_2;
-use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
-use function in_array;
-
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
-
-use function str_starts_with;
-
 use WeakReference;
 
 /**
@@ -59,7 +53,7 @@ class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
 
-    public function getImplementation()
+    public function getImplementation(): array
     {
         return [$this->boltProtocol, $this->connection];
     }
@@ -68,16 +62,13 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V3|V4|V4_1|V4_2|V4_3|V4_4|V5 $boltProtocol,
+        private V4_4|V5 $boltProtocol,
         private Connection $connection,
         private AuthenticateInterface $auth,
         private string $userAgent,
-    /** @psalm-readonly */
-    private ConnectionConfiguration $config
-    ) {
-        $this->serverState = 'READY';
-        $this->config = $config;
-    }
+        /** @psalm-readonly */
+        private ConnectionConfiguration $config
+    ) {}
 
     public function getEncryptionLevel(): string
     {
@@ -170,7 +161,11 @@ class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
-        $this->protocol()->reset();
+        $response = $this->protocol()->reset()
+            ->getResponse();
+
+        $this->assertNoFailure($response);
+
         $this->subscribedResults = [];
     }
 
@@ -183,7 +178,12 @@ class BoltConnection implements ConnectionInterface
     {
         $this->consumeResults();
         $extra = $this->buildRunExtra($database, $timeout, $holder);
-        $this->protocol()->begin($extra);
+
+        $response = $this->protocol()
+            ->begin($extra)
+            ->getResponse();
+
+        $this->assertNoFailure($response);
     }
 
     /**
@@ -196,11 +196,10 @@ class BoltConnection implements ConnectionInterface
         $extra = $this->buildResultExtra(null, $qid);
         $bolt = $this->protocol();
 
-        if ($bolt instanceof V4) {
-            $bolt->discard($extra);
-        } else {
-            $bolt->discardAll($extra);
-        }
+        $response = $bolt->discard($extra)
+            ->getResponse();
+
+        $this->assertNoFailure($response);
     }
 
     /**
@@ -212,15 +211,14 @@ class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder): array
     {
-        if (!str_starts_with($this->protocol()->serverState->get(), 'TX_') || str_starts_with($this->getServerVersion(), '3')) {
-            $this->consumeResults();
-        }
-
         $extra = $this->buildRunExtra($database, $timeout, $holder);
-        $tbr = $this->protocol()->run($text, $parameters, $extra);
+        $response = $this->protocol()->run($text, $parameters, $extra)
+            ->getResponse();
+
+        $this->assertNoFailure($response);
 
         /** @var BoltMeta */
-        return $tbr;
+        return $response->getContent();
     }
 
     /**
@@ -231,7 +229,11 @@ class BoltConnection implements ConnectionInterface
     public function commit(): void
     {
         $this->consumeResults();
-        $this->protocol()->commit();
+        $response = $this->protocol()
+            ->commit()
+            ->getResponse();
+
+        $this->assertNoFailure($response);
     }
 
     /**
@@ -242,10 +244,14 @@ class BoltConnection implements ConnectionInterface
     public function rollback(): void
     {
         $this->consumeResults();
-        $this->protocol()->rollback();
+        $response = $this->protocol()
+            ->rollback()
+            ->getResponse();
+
+        $this->assertNoFailure($response);
     }
 
-    public function protocol(): V3|V4|V4_1|V4_2|V4_3|V4_4|V5
+    public function protocol(): V4_4|V5
     {
         return $this->boltProtocol;
     }
@@ -261,30 +267,26 @@ class BoltConnection implements ConnectionInterface
     {
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
-        $bolt = $this->protocol();
-        if (!$bolt instanceof V4) {
-            /** @var non-empty-list<list> */
-            $tbr = $bolt->pullAll($extra);
-        } else {
-            /** @var non-empty-list<list> */
-            $tbr = $bolt->pull($extra);
+        $tbr = [];
+        foreach ($this->protocol()->pull($extra)->getResponses() as $response) {
+            $this->assertNoFailure($response);
+
+            $tbr[] = $response->getContent();
         }
 
-        $this->interpretResult($tbr[count($tbr) - 1]);
-
+        /** @var non-empty-list<list> */
         return $tbr;
     }
 
     public function __destruct()
     {
-        if ($this->serverState !== 'FAILED' && $this->isOpen()) {
-            if (in_array($this->serverState, ['STREAMING', 'TX_STREAMING'])) {
+        if (!$this->protocol()->serverState->is(ServerState::FAILED) && $this->isOpen()) {
+            if ($this->protocol()->serverState->is(ServerState::STREAMING, ServerState::TX_STREAMING)) {
                 $this->consumeResults();
             }
 
             $this->protocol()->goodbye();
 
-            $this->serverState = 'DEFUNCT';
             unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
         }
     }
@@ -330,35 +332,15 @@ class BoltConnection implements ConnectionInterface
         $this->subscribedResults[] = WeakReference::create($result);
     }
 
-    private function interpretResult(array $result): void
-    {
-        if (str_starts_with($this->serverState, 'TX_')) {
-            if ($result['has_more'] ?? ($this->countResults() > 1)) {
-                $this->serverState = 'TX_STREAMING';
-            } else {
-                $this->serverState = 'TX_READY';
-            }
-        } elseif ($result['has_more'] ?? false) {
-            $this->serverState = 'STREAMING';
-        } else {
-            $this->serverState = 'READY';
-        }
-    }
-
-    private function countResults(): int
-    {
-        $ctr = 0;
-        foreach ($this->subscribedResults as $result) {
-            if ($result->get() !== null) {
-                ++$ctr;
-            }
-        }
-
-        return $ctr;
-    }
-
     public function getUserAgent(): string
     {
         return $this->userAgent;
+    }
+
+    private function assertNoFailure(Response $response): void
+    {
+        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
+            throw Neo4jException::fromBoltResponse($response);
+        }
     }
 }
