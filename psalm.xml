@@ -23,24 +23,6 @@
                 <directory name="tests"/>
             </errorLevel>
         </UnusedMethodCall>
-        <DeprecatedMethod>
-            <errorLevel type="suppress">
-                <directory name="tests"/>
-                <directory name="src"/>
-            </errorLevel>
-        </DeprecatedMethod>
-        <DeprecatedClass>
-            <errorLevel type="suppress">
-                <directory name="tests"/>
-                <directory name="src"/>
-            </errorLevel>
-        </DeprecatedClass>
-        <DeprecatedInterface>
-            <errorLevel type="suppress">
-                <directory name="tests"/>
-                <directory name="src"/>
-            </errorLevel>
-        </DeprecatedInterface>
         <UnusedForeachValue>
             <errorLevel type="suppress">
                 <directory name="tests"/>

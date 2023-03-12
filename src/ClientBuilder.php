@@ -112,89 +112,6 @@ final class ClientBuilder
     }
 
     /**
-     * Adds a new bolt connection with the given alias and over the provided url. The configuration will be merged with the one in the client, if provided.
-     *
-     * @return self<T>
-     *
-     * @deprecated
-     *
-     * @psalm-suppress DeprecatedClass
-     *
-     * @see Client::withDriver()
-     */
-    public function addBoltConnection(string $alias, string $url, BoltConfiguration $config = null): self
-    {
-        $config ??= BoltConfiguration::create();
-        $parsedUrl = Uri::create($url);
-        /** @psalm-suppress ImpureMethodCall */
-        $options = $config->getSslContextOptions();
-        $postScheme = '';
-        if ($options && $options !== []) {
-            if (($options['allow_self_signed'] ?? false) === true) {
-                $postScheme = '+ssc';
-            } else {
-                $postScheme = '+s';
-            }
-        }
-
-        parse_str($parsedUrl->getQuery(), $query);
-        /** @var array<string, string> */
-        $query['database'] ??= $config->getDatabase();
-        $parsedUrl = $parsedUrl->withPath(http_build_query($query));
-
-        if ($config->hasAutoRouting()) {
-            $parsedUrl = $parsedUrl->withScheme('neo4j'.$postScheme);
-        } else {
-            $parsedUrl = $parsedUrl->withScheme('bolt'.$postScheme);
-        }
-
-        return $this->withParsedUrl($alias, $parsedUrl, Authenticate::fromUrl($parsedUrl), 0);
-    }
-
-    /**
-     * Adds a new http connection with the given alias and over the provided url. The configuration will be merged with the one in the client, if provided.
-     *
-     * @return self<T>
-     *
-     * @deprecated
-     * @see Driver::withDriver()
-     *
-     * @psalm-suppress DeprecatedClass
-     */
-    public function addHttpConnection(string $alias, string $url, HttpConfig $config = null): self
-    {
-        $config ??= HttpConfig::create();
-
-        $bindings = new HttpPsrBindings($config->getClient(), $config->getStreamFactory(), $config->getRequestFactory());
-
-        $uri = Uri::create($url);
-
-        $scheme = $bindings->getRequestFactory()->createRequest('GET', $uri)->getUri()->getScheme();
-        $uri = $uri->withScheme($scheme === '' ? 'http' : $scheme);
-        $uri = $uri->withPort($uri->getPort() === 7687 ? 7474 : $uri->getPort());
-
-        $tbr = clone $this;
-        $tbr->defaultDriverConfig = $this->defaultDriverConfig->withHttpPsrBindings($bindings);
-
-        return $tbr->withParsedUrl($alias, $uri, Authenticate::fromUrl($uri), 0);
-    }
-
-    /**
-     * Sets the default connection to the given alias.
-     *
-     * @return self<T>
-     *
-     * @deprecated
-     * @see Driver::withDefaultDriver()
-     *
-     * @psalm-mutation-free
-     */
-    public function setDefaultConnection(string $alias): self
-    {
-        return $this->withDefaultDriver($alias);
-    }
-
-    /**
      * Sets the default connection to the given alias.
      *
      * @return self<T>
@@ -240,20 +157,6 @@ final class ClientBuilder
             $this->defaultSessionConfig,
             $this->defaultTransactionConfig,
         );
-    }
-
-    /**
-     * @deprecated
-     * @see self::withDefaultDriverConfiguration
-     */
-    public function withHttpPsrBindings(HttpPsrBindings $bindings): self
-    {
-        $config = $this->defaultDriverConfig->withHttpPsrBindings($bindings);
-
-        $tbr = clone $this;
-        $tbr->defaultDriverConfig = $config;
-
-        return $tbr;
     }
 
     /**

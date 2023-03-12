@@ -54,18 +54,6 @@ interface SessionInterface extends TransactionInterface
      *
      * @throws Neo4jException
      *
-     * @deprecated
-     * @see SessionInterface::beginTransaction use this method instead.
-     *
-     * @return UnmanagedTransactionInterface<ResultFormat>
-     */
-    public function openTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
-
-    /**
-     * @psalm-param iterable<Statement>|null $statements
-     *
-     * @throws Neo4jException
-     *
      * @return UnmanagedTransactionInterface<ResultFormat>
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;

@@ -61,15 +61,6 @@ final class Session implements SessionInterface
         return $this->session->run($statement, $parameters, $config);
     }
 
-    /**
-     * @deprecated
-     */
-    public function openTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransaction
-    {
-        /** @psalm-suppress DeprecatedMethod */
-        return new UnmanagedTransaction($this->session->openTransaction($statements, $config));
-    }
-
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransaction
     {
         return new UnmanagedTransaction($this->session->beginTransaction($statements, $config));
