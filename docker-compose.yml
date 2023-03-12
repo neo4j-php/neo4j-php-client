@@ -45,6 +45,7 @@ services:
             context: .
             dockerfile: Dockerfile
         container_name: neo4j-client:latest
+        user: ${USER_ID}:${GROUP_ID}
         working_dir: /opt/project
         networks:
             - neo4j
