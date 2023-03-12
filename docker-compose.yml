@@ -44,6 +44,7 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+        container_name: neo4j-client:latest
         working_dir: /opt/project
         networks:
             - neo4j
