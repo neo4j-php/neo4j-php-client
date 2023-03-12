@@ -44,7 +44,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: neo4j-client:latest
+    image: neo4j-php-client:latest
+    hostname: neo4j-php-client
     user: ${USER_ID}:${GROUP_ID}
     working_dir: /opt/project
     networks:
