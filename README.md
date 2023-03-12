@@ -4,14 +4,11 @@
 [![Code Climate maintainability](https://img.shields.io/codeclimate/maintainability/laudis-technologies/neo4j-php-client)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/maintainability)
 [![Packagist PHP Version Support (custom server)](https://img.shields.io/packagist/php-v/laudis/neo4j-php-client)](https://packagist.org/packages/laudis/neo4j-php-client)
 
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/neo4j-php/neo4j-php-client/Full%20Test/main)
 [![Latest Stable Version](https://poser.pugx.org/laudis/neo4j-php-client/v)](https://packagist.org/packages/laudis/neo4j-php-client)
 [![Commits Since latest](https://img.shields.io/github/commits-since/neo4j-php/neo4j-php-client/latest)](https://github.com/neo4j-php/neo4j-php-client/commits/main)
 
 [![Packagist Downloads](https://img.shields.io/packagist/dt/laudis/neo4j-php-client)](https://packagist.org/packages/laudis/neo4j-php-client/stats)
 [![Packagist Downloads](https://img.shields.io/packagist/dm/laudis/neo4j-php-client)](https://packagist.org/packages/laudis/neo4j-php-client/stats)
-[![Discord](https://img.shields.io/discord/787399249741479977)](https://discord.com/channels/787399249741479977)
-
 
 ## Control to worlds' most powerful graph database
 - Pick and choose your drivers with easy configuration

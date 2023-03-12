@@ -13,20 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
-use const E_DEPRECATED;
-
-use function error_reporting;
-
 use JsonSerializable;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\TypedEnum\TypedEnum;
-use Stringable;
-
-/**
- * Turn of error reporting for class definition. PHP Users of 8.1 receive a deprectation warning otherwise but
- * it is not fixable from the minimum version 7.4 as it required the "mixed" keyword.
- */
-$oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
 
 /**
  * The actual type of query after is has been run.
@@ -40,7 +29,7 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
  *
  * @psalm-suppress MutableDependency
  */
-final class QueryTypeEnum extends TypedEnum implements JsonSerializable, Stringable
+final class QueryTypeEnum extends TypedEnum implements JsonSerializable
 {
     private const READ_ONLY = 'read_only';
     private const READ_WRITE = 'read_write';
@@ -67,19 +56,15 @@ final class QueryTypeEnum extends TypedEnum implements JsonSerializable, Stringa
         return self::READ_ONLY();
     }
 
-    public function __toString(): string
+    public function __toString()
     {
         /** @noinspection MagicMethodsValidityInspection */
-        return (string) $this->getValue();
+        return $this->getValue();
     }
 
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return $this->getValue();
     }
 }
-
-/**
- * Turn back on old error reporting after class definition.
- */
-error_reporting($oldReporting);

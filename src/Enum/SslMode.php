@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /*
  * This file is part of the Neo4j PHP Client and Driver package.
  *
@@ -13,19 +11,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
-use const E_DEPRECATED;
-
-use function error_reporting;
-
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
-use Stringable;
-
-/**
- * Turn of error reporting for class definition. PHP Users of 8.1 receive a deprectation warning otherwise but
- * it is not fixable from the minimum version 7.4 as it required the "mixed" keyword.
- */
-$oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
 
 /**
  * @method static self ENABLE()
@@ -39,26 +26,22 @@ $oldReporting = error_reporting(error_reporting() & ~E_DEPRECATED);
  *
  * @psalm-suppress MutableDependency
  */
-final class SslMode extends TypedEnum implements JsonSerializable, Stringable
+final class SslMode extends TypedEnum implements JsonSerializable
 {
     private const ENABLE = 'enable';
     private const ENABLE_WITH_SELF_SIGNED = 'enable_with_self_signed';
     private const DISABLE = 'disable';
     private const FROM_URL = 'from_url';
 
-    public function __toString(): string
+    public function __toString()
     {
         /** @noinspection MagicMethodsValidityInspection */
         return $this->getValue();
     }
 
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return $this->getValue();
     }
 }
-
-/**
- * Turn back on old error reporting after class definition.
- */
-error_reporting($oldReporting);

@@ -13,18 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
-use const E_DEPRECATED;
-
-use function error_reporting;
-
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
-
-/**
- * Turn of error reporting for class definition. PHP Users of 8.1 receive a deprectation warning otherwise but
- * it is not fixable from the minimum version 7.4 as it required the "mixed" keyword.
- */
-$oldReporting = error_reporting(error_reporting() & (~E_DEPRECATED));
 
 /**
  * The possible routing roles.
@@ -48,6 +38,7 @@ final class RoutingRoles extends TypedEnum implements JsonSerializable
     /**
      * @psalm-suppress ImpureMethodCall
      */
+    #[\ReturnTypeWillChange]
     public function jsonSerialize(): string
     {
         if ($this === self::LEADER()) {
@@ -61,8 +52,3 @@ final class RoutingRoles extends TypedEnum implements JsonSerializable
         return 'ROUTE';
     }
 }
-
-/**
- * Turn back on old error reporting after class definition.
- */
-error_reporting($oldReporting);
