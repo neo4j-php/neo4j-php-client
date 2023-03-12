@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Authentication;
 
 use function explode;
 
-use JetBrains\PhpStorm\Pure;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\UriInterface;
 

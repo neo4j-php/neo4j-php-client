@@ -62,7 +62,6 @@
         "symfony/uid": "^5.0",
         "symfony/var-dumper": "^5.0",
         "cache/integration-tests": "dev-master",
-        "rector/rector": "^0.15.10",
         "kubawerlos/php-cs-fixer-custom-fixers": "^3.11"
     },
     "autoload": {
