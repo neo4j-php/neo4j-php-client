@@ -37,11 +37,11 @@ final class EdgeCasesTest extends TestCase
     private function getBoltUri(): ?string
     {
         /** @var string|mixed $connections */
-        $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+        $connections = $_ENV['CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
             Dotenv::createImmutable(__DIR__.'/../../')->load();
             /** @var string|mixed $connections */
-            $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+            $connections = $_ENV['CONNECTIONS'] ?? false;
             if (!is_string($connections)) {
                 $connections = 'bolt://neo4j:test@neo4j,neo4j://neo4j:test@core1,http://neo4j:test@neo4j';
             }

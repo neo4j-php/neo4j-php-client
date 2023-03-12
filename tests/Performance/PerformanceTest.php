@@ -34,7 +34,7 @@ use function sleep;
 use function str_starts_with;
 
 /**
- * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
+ * @psalm-import-type BasicResults from BasicFormatter
  *
  * @extends EnvironmentAwareIntegrationTest<BasicResults>
  */

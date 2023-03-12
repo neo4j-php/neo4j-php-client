@@ -34,7 +34,7 @@ final class OIDCTest extends TestCase
         }
 
         /** @var mixed */
-        $connections = $_ENV['NEO4J_CONNECTIONS'] ?? '';
+        $connections = $_ENV['CONNECTIONS'] ?? '';
         $connections = is_string($connections) ? $connections : '';
         foreach (explode(',', $connections) as $connection) {
             $driver = ClientBuilder::create()

@@ -38,11 +38,11 @@ final class BoltResultIntegrationTest extends TestCase
      */
     public function buildConnections(): array
     {
-        $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+        $connections = $_ENV['CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
             Dotenv::createImmutable(__DIR__.'/../../')->load();
             /** @var string|mixed $connections */
-            $connections = $_ENV['NEO4J_CONNECTIONS'] ?? false;
+            $connections = $_ENV['CONNECTIONS'] ?? false;
             if (!is_string($connections)) {
                 return ['bolt://neo4j:test@neo4j' => ['bolt://neo4j:test@neo4j']];
             }

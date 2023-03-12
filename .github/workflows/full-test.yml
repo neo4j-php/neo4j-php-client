@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     name: "Running full tests"
     env:
-      NEO4J_CONNECTIONS: ${{ secrets.NEO4J_CONNECTIONS }}
+      CONNECTIONS: ${{ secrets.CONNECTIONS }}
 
     steps:
       - uses: actions/checkout@v2
