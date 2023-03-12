@@ -16,6 +16,11 @@ namespace Laudis\Neo4j\Bolt;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 
+use Bolt\protocol\V4_1;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
+use Bolt\protocol\V4_4;
+use Bolt\protocol\V5;
 use function in_array;
 
 use Laudis\Neo4j\Common\ConnectionConfiguration;
@@ -63,7 +68,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V3 $boltProtocol,
+        private V3|V4|V4_1|V4_2|V4_3|V4_4|V5 $boltProtocol,
         private Connection $connection,
         private AuthenticateInterface $auth,
         private string $userAgent,
@@ -240,7 +245,7 @@ class BoltConnection implements ConnectionInterface
         $this->protocol()->rollback();
     }
 
-    public function protocol(): V3
+    public function protocol(): V3|V4|V4_1|V4_2|V4_3|V4_4|V5
     {
         return $this->boltProtocol;
     }
