@@ -1,39 +1,45 @@
 version: '3.8'
 
-x-shared-env:
-  &common-env
-  NEO4J_AUTH: neo4j/testtest
-  NEO4J_PLUGINS: '["apoc"]'
-
-x-shared-cluster-env:
-  &common-cluster-env
-  <<: *common-env
-  NEO4J_EDITION: 'enterprise'
-  NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
-  EXTENDED_CONF: 'yes'
-
-x-shared-core-env:
-  &common-core-env
-  <<: *common-cluster-env
-  NEO4J_initial_server_mode__constraint: 'PRIMARY'
-
-x-common:
-  &common
-  image: neo4j:5.3
-  user: ${USER_ID}:${GROUP_ID}
-  healthcheck:
-    test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
-  env_file:
-    - .env
-
-x-common-cluster:
-  &common-cluster
-  <<: *common
-  image: neo4j:5.3-enterprise
-  networks:
-    neo4j-cluster:
-      aliases:
-        - neo4j-network
+x-definitions:
+  x-shared-env:
+    &common-env
+    NEO4J_AUTH: neo4j/testtest
+    NEO4J_PLUGINS: '["apoc"]'
+  x-shared-cluster-env:
+    &common-cluster-env
+    <<: *common-env
+    NEO4J_EDITION: 'enterprise'
+    NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
+    EXTENDED_CONF: 'yes'
+  x-shared-core-env:
+    &common-core-env
+    <<: *common-cluster-env
+    NEO4J_initial_server_mode__constraint: 'PRIMARY'
+  x-common:
+    &common
+    image: neo4j:5.3
+    user: ${USER_ID}:${GROUP_ID}
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
+    env_file:
+      - .env
+  x-common-php:
+    &common-php
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: neo4j-php-client:latest
+    user: ${USER_ID}:${GROUP_ID}
+    volumes:
+      - .:/opt/project
+  x-common-cluster:
+    &common-cluster
+    <<: *common
+    image: neo4j:5.3-enterprise
+    networks:
+      neo4j-cluster:
+        aliases:
+          - neo4j-network
 
 networks:
   neo4j:
@@ -41,12 +47,7 @@ networks:
 
 services:
   client:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: neo4j-php-client:latest
-    hostname: neo4j-php-client
-    working_dir: /opt/project
+    <<: *common-php
     networks:
       - neo4j
       - neo4j-cluster
@@ -57,14 +58,7 @@ services:
     env_file:
       - .env
   testkit-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - WITH_XDEBUG=true
-    working_dir: /opt/project
-    volumes:
-      - .:/opt/project
+    <<: *common-php
     command: php /opt/project/testkit-backend/index.php
     networks:
       - neo4j

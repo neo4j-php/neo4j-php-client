@@ -8,12 +8,10 @@ RUN apt-get update \
     && docker-php-ext-install -j$(nproc) bcmath \
     && wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 \
     && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
-    && chmod +x /usr/bin/cc-test-reporter
-
-RUN pecl install xdebug \
-    && docker-php-ext-enable xdebug
-
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    && chmod +x /usr/bin/cc-test-reporter \
+    && pecl install xdebug \
+    && docker-php-ext-enable xdebug && \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /opt/project
 
@@ -21,9 +19,10 @@ COPY composer.json ./
 
 RUN composer install
 
-COPY phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.php ./
+COPY phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.php LICENSE README.md ./
 COPY src/ src/
 COPY tests/ tests/
+COPY testkit-backend/ testkit-backend/
 COPY .git/ .git/
 
 
