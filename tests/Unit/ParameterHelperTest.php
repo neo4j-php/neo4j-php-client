@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Bolt\structures\DateTimeZoneId;
+use Bolt\protocol\v1\structures\DateTimeZoneId;
 use DateTime;
 use DateTimeZone;
 use InvalidArgumentException;
