@@ -29,7 +29,7 @@
         "psr/http-client": "^1.0",
         "php-http/message": "^1.0",
         "php-http/message-factory": "^1.0",
-        "stefanak-michal/bolt": "^4.1",
+        "stefanak-michal/bolt": "^5.1",
         "symfony/polyfill-php80": "^1.2",
         "psr/simple-cache": "^1.0",
         "ext-json": "*"
