@@ -33,8 +33,7 @@ EOF;
 try {
     $finder = PhpCsFixer\Finder::create()
         ->in(__DIR__.'/src')
-        ->in(__DIR__.'/tests')
-        ->in(__DIR__.'/testkit-backend');
+        ->in(__DIR__.'/tests');
 } catch (Throwable $e) {
     echo $e->getMessage()."\n";
 

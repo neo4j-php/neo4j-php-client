@@ -22,7 +22,6 @@ RUN composer install
 COPY phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.php LICENSE README.md ./
 COPY src/ src/
 COPY tests/ tests/
-COPY testkit-backend/ testkit-backend/
 COPY .git/ .git/
 
 

@@ -55,15 +55,6 @@ services:
       - .:/opt/project
     env_file:
       - .env
-  testkit-backend:
-    <<: *common-php
-    command: php /opt/project/testkit-backend/index.php
-    networks:
-      - neo4j
-    depends_on:
-      - neo4j
-    ports:
-      - "9876:9876"
   neo4j:
     <<: *common
     hostname: neo4j

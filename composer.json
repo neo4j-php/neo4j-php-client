@@ -68,8 +68,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Laudis\\Neo4j\\Tests\\": "tests/",
-            "Laudis\\Neo4j\\TestkitBackend\\": "testkit-backend/src"
+            "Laudis\\Neo4j\\Tests\\": "tests/"
         }
     },
     "minimum-stability": "stable",
