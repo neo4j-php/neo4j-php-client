@@ -99,13 +99,18 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), true);
         $start = microtime(true);
 
-        $meta = $this->connection->run(
-            $statement->getText(),
-            $parameters->toArray(),
-            $this->database,
-            $this->tsxConfig->getTimeout(),
-            $this->bookmarkHolder
-        );
+        try {
+            $meta = $this->connection->run(
+                $statement->getText(),
+                $parameters->toArray(),
+                $this->database,
+                $this->tsxConfig->getTimeout(),
+                $this->bookmarkHolder
+            );
+        } catch (Throwable $e) {
+            $this->isRolledBack = true;
+            throw $e;
+        }
         $run = microtime(true);
 
         return $this->formatter->formatBoltResult(
