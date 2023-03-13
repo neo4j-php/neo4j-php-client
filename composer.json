@@ -48,7 +48,7 @@
         "nyholm/psr7-server": "^1.0",
         "kriswallsmith/buzz": "^1.2",
         "vimeo/psalm": "4.29.0",
-        "friendsofphp/php-cs-fixer": "^3.13",
+        "friendsofphp/php-cs-fixer": "3.15.0",
         "psalm/plugin-phpunit": "^0.15.1",
         "monolog/monolog": "^2.2",
         "psr/log": "^1.1",
@@ -59,7 +59,7 @@
         "symfony/uid": "^5.0",
         "symfony/var-dumper": "^5.0",
         "cache/integration-tests": "dev-master",
-        "kubawerlos/php-cs-fixer-custom-fixers": "^3.11"
+        "kubawerlos/php-cs-fixer-custom-fixers": "3.13.*"
     },
     "autoload": {
         "psr-4": {

@@ -5,7 +5,7 @@ RUN apt-get update \
         unzip \
         git \
         wget \
-    && docker-php-ext-install -j$(nproc) bcmath \
+    && docker-php-ext-install -j$(nproc) bcmath sockets \
     && wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 \
     && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
     && chmod +x /usr/bin/cc-test-reporter \
