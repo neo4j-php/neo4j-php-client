@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Generator;
 
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use function getenv;
 
 use InvalidArgumentException;
@@ -39,7 +40,7 @@ use function str_starts_with;
 use Throwable;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from OGMFormatter
  *
  * @extends EnvironmentAwareIntegrationTest<SummarizedResult<CypherMap<OGMTypes>>>
  */

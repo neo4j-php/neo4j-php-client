@@ -228,7 +228,7 @@ final class LegacyHttpOGMTranslator
                 $meta = $meta->incrementMeta();
                 $map = $this->translateProperties((array) $node->properties);
 
-                return [new Node((int) $node->id, new CypherList($node->labels), $map), $meta];
+                return [new Node((int) $node->id, new CypherList($node->labels), $map, null), $meta];
             }
         }
 
@@ -275,7 +275,8 @@ final class LegacyHttpOGMTranslator
             (int) $relationship->startNode,
             (int) $relationship->endNode,
             $relationship->type,
-            $map
+            $map,
+            null
         );
 
         return [$tbr, $meta];
