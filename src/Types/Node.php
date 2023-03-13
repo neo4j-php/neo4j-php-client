@@ -37,7 +37,8 @@ final class Node extends AbstractPropertyObject
     public function __construct(
         private int $id,
         private CypherList $labels,
-        private CypherMap $properties
+        private CypherMap $properties,
+        private ?string $elementId
     ) {}
 
     /**
@@ -92,5 +93,13 @@ final class Node extends AbstractPropertyObject
     {
         /** @psalm-suppress InvalidReturnStatement false positive with type alias. */
         return $this->properties;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getElementId(): ?string
+    {
+        return $this->elementId;
     }
 }

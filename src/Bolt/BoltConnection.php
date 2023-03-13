@@ -32,7 +32,7 @@ use Psr\Http\Message\UriInterface;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V3, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_4|V5, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  */

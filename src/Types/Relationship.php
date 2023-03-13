@@ -30,9 +30,10 @@ final class Relationship extends UnboundRelationship
         private int $startNodeId,
         private int $endNodeId,
         string $type,
-        CypherMap $properties
+        CypherMap $properties,
+        ?string $elementId
     ) {
-        parent::__construct($id, $type, $properties);
+        parent::__construct($id, $type, $properties, $elementId);
     }
 
     /**

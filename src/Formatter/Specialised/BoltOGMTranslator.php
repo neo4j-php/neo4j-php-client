@@ -13,22 +13,20 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
-use Bolt\structures\Date as BoltDate;
-use Bolt\structures\DateTime as BoltDateTime;
-use Bolt\structures\DateTimeZoneId as BoltDateTimeZoneId;
-use Bolt\structures\Duration as BoltDuration;
-use Bolt\structures\LocalDateTime as BoltLocalDateTime;
-use Bolt\structures\LocalTime as BoltLocalTime;
-use Bolt\structures\Node as BoltNode;
-use Bolt\structures\Path as BoltPath;
-use Bolt\structures\Point2D as BoltPoint2D;
-use Bolt\structures\Point3D as BoltPoint3D;
-use Bolt\structures\Relationship as BoltRelationship;
-use Bolt\structures\Time as BoltTime;
-use Bolt\structures\UnboundRelationship as BoltUnboundRelationship;
-
-use function call_user_func;
-
+use Bolt\protocol\v1\structures\Date as BoltDate;
+use Bolt\protocol\v1\structures\DateTime as BoltDateTime;
+use Bolt\protocol\v1\structures\DateTimeZoneId as BoltDateTimeZoneId;
+use Bolt\protocol\v1\structures\Duration as BoltDuration;
+use Bolt\protocol\v1\structures\LocalDateTime as BoltLocalDateTime;
+use Bolt\protocol\v1\structures\LocalTime as BoltLocalTime;
+use Bolt\protocol\v1\structures\Node as BoltNode;
+use Bolt\protocol\v1\structures\Path as BoltPath;
+use Bolt\protocol\v1\structures\Point2D as BoltPoint2D;
+use Bolt\protocol\v1\structures\Point3D as BoltPoint3D;
+use Bolt\protocol\v1\structures\Relationship as BoltRelationship;
+use Bolt\protocol\v1\structures\Time as BoltTime;
+use Bolt\protocol\v1\structures\UnboundRelationship as BoltUnboundRelationship;
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
@@ -53,7 +51,7 @@ use UnexpectedValueException;
 /**
  * Translates Bolt objects to Driver Types.
  *
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from OGMFormatter
  *
  * @psalm-immutable
  */
@@ -101,13 +99,19 @@ final class BoltOGMTranslator
             $properties[$name] = $this->mapValueToType($property);
         }
 
+        /** @var ?string|null $elementId */
+        $elementId = null;
+        if ($node instanceof \Bolt\protocol\v5\structures\Node) {
+            $elementId = $node->element_id();
+        }
         /**
          * @psalm-suppress MixedArgumentTypeCoercion
          */
         return new Node(
             $node->id(),
             new CypherList($node->labels()),
-            new CypherMap($properties)
+            new CypherMap($properties),
+            $elementId
         );
     }
 
@@ -163,12 +167,19 @@ final class BoltOGMTranslator
             $map[$key] = $this->mapValueToType($property);
         }
 
+        /** @var string|null $elementId */
+        $elementId = null;
+        if ($rel instanceof \Bolt\protocol\v5\structures\Relationship) {
+            $elementId = $rel->element_id();
+        }
+
         return new Relationship(
             $rel->id(),
             $rel->startNodeId(),
             $rel->endNodeId(),
             $rel->type(),
-            new CypherMap($map)
+            new CypherMap($map),
+            $elementId
         );
     }
 
@@ -184,10 +195,16 @@ final class BoltOGMTranslator
             $map[$key] = $this->mapValueToType($property);
         }
 
+        $elementId = null;
+        if ($rel instanceof \Bolt\protocol\v5\structures\UnboundRelationship) {
+            $elementId = $rel->element_id();
+        }
+
         return new UnboundRelationship(
             $rel->id(),
             $rel->type(),
-            new CypherMap($map)
+            new CypherMap($map),
+            $elementId
         );
     }
 
@@ -271,11 +288,12 @@ final class BoltOGMTranslator
     {
         /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         $type = get_debug_type($value);
-        if (!array_key_exists($type, $this->rawToTypes)) {
-            throw new UnexpectedValueException('Cannot handle value of debug type: '.$type);
+        foreach ($this->rawToTypes as $class => $formatter) {
+            if ($type === $class || is_a($value, $class, true)) {
+                return $formatter($value);
+            }
         }
 
-        /** @psalm-suppress ImpureFunctionCall */
-        return call_user_func($this->rawToTypes[$type], $value);
+        throw new UnexpectedValueException('Cannot handle value of debug type: '.$type);
     }
 }

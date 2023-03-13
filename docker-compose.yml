@@ -35,7 +35,7 @@ x-definitions:
   x-common-cluster:
     &common-cluster
     <<: *common
-    image: neo4j:5.3-enterprise
+    image: neo4j:5-enterprise
     networks:
       neo4j-cluster:
         aliases:

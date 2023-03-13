@@ -103,11 +103,7 @@ final class BoltResult implements Iterator
 
     private function fetchResults(): void
     {
-        try {
-            $meta = $this->connection->pull($this->qid, $this->fetchSize);
-        } catch (MessageException $e) {
-            $this->handleMessageException($e);
-        }
+        $meta = $this->connection->pull($this->qid, $this->fetchSize);
 
         /** @var list<list> $rows */
         $rows = array_splice($meta, 0, count($meta) - 1);

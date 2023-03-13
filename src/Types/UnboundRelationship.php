@@ -34,7 +34,8 @@ class UnboundRelationship extends AbstractPropertyObject
     public function __construct(
         private int $id,
         private string $type,
-        private CypherMap $properties
+        private CypherMap $properties,
+        private ?string $elementId
     ) {}
 
     public function getId(): int
