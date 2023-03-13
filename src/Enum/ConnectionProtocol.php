@@ -33,6 +33,7 @@ use ReturnTypeWillChange;
  * @method static ConnectionProtocol BOLT_V42()
  * @method static ConnectionProtocol BOLT_V43()
  * @method static ConnectionProtocol BOLT_V44()
+ * @method static ConnectionProtocol BOLT_V5()
  * @method static ConnectionProtocol HTTP()
  *
  * @extends TypedEnum<string>
@@ -49,6 +50,7 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
     private const BOLT_V42 = '4.2';
     private const BOLT_V43 = '4.3';
     private const BOLT_V44 = '4.4';
+    private const BOLT_V5 = '5';
     private const HTTP = 'http';
 
     /**

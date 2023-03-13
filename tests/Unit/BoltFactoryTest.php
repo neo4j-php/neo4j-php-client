@@ -18,6 +18,7 @@ use Bolt\packstream\v1\Packer;
 use Bolt\packstream\v1\Unpacker;
 use Bolt\protocol\ServerState;
 use Bolt\protocol\V4;
+use Bolt\protocol\V5;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\Connection;
@@ -44,7 +45,7 @@ final class BoltFactoryTest extends TestCase
         $protocolFactory = $this->createMock(ProtocolFactory::class);
         $protocolFactory->method('createProtocol')
             ->willReturnCallback(static fn (IConnection $connection) => [
-                new V4(new Packer(), new Unpacker(), $connection, new ServerState()),
+                new V5(new Packer(), new Unpacker(), $connection, new ServerState()),
                 ['server' => 'abc', 'connection_id' => 'i'],
                 ]);
 
@@ -64,7 +65,7 @@ final class BoltFactoryTest extends TestCase
 
         self::assertInstanceOf(BoltConnection::class, $connection);
         self::assertEquals('', $connection->getEncryptionLevel());
-        self::assertInstanceOf(V4::class, $connection->getImplementation()[0]);
+        self::assertInstanceOf(V5::class, $connection->getImplementation()[0]);
         self::assertInstanceOf(Connection::class,
             $connection->getImplementation()[1]);
     }
