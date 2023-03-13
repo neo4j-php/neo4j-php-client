@@ -52,7 +52,7 @@ final class ClientBuilderTest extends TestCase
             self::markTestSkipped('No bolt uri provided');
         }
 
-        $client = ClientBuilder::create()->addBoltConnection('bolt', $uri)->build();
+        $client = ClientBuilder::create()->withDriver('bolt', $uri)->build();
         $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
@@ -65,7 +65,7 @@ final class ClientBuilderTest extends TestCase
             self::markTestSkipped('No bolt uri provided');
         }
 
-        $client = ClientBuilder::create()->addBoltConnection('bolt', $uri)->build();
+        $client = ClientBuilder::create()->withDriver('bolt', $uri)->build();
         $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
@@ -78,7 +78,7 @@ final class ClientBuilderTest extends TestCase
             self::markTestSkipped('No bolt uri provided');
         }
 
-        $client = ClientBuilder::create()->addBoltConnection('bolt', $uri)->build();
+        $client = ClientBuilder::create()->withDriver('bolt', $uri)->build();
         $tsx = $client->beginTransaction();
         self::assertTrue(true);
         $tsx->rollback();
