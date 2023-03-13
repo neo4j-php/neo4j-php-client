@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,12 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use function is_string;
+
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\StartTestRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\RunTestResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\SkipTestResponse;
-use function is_string;
 
 /**
  * @implements RequestHandlerInterface<StartTestRequest>
@@ -28,9 +29,9 @@ final class StartTest implements RequestHandlerInterface
     /**
      * @param array<string, array|string|bool> $acceptedTests
      */
-    public function __construct(private array $acceptedTests)
-    {
-    }
+    public function __construct(
+        private array $acceptedTests
+    ) {}
 
     /**
      * @param StartTestRequest $request
@@ -39,7 +40,7 @@ final class StartTest implements RequestHandlerInterface
     {
         $section = $this->acceptedTests;
         foreach (explode('.', $request->getTestName()) as $key) {
-            if (isset($section[$key])) {
+            if (array_key_exists($key, $section)) {
                 if ($section[$key] === false) {
                     return new SkipTestResponse('Test disabled in backend');
                 }

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -19,7 +19,6 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
-use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Symfony\Component\Uid\Uuid;
 
@@ -39,9 +38,12 @@ final class MainRepository
      * @param array<string, SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface>       $records
      * @param array<string, UnmanagedTransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>> $transactions
      */
-    public function __construct(private array $drivers, private array $sessions, private array $records, private array $transactions)
-    {
-    }
+    public function __construct(
+        private array $drivers,
+        private array $sessions,
+        private array $records,
+        private array $transactions
+    ) {}
 
     /**
      * @param DriverInterface<SummarizedResult<CypherMap<OGMTypes>>> $driver
@@ -96,7 +98,7 @@ final class MainRepository
     /**
      * @param SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface $result
      */
-    public function addRecords(Uuid $id, \Laudis\Neo4j\Databags\SummarizedResult|\Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface $result): void
+    public function addRecords(Uuid $id, SummarizedResult|TestkitResponseInterface $result): void
     {
         $this->records[$id->toRfc4122()] = $result;
         if ($result instanceof SummarizedResult) {
@@ -113,7 +115,7 @@ final class MainRepository
     /**
      * @return SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface
      */
-    public function getRecords(Uuid $id): \Laudis\Neo4j\Databags\SummarizedResult|\Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface
+    public function getRecords(Uuid $id): SummarizedResult|TestkitResponseInterface
     {
         return $this->records[$id->toRfc4122()];
     }

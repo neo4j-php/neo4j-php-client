@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -16,7 +16,6 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
-use Laudis\Neo4j\Exception\InvalidTransactionStateException;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -37,9 +36,10 @@ use Symfony\Component\Uid\Uuid;
  */
 abstract class AbstractRunner implements RequestHandlerInterface
 {
-    public function __construct(protected MainRepository $repository, private LoggerInterface $logger)
-    {
-    }
+    public function __construct(
+        protected MainRepository $repository,
+        private LoggerInterface $logger
+    ) {}
 
     public function handle($request): ResultResponse
     {
@@ -122,7 +122,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
      *
      * @return SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>|TransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>
      */
-    abstract protected function getRunner($request): \Laudis\Neo4j\Contracts\SessionInterface|\Laudis\Neo4j\Contracts\TransactionInterface;
+    abstract protected function getRunner($request): SessionInterface|TransactionInterface;
 
     /**
      * @param T $request

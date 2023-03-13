@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,15 +15,20 @@ namespace Laudis\Neo4j\TestkitBackend;
 
 use DI\ContainerBuilder;
 use Exception;
+
 use function get_debug_type;
 use function json_decode;
 use function json_encode;
+
 use const JSON_THROW_ON_ERROR;
+
 use JsonException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
+
 use const PHP_EOL;
+
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -31,9 +36,12 @@ use UnexpectedValueException;
 
 final class Backend
 {
-    public function __construct(private Socket $socket, private LoggerInterface $logger, private ContainerInterface $container, private RequestFactory $factory)
-    {
-    }
+    public function __construct(
+        private Socket $socket,
+        private LoggerInterface $logger,
+        private ContainerInterface $container,
+        private RequestFactory $factory
+    ) {}
 
     /**
      * @throws Exception
@@ -92,9 +100,6 @@ final class Backend
         return $action;
     }
 
-    /**
-     * @param string $message
-     */
     private function properSendoff(TestkitResponseInterface $response): void
     {
         $message = json_encode($response, JSON_THROW_ON_ERROR);

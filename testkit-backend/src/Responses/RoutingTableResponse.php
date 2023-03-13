@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -25,9 +25,13 @@ final class RoutingTableResponse implements TestkitResponseInterface
      * @param iterable<string> $readers
      * @param iterable<string> $writers
      */
-    public function __construct(private ?string $database, private int $ttl, private iterable $routers, private iterable $readers, private iterable $writers)
-    {
-    }
+    public function __construct(
+        private ?string $database,
+        private int $ttl,
+        private iterable $routers,
+        private iterable $readers,
+        private iterable $writers
+    ) {}
 
     public function jsonSerialize(): array
     {

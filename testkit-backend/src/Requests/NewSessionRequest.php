@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -21,9 +21,13 @@ final class NewSessionRequest
     /**
      * @param iterable<Bookmark>|null $bookmarks
      */
-    public function __construct(private Uuid $driverId, private string $accessMode, private ?iterable $bookmarks, private ?string $database, private ?int $fetchSize)
-    {
-    }
+    public function __construct(
+        private Uuid $driverId,
+        private string $accessMode,
+        private ?iterable $bookmarks,
+        private ?string $database,
+        private ?int $fetchSize
+    ) {}
 
     public function getDriverId(): Uuid
     {

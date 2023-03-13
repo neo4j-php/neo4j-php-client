@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -18,10 +18,15 @@ use function getenv;
 use function is_numeric;
 use function is_string;
 use function json_encode;
+
 use const PHP_EOL;
+
 use RuntimeException;
+
 use function stream_get_line;
+
 use const STREAM_SHUT_RDWR;
+
 use function stream_socket_accept;
 use function stream_socket_server;
 use function stream_socket_shutdown;
@@ -34,9 +39,9 @@ final class Socket
     /**
      * @param resource $streamSocketServer
      */
-    public function __construct(private $streamSocketServer)
-    {
-    }
+    public function __construct(
+        private $streamSocketServer
+    ) {}
 
     public static function fromEnvironment(): self
     {
