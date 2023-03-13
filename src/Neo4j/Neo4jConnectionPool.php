@@ -13,14 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use function array_slice;
 use function array_unique;
 
-use Bolt\error\MessageException;
-use Bolt\protocol\V3;
-use Bolt\protocol\V4;
-use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
+use Bolt\protocol\V5;
 
 use function count;
 
@@ -47,9 +43,6 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
-
-use const PHP_INT_MAX;
-
 use Psr\Http\Message\UriInterface;
 use Psr\SimpleCache\CacheInterface;
 
@@ -59,7 +52,6 @@ use RuntimeException;
 
 use function sprintf;
 use function str_replace;
-use function str_starts_with;
 
 use Throwable;
 
@@ -74,7 +66,7 @@ use function time;
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
-    /** @var array<string, ConnectionPool> */
+    /** @var array<string, Neo4jConnectionPool> */
     private static array $pools = [];
 
     /**
@@ -192,94 +184,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         $bolt = $connection->getImplementation()[0];
 
-        if ($bolt instanceof V4_4) {
-            return $this->useRouteMessageNew($bolt, $config);
-        }
-
-        if ($bolt instanceof V4_3) {
-            return $this->useRouteMessage($bolt, $config);
-        }
-
-        if ($bolt instanceof V4) {
-            return $this->useRoutingTable($bolt);
-        }
-
-        return $this->useClusterOverview($bolt, $connection);
-    }
-
-    private function useRouteMessage(V4_3 $bolt, SessionConfiguration $config): RoutingTable
-    {
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
-        $route = $bolt->route([], [], $config->getDatabase());
+        $route = $bolt->route([], [], ['db' => $config->getDatabase()])
+            ->getResponse()
+            ->getContent();
+
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();
-
-        return new RoutingTable($servers, $ttl);
-    }
-
-    private function useRouteMessageNew(V4_4 $bolt, SessionConfiguration $config): RoutingTable
-    {
-        /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
-        $route = $bolt->route([], [], ['db' => $config->getDatabase()]);
-        ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
-        $ttl += time();
-
-        return new RoutingTable($servers, $ttl);
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function useRoutingTable(V4 $bolt): RoutingTable
-    {
-        $bolt->run('CALL dbms.routing.getRoutingTable({context: []})');
-        /** @var array{0: array{0: int, 1: list<array{addresses: list<string>, role:string}>}} */
-        $response = $bolt->pull(['n' => 1]);
-        $response = $response[0];
-        $servers = [];
-        $ttl = time() + $response[0];
-        foreach ($response[1] as $server) {
-            $servers[] = ['addresses' => $server['addresses'], 'role' => $server['role']];
-        }
-
-        return new RoutingTable($servers, $ttl);
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function useClusterOverview(V3 $bolt, ConnectionInterface $c): RoutingTable
-    {
-        try {
-            $bolt->run('CALL dbms.cluster.overview()');
-        } catch (MessageException) {
-            return new RoutingTable([
-                [
-                    'addresses' => [(string) $c->getServerAddress()],
-                    'role' => 'WRITE',
-                ],
-                [
-                    'addresses' => [(string) $c->getServerAddress()],
-                    'role' => 'READ',
-                ],
-            ], PHP_INT_MAX);
-        }
-        /** @var list<array{0: string, 1: list<string>, 2: string, 4: list, 4:string}> */
-        $response = $bolt->pullAll();
-        $response = array_slice($response, 0, count($response) - 1);
-        $servers = [];
-        $ttl = time() + 3600;
-
-        foreach ($response as $server) {
-            $addresses = $server[1];
-            $addresses = array_filter($addresses, static fn (string $x) => str_starts_with($x, 'bolt://'));
-            /**
-             * @psalm-suppress InvalidArrayAssignment
-             *
-             * @var array{addresses: list<string>, role:string}
-             */
-            $servers[] = ['addresses' => $addresses, 'role' => $server[2]];
-        }
 
         return new RoutingTable($servers, $ttl);
     }

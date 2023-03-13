@@ -75,9 +75,6 @@ class BoltConnection implements ConnectionInterface
         return $this->connection->getEncryptionLevel();
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function getServerAgent(): string
     {
         return $this->config->getServerAgent();
