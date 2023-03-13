@@ -86,7 +86,7 @@ final class Uri implements UriInterface, Stringable
                     // If the path is rootless and an authority is present, the path MUST be prefixed by "/"
                     $path = '/'.$path;
                 }
-            } elseif (array_key_exists(1, $path) && $path[1] === '/') {
+            } elseif (mb_strlen($path) > 1 && $path[1] === '/') {
                 if ($authority === '') {
                     // If the path is starting with more than one "/" and no authority is present, the
                     // starting slashes MUST be reduced to one.
