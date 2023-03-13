@@ -17,7 +17,6 @@ use Bolt\connection\IConnection;
 use Bolt\packstream\v1\Packer;
 use Bolt\packstream\v1\Unpacker;
 use Bolt\protocol\ServerState;
-use Bolt\protocol\V4;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;

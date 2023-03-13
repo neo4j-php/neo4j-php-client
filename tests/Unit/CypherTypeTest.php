@@ -63,7 +63,7 @@ final class CypherTypeTest extends TestCase
         $empty = new BogusCypherObject();
 
         self::assertEquals('[]', json_encode($empty, JSON_THROW_ON_ERROR));
-        self::assertFalse(array_key_exists(0, $empty));
+        self::assertCount(0, $empty);
         self::assertNull($empty[0] ?? null);
 
         $caught = null;
@@ -102,11 +102,11 @@ final class CypherTypeTest extends TestCase
 
         self::assertEquals('{"a":"b","c":"d"}', json_encode($filled, JSON_THROW_ON_ERROR));
 
-        self::assertFalse(array_key_exists(0, $filled));
+        self::assertFalse($filled->offsetExists(0));
         self::assertNull($filled[0] ?? null);
 
-        self::assertTrue(array_key_exists('a', $filled));
-        self::assertTrue(array_key_exists('c', $filled));
+        self::assertTrue($filled->offsetExists('a'));
+        self::assertTrue($filled->offsetExists('c'));
         self::assertEquals('b', $filled['a']);
         self::assertEquals('d', $filled['c']);
 

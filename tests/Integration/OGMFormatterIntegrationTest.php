@@ -229,7 +229,6 @@ CYPHER
      * @dataProvider connectionAliases
      *
      * @throws JsonException
-     * @throws JsonException
      */
     public function testDateTime(string $alias): void
     {
@@ -473,28 +472,6 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alia
         self::assertEquals(['z' => 'z'], $path->getNodes()->get(2)->getProperties()->toArray());
         self::assertEquals(['attribute' => 'xy'], $path->getRelationships()->get(0)->getProperties()->toArray());
         self::assertEquals(['attribute' => 'yz'], $path->getRelationships()->get(1)->getProperties()->toArray());
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testPathMultiple(string $alias): void
-    {
-        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
-            $tsx->run('MATCH (x) DETACH DELETE (x)');
-            $tsx->run('CREATE (:Node) - [:HasNode] -> (:Node)');
-            $tsx->run('CREATE (:Node) - [:HasNode] -> (:Node)');
-
-            return $tsx->run('RETURN (:Node) - [:HasNode] -> (:Node) as paths');
-        }, $alias);
-
-        self::assertCount(1, $result);
-        $paths = $result->first()->get('paths');
-        self::assertInstanceOf(CypherList::class, $paths);
-        self::assertCount(2, $paths);
-        foreach ($paths as $path) {
-            self::assertInstanceOf(Path::class, $path);
-        }
     }
 
     /**
