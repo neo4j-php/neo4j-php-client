@@ -14,10 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use function array_unique;
-
-use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
-
 use function count;
 
 use Exception;
@@ -66,7 +62,7 @@ use function time;
  */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
-    /** @var array<string, Neo4jConnectionPool> */
+    /** @var array<string, ConnectionPool> */
     private static array $pools = [];
 
     /**

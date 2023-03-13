@@ -39,6 +39,8 @@ interface ConnectionInterface
 
     /**
      * Returns the agent the servers uses to identify itself.
+     *
+     * @psalm-mutation-free
      */
     public function getServerAgent(): string;
 
@@ -58,8 +60,6 @@ interface ConnectionInterface
 
     /**
      * Returns the assumed server state.
-     *
-     * @psalm-mutation-free
      */
     public function getServerState(): string;
 

@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\structures\IStructure;
+use Bolt\protocol\IStructure;
 use DateTimeImmutable;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
@@ -86,6 +86,6 @@ final class LocalDateTime extends AbstractPropertyObject implements BoltConverti
 
     public function convertToBolt(): IStructure
     {
-        return new \Bolt\structures\LocalDateTime($this->getSeconds(), $this->getNanoseconds());
+        return new \Bolt\protocol\v1\structures\LocalDateTime($this->getSeconds(), $this->getNanoseconds());
     }
 }

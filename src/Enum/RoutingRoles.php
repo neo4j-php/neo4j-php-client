@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Enum;
 
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
+use ReturnTypeWillChange;
 
 /**
  * The possible routing roles.
@@ -38,7 +39,7 @@ final class RoutingRoles extends TypedEnum implements JsonSerializable
     /**
      * @psalm-suppress ImpureMethodCall
      */
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize(): string
     {
         if ($this === self::LEADER()) {

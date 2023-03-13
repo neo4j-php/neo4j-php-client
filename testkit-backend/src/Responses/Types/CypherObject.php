@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Laudis Neo4j package.
+ * This file is part of the Neo4j PHP Client and Driver package.
  *
- * (c) Laudis technologies <http://laudis.tech>
+ * (c) Nagels <https://nagels.tech>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Responses\Types;
 
 use function get_debug_type;
+
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -24,21 +26,16 @@ use Laudis\Neo4j\Types\UnboundRelationship;
 use RuntimeException;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from OGMFormatter
  */
 final class CypherObject implements TestkitResponseInterface
 {
-    /**
-     * @param CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null $value
-     */
-    public function __construct(private string $name, private $value)
-    {
-    }
+    public function __construct(
+        private string $name,
+        private CypherMap|float|Node|bool|int|string|Relationship|CypherList|Path|null $value
+    ) {}
 
-    /**
-     * @return bool|float|int|CypherList|CypherMap|Node|Path|Relationship|string|null
-     */
-    public function getValue()
+    public function getValue(): CypherMap|float|Node|bool|int|string|Relationship|CypherList|Path|null
     {
         return $this->value;
     }
@@ -130,7 +127,8 @@ final class CypherObject implements TestkitResponseInterface
                         $value->getNodes()->get($i)->getId(),
                         $value->getNodes()->get($i + 1)->getId(),
                         $rel->getType(),
-                        $rel->getProperties()
+                        $rel->getProperties(),
+                        null
                     ));
                 }
                 $tbr = new CypherPath(

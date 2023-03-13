@@ -14,9 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use function array_splice;
-
-use Bolt\error\MessageException;
-
 use function count;
 
 use Generator;
@@ -25,7 +22,6 @@ use function in_array;
 
 use Iterator;
 use Laudis\Neo4j\Contracts\FormatterInterface;
-use Laudis\Neo4j\Exception\Neo4jException;
 
 /**
  * @psalm-import-type BoltCypherStats from FormatterInterface

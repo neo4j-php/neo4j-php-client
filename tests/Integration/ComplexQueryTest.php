@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Generator;
 
-use Laudis\Neo4j\Formatter\OGMFormatter;
 use function getenv;
 
 use InvalidArgumentException;
@@ -28,6 +27,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherMap;

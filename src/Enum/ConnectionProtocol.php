@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Enum;
 
-use Bolt\protocol\AProtocol;
 use Bolt\protocol\V3;
 use Bolt\protocol\V4;
 use Bolt\protocol\V4_1;
@@ -23,6 +22,7 @@ use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
+use ReturnTypeWillChange;
 
 /**
  * Defines the protocol used in a connection.
@@ -82,7 +82,7 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
         return $x - $y;
     }
 
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize(): string
     {
         return $this->getValue();

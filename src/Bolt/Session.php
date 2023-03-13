@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\error\MessageException;
 use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\TransactionHelper;
@@ -74,6 +73,9 @@ final class Session implements SessionInterface
         return new CypherList($tbr);
     }
 
+    /**
+     * @param iterable<Statement>|null $statements
+     */
     public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         return $this->beginTransaction($statements, $this->mergeTsxConfig($config));
@@ -162,11 +164,11 @@ final class Session implements SessionInterface
             $connection = $this->acquireConnection($config, $sessionConfig);
 
             $connection->begin($this->config->getDatabase(), $config->getTimeout(), $this->bookmarkHolder);
-        } catch (MessageException $e) {
+        } catch (Neo4jException $e) {
             if (isset($connection) && $connection->getServerState() === 'FAILED') {
                 $connection->reset();
             }
-            throw Neo4jException::fromMessageException($e);
+            throw $e;
         }
 
         return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $config, $this->bookmarkHolder);

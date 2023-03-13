@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\error\MessageException;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -37,7 +36,7 @@ use Throwable;
  *
  * @implements UnmanagedTransactionInterface<T>
  *
- * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type BoltMeta from FormatterInterface
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
@@ -72,24 +71,16 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         });
 
-        try {
-            $this->connection->commit();
-            $this->isCommitted = true;
-        } catch (MessageException $e) {
-            $this->handleMessageException($e);
-        }
+        $this->connection->commit();
+        $this->isCommitted = true;
 
         return $tbr;
     }
 
     public function rollback(): void
     {
-        try {
-            $this->connection->rollback();
-            $this->isRolledBack = true;
-        } catch (MessageException $e) {
-            $this->handleMessageException($e);
-        }
+        $this->connection->rollback();
+        $this->isRolledBack = true;
     }
 
     /**
@@ -108,18 +99,14 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), true);
         $start = microtime(true);
 
-        try {
-            $meta = $this->connection->run(
-                $statement->getText(),
-                $parameters->toArray(),
-                $this->database,
-                $this->tsxConfig->getTimeout(),
-                $this->bookmarkHolder
-            );
-            $run = microtime(true);
-        } catch (\Exception $e) {
-            $this->handleMessageException($e);
-        }
+        $meta = $this->connection->run(
+            $statement->getText(),
+            $parameters->toArray(),
+            $this->database,
+            $this->tsxConfig->getTimeout(),
+            $this->bookmarkHolder
+        );
+        $run = microtime(true);
 
         return $this->formatter->formatBoltResult(
             $meta,

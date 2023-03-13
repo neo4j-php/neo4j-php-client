@@ -13,15 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\protocol\Response;
-use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
-use Laudis\Neo4j\Exception\Neo4jException;
 use function base64_encode;
 
 use Bolt\helpers\Auth;
+use Bolt\protocol\Response;
+use Bolt\protocol\V4_4;
+use Bolt\protocol\V5;
 use Exception;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 

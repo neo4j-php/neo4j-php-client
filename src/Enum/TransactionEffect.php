@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Neo4j PHP Client and Driver package.
  *
@@ -13,6 +15,7 @@ namespace Laudis\Neo4j\Enum;
 
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
+use ReturnTypeWillChange;
 
 /**
  * Defines the access mode of a connection.
@@ -31,7 +34,7 @@ final class TransactionEffect extends TypedEnum implements JsonSerializable
     private const ROLLBACK = 'rollback';
     private const WRITE = 'none';
 
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return $this->getValue();

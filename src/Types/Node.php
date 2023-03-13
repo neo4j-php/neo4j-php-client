@@ -95,9 +95,6 @@ final class Node extends AbstractPropertyObject
         return $this->properties;
     }
 
-    /**
-     * @return string|null
-     */
     public function getElementId(): ?string
     {
         return $this->elementId;

@@ -17,13 +17,13 @@ use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 
 /**
- * A WGS84 Point in three dimensional space.
+ * A WGS84 Point in three-dimensional space.
  *
  * @see https://neo4j.com/docs/cypher-manual/current/functions/spatial/#functions-point-wgs84-3d
  *
  * @psalm-immutable
  *
- * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
+ * @psalm-import-type Crs from PointInterface
  */
 final class WGS843DPoint extends Abstract3DPoint implements PointInterface, BoltConvertibleInterface
 {

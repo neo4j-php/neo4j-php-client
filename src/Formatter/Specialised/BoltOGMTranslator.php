@@ -286,9 +286,9 @@ final class BoltOGMTranslator
      */
     public function mapValueToType(mixed $value)
     {
-        /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         $type = get_debug_type($value);
         foreach ($this->rawToTypes as $class => $formatter) {
+            /** @psalm-suppress ArgumentTypeCoercion */
             if ($type === $class || is_a($value, $class, true)) {
                 return $formatter($value);
             }

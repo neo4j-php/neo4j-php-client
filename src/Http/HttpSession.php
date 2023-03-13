@@ -99,17 +99,9 @@ final class HttpSession implements SessionInterface
         return $this->formatter->formatHttpResult($response, $data, $connection, $time, $time, $statements);
     }
 
-    /**
-     * @throws JsonException
-     */
-    public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
-    {
-        return $this->beginTransaction($statements, $config);
-    }
-
     public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
-        return TransactionHelper::retry(fn () => $this->openTransaction(), $tsxHandler);
+        return TransactionHelper::retry(fn () => $this->beginTransaction(), $tsxHandler);
     }
 
     public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)

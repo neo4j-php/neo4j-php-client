@@ -299,7 +299,7 @@ final class JoltHttpOGMTranslator
      */
     private function translateNode(array $value): Node
     {
-        return new Node($value[0], new CypherList($value[1]), $this->translateMap($value[2]));
+        return new Node($value[0], new CypherList($value[1]), $this->translateMap($value[2]), null);
     }
 
     /**
@@ -307,7 +307,7 @@ final class JoltHttpOGMTranslator
      */
     private function translateRightRelationship(array $value): Relationship
     {
-        return new Relationship($value[0], $value[1], $value[3], $value[2], $this->translateMap($value[4]));
+        return new Relationship($value[0], $value[1], $value[3], $value[2], $this->translateMap($value[4]), null);
     }
 
     /**
@@ -315,7 +315,7 @@ final class JoltHttpOGMTranslator
      */
     private function translateLeftRelationship(array $value): Relationship
     {
-        return new Relationship($value[0], $value[3], $value[1], $value[2], $this->translateMap($value[4]));
+        return new Relationship($value[0], $value[3], $value[1], $value[2], $this->translateMap($value[4]), null);
     }
 
     private function translateBinary(): Closure

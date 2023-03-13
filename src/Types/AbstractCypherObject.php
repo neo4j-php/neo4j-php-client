@@ -14,13 +14,17 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use function array_key_exists;
+
 use ArrayAccess;
 use ArrayIterator;
 use BadMethodCallException;
 use IteratorAggregate;
 use JsonSerializable;
 use OutOfBoundsException;
+use ReturnTypeWillChange;
+
 use function sprintf;
+
 use Traversable;
 
 /**
@@ -43,7 +47,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      */
     abstract public function toArray(): array;
 
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return $this->toArray();

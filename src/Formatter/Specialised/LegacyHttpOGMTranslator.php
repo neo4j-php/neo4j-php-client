@@ -128,7 +128,6 @@ final class LegacyHttpOGMTranslator
 
             /** @var list<stdClass> $row */
             $row = $data->row;
-            /** @var array<string, stdClass> $row */
             $row = array_combine($columns, $row);
             $tbr[] = $this->translateCypherMap($row, $meta)[0];
         }
@@ -321,7 +320,7 @@ final class LegacyHttpOGMTranslator
             if ($x instanceof Node) {
                 $nodes[] = $x;
             } elseif ($x instanceof Relationship) {
-                $rels[] = new UnboundRelationship($x->getId(), $x->getType(), $x->getProperties());
+                $rels[] = new UnboundRelationship($x->getId(), $x->getType(), $x->getProperties(), null);
             }
         }
 

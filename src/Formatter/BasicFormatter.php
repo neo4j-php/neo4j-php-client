@@ -15,7 +15,7 @@ namespace Laudis\Neo4j\Formatter;
 
 use function array_key_exists;
 
-use Bolt\structures\Path;
+use Bolt\protocol\v1\structures\Path;
 
 use function gettype;
 use function is_array;
@@ -163,7 +163,7 @@ final class BasicFormatter implements FormatterInterface
     /**
      * @return scalar|array|null
      */
-    private function mapValue(mixed $value)
+    private function mapValue(mixed $value): float|array|bool|int|string|null
     {
         if ($value instanceof Path) {
             $value = $this->mapPath($value);

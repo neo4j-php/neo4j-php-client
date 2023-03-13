@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\structures\IStructure;
+use Bolt\protocol\IStructure;
 use DateTimeImmutable;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
@@ -70,6 +70,6 @@ final class Date extends AbstractPropertyObject implements BoltConvertibleInterf
 
     public function convertToBolt(): IStructure
     {
-        return new \Bolt\structures\Date($this->getDays());
+        return new \Bolt\protocol\v1\structures\Date($this->getDays());
     }
 }

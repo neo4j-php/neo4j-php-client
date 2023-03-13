@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\protocol\Response;
 use Bolt\protocol\ServerState;
-use Bolt\protocol\V3;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
@@ -53,6 +52,9 @@ class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
 
+    /**
+     * @return array{0: V4_4|V5, 1: Connection}
+     */
     public function getImplementation(): array
     {
         return [$this->boltProtocol, $this->connection];
@@ -75,6 +77,9 @@ class BoltConnection implements ConnectionInterface
         return $this->connection->getEncryptionLevel();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getServerAgent(): string
     {
         return $this->config->getServerAgent();
@@ -130,7 +135,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return !$this->protocol()->serverState->is('DISCONNECTED', 'DEFUNCT');
+        return in_array($this->protocol()->serverState->get(), ['DISCONNECTED', 'DEFUNCT'], true);
     }
 
     public function setTimeout(float $timeout): void

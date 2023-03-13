@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Bolt\structures\IStructure;
+use Bolt\protocol\IStructure;
 
 interface BoltConvertibleInterface
 {

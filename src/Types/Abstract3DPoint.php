@@ -13,19 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\structures\IStructure;
-use Bolt\structures\Point3D;
+use Bolt\protocol\IStructure;
+use Bolt\protocol\v1\structures\Point3D;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 
 /**
- * A cartesian point in three dimensional space.
+ * A cartesian point in three-dimensional space.
  *
  * @see https://neo4j.com/docs/cypher-manual/current/functions/spatial/#functions-point-cartesian-3d
  *
  * @psalm-immutable
  *
- * @psalm-import-type Crs from \Laudis\Neo4j\Contracts\PointInterface
+ * @psalm-import-type Crs from PointInterface
  */
 abstract class Abstract3DPoint extends AbstractPoint implements PointInterface, BoltConvertibleInterface
 {

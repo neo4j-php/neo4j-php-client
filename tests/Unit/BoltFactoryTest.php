@@ -18,7 +18,6 @@ use Bolt\packstream\v1\Packer;
 use Bolt\packstream\v1\Unpacker;
 use Bolt\protocol\ServerState;
 use Bolt\protocol\V4;
-use Grpc\Server;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\Connection;
@@ -63,10 +62,10 @@ final class BoltFactoryTest extends TestCase
             SessionConfiguration::default()
         );
 
-        static::assertInstanceOf(BoltConnection::class, $connection);
-        static::assertEquals('', $connection->getEncryptionLevel());
-        static::assertInstanceOf(V4::class, $connection->getImplementation()[0]);
-        static::assertInstanceOf(Connection::class,
+        self::assertInstanceOf(BoltConnection::class, $connection);
+        self::assertEquals('', $connection->getEncryptionLevel());
+        self::assertInstanceOf(V4::class, $connection->getImplementation()[0]);
+        self::assertInstanceOf(Connection::class,
             $connection->getImplementation()[1]);
     }
 }

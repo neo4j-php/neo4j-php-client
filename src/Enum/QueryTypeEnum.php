@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Enum;
 use JsonSerializable;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\TypedEnum\TypedEnum;
+use ReturnTypeWillChange;
 
 /**
  * The actual type of query after is has been run.
@@ -26,6 +27,8 @@ use Laudis\TypedEnum\TypedEnum;
  * @method static self WRITE_ONLY()
  *
  * @psalm-immutable
+ *
+ * @extends TypedEnum<string>
  *
  * @psalm-suppress MutableDependency
  */
@@ -58,11 +61,10 @@ final class QueryTypeEnum extends TypedEnum implements JsonSerializable
 
     public function __toString()
     {
-        /** @noinspection MagicMethodsValidityInspection */
         return $this->getValue();
     }
 
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return $this->getValue();

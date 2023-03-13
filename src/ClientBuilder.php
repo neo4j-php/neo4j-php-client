@@ -13,11 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use function http_build_query;
 use function in_array;
 
 use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\Bolt\BoltConfiguration;
 use Laudis\Neo4j\Common\DriverSetupManager;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -25,14 +23,12 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\DriverSetup;
-use Laudis\Neo4j\Databags\HttpPsrBindings;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use Laudis\Neo4j\Http\HttpConfig;
 use Laudis\Neo4j\Types\CypherMap;
 
 /**

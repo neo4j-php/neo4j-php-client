@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\structures\IStructure;
+use Bolt\protocol\IStructure;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
@@ -103,6 +103,6 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
 
     public function convertToBolt(): IStructure
     {
-        return new \Bolt\structures\DateTimeZoneId($this->getSeconds(), $this->getNanoseconds(), $this->getTimezoneIdentifier());
+        return new \Bolt\protocol\v1\structures\DateTimeZoneId($this->getSeconds(), $this->getNanoseconds(), $this->getTimezoneIdentifier());
     }
 }

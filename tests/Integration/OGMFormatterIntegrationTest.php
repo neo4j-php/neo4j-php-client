@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUndefinedFieldInspection */
 
 declare(strict_types=1);
 
@@ -43,7 +43,7 @@ use function sprintf;
 use function str_contains;
 
 /**
- * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMResults from OGMFormatter
  *
  * @extends EnvironmentAwareIntegrationTest<OGMResults>
  *
@@ -53,7 +53,6 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
 {
     protected static function formatter(): FormatterInterface
     {
-        /** @psalm-suppress InvalidReturnStatement */
         return OGMFormatter::create();
     }
 
@@ -246,9 +245,9 @@ CYPHER
         self::assertEquals(1_559_414_432, $createdAt->getSeconds());
         self::assertEquals(142_000_000, $createdAt->getNanoseconds());
         self::assertEquals(3600, $createdAt->getTimeZoneOffsetSeconds());
-        self::assertEquals(1_559_414_432, $createdAt->seconds);
-        self::assertEquals(142_000_000, $createdAt->nanoseconds);
-        self::assertEquals(3600, $createdAt->tzOffsetSeconds);
+        self::assertEquals(1_559_414_432, $createdAt->getSeconds());
+        self::assertEquals(142_000_000, $createdAt->getNanoseconds());
+        self::assertEquals(3600, $createdAt->getTimeZoneOffsetSeconds());
         self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
 
         self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
@@ -299,10 +298,10 @@ CYPHER
         $duration = $results[1]['aDuration'];
         self::assertInstanceOf(Duration::class, $duration);
         self::assertEquals(new Duration(5, 1, 43200, 0), $duration);
-        self::assertEquals(5, $duration->months);
-        self::assertEquals(1, $duration->days);
-        self::assertEquals(43200, $duration->seconds);
-        self::assertEquals(0, $duration->nanoseconds);
+        self::assertEquals(5, $duration->getMonths());
+        self::assertEquals(1, $duration->getDays());
+        self::assertEquals(43200, $duration->getSeconds());
+        self::assertEquals(0, $duration->getNanoseconds());
         self::assertEquals(new Duration(0, 22, 71509, 500_000_000), $results[2]['aDuration']);
         self::assertEquals(new Duration(0, 17, 43200, 0), $results[3]['aDuration']);
         self::assertEquals(new Duration(0, 0, 91, 123_456_789), $results[4]['aDuration']);
@@ -364,9 +363,11 @@ CYPHER
         $email = 'a@b.c';
         $type = 'pepperoni';
 
+        $arguments = compact('email', 'uuid', 'type');
+
         $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(
             'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
-            compact('email', 'uuid', 'type')
+            $arguments
         ), $alias);
 
         self::assertEquals(1, $results->count());
@@ -374,29 +375,29 @@ CYPHER
         /** @var Node $u */
         $u = $results[0]['u'];
         self::assertInstanceOf(Node::class, $u);
-        self::assertEquals(['User'], $u->labels()->toArray());
-        self::assertEquals($email, $u->properties()['email']);
-        self::assertEquals($uuid, $u->properties()['uuid']);
+        self::assertEquals(['User'], $u->getLabels()->toArray());
+        self::assertEquals($email, $u->getProperties()['email']);
+        self::assertEquals($uuid, $u->getProperties()['uuid']);
         self::assertEquals($email, $u->email);
         self::assertEquals($uuid, $u->uuid);
         self::assertEquals(
             json_encode([
-                'id' => $u->id(),
-                'labels' => $u->labels()->jsonSerialize(),
-                'properties' => $u->properties()->jsonSerialize(),
+                'id' => $u->getId(),
+                'labels' => $u->getLabels()->jsonSerialize(),
+                'properties' => $u->getProperties()->jsonSerialize(),
             ], JSON_THROW_ON_ERROR),
             json_encode($u, JSON_THROW_ON_ERROR));
 
         /** @var Node $p */
         $p = $results[0]['p'];
         self::assertInstanceOf(Node::class, $p);
-        self::assertEquals(['Food', 'Pizza'], $p->labels()->toArray());
-        self::assertEquals($type, $p->properties()['type']);
+        self::assertEquals(['Food', 'Pizza'], $p->getLabels()->toArray());
+        self::assertEquals($type, $p->getProperties()['type']);
         self::assertEquals(
             json_encode([
-                'id' => $p->id(),
-                'labels' => $p->labels()->jsonSerialize(),
-                'properties' => $p->properties()->jsonSerialize(),
+                'id' => $p->getId(),
+                'labels' => $p->getLabels()->jsonSerialize(),
+                'properties' => $p->getProperties()->jsonSerialize(),
             ], JSON_THROW_ON_ERROR),
             json_encode($p, JSON_THROW_ON_ERROR)
         );

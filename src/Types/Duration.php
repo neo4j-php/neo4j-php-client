@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\structures\IStructure;
+use Bolt\protocol\IStructure;
 use DateInterval;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
@@ -96,7 +96,7 @@ final class Duration extends AbstractPropertyObject implements BoltConvertibleIn
 
     public function convertToBolt(): IStructure
     {
-        return new \Bolt\structures\Duration(
+        return new \Bolt\protocol\v1\structures\Duration(
             $this->getMonths(),
             $this->getDays(),
             $this->getSeconds(),

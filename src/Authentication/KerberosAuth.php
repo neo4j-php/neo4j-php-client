@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Authentication;
 
 use Bolt\helpers\Auth;
-use Bolt\protocol\V3;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;

@@ -13,9 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Exception;
 
-use Bolt\error\MessageException;
 use Bolt\protocol\Response;
-use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Databags\Neo4jError;
 use RuntimeException;
 use Throwable;

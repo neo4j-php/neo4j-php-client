@@ -25,8 +25,21 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\Specialised\JoltHttpOGMTranslator;
 use Laudis\Neo4j\Formatter\Specialised\LegacyHttpOGMTranslator;
+use Laudis\Neo4j\Types\Cartesian3DPoint;
+use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\Duration;
+use Laudis\Neo4j\Types\LocalDateTime;
+use Laudis\Neo4j\Types\LocalTime;
+use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Path;
+use Laudis\Neo4j\Types\Relationship;
+use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\WGS843DPoint;
+use Laudis\Neo4j\Types\WGS84Point;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
@@ -38,10 +51,10 @@ use function version_compare;
  *
  * @see https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-type-mapping
  *
- * @psalm-type OGMTypes = string|int|float|bool|null|\Laudis\Neo4j\Types\Date|\Laudis\Neo4j\Types\DateTime|\Laudis\Neo4j\Types\Duration|\Laudis\Neo4j\Types\LocalDateTime|\Laudis\Neo4j\Types\LocalTime|\Laudis\Neo4j\Types\Time|\Laudis\Neo4j\Types\CypherList|\Laudis\Neo4j\Types\CypherMap|\Laudis\Neo4j\Types\Node|\Laudis\Neo4j\Types\Relationship|\Laudis\Neo4j\Types\Path|\Laudis\Neo4j\Types\Cartesian3DPoint|\Laudis\Neo4j\Types\CartesianPoint|\Laudis\Neo4j\Types\WGS84Point|\Laudis\Neo4j\Types\WGS843DPoint
+ * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|CypherList|CypherMap|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  *
- * @psalm-import-type BoltMeta from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type BoltMeta from FormatterInterface
  *
  * @implements FormatterInterface<CypherList<CypherMap<OGMTypes>>>
  */

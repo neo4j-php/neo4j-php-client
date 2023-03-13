@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use Bolt\protocol\IStructure;
 use Bolt\protocol\v1\structures\DateTimeZoneId;
 use Bolt\protocol\v1\structures\Duration;
-use Bolt\protocol\IStructure;
 
 use function count;
 

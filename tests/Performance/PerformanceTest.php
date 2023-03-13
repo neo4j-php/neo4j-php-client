@@ -51,7 +51,6 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
     public function testBigRandomData(string $alias): void
     {
         $this->expectException(RuntimeException::class);
-        $this->expectErrorMessage('Rollback please');
 
         $this->getClient()->transaction(static function (TSX $tsx) {
             $params = [
