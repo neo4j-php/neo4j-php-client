@@ -48,7 +48,7 @@ use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\ClientBuilder;
 
 $client = ClientBuilder::create()
-    ->withDriver('bolt', 'bolt+s://user:password@localhost') // creates a bolt driver
+    ->withDriver('bolt', 'bolt://user:password@localhost') // creates a bolt driver
     ->withDriver('https', 'https://test.com', Authenticate::basic('user', 'password')) // creates an http driver
     ->withDriver('neo4j', 'neo4j://neo4j.test.com?database=my-database', Authenticate::oidc('token')) // creates an auto routed driver with an OpenID Connect token
     ->withDefaultDriver('bolt')
