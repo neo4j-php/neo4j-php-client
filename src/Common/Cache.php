@@ -40,10 +40,6 @@ use function time;
  * @see https://packagist.org/providers/psr/simple-cache-implementation For existing implementations.
  *
  * @template T
- *
- * @psalm-suppress MoreSpecificImplementedParamType
- * @psalm-suppress DocblockTypeContradiction
- * @psalm-suppress RedundantConditionGivenDocblockType
  */
 class Cache implements CacheInterface
 {
@@ -128,7 +124,7 @@ class Cache implements CacheInterface
         return true;
     }
 
-    public function delete($key): bool
+    public function delete(string $key): bool
     {
         $this->assertValidKey($key);
 
@@ -162,17 +158,22 @@ class Cache implements CacheInterface
     }
 
     /**
-     * @param iterable<string, T>   $values
+     * @param iterable<mixed, T>    $values
      * @param int|DateInterval|null $ttl
      *
      * @throws InvalidCacheArgumentException
      */
     public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
     {
+        /**
+         * @var mixed $key
+         */
         foreach ($values as $key => $value) {
             if (is_int($key)) {
                 $key = (string) $key;
             }
+            $this->assertIsString($key);
+            /** @param string $key */
             $this->set($key, $value, $ttl);
         }
 
@@ -194,6 +195,18 @@ class Cache implements CacheInterface
             str_contains($key, '@') ||
             str_contains($key, ':')
         ) {
+            throw new InvalidCacheArgumentException();
+        }
+    }
+
+    /**
+     * @psalm-assert string $key
+     *
+     * @throws InvalidCacheArgumentException
+     */
+    private function assertIsString(mixed $key): void
+    {
+        if (!is_string($key)) {
             throw new InvalidCacheArgumentException();
         }
     }
