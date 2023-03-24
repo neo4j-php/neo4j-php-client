@@ -243,13 +243,23 @@ CYPHER
 
         $createdAt = $results[0]['created_at'];
         self::assertInstanceOf(DateTime::class, $createdAt);
-        self::assertEquals(1_559_414_432, $createdAt->getSeconds());
+        if ($createdAt->isLegacy()) {
+            self::assertEquals(1_559_414_432, $createdAt->getSeconds());
+        } else {
+            self::assertEquals(1_559_418_032 , $createdAt->getSeconds());
+        }
+
         self::assertEquals(142_000_000, $createdAt->getNanoseconds());
         self::assertEquals(3600, $createdAt->getTimeZoneOffsetSeconds());
         self::assertEquals(1_559_414_432, $createdAt->getSeconds());
         self::assertEquals(142_000_000, $createdAt->getNanoseconds());
         self::assertEquals(3600, $createdAt->getTimeZoneOffsetSeconds());
-        self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
+
+        if ($createdAt->isLegacy()) {
+            self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
+        } else {
+            self::assertEquals('{"seconds":1559418032,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
+        }
 
         self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
         self::assertEquals(1_559_471_012, $results[1]['created_at']->getSeconds());

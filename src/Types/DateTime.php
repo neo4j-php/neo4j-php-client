@@ -39,6 +39,15 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
     ) {}
 
     /**
+     * Returns whether this DateTime Type follows conventions up until Neo4j version 4.
+     * @return bool
+     */
+    public function isLegacy(): bool
+    {
+        return $this->legacy;
+    }
+
+    /**
      * Returns the amount of seconds since unix epoch.
      */
     public function getSeconds(): int
