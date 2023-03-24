@@ -51,7 +51,7 @@ use function version_compare;
  *
  * @see https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-type-mapping
  *
- * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|CypherList|CypherMap|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint
+ * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|CypherList<mixed>|CypherMap<mixed>
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
