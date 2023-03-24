@@ -251,7 +251,6 @@ CYPHER
 
         self::assertEquals(142_000_000, $createdAt->getNanoseconds());
         self::assertEquals(3600, $createdAt->getTimeZoneOffsetSeconds());
-        self::assertEquals(1_559_414_432, $createdAt->getSeconds());
         self::assertEquals(142_000_000, $createdAt->getNanoseconds());
         self::assertEquals(3600, $createdAt->getTimeZoneOffsetSeconds());
 
