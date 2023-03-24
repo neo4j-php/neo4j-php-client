@@ -35,5 +35,5 @@ jobs:
           php_version: ${{ matrix.php-version }}
           memory_limit: 1024M
           version: 9
-          testsuite: integration
+          testsuite: Integration
           bootstrap: vendor/autoload.php
