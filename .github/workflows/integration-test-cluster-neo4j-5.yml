@@ -10,7 +10,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTIONS: neo4j://neo4j:testtest@server1
+      CONNECTIONS: neo4j://neo4j:testtest@localhost7688
     name: "Running Integration tests for PHP ${{ matrix.php-version }} on a Neo4j ${{ matrix.neo4j-version }} cluster"
     strategy:
       fail-fast: false
@@ -19,28 +19,17 @@ jobs:
         neo4j-version: ["5.0", "5.6"]
 
     services:
-      neo4j:
-        image: neo4j:${{ matrix.neo4j-version }}
-        env:
-          NEO4J_AUTH: neo4j/testtest
-          NEO4JLABS_PLUGINS: '["apoc"]'
-        ports:
-          - 7687:7687
-          - 7474:7474
-        options: >-
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
-          --health-start-period "60s"
-          --health-interval "30s"
-          --health-timeout "15s"
-          --health-retries "5"
       server1:
         image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        ports:
+          - 7688:7688
+          - 7475:7475
         env:
           NEO4J_initial_server_mode__constraint=PRIMARY
           NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-          NEO4j_server_bolt_advertised_address=server1:7687
-          NEO4j_server_http_advertised_address=server1:7474
+          NEO4j_server_bolt_advertised_address=localhost:7688
+          NEO4j_server_http_advertised_address=localhost:7478
           NEO4J_AUTH=neo4j/mypassword
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
@@ -50,12 +39,15 @@ jobs:
           --health-retries "5"
       server2:
         image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        ports:
+          - 7689:7689
+          - 7476:7476
         env:
           NEO4J_initial_server_mode__constraint=PRIMARY
           NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-          NEO4j_server_bolt_advertised_address=server2:7687
-          NEO4j_server_http_advertised_address=server2:7474
+          NEO4j_server_bolt_advertised_address=localhost:7689
+          NEO4j_server_http_advertised_address=server2:7476
           NEO4J_AUTH=neo4j/mypassword
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
@@ -65,12 +57,15 @@ jobs:
           --health-retries "5"
       server3:
         image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        ports:
+          - 7690:7690
+          - 7477:7477
         env:
           NEO4J_initial_server_mode__constraint=PRIMARY
           NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-          NEO4j_server_bolt_advertised_address=server3:7687
-          NEO4j_server_http_advertised_address=server3:7474
+          NEO4j_server_bolt_advertised_address=localhost:7690
+          NEO4j_server_http_advertised_address=server3:7477
           NEO4J_AUTH=neo4j/mypassword
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
@@ -80,12 +75,15 @@ jobs:
           --health-retries "5"
       read-server4:
         image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        ports:
+          - 7691:7691
+          - 7478:7478
         env:
           NEO4J_initial_server_mode__constraint=PRIMARY
           NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-          NEO4j_server_bolt_advertised_address=read-server4:7687
-          NEO4j_server_http_advertised_address=read-server4:7474
+          NEO4j_server_bolt_advertised_address=localhost:7691
+          NEO4j_server_http_advertised_address=localhost:7478
           NEO4J_AUTH=neo4j/mypassword
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
