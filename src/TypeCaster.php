@@ -28,6 +28,10 @@ final class TypeCaster
 {
     /**
      * @pure
+     *
+     * @param mixed $value
+     *
+     * @psalm-param TValue $value
      */
     public static function toString(mixed $value): ?string
     {
@@ -40,6 +44,10 @@ final class TypeCaster
 
     /**
      * @pure
+     *
+     * @param mixed $value
+     *
+     * @psalm-param TValue $value
      */
     public static function toFloat(mixed $value): ?float
     {
@@ -53,6 +61,10 @@ final class TypeCaster
 
     /**
      * @pure
+     *
+     * @param mixed $value
+     *
+     * @psalm-param TValue $value
      */
     public static function toInt(mixed $value): ?int
     {
@@ -76,6 +88,10 @@ final class TypeCaster
 
     /**
      * @pure
+     *
+     * @param mixed $value
+     *
+     * @psalm-param TValue $value
      */
     public static function toBool(mixed $value): ?bool
     {
@@ -91,10 +107,13 @@ final class TypeCaster
      * @template T
      *
      * @param class-string<T> $class
+     * @param mixed $value
      *
      * @return T|null
      *
      * @pure
+     *
+     * @psalm-param TValue $value
      */
     public static function toClass(mixed $value, string $class): ?object
     {
@@ -131,6 +150,10 @@ final class TypeCaster
      * @return CypherList<mixed>|null
      *
      * @pure
+     *
+     * @param mixed $value
+     *
+     * @psalm-param TValue $value
      */
     public static function toCypherList(mixed $value): ?CypherList
     {
@@ -143,6 +166,10 @@ final class TypeCaster
 
     /**
      * @return CypherMap<mixed>|null
+     *
+     * @param mixed $value
+     *
+     * @psalm-param TValue $value
      */
     public static function toCypherMap(mixed $value): ?CypherMap
     {

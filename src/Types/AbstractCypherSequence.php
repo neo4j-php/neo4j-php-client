@@ -542,6 +542,10 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
 
     /**
      * @psalm-mutation-free
+     *
+     * @param (int|string) $key
+     *
+     * @psalm-param array-key $key
      */
     protected function isStringable(mixed $key): bool
     {

@@ -54,6 +54,11 @@ final class TransactionHelper
         }
     }
 
+    /**
+     * @param mixed $tbr
+     *
+     * @psalm-param U $tbr
+     */
     private static function triggerLazyResult(mixed $tbr): void
     {
         if ($tbr instanceof AbstractCypherSequence) {

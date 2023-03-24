@@ -246,7 +246,7 @@ CYPHER
         if ($createdAt->isLegacy()) {
             self::assertEquals(1_559_414_432, $createdAt->getSeconds());
         } else {
-            self::assertEquals(1_559_418_032, $createdAt->getSeconds());
+            self::assertEquals(1_559_410_832, $createdAt->getSeconds());
         }
 
         self::assertEquals(142_000_000, $createdAt->getNanoseconds());
@@ -258,7 +258,7 @@ CYPHER
         if ($createdAt->isLegacy()) {
             self::assertEquals('{"seconds":1559414432,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
         } else {
-            self::assertEquals('{"seconds":1559418032,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
+            self::assertEquals('{"seconds":1559410832,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
         }
 
         self::assertInstanceOf(DateTime::class, $results[1]['created_at']);

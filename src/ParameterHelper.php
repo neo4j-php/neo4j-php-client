@@ -77,8 +77,10 @@ final class ParameterHelper
 
     /**
      * @return iterable|scalar|stdClass|IStructure|null
+     *
+     * @param \DateTime|array|object|stdClass $value
      */
-    public static function asParameter(mixed $value, bool $boltDriver = false)
+    public static function asParameter(array|object|stdClass|\DateTimed $value, bool $boltDriver = false)
     {
         return self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
