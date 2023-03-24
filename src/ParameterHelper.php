@@ -77,11 +77,11 @@ final class ParameterHelper
 
     /**
      * @return iterable|scalar|stdClass|IStructure|null
-     *
-     * @param \DateTime|array|object|stdClass $value
      */
-    public static function asParameter(array|object|stdClass|\DateTimed $value, bool $boltDriver = false)
-    {
+    public static function asParameter(
+        mixed $value,
+        bool $boltDriver = false
+    ): iterable|int|float|bool|string|stdClass|IStructure|null {
         return self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
             self::convertBoltConvertibles($value, $boltDriver) ??
@@ -108,7 +108,7 @@ final class ParameterHelper
      *
      * @pure
      */
-    private static function filterInvalidType(mixed $value)
+    private static function filterInvalidType(mixed $value): mixed
     {
         if ($value !== null && !is_scalar($value)) {
             /** @psalm-suppress ImpureFunctionCall */

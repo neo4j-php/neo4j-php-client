@@ -20,9 +20,7 @@ use DateTimeImmutable;
 use Generator;
 
 use function is_int;
-use function is_iterable;
 use function is_object;
-use function is_string;
 
 use Laudis\Neo4j\Exception\InvalidCacheArgumentException;
 
@@ -53,9 +51,7 @@ class Cache implements CacheInterface
     private array $items = [];
     private static ?self $instance = null;
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 
     public static function getInstance(): self
     {
@@ -69,7 +65,6 @@ class Cache implements CacheInterface
     /**
      * @template U
      *
-     * @param string $key
      * @param U $default
      *
      * @return T|U
@@ -102,8 +97,6 @@ class Cache implements CacheInterface
      */
     public function deleteMultiple(iterable $keys): bool
     {
-        $this->assertIterable($keys);
-
         foreach ($keys as $key) {
             $this->delete($key);
         }
@@ -122,10 +115,8 @@ class Cache implements CacheInterface
             $ttl = (new DateTimeImmutable())->add($ttl)->getTimestamp();
         } elseif ($ttl === null) {
             $ttl = PHP_INT_MAX;
-        } elseif (is_int($ttl)) {
-            $ttl += time();
         } else {
-            throw new InvalidCacheArgumentException();
+            $ttl += time();
         }
 
         if (is_object($value)) {
@@ -150,14 +141,12 @@ class Cache implements CacheInterface
      * @template U
      *
      * @param iterable<string> $keys
-     * @param U $default
+     * @param U                $default
      *
      * @return Generator<string, T|U>
      */
     public function getMultiple($keys, $default = null): Generator
     {
-        $this->assertIterable($keys);
-
         /** @var list<string> $cachedKeys */
         $cachedKeys = [];
         foreach ($keys as $key) {
@@ -173,18 +162,16 @@ class Cache implements CacheInterface
     }
 
     /**
-     * @param iterable<string, T> $values
+     * @param iterable<string, T>   $values
      * @param int|DateInterval|null $ttl
      *
      * @throws InvalidCacheArgumentException
      */
     public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
     {
-        $this->assertIterable($values);
-
         foreach ($values as $key => $value) {
             if (is_int($key)) {
-                $key = (string)$key;
+                $key = (string) $key;
             }
             $this->set($key, $value, $ttl);
         }
