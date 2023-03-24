@@ -35,6 +35,8 @@ jobs:
           configuration: phpunit.xml.dist
           php_version: ${{ matrix.php-version }}
           memory_limit: 1024M
+          version: 9
+          testsuite: integration
           bootstrap: vendor/autoload.php
 
     services:
