@@ -11,7 +11,7 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: "Running Unit tests for PHP ${{ matrix.php-version }}"
+    name: "Running on PHP ${{ matrix.php-version }}"
     strategy:
       fail-fast: false
       matrix:

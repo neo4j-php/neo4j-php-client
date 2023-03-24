@@ -10,7 +10,7 @@ on:
 
 jobs:
   php-cs-fixer:
-    name: "Lint"
+    name: "Lint & Analyse"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

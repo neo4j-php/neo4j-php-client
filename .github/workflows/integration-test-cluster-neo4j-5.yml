@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONNECTIONS: neo4j://neo4j:testtest@localhost7688
-    name: "Running Integration tests for PHP ${{ matrix.php-version }} on a Neo4j ${{ matrix.neo4j-version }} cluster"
+    name: "Running on PHP ${{ matrix.php-version }} with a Neo4j ${{ matrix.neo4j-version }} cluster"
     strategy:
       fail-fast: false
       matrix:
