@@ -27,5 +27,11 @@ jobs:
           progress: yes
           php_version: ${{ matrix.php-version }}
           version: 2
-      - name: Run unit tests
-        run: php vendor/bin/phpunit --testsuite Unit
+      - uses: php-actions/phpunit@v3
+        with:
+          configuration: phpunit.xml.dist
+          php_version: ${{ matrix.php-version }}
+          memory_limit: 1024M
+          version: 9
+          testsuite: Unit
+          bootstrap: vendor/autoload.php
