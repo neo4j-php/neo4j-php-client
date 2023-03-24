@@ -1,0 +1,110 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: ['**']
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    env:
+      CONNECTIONS: bolt://neo4j:testtest@localhost,http://neo4j:testtest@localhost,neo4j://neo4j:testtest@localhost
+    name: "Running Integration tests for PHP 8.0 on Neo4j ${{ matrix.neo4j-version }} with simple config"
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["8.0", "8.1", "8.2"]
+        neo4j-version: ["5.0", "5.6"]
+
+    services:
+      neo4j:
+        image: neo4j:${{ matrix.neo4j-version }}
+        env:
+          NEO4J_AUTH: neo4j/testtest
+          NEO4JLABS_PLUGINS: '["apoc"]'
+        ports:
+          - 7687:7687
+          - 7474:7474
+        options: >-
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-start-period "60s"
+          --health-interval "30s"
+          --health-timeout "15s"
+          --health-retries "5"
+      server1:
+        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        env:
+          NEO4J_initial_server_mode__constraint=PRIMARY
+          NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
+          NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+          NEO4j_server_bolt_advertised_address=server1:7687
+          NEO4j_server_http_advertised_address=server1:7474
+          NEO4J_AUTH=neo4j/mypassword
+        options: >-
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-start-period "60s"
+          --health-interval "30s"
+          --health-timeout "15s"
+          --health-retries "5"
+      server2:
+        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        env:
+          NEO4J_initial_server_mode__constraint=PRIMARY
+          NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
+          NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+          NEO4j_server_bolt_advertised_address=server2:7687
+          NEO4j_server_http_advertised_address=server2:7474
+          NEO4J_AUTH=neo4j/mypassword
+        options: >-
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-start-period "60s"
+          --health-interval "30s"
+          --health-timeout "15s"
+          --health-retries "5"
+      server3:
+        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        env:
+          NEO4J_initial_server_mode__constraint=PRIMARY
+          NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
+          NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+          NEO4j_server_bolt_advertised_address=server3:7687
+          NEO4j_server_http_advertised_address=server3:7474
+          NEO4J_AUTH=neo4j/mypassword
+        options: >-
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-start-period "60s"
+          --health-interval "30s"
+          --health-timeout "15s"
+          --health-retries "5"
+      read-server4:
+        image: neo4j:${{ matrix.neo4j-version }}-enterprise
+        env:
+          NEO4J_initial_server_mode__constraint=PRIMARY
+          NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
+          NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+          NEO4j_server_bolt_advertised_address=read-server4:7687
+          NEO4j_server_http_advertised_address=read-server4:7474
+          NEO4J_AUTH=neo4j/mypassword
+        options: >-
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+          --health-start-period "60s"
+          --health-interval "30s"
+          --health-timeout "15s"
+          --health-retries "5"
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache Composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: /tmp/composer-cache
+          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
+      - uses: php-actions/composer@v6
+        with:
+          progress: yes
+          php_version: 8.0
+          version: 2
+      - name: Run unit tests
+        run: vendor/bin/phpunit --testsuite Integration
