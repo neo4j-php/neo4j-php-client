@@ -348,7 +348,7 @@ class Map extends AbstractCypherSequence
         return $this->offsetGet($key);
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         if ($this->isEmpty()) {
             return new stdClass();
