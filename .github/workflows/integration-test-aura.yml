@@ -1,4 +1,12 @@
-name: Integration Tests
+name: Integration Tests On Neo4j Aura
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 on:
   push:
