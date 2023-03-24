@@ -1,9 +1,6 @@
 <phpunit colors="true" verbose="true"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
-         convertErrorsToExceptions="true"
          convertDeprecationsToExceptions="true"
 >
     <testsuites>
