@@ -10,12 +10,12 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTIONS: bolt://neo4j:testtest@localhost,http://neo4j:testtest@localhost,neo4j://neo4j:testtest@localhost
-    name: "Running Integration tests for PHP 8.0 on Neo4j ${{ matrix.neo4j-version }} with simple config"
+      CONNECTIONS: neo4j://neo4j:testtest@server1
+    name: "Running Integration tests for PHP ${{ matrix.php-version }} on a Neo4j ${{ matrix.neo4j-version }} cluster"
     strategy:
       fail-fast: false
       matrix:
-        php-version: ["8.0", "8.1", "8.2"]
+        php-version: ["8.0", "8.2"]
         neo4j-version: ["5.0", "5.6"]
 
     services:
