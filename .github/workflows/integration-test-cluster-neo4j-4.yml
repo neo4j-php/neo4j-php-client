@@ -10,7 +10,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTIONS: neo4j://neo4j:testtest@core1
+      CONNECTIONS: neo4j://neo4j:testtest@localhost:7688
     name: "Running Integration tests for PHP ${{ matrix.php-version }} on a Neo4j ${{ matrix.neo4j-version }} cluster"
     strategy:
       fail-fast: false
@@ -52,7 +52,7 @@ jobs:
         env:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
           NEO4JLABS_PLUGINS: '["apoc"]'
-          NEO4J_AUTH: neo4j/test
+          NEO4J_AUTH: neo4j/testtest
           NEO4J_dbms_mode: CORE
           NEO4J_causal__clustering_discovery__advertised__address: core1:5000
           NEO4J_causal__clustering_transaction__advertised__address: core1:6000
@@ -78,7 +78,7 @@ jobs:
         env:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
           NEO4JLABS_PLUGINS: '["apoc"]'
-          NEO4J_AUTH: neo4j/test
+          NEO4J_AUTH: neo4j/testtest
           NEO4J_dbms_mode: CORE
           NEO4J_causal__clustering_discovery__advertised__address: core2:5000
           NEO4J_causal__clustering_transaction__advertised__address: core2:6000
@@ -104,7 +104,7 @@ jobs:
         env:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
           NEO4JLABS_PLUGINS: '["apoc"]'
-          NEO4J_AUTH: neo4j/test
+          NEO4J_AUTH: neo4j/testtest
           NEO4J_dbms_mode: CORE
           NEO4J_causal__clustering_discovery__advertised__address: core3:5000
           NEO4J_causal__clustering_transaction__advertised__address: core3:6000
@@ -130,7 +130,7 @@ jobs:
         env:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
           NEO4JLABS_PLUGINS: '["apoc"]'
-          NEO4J_AUTH: neo4j/test
+          NEO4J_AUTH: neo4j/testtest
           NEO4J_dbms_mode: READ_REPLICA
           NEO4J_causal__clustering_discovery__advertised__address: readreplica1:5000
           NEO4J_causal__clustering_transaction__advertised__address: readreplica1:6000
