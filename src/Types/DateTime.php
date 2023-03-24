@@ -18,7 +18,6 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
-use RuntimeException;
 
 use function sprintf;
 
@@ -77,22 +76,22 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
      */
     public function toDateTime(): DateTimeImmutable
     {
-        /** @psalm-suppress all */
-        foreach (DateTimeZone::listAbbreviations() as $tz) {
-            /** @psalm-suppress all */
-            if ($tz[0]['offset'] === $this->getTimeZoneOffsetSeconds()) {
-                $dateTime = new DateTimeImmutable(sprintf('@%s', $this->getSeconds()));
+        $dateTime = new DateTimeImmutable(sprintf('@%s', $this->getSeconds()));
+        $dateTime = $dateTime->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
+        /** @psalm-suppress PossiblyFalseReference */
+        $dateTime = $dateTime->setTimezone(new DateTimeZone(sprintf("%+'05d", $this->getTimeZoneOffsetSeconds() / 3600 * 100)));
 
-                if ($this->legacy) {
-                    $dateTime = $dateTime->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
-                }
-
-                return $dateTime->setTimezone(new DateTimeZone($tz[0]['timezone_id']));
-            }
+        if ($this->legacy) {
+            /**
+             * @psalm-suppress FalsableReturnStatement
+             *
+             * @var DateTimeImmutable
+             */
+            return $dateTime->modify(sprintf('-%s seconds', $this->getTimeZoneOffsetSeconds()));
         }
 
-        $message = sprintf('Cannot find an timezone with %s seconds as offset.', $this->tzOffsetSeconds);
-        throw new RuntimeException($message);
+        /** @var DateTimeImmutable */
+        return $dateTime;
     }
 
     /**

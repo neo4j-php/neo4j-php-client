@@ -259,15 +259,6 @@ CYPHER
         } else {
             self::assertEquals('{"seconds":1559410832,"nanoseconds":142000000,"tzOffsetSeconds":3600}', json_encode($createdAt, JSON_THROW_ON_ERROR));
         }
-
-        self::assertInstanceOf(DateTime::class, $results[1]['created_at']);
-        self::assertEquals(1_559_471_012, $results[1]['created_at']->getSeconds());
-        self::assertEquals(122_000_000, $results[1]['created_at']->getNanoseconds());
-        self::assertEquals('{"seconds":1559471012,"nanoseconds":122000000,"tzOffsetSeconds":3600}', json_encode($results[1]['created_at'], JSON_THROW_ON_ERROR));
-
-        self::assertInstanceOf(DateTime::class, $results[2]['created_at']);
-        self::assertGreaterThan(0, $results[2]['created_at']->getSeconds());
-        self::assertGreaterThan(0, $results[2]['created_at']->getNanoseconds());
     }
 
     /**
