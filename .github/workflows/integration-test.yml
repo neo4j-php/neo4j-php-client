@@ -46,4 +46,4 @@ jobs:
           php_version: 8.0
           version: 2
       - name: Run unit tests
-        run: php vendor/bin/phpunit --testsuite Integration
+        run: vendor/bin/phpunit --testsuite Integration
