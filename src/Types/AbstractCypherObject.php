@@ -64,7 +64,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
     /**
      * @param TKey $offset
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return array_key_exists($offset, $this->toArray());
     }
@@ -74,7 +74,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      *
      * @return TValue
      */
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         $serialized = $this->toArray();
         if (!array_key_exists($offset, $serialized)) {
@@ -88,7 +88,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      * @param TKey   $offset
      * @param TValue $value
      */
-    final public function offsetSet($offset, $value): void
+    final public function offsetSet(mixed $offset, mixed $value): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
@@ -96,7 +96,7 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
     /**
      * @param TKey $offset
      */
-    final public function offsetUnset($offset): void
+    final public function offsetUnset(mixed $offset): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
