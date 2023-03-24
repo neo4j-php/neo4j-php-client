@@ -246,7 +246,7 @@ CYPHER
         if ($createdAt->isLegacy()) {
             self::assertEquals(1_559_414_432, $createdAt->getSeconds());
         } else {
-            self::assertEquals(1_559_418_032 , $createdAt->getSeconds());
+            self::assertEquals(1_559_418_032, $createdAt->getSeconds());
         }
 
         self::assertEquals(142_000_000, $createdAt->getNanoseconds());
