@@ -480,10 +480,10 @@ final class LegacyHttpOGMTranslator
         }
 
         if ($tz !== null) {
-            return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1_000_000, $tz);
+            return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1_000_000, $tz, true);
         }
 
-        return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1_000_000, 0);
+        return new DateTime($dateTime->getTimestamp(), (int) $milliseconds * 1_000_000, 0, true);
     }
 
     private function translateLocalDateTime(string $value): LocalDateTime

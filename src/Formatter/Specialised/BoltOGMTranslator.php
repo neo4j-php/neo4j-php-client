@@ -142,7 +142,12 @@ final class BoltOGMTranslator
 
     private function makeFromBoltDateTime(BoltDateTime $datetime): DateTime
     {
-        return new DateTime($datetime->seconds(), $datetime->nanoseconds(), $datetime->tz_offset_seconds());
+        return new DateTime(
+            $datetime->seconds(),
+            $datetime->nanoseconds(),
+            $datetime->tz_offset_seconds(),
+            !$datetime instanceof \Bolt\protocol\v5\structures\DateTime
+        );
     }
 
     private function makeFromBoltTime(BoltTime $time): Time

@@ -34,7 +34,8 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
     public function __construct(
         private int $seconds,
         private int $nanoseconds,
-        private int $tzOffsetSeconds
+        private int $tzOffsetSeconds,
+        private bool $legacy
     ) {}
 
     /**
@@ -72,9 +73,13 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
         foreach (DateTimeZone::listAbbreviations() as $tz) {
             /** @psalm-suppress all */
             if ($tz[0]['offset'] === $this->getTimeZoneOffsetSeconds()) {
-                return (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))
-                    ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000))
-                    ->setTimezone(new DateTimeZone($tz[0]['timezone_id']));
+                $dateTime = new DateTimeImmutable(sprintf('@%s', $this->getSeconds()));
+
+                if ($this->legacy) {
+                    $dateTime = $dateTime->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
+                }
+
+                return $dateTime->setTimezone(new DateTimeZone($tz[0]['timezone_id']));
             }
         }
 

@@ -371,7 +371,7 @@ final class JoltHttpOGMTranslator
 
             $offset = $this->offsetFromMatches($matches);
 
-            return new DateTime($seconds, $nanoseconds, $offset);
+            return new DateTime($seconds, $nanoseconds, $offset, true);
         }
 
         if (str_starts_with($datetime, 'P')) {
