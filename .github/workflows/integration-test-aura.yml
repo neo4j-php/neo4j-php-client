@@ -10,7 +10,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTIONS: $AURA_CONNECTIONS
+      CONNECTIONS: ${{ secrets.AURA_CONNECTIONS }}
     name: "Running Integration tests for PHP ${{ matrix.php-version }} on a Neo4j Aura Instance"
     strategy:
       fail-fast: false
