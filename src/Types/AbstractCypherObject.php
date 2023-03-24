@@ -21,7 +21,6 @@ use BadMethodCallException;
 use IteratorAggregate;
 use JsonSerializable;
 use OutOfBoundsException;
-use ReturnTypeWillChange;
 
 use function sprintf;
 
@@ -47,8 +46,10 @@ abstract class AbstractCypherObject implements JsonSerializable, ArrayAccess, It
      */
     abstract public function toArray(): array;
 
-    #[ReturnTypeWillChange]
-    public function jsonSerialize()
+    /**
+     * @return array<TKey, TValue>
+     */
+    public function jsonSerialize(): array
     {
         return $this->toArray();
     }

@@ -22,7 +22,6 @@ use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
-use ReturnTypeWillChange;
 
 /**
  * Defines the protocol used in a connection.
@@ -84,7 +83,6 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
         return $x - $y;
     }
 
-    #[ReturnTypeWillChange]
     public function jsonSerialize(): string
     {
         return $this->getValue();

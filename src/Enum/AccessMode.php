@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Enum;
 
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
-use ReturnTypeWillChange;
 
 /**
  * Defines the access mode of a connection.
@@ -34,8 +33,7 @@ final class AccessMode extends TypedEnum implements JsonSerializable
     private const READ = 'read';
     private const WRITE = 'write';
 
-    #[ReturnTypeWillChange]
-    public function jsonSerialize()
+    public function jsonSerialize(): string
     {
         return $this->getValue();
     }

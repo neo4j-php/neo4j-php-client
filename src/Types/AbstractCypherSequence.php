@@ -46,9 +46,6 @@ use OutOfBoundsException;
 use const PHP_INT_MAX;
 
 use function property_exists;
-
-use ReturnTypeWillChange;
-
 use function sprintf;
 
 use UnexpectedValueException;
@@ -362,8 +359,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return $this;
     }
 
-    #[ReturnTypeWillChange]
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         while (!array_key_exists($offset, $this->cache) && $this->valid()) {
             $this->next();
@@ -376,12 +372,12 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return $this->cache[$offset];
     }
 
-    public function offsetSet($offset, $value): void
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
 
-    public function offsetUnset($offset): void
+    public function offsetUnset(mixed $offset): void
     {
         throw new BadMethodCallException(sprintf('%s is immutable', static::class));
     }
@@ -391,7 +387,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      *
      * @psalm-suppress UnusedForeachValue
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         while (!array_key_exists($offset, $this->cache) && $this->valid()) {
             $this->next();
@@ -400,8 +396,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return array_key_exists($offset, $this->cache);
     }
 
-    #[ReturnTypeWillChange]
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         return $this->toArray();
     }
@@ -442,8 +437,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     /**
      * @return TValue
      */
-    #[ReturnTypeWillChange]
-    public function current()
+    public function current(): mixed
     {
         $this->setupCache();
 
@@ -485,8 +479,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     /**
      * @return TKey
      */
-    #[ReturnTypeWillChange]
-    public function key()
+    public function key(): mixed
     {
         return $this->cacheKey();
     }
