@@ -91,7 +91,7 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     {
         $connections = $_ENV['CONNECTIONS'] ?? false;
         if (!is_string($connections)) {
-            Dotenv::createImmutable(__DIR__.'/../../')->load();
+            Dotenv::createImmutable(__DIR__.'/../../')->safeLoad();
             /** @var string|mixed $connections */
             $connections = $_ENV['CONNECTIONS'] ?? false;
             if (!is_string($connections)) {
