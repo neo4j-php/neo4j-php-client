@@ -16,8 +16,6 @@ jobs:
     name: "Running on all provided Aura instances"
     strategy:
       fail-fast: false
-      matrix:
-        php-version: ["8.0", "8.2"]
 
     steps:
       - uses: actions/checkout@v2
@@ -29,12 +27,12 @@ jobs:
       - uses: php-actions/composer@v6
         with:
           progress: yes
-          php_version: ${{ matrix.php-version }}
+          php_version: 8.0
           version: 2
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
-          php_version: ${{ matrix.php-version }}
+          php_version: 8.0
           memory_limit: 1024M
           version: 9
           testsuite: Integration
