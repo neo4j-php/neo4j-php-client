@@ -43,7 +43,7 @@ final class NoAuth implements AuthenticateInterface
     public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
     {
         /** @var array{server: string, connection_id: string, hints: list} */
-        return $bolt->hello(Auth::none($userAgent));
+        return $bolt->hello(Auth::none($userAgent))->getContent();
     }
 
     public function toString(UriInterface $uri): string
