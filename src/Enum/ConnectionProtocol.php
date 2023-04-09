@@ -52,6 +52,12 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
     private const BOLT_V5 = '5';
     private const HTTP = 'http';
 
+    public function isBolt(): bool
+    {
+        /** @psalm-suppress ImpureMethodCall */
+        return $this !== self::HTTP();
+    }
+
     /**
      * @pure
      *

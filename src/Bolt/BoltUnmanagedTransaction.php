@@ -96,7 +96,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function runStatement(Statement $statement)
     {
-        $parameters = ParameterHelper::formatParameters($statement->getParameters(), true);
+        $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
         $start = microtime(true);
 
         try {

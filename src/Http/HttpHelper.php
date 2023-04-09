@@ -208,7 +208,7 @@ final class HttpHelper
                 'includeStats' => false,
             ];
             $st = array_merge($st, $formatter->statementConfigOverride($connection));
-            $parameters = ParameterHelper::formatParameters($statement->getParameters());
+            $parameters = ParameterHelper::formatParameters($statement->getParameters(), $connection->getProtocol());
             $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
             $tbr[] = $st;
         }
