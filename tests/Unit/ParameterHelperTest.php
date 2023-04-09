@@ -169,6 +169,6 @@ final class ParameterHelperTest extends TestCase
     {
         $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), ConnectionProtocol::BOLT_V5());
 
-        self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTime::class, $date);
+        self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTimeZoneId::class, $date);
     }
 }
