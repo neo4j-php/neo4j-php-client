@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use Bolt\Bolt;
-
 use function explode;
 
 use Laudis\Neo4j\Bolt\BoltConnection;
@@ -81,7 +79,7 @@ class BoltFactory
     public function canReuseConnection(ConnectionInterface $connection, ConnectionRequestData $data, SessionConfiguration $config): bool
     {
         $databaseInfo = $connection->getDatabaseInfo();
-        $database = $databaseInfo === null ? null : $databaseInfo->getName();
+        $database = $databaseInfo?->getName();
 
         return $connection->getServerAddress()->getHost() === $data->getUri()->getHost() &&
                $connection->getServerAddress()->getPort() === $data->getUri()->getPort() &&
