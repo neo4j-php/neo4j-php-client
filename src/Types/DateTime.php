@@ -113,6 +113,10 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
 
     public function convertToBolt(): IStructure
     {
-        return new \Bolt\protocol\v1\structures\DateTime($this->getSeconds(), $this->getNanoseconds(), $this->getTimeZoneOffsetSeconds());
+        if ($this->legacy) {
+            return new \Bolt\protocol\v1\structures\DateTime($this->getSeconds(), $this->getNanoseconds(), $this->getTimeZoneOffsetSeconds());
+        }
+
+        return new \Bolt\protocol\v5\structures\DateTime($this->getSeconds(), $this->getNanoseconds(), $this->getTimeZoneOffsetSeconds());
     }
 }
