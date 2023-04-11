@@ -12,7 +12,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTIONS: ${{ secrets.AURA_CONNECTIONS }}
+      CONNECTION: ${{ secrets.AURA_CONNECTIONS }}
     name: "Running on all provided Aura instances"
     strategy:
       fail-fast: false

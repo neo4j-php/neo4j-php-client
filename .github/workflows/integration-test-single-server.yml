@@ -12,13 +12,14 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTIONS: neo4j://neo4j:testtest@localhost,bolt://neo4j:testtest@localhost,http://neo4j:testtest@localhost
-    name: "Running on PHP ${{ matrix.php-version }} with a Neo4j ${{ matrix.neo4j-version }} instance"
+      CONNECTION: ${{ matrix.test-connection }}
+    name: "Running on PHP ${{ matrix.php-version }} with a Neo4j ${{ matrix.neo4j-version }} instance connecting over ${{ matrix.test-connection }}"
     strategy:
       fail-fast: false
       matrix:
         php-version: ["8.0", "8.2"]
         neo4j-version: ["4.4", "5.1", "5.5"]
+        test-connection: ['neo4j://neo4j:testtest@localhost', 'bolt://neo4j:testtest@localhost', 'http://neo4j:testtest@localhost']
 
     services:
       neo4j:
