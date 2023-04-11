@@ -21,7 +21,6 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
     public function testConsistency(): void
     {
         $res = $this->getSession()->transaction(function (TSX $tsx) {
-            $tsx->run('MATCH (x) DETACH DELETE x', []);
             $res = $tsx->run('MERGE (n:zzz {name: "bbbb"}) RETURN n');
             self::assertEquals(1, $res->count());
             self::assertEquals(['name' => 'bbbb'], $res->first()->getAsNode('n')->getProperties()->toArray());
@@ -35,16 +34,15 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
 
     public function testConsistencyTransaction(): void
     {
-        $this->getSession()->run('MATCH (x) DETACH DELETE x');
         $tsx = $this->getSession()->beginTransaction([
-            Statement::create('CREATE (n:aaa) SET n.name="aaa" return n'),
+            Statement::create('MERGE (n:aaa) SET n.name="aaa" return n'),
         ]);
 
-        $tsx->run('CREATE (n:ccc) SET n.name="ccc"');
+        $tsx->run('MERGE (n:ccc) SET n.name="ccc"');
 
-        $tsx->commit([Statement::create('CREATE (n:bbb) SET n.name="bbb" return n')]);
+        $tsx->commit([Statement::create('MERGE (n:bbb) SET n.name="bbb" return n')]);
 
-        $results = $this->getSession()->run('MATCH (n) RETURN n ORDER BY n.name', []);
+        $results = $this->getSession()->run('MATCH (n:aaa|ccc|bbb) RETURN n ORDER BY n.name', []);
 
         self::assertEquals(3, $results->count());
         self::assertEquals(['name' => 'aaa'], $results->first()->getAsNode('n')->getProperties()->toArray());

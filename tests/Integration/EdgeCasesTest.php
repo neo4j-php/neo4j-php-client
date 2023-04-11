@@ -13,17 +13,69 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
+use Laudis\Neo4j\Types\ArrayList;
+use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Path;
 
 final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
 {
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+        self::$session->run(MoviesFixture::CQL);
+    }
+
+    public function testCanHandleMapLiterals(): void
+    {
+        $results = self::$session->run('MATCH (n:Person)-[r:ACTED_IN]->(m) RETURN n, {movie: m, roles: r.roles} AS actInfo LIMIT 5');
+
+        foreach ($results as $result) {
+            $actorInfo = $result->get('actInfo');
+
+            $this->assertInstanceOf(CypherMap::class, $actorInfo);
+            $this->assertTrue($actorInfo->hasKey('roles'));
+            $this->assertTrue($actorInfo->hasKey('movie'));
+        }
+    }
+
+    public function testComplex(): void
+    {
+        $results = $this->getSession()->run(<<<'CYPHER'
+        MATCH (n:Person)-[r:ACTED_IN]->(m), p = () - [] -> () - [] -> ()
+        SET m.point = point({latitude:12, longitude: 56, height: 1000})
+        RETURN  n,
+                p,
+                {movie: m, roles: r.roles} AS actInfo,
+                m,
+                point({latitude:13, longitude: 56, height: 1000}) as point
+        LIMIT 1
+        CYPHER);
+
+        foreach ($results as $result) {
+            $actorInfo = $result->get('actInfo');
+
+            self::assertInstanceOf(CypherMap::class, $actorInfo);
+            self::assertTrue($actorInfo->hasKey('roles'));
+            self::assertTrue($actorInfo->hasKey('movie'));
+
+            self::assertInstanceOf(ArrayList::class, $actorInfo->get('roles'));
+            self::assertInstanceOf(Node::class, $actorInfo->get('movie'));
+            // this can be a cyphermap in HTTP protocol
+            $point = $actorInfo->getAsNode('movie')->getProperty('point');
+            self::assertTrue($point instanceof PointInterface || $point instanceof CypherMap);
+            self::assertIsObject($actorInfo->getAsNode('movie')->getProperty('point'));
+            self::assertInstanceOf(Path::class, $result->get('p'));
+            self::assertInstanceOf(Node::class, $result->get('m'));
+            self::assertInstanceOf(PointInterface::class, $result->get('point'));
+        }
+    }
+
     public function testRunALotOfStatements(): void
     {
-        $this->getSession()->run('MATCH (n) DETACH DELETE n');
-        $this->getSession()->run(MoviesFixture::CQL);
-
         $persons = $this->getSession()->run('MATCH (p:Person) RETURN p');
         $movies = $this->getSession()->run('MATCH (m:Movie) RETURN m');
 
@@ -61,9 +113,6 @@ final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
 
     public function testGettingKeysFromArraylist(): void
     {
-        $this->getSession()->run('MATCH (n) DETACH DELETE n');
-        $this->getSession()->run(MoviesFixture::CQL);
-
         $result = $this->getSession()->run('MATCH (n:Person)-[r:ACTED_IN]->(m)
         RETURN n, {roles: r.roles, movie: m} AS actInfo LIMIT 1');
 

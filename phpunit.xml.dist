@@ -14,4 +14,7 @@
             <directory>./tests/Unit</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <env name="CONNECTION" value="neo4j://neo4j:testtest@localhost" />
+    </php>
 </phpunit>
