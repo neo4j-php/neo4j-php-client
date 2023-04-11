@@ -17,4 +17,8 @@ require __DIR__.'/../vendor/autoload.php';
 
 $connection = $_ENV['CONNECTION'] ?? 'neo4j://neo4j:testtest@localhost';
 
+echo '================================================================================'.PHP_EOL;
+echo 'CLEANING DATABASE neo4j OVER CONNECTION: ';
+echo $connection.PHP_EOL;
+
 Driver::create($connection)->createSession()->run('MATCH (x) DETACH DELETE x');
