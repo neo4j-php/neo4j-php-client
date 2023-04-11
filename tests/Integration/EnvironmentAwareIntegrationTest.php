@@ -15,98 +15,69 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Dotenv\Dotenv;
 
-use function explode;
 use function is_string;
 
-use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Basic\Driver;
+use Laudis\Neo4j\Basic\Session;
 use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @template T
- */
 abstract class EnvironmentAwareIntegrationTest extends TestCase
 {
-    /** @var ClientInterface<mixed> */
-    protected static ClientInterface $client;
+    protected static Session $session;
+    protected static Driver $driver;
+    protected static Uri $uri;
 
-    /**
-     * @return ClientInterface<T>
-     */
-    protected function getClient(): ClientInterface
-    {
-        return self::$client;
-    }
-
-    /**
-     * @psalm-suppress InternalMethod
-     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        self::$client = self::createClient();
-    }
 
-    abstract protected static function formatter(): FormatterInterface;
-
-    protected static function createClient(): ClientInterface
-    {
-        $connections = self::buildConnections();
-
-        $builder = ClientBuilder::create();
-        foreach ($connections as $i => $connection) {
-            $uri = Uri::create($connection);
-            $alias = $uri->getScheme().'_'.$i;
-            $builder = $builder->withDriver($alias, $connection);
-        }
-
-        return $builder->withFormatter(static::formatter())->build();
-    }
-
-    /**
-     * @return non-empty-array<array-key, array{0: string}>
-     */
-    public static function connectionAliases(): iterable
-    {
         Dotenv::createImmutable(__DIR__.'/../../')->safeLoad();
-        $connections = static::getConnections();
-
-        $tbr = [];
-        foreach ($connections as $i => $connection) {
-            $uri = Uri::create($connection);
-            $alias = $uri->getScheme().'_'.$i;
-            $tbr[$alias] = [$alias];
+        $connection = $_ENV['CONNECTION'] ?? false;
+        if (!is_string($connection)) {
+            $connection = 'bolt://localhost';
         }
 
-        /** @var non-empty-array<array-key, array{0: string}> */
-        return $tbr;
+        self::$uri = Uri::create($connection);
+        self::$driver = Driver::create(self::$uri);
+        self::$session = self::$driver->createSession();
     }
 
-    /**
-     * @return list<string>
-     */
-    protected static function buildConnections(): array
+    public function getSession(array|string|null $forceScheme = null): Session
     {
-        $connections = $_ENV['CONNECTIONS'] ?? false;
-        if (!is_string($connections)) {
-            Dotenv::createImmutable(__DIR__.'/../../')->safeLoad();
-            /** @var string|mixed $connections */
-            $connections = $_ENV['CONNECTIONS'] ?? false;
-            if (!is_string($connections)) {
-                return ['bolt://neo4j:test@neo4j', 'neo4j://neo4j:test@core1', 'http://neo4j:test@neo4j'];
-            }
+        $this->skipUnsupportedScheme($forceScheme);
+
+        return self::$session;
+    }
+
+    public function getUri(array|string|null $forceScheme = null): Uri
+    {
+        $this->skipUnsupportedScheme($forceScheme);
+
+        return self::$uri;
+    }
+
+    private function skipUnsupportedScheme(array|string|null $forceScheme): void
+    {
+        if (is_string($forceScheme)) {
+            $forceScheme = [$forceScheme];
         }
 
-        return explode(',', $connections);
+        if ($forceScheme !== null &&
+            !in_array(self::$uri->getScheme(), $forceScheme)
+        ) {
+            /** @psalm-suppress MixedArgumentTypeCoercion */
+            $this->markTestSkipped(sprintf(
+                'Connection only for types: "%s"',
+                implode(', ', $forceScheme)
+            ));
+        }
     }
 
-    /**
-     * @return list<string>
-     */
-    protected static function getConnections(): array
+    protected function getDriver(array|string|null $forceScheme = null): Driver
     {
-        return self::buildConnections();
+        $this->skipUnsupportedScheme($forceScheme);
+
+        return self::$driver;
     }
 }

@@ -13,41 +13,25 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
 use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 
-/**
- * @psalm-suppress all
- */
 final class DriverParityTest extends EnvironmentAwareIntegrationTest
 {
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        foreach (self::connectionAliases() as $alias) {
-            $session = self::$client->getDriver($alias[0])->createSession();
-            $session->run('MATCH (x) DETACH DELETE x', []);
-            $session->run(MoviesFixture::CQL, []);
-        }
+        self::$session->run('MATCH (x) DETACH DELETE x');
+        self::$session->run(MoviesFixture::CQL);
     }
 
-    protected static function formatter(): FormatterInterface
+    public function testCanHandleMapLiterals(): void
     {
-        return SummarizedResultFormatter::create();
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testCanHandleMapLiterals(string $alias): void
-    {
-        $results = $this->getClient()->run('MATCH (n:Person)-[r:ACTED_IN]->(m) RETURN n, {movie: m, roles: r.roles} AS actInfo LIMIT 5', [], $alias);
+        $results = self::$session->run('MATCH (n:Person)-[r:ACTED_IN]->(m) RETURN n, {movie: m, roles: r.roles} AS actInfo LIMIT 5');
 
         foreach ($results as $result) {
             $actorInfo = $result->get('actInfo');
@@ -58,12 +42,9 @@ final class DriverParityTest extends EnvironmentAwareIntegrationTest
         }
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testComplex(string $alias): void
+    public function testComplex(): void
     {
-        $results = $this->getClient()->run(<<<'CYPHER'
+        $results = $this->getSession()->run(<<<'CYPHER'
         MATCH (n:Person)-[r:ACTED_IN]->(m), p = () - [] -> () - [] -> ()
         SET m.point = point({latitude:12, longitude: 56, height: 1000})
         RETURN  n,
@@ -72,7 +53,7 @@ final class DriverParityTest extends EnvironmentAwareIntegrationTest
                 m,
                 point({latitude:13, longitude: 56, height: 1000}) as point
         LIMIT 1
-        CYPHER, [], $alias);
+        CYPHER);
 
         foreach ($results as $result) {
             $actorInfo = $result->get('actInfo');

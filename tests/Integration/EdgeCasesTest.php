@@ -13,60 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Dotenv\Dotenv;
-use Laudis\Neo4j\Basic\Driver;
-use Laudis\Neo4j\Basic\Session;
-use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
 use Laudis\Neo4j\Types\Node;
-use PHPUnit\Framework\TestCase;
 
-final class EdgeCasesTest extends TestCase
+final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
 {
-    private ?Session $session = null;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        if (($uri = $this->getBoltUri()) !== null) {
-            $this->session = Driver::create($uri)->createSession();
-        }
-    }
-
-    private function getBoltUri(): ?string
-    {
-        /** @var string|mixed $connections */
-        $connections = $_ENV['CONNECTIONS'] ?? false;
-        if (!is_string($connections)) {
-            Dotenv::createImmutable(__DIR__.'/../../')->load();
-            /** @var string|mixed $connections */
-            $connections = $_ENV['CONNECTIONS'] ?? false;
-            if (!is_string($connections)) {
-                $connections = 'bolt://neo4j:test@neo4j,neo4j://neo4j:test@core1,http://neo4j:test@neo4j';
-            }
-        }
-        foreach (explode(',', $connections) as $uri) {
-            $psrUri = Uri::create($uri);
-            if ($psrUri->getScheme() === 'neo4j') {
-                return $psrUri->__toString();
-            }
-        }
-
-        return null;
-    }
-
     public function testRunALotOfStatements(): void
     {
-        if ($this->session === null) {
-            self::markTestSkipped('No neo4j uri provided');
-        }
+        $this->getSession()->run('MATCH (n) DETACH DELETE n');
+        $this->getSession()->run(MoviesFixture::CQL);
 
-        $this->session->run('MATCH (n) DETACH DELETE n');
-        $this->session->run(MoviesFixture::CQL);
-
-        $persons = $this->session->run('MATCH (p:Person) RETURN p');
-        $movies = $this->session->run('MATCH (m:Movie) RETURN m');
+        $persons = $this->getSession()->run('MATCH (p:Person) RETURN p');
+        $movies = $this->getSession()->run('MATCH (m:Movie) RETURN m');
 
         $personIds = [];
         foreach ($persons->toArray() as $record) {
@@ -96,20 +55,16 @@ final class EdgeCasesTest extends TestCase
             }
         }
 
-        $this->session->runStatements($statements);
+        $this->getSession()->runStatements($statements);
         self::assertCount(4978, $statements);
     }
 
     public function testGettingKeysFromArraylist(): void
     {
-        if ($this->session === null) {
-            self::markTestSkipped('No neo4j uri provided');
-        }
+        $this->getSession()->run('MATCH (n) DETACH DELETE n');
+        $this->getSession()->run(MoviesFixture::CQL);
 
-        $this->session->run('MATCH (n) DETACH DELETE n');
-        $this->session->run(MoviesFixture::CQL);
-
-        $result = $this->session->run('MATCH (n:Person)-[r:ACTED_IN]->(m)
+        $result = $this->getSession()->run('MATCH (n:Person)-[r:ACTED_IN]->(m)
         RETURN n, {roles: r.roles, movie: m} AS actInfo LIMIT 1');
 
         $resultKeys = [];

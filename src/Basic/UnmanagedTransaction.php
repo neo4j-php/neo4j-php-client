@@ -86,6 +86,6 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
 
     public function isFinished(): bool
     {
-        return $this->tsx->isRolledBack();
+        return $this->tsx->isFinished();
     }
 }
