@@ -69,6 +69,9 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         self::assertEquals($results->toRecursiveArray(), $resultHasBeenSerialized->toRecursiveArray());
     }
 
+    /**
+     * @doesNotPerformAssertions
+     */
     public function testDump(): void
     {
         $results = $this->getSession()->run('RETURN 1 AS one', []);
