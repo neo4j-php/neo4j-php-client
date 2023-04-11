@@ -14,8 +14,6 @@ jobs:
     env:
       CONNECTION: ${{ secrets.AURA_CONNECTIONS }}
     name: "Running on all provided Aura instances"
-    strategy:
-      fail-fast: false
 
     steps:
       - uses: actions/checkout@v2
