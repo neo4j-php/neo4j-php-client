@@ -1,4 +1,4 @@
-name: Integration Tests On Cluster Neo4j 4
+name: Integration Tests
 
 on:
   push:
@@ -14,10 +14,6 @@ jobs:
     env:
       CONNECTION: neo4j://neo4j:testtest@localhost:7688
     name: "Running on PHP 8.0 in a Neo4j 4.4 cluster"
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ["8.0", "8.2"]
 
     steps:
       - uses: actions/checkout@v2
