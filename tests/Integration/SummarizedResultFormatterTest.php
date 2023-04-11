@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use function bin2hex;
+
+use DateTimeImmutable;
+
 use function dump;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
@@ -21,6 +24,7 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\DateTimeZoneId;
 
 use function random_bytes;
 use function serialize;
@@ -95,5 +99,14 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         self::assertInstanceOf(SummarizedResult::class, $results);
 
         self::assertGreaterThan(0, $results->getSummary()->getResultAvailableAfter());
+    }
+
+    public function testDateTime(): void
+    {
+        $dt = new DateTimeImmutable();
+        $ls = $this->getClient()->run('RETURN $x AS x', ['x' => $dt])->first()->get('x');
+
+        $this->assertInstanceOf(DateTimeZoneId::class, $ls);
+        $this->assertEquals($dt, $ls->toDateTime());
     }
 }

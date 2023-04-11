@@ -31,6 +31,7 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId;
 use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
@@ -51,7 +52,7 @@ use function version_compare;
  *
  * @see https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-type-mapping
  *
- * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|CypherList<mixed>|CypherMap<mixed>
+ * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|DateTimeZoneId|CypherList<mixed>|CypherMap<mixed>
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
