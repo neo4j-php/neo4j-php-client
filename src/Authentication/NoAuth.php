@@ -14,9 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Authentication;
 
 use Bolt\helpers\Auth;
+use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -42,8 +44,13 @@ final class NoAuth implements AuthenticateInterface
 
     public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
     {
+        $response = $bolt->hello(Auth::none($userAgent));
+        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
+            throw Neo4jException::fromBoltResponse($response);
+        }
+
         /** @var array{server: string, connection_id: string, hints: list} */
-        return $bolt->hello(Auth::none($userAgent));
+        return $response->getContent();
     }
 
     public function toString(UriInterface $uri): string
