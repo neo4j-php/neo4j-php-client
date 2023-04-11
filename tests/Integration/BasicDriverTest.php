@@ -13,51 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Dotenv\Dotenv;
-
-use function explode;
-use function is_string;
-
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\Bolt\BoltDriver;
-use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
-use PHPUnit\Framework\TestCase;
 
-final class BasicDriverTest extends TestCase
+final class BasicDriverTest extends EnvironmentAwareIntegrationTest
 {
-    /**
-     * @return non-empty-array<string, array{0: string}>
-     */
-    public function getConnections(): array
+    public function testFullWalk(): void
     {
-        /** @var string|mixed $connections */
-        $connections = $_ENV['CONNECTIONS'] ?? false;
-        if (!is_string($connections)) {
-            Dotenv::createImmutable(__DIR__.'/../../')->safeLoad();
-            /** @var string|mixed $connections */
-            $connections = $_ENV['CONNECTIONS'] ?? false;
-            if (!is_string($connections)) {
-                $connections = 'bolt://neo4j:test@neo4j,neo4j://neo4j:test@core1,http://neo4j:test@neo4j';
-            }
-        }
-
-        $tbr = [];
-        foreach (explode(',', $connections) as $connection) {
-            $tbr[$connection] = [$connection];
-        }
-
-        return $tbr;
-    }
-
-    /**
-     * @dataProvider getConnections
-     */
-    public function testFullWalk(string $connection): void
-    {
-        $driver = Driver::create($connection);
+        $driver = Driver::create($this->getUri());
 
         $session = $driver->createSession();
 
@@ -73,12 +39,9 @@ final class BasicDriverTest extends TestCase
         self::assertEquals(0, $id);
     }
 
-    /**
-     * @dataProvider getConnections
-     */
-    public function testInvalidAuth(string $connection): void
+    public function testInvalidAuth(): void
     {
-        $uri = Uri::create($connection)->withUserInfo('');
+        $uri = $this->getUri()->withUserInfo('');
 
         $this->expectException(Neo4jException::class);
         BoltDriver::create($uri, null, Authenticate::basic('x', 'y'))

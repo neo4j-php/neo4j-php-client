@@ -16,38 +16,16 @@ namespace Laudis\Neo4j\Tests\Integration;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Formatter\BasicFormatter;
 use ReflectionClass;
-
-use function str_starts_with;
-
 use Throwable;
 
-/**
- * @psalm-import-type BasicResults from BasicFormatter
- *
- * @extends EnvironmentAwareIntegrationTest<BasicResults>
- */
 final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    protected static function formatter(): FormatterInterface
+    public function testValidRun(): void
     {
-        return new BasicFormatter();
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testValidRun(string $alias): void
-    {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getSession()->beginTransaction();
 
         self::assertFalse($tsx->isFinished());
         self::assertFalse($tsx->isRolledBack());
@@ -64,27 +42,20 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
         self::assertEquals(1, $response->count());
         $map = $response->first();
         self::assertEquals(5, $map->count());
-        self::assertEquals(['test' => 'a'], $map->get('x'));
-        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals(['test' => 'a'], $map->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals(['test' => 'b'], $map->getAsNode('y')->getProperties()->toArray());
         self::assertEquals('a', $map->get('test'));
-        self::assertEquals(['c' => 'd'], $map->get('map'));
-        self::assertEquals([1, 2, 3], $map->get('list'));
+        self::assertEquals(['c' => 'd'], $map->getAsMap('map')->toArray());
+        self::assertEquals([1, 2, 3], $map->getAsArrayList('list')->toArray());
 
         self::assertFalse($tsx->isFinished());
         self::assertFalse($tsx->isRolledBack());
         self::assertFalse($tsx->isCommitted());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testInvalidRun(string $alias): void
+    public function testInvalidRun(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getSession()->beginTransaction();
 
         self::assertFalse($tsx->isFinished());
         self::assertFalse($tsx->isRolledBack());
@@ -103,16 +74,9 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']);
         self::assertFalse($tsx->isCommitted());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testValidStatement(string $alias): void
+    public function testValidStatement(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $response = $this->getClient()->beginTransaction(null, $alias)->runStatement(
+        $response = $this->getSession()->beginTransaction()->runStatement(
             Statement::create(<<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
@@ -125,23 +89,16 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
         self::assertEquals(1, $response->count());
         $map = $response->first();
         self::assertEquals(5, $map->count());
-        self::assertEquals(['test' => 'a'], $map->get('x'));
-        self::assertEquals(['test' => 'b'], $map->get('y'));
+        self::assertEquals(['test' => 'a'], $map->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals(['test' => 'b'], $map->getAsNode('y')->getProperties()->toArray());
         self::assertEquals('a', $map->get('test'));
-        self::assertEquals(['c' => 'd'], $map->get('map'));
-        self::assertEquals([1, 2, 3], $map->get('list'));
+        self::assertEquals(['c' => 'd'], $map->getAsMap('map')->toArray());
+        self::assertEquals([1, 2, 3], $map->getAsArrayList('list')->toArray());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testInvalidStatement(string $alias): void
+    public function testInvalidStatement(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $transaction = $this->getClient()->beginTransaction(null, $alias);
+        $transaction = $this->getSession()->beginTransaction();
         $exception = false;
         try {
             $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
@@ -152,16 +109,9 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])
         self::assertTrue($exception);
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testStatements(string $alias): void
+    public function testStatements(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $transaction = $this->getClient()->beginTransaction(null, $alias);
+        $transaction = $this->getSession()->beginTransaction();
         $params = ['test' => 'a', 'otherTest' => 'b'];
         $response = $transaction->runStatements([
             Statement::create(<<<'CYPHER'
@@ -188,16 +138,9 @@ CYPHER,
         self::assertEquals(1, $response->get(2)->first()->get('x'));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testInvalidStatements(string $alias): void
+    public function testInvalidStatements(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getSession()->beginTransaction();
 
         self::assertFalse($tsx->isFinished());
         self::assertFalse($tsx->isRolledBack());
@@ -229,16 +172,9 @@ CYPHER,
         self::assertFalse($tsx->isCommitted());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testCommitValidEmpty(string $alias): void
+    public function testCommitValidEmpty(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getSession()->beginTransaction();
 
         self::assertFalse($tsx->isFinished());
         self::assertFalse($tsx->isRolledBack());
@@ -252,16 +188,9 @@ CYPHER,
         self::assertTrue($tsx->isCommitted());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testCommitValidFilled(string $alias): void
+    public function testCommitValidFilled(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $result = $this->getClient()->beginTransaction(null, $alias)->commit([Statement::create(<<<'CYPHER'
+        $result = $this->getSession()->beginTransaction()->commit([Statement::create(<<<'CYPHER'
 UNWIND [1, 2, 3] AS x
 RETURN x
 CYPHER
@@ -270,16 +199,9 @@ CYPHER
         self::assertEquals(3, $result->first()->count());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testCommitValidFilledWithInvalidStatement(string $alias): void
+    public function testCommitValidFilledWithInvalidStatement(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getSession()->beginTransaction();
 
         $exception = false;
         try {
@@ -293,16 +215,9 @@ CYPHER
         self::assertFalse($tsx->isCommitted());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testCommitInvalid(string $alias): void
+    public function testCommitInvalid(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getSession()->beginTransaction();
         $tsx->commit();
 
         self::assertTrue($tsx->isFinished());
@@ -322,16 +237,9 @@ CYPHER
         self::assertTrue($tsx->isCommitted());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testRollbackValid(string $alias): void
+    public function testRollbackValid(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getSession()->beginTransaction();
         $tsx->rollback();
 
         self::assertTrue($tsx->isFinished());
@@ -339,16 +247,9 @@ CYPHER
         self::assertFalse($tsx->isCommitted());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testRollbackInvalid(string $alias): void
+    public function testRollbackInvalid(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
-
-        $tsx = $this->getClient()->beginTransaction(null, $alias);
+        $tsx = $this->getSession()->beginTransaction();
         $tsx->rollback();
 
         self::assertTrue($tsx->isFinished());
@@ -374,9 +275,9 @@ CYPHER
 //     * @noinspection PhpUnusedLocalVariableInspection
 //     * @psalm-suppress UnusedVariable
 //     */
-//    public function testCorrectConnectionReuse(string $alias): void
+//    public function testCorrectConnectionReuse(): void
 //    {
-//        $driver = $this->getClient()->getDriver($alias);
+//        $driver = $this->getSession()->getDriver($alias);
 //        if (!$driver instanceof BoltDriver) {
 //            self::markTestSkipped('Can only white box test bolt driver');
 //        }
@@ -384,13 +285,13 @@ CYPHER
 //        $poolReflection = new ReflectionClass(Connection::class);
 //        $poolReflection->setStaticPropertyValue('connectionCache', []);
 //
-//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
-//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
-//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
-//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
-//        $a = $this->getClient()->beginTransaction([], $alias);
-//        $b = $this->getClient()->beginTransaction([], $alias);
-//        $this->getClient()->run('MATCH (x) RETURN x', [], $alias);
+//        $this->getSession()->run('MATCH (x) RETURN x', []);
+//        $this->getSession()->run('MATCH (x) RETURN x', []);
+//        $this->getSession()->run('MATCH (x) RETURN x', []);
+//        $this->getSession()->run('MATCH (x) RETURN x', []);
+//        $a = $this->getSession()->beginTransaction([]);
+//        $b = $this->getSession()->beginTransaction([]);
+//        $this->getSession()->run('MATCH (x) RETURN x', []);
 //
 //        $poolReflection = new ReflectionClass(ConnectionPool::class);
 //        /** @var array $cache */
@@ -404,26 +305,22 @@ CYPHER
 //    }
 
     /**
-     * @dataProvider connectionAliases
-     *
      * @doesNotPerformAssertions
      */
-    public function testTransactionRunNoConsumeResult(string $alias): void
+    public function testTransactionRunNoConsumeResult(): void
     {
-        $tsx = $this->getClient()->beginTransaction([], $alias);
+        $tsx = $this->getSession()->beginTransaction([]);
         $tsx->run('MATCH (x) RETURN x');
         $tsx->run('MATCH (x) RETURN x');
         $tsx->commit();
     }
 
     /**
-     * @dataProvider connectionAliases
-     *
      * @doesNotPerformAssertions
      */
-    public function testTransactionRunNoConsumeButSaveResult(string $alias): void
+    public function testTransactionRunNoConsumeButSaveResult(): void
     {
-        $tsx = $this->getClient()->beginTransaction([], $alias);
+        $tsx = $this->getSession()->beginTransaction([]);
         $result = $tsx->run("MATCH (n:Node) SET n.testing = 'world' RETURN n");
         $tsx->commit();
 
