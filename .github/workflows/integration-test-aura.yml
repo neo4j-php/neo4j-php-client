@@ -12,7 +12,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTION: ${{ secrets.AURA_CONNECTIONS }}
+      CONNECTION: ${{ secrets.AURA_PRO }}
     name: "Running on all provided Aura instances"
 
     steps:
@@ -28,7 +28,7 @@ jobs:
           php_version: 8.0
           version: 2
       - name: clean database
-        run: php tests/clean-database.php
+        run: echo $CONNECTION && CONNECTION=$CONNECTION php tests/clean-database.php
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
