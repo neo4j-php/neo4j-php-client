@@ -11,11 +11,7 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: "Running on PHP ${{ matrix.php-version }}"
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ['8.0', '8.1', '8.2']
+    name: "Running on PHP 8.2"
 
     steps:
       - uses: actions/checkout@v2
@@ -23,16 +19,16 @@ jobs:
         uses: actions/cache@v2
         with:
           path: /tmp/composer-cache
-          key: ${{ runner.os }}-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
       - uses: php-actions/composer@v6
         with:
           progress: yes
-          php_version: ${{ matrix.php-version }}
+          php_version: 8.2
           version: 2
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
-          php_version: ${{ matrix.php-version }}
+          php_version: 8.2
           memory_limit: 1024M
           version: 9
           testsuite: Unit
