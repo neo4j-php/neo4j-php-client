@@ -28,7 +28,7 @@ jobs:
           php_version: 8.0
           version: 2
       - name: clean database
-        run: echo $CONNECTION && CONNECTION=$CONNECTION php tests/clean-database.php
+        run: CONNECTION=$CONNECTION php tests/clean-database.php
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
