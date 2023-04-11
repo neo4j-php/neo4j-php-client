@@ -1,4 +1,4 @@
-name: Integration Tests On Neo4j Aura
+name: Integration Tests
 
 on:
   push:
