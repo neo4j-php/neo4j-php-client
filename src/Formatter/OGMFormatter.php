@@ -57,6 +57,8 @@ use function version_compare;
  * @psalm-import-type BoltMeta from FormatterInterface
  *
  * @implements FormatterInterface<CypherList<CypherMap<OGMTypes>>>
+ *
+ * @deprecated Next major version will only use SummarizedResultFormatter
  */
 final class OGMFormatter implements FormatterInterface
 {
