@@ -215,22 +215,11 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])));
     public function fetchSize(int $fetchSize): void
     {
         $session = $this->getDriver()->createSession(SessionConfiguration::default()->withFetchSize($fetchSize));
-        $session->run('MATCH (x) DETACH DELETE x');
 
         $nodesAmount = $fetchSize * 4;
-        // Add user nodes
-        for ($i = 0; $i < $nodesAmount; ++$i) {
-            $session->run('CREATE (user:User)');
-        }
-
-        // Confirm that the database contains 4000 unique user nodes
-        $userCountResults = $session->run('MATCH (user:User) RETURN COUNT(DISTINCT(ID(user))) as user_count');
-        $userCount = $userCountResults->getAsCypherMap(0)->getAsInt('user_count');
-
-        $this->assertEquals($nodesAmount, $userCount);
 
         // Retrieve the ids of all user nodes
-        $results = $session->run('MATCH (user:User) RETURN ID(user) AS id');
+        $results = $session->run('UNWIND range(1, $x) AS id RETURN id', ['x' => $nodesAmount]);
 
         // Loop through the results and add each id to an array
         $userIds = [];

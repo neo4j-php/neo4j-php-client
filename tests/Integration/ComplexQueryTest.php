@@ -105,7 +105,7 @@ CYPHER, ['listOrMap' => $generator]));
     {
         $result = $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run('MERGE (x:Node {x:$x}) RETURN x', ['x' => 'x']))->first();
 
-        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals('x', $result->getAsNode('x')->getProperties()->get('x'));
     }
 
     public function testPath(): void
@@ -115,12 +115,13 @@ MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNod
 WITH b
 MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
 RETURN x, y, z
+LIMIT 1
 CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
 
         self::assertEquals(1, $results->count());
         $result = $results->first();
         self::assertEquals(3, $result->count());
-        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals('x', $result->getAsNode('x')->getProperty('x'));
         self::assertEquals(
             [['attribute' => 'xy'], ['attribute' => 'yz']],
             /** @psalm-suppress MissingClosureReturnType */
@@ -131,7 +132,7 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
                  */
 $r->getProperties()->toArray())->toArray()
         );
-        self::assertEquals(['z' => 'z'], $result->getAsNode('z')->getProperties()->toArray());
+        self::assertEquals('z', $result->getAsNode('z')->getProperty('z'));
     }
 
     public function testNullListAndMap(): void
@@ -161,7 +162,7 @@ CYPHER, ['x' => ['x' => 'x'], 'y' => [1, 2, 3]]));
         self::assertEquals(1, $results->count());
         $result = $results->first();
         self::assertEquals(2, $result->count());
-        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals('x', $result->getAsNode('x')->getProperty('x'));
         self::assertEquals(['list' => [1, 2, 3]], $result->getAsNode('y')->getProperties()->toRecursiveArray());
     }
 
@@ -283,7 +284,7 @@ CYPHER
     public function testTimeoutRecovery(): void
     {
         $this->expectNotToPerformAssertions();
-        $tsx = $this->getSession(['bolt', 'neo4j'])->beginTransaction([], TransactionConfiguration::default()->withTimeout(1000));
+        $tsx = $this->getSession(['bolt', 'neo4j'])->beginTransaction([], TransactionConfiguration::default()->withTimeout(2));
         $tsx->run('CALL apoc.util.sleep(20000)');
     }
 

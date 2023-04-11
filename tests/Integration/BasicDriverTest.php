@@ -27,11 +27,10 @@ final class BasicDriverTest extends EnvironmentAwareIntegrationTest
 
         $session = $driver->createSession();
 
-        $session->run('MATCH (x) DETACH DELETE x');
-        $session->run('CREATE (x:X {id: 0})');
+        $session->run('MERGE (x:X {id: 0})');
 
         $id = 1;
-        $result = $session->run('MATCH (x) RETURN x');
+        $result = $session->run('MATCH (x:X {id: 0}) RETURN x');
         $result->each(static function (CypherMap $map) use (&$id) {
             $id = $map->getAsNode('x')->getProperties()->getAsInt('id');
         });

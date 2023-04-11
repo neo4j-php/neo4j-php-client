@@ -30,6 +30,8 @@ use RuntimeException;
 
 use function sleep;
 
+use Symfony\Component\Uid\Uuid;
+
 final class PerformanceTest extends EnvironmentAwareIntegrationTest
 {
     public function testBigRandomData(): void
@@ -71,8 +73,7 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
 
     public function testMultipleTransactionsCorrectness(): void
     {
-        $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run('MATCH (x) DETACH DELETE (x)'));
-
+        $id = Uuid::v4();
         for ($i = 0; $i < 2; ++$i) {
             $tsxs = [];
             for ($j = 0; $j < 100; ++$j) {
@@ -80,18 +81,18 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
             }
 
             foreach ($tsxs as $tsx) {
-                $tsx->run('CREATE (:X {y: "z"})');
+                $tsx->run('CREATE (:X {id: $id})', compact('i', 'id'));
             }
 
-            self::assertEquals(0 + $i * 100, $this->getSession()->run('MATCH (x) RETURN count(x) AS x', [])->first()->get('x'));
+            self::assertEquals(0 + $i * 100, $this->getSession()->run('MATCH (x:X {id: $id}) RETURN count(x) AS x', ['id' => $id])->first()->get('x'));
 
             foreach ($tsxs as $j => $tsx) {
                 $tsx->commit();
 
-                self::assertEquals($j + 1 + $i * 100, $this->getSession()->run('MATCH (x) RETURN count(x) AS x', [])->first()->get('x'));
+                self::assertEquals($j + 1 + $i * 100, $this->getSession()->run('MATCH (x:X {id: $id}) RETURN count(x) AS x', ['id' => $id])->first()->get('x'));
             }
 
-            self::assertEquals(($i + 1) * 100, $this->getSession()->run('MATCH (x) RETURN count(x) AS x', [])->first()->get('x'));
+            self::assertEquals(($i + 1) * 100, $this->getSession()->run('MATCH (x:X {id: $id}) RETURN count(x) AS x', ['id' => $id])->first()->get('x'));
         }
     }
 

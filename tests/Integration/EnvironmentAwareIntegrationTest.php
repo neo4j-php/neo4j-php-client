@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Dotenv\Dotenv;
-
 use function is_string;
 
 use Laudis\Neo4j\Basic\Driver;
@@ -32,7 +30,6 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     {
         parent::setUpBeforeClass();
 
-        Dotenv::createImmutable(__DIR__.'/../../')->safeLoad();
         $connection = $_ENV['CONNECTION'] ?? false;
         if (!is_string($connection)) {
             $connection = 'bolt://localhost';

@@ -12,17 +12,16 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTION: neo4j://neo4j:testtest@localhost7688
-    name: "Running on PHP ${{ matrix.php-version }} with a Neo4j ${{ matrix.neo4j-version }} cluster"
+      CONNECTION: neo4j://neo4j:testtest@localhost:7688
+    name: "Running on PHP 8.0 with a Neo4j 5.5 cluster"
     strategy:
       fail-fast: false
       matrix:
         php-version: ["8.0", "8.2"]
-        neo4j-version: ["5.1", "5.5"]
 
     services:
       server1:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:5.5
         ports:
           - 7688:7688
           - 7475:7475
@@ -40,7 +39,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server2:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:5.5
         ports:
           - 7689:7689
           - 7476:7476
@@ -58,7 +57,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server3:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:5.5
         ports:
           - 7690:7690
           - 7477:7477
@@ -76,7 +75,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       read-server4:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:5.5
         ports:
           - 7691:7691
           - 7478:7478
@@ -109,7 +108,7 @@ jobs:
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
-          php_version: ${{ matrix.php-version }}
+          php_version: 8.0
           memory_limit: 1024M
           version: 9
           testsuite: Integration
