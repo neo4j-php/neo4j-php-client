@@ -27,6 +27,8 @@ jobs:
           progress: yes
           php_version: 8.0
           version: 2
+      - name: clean database
+        run: php tests/clean-database.php
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
