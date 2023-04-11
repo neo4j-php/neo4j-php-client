@@ -15,7 +15,7 @@ use Laudis\Neo4j\Basic\Driver;
 
 require __DIR__.'/../vendor/autoload.php';
 
-$connection = $_ENV['CONNECTION'] ?? 'neo4j://neo4j:testtest@localhost';
+$connection = $_SERVER['CONNECTION'] ?? 'neo4j://neo4j:testtest@localhost';
 
 echo '================================================================================'.PHP_EOL;
 echo 'CLEANING DATABASE neo4j OVER CONNECTION: ';
