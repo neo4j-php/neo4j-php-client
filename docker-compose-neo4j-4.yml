@@ -32,6 +32,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: arestravel/php-8.0
     working_dir: /opt/project
     networks:
       - neo4j

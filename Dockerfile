@@ -19,7 +19,7 @@ COPY composer.json ./
 
 RUN composer install
 
-COPY phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.php LICENSE README.md ./
+COPY phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.dist.php LICENSE README.md ./
 COPY src/ src/
 COPY tests/ tests/
 COPY .git/ .git/

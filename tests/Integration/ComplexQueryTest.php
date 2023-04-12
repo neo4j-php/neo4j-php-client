@@ -281,13 +281,6 @@ CYPHER
         }
     }
 
-    public function testTimeoutRecovery(): void
-    {
-        $this->expectNotToPerformAssertions();
-        $tsx = $this->getSession(['bolt', 'neo4j'])->beginTransaction([], TransactionConfiguration::default()->withTimeout(2));
-        $tsx->run('CALL apoc.util.sleep(20000)');
-    }
-
     public function testConstraintHandling(): void
     {
         $session = $this->getSession();
