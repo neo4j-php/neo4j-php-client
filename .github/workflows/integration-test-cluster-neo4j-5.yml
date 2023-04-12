@@ -43,12 +43,12 @@ jobs:
           - 7688:7688
           - 7475:7475
         env:
-          NEO4J_initial_server_mode__constraint=PRIMARY
-          NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
-          NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-          NEO4j_server_bolt_advertised_address=localhost:7688
-          NEO4j_server_http_advertised_address=localhost:7478
-          NEO4J_AUTH=neo4j/testtest
+          NEO4J_initial_server_mode__constraint: PRIMARY
+          NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4j_server_bolt_advertised_address: localhost:7688
+          NEO4j_server_http_advertised_address: localhost:7478
+          NEO4J_AUTH: neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
@@ -61,12 +61,12 @@ jobs:
           - 7689:7689
           - 7476:7476
         env:
-          NEO4J_initial_server_mode__constraint=PRIMARY
-          NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
-          NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-          NEO4j_server_bolt_advertised_address=localhost:7689
-          NEO4j_server_http_advertised_address=server2:7476
-          NEO4J_AUTH=neo4j/testtest
+          NEO4J_initial_server_mode__constraint: PRIMARY
+          NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4j_server_bolt_advertised_address: localhost:7689
+          NEO4j_server_http_advertised_address: server2:7476
+          NEO4J_AUTH: neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
@@ -79,12 +79,12 @@ jobs:
           - 7690:7690
           - 7477:7477
         env:
-          NEO4J_initial_server_mode__constraint=PRIMARY
-          NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
-          NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-          NEO4j_server_bolt_advertised_address=localhost:7690
-          NEO4j_server_http_advertised_address=server3:7477
-          NEO4J_AUTH=neo4j/testtest
+          NEO4J_initial_server_mode__constraint: PRIMARY
+          NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4j_server_bolt_advertised_address: localhost:7690
+          NEO4j_server_http_advertised_address: server3:7477
+          NEO4J_AUTH: neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
@@ -97,12 +97,12 @@ jobs:
           - 7691:7691
           - 7478:7478
         env:
-          NEO4J_initial_server_mode__constraint=PRIMARY
-          NEO4J_dbms_cluster_discovery_endpoints=server1:5000,server2:5000,server3:5000
-          NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-          NEO4j_server_bolt_advertised_address=localhost:7691
-          NEO4j_server_http_advertised_address=localhost:7478
-          NEO4J_AUTH=neo4j/testtest
+          NEO4J_initial_server_mode__constraint: PRIMARY
+          NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
+          NEO4j_server_bolt_advertised_address: localhost:7691
+          NEO4j_server_http_advertised_address: localhost:7478
+          NEO4J_AUTH: neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
