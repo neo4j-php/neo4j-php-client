@@ -40,6 +40,9 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
         self::$session = self::$driver->createSession();
     }
 
+    /**
+     * @param list<string>|string|null $forceScheme
+     */
     public function getSession(array|string|null $forceScheme = null): Session
     {
         $this->skipUnsupportedScheme($forceScheme);
@@ -47,6 +50,9 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
         return self::$session;
     }
 
+    /**
+     * @param list<string>|string|null $forceScheme
+     */
     public function getUri(array|string|null $forceScheme = null): Uri
     {
         $this->skipUnsupportedScheme($forceScheme);
@@ -54,15 +60,27 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
         return self::$uri;
     }
 
+    /**
+     * @param list<string>|string|null $forceScheme
+     */
     private function skipUnsupportedScheme(array|string|null $forceScheme): void
     {
+        if ($forceScheme === null) {
+            return;
+        }
+
         if (is_string($forceScheme)) {
             $forceScheme = [$forceScheme];
         }
 
-        if ($forceScheme !== null &&
-            !in_array(self::$uri->getScheme(), $forceScheme)
-        ) {
+        $options = [];
+        foreach ($forceScheme as $scheme) {
+            $options[] = $scheme;
+            $options[] = $scheme.'+s';
+            $options[] = $scheme.'+ssc';
+        }
+
+        if (!in_array(self::$uri->getScheme(), $options)) {
             /** @psalm-suppress MixedArgumentTypeCoercion */
             $this->markTestSkipped(sprintf(
                 'Connection only for types: "%s"',
@@ -71,6 +89,9 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
         }
     }
 
+    /**
+     * @param list<string>|string|null $forceScheme
+     */
     protected function getDriver(array|string|null $forceScheme = null): Driver
     {
         $this->skipUnsupportedScheme($forceScheme);
