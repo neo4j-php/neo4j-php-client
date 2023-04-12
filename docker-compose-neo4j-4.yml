@@ -1,0 +1,161 @@
+version: '3.8'
+
+x-shared:
+  &common
+  NEO4J_AUTH: neo4j/test
+  NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+  NEO4JLABS_PLUGINS: '["apoc"]'
+  NEO4J_dbms_security_allow__csv__import__from__file__urls: "true"
+
+x-shared-cluster:
+  &common-cluster
+  <<: *common
+  NEO4J_causal__clustering_initial__discovery__members: core1:5000,core2:5000,core3:5000
+  NEO4J_dbms_memory_pagecache_size: 100M
+  NEO4J_dbms_memory_heap_initial__size: 100M
+  NEO4J_causal__clustering_discovery__listen__address: 0.0.0.0:5000
+  NEO4J_causal__clustering_transaction__listen__address: 0.0.0.0:6000
+  NEO4J_causal__clustering_raft__listen__address: 0.0.0.0:7000
+
+x-shared-core:
+  &common-core
+  <<: *common-cluster
+  NEO4J_dbms_mode: CORE
+  NEO4J_causal__clustering_minimum__core__cluster__size__at__formation: 3
+
+networks:
+  neo4j:
+    driver: bridge
+
+services:
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /opt/project
+    networks:
+      - neo4j
+    volumes:
+      - .:/opt/project
+    expose:
+      - 9000
+    env_file:
+      - .env
+  testkit-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - WITH_XDEBUG=true
+    working_dir: /opt/project
+    volumes:
+      - .:/opt/project
+    command: php /opt/project/testkit-backend/index.php
+    networks:
+      - neo4j
+    depends_on:
+      - neo4j
+    ports:
+      - "9876:9876"
+  neo4j:
+    networks:
+      - neo4j
+    image: neo4j:4.4-enterprise
+    healthcheck:
+      test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    environment:
+      <<: *common
+    volumes:
+      - ./tests/resources:/import
+    env_file:
+      - .env
+  core1:
+    image: neo4j:4.4-enterprise
+    healthcheck:
+      test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - neo4j
+    volumes:
+      - ./tests/resources:/import
+    environment:
+      <<: *common-core
+      NEO4J_causal__clustering_discovery__advertised__address: core1:5000
+      NEO4J_causal__clustering_transaction__advertised__address: core1:6000
+      NEO4J_causal__clustering_raft__advertised__address: core1:7000
+      NEO4J_dbms_connector_http_advertised__address: core1:7474
+      NEO4J_dbms_connector_bolt_advertised__address: core1:7687
+    env_file:
+      - .env
+
+  core2:
+    image: neo4j:4.4-enterprise
+    healthcheck:
+      test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - neo4j
+    environment:
+      <<: *common-core
+      NEO4J_causal__clustering_discovery__advertised__address: core2:5000
+      NEO4J_causal__clustering_transaction__advertised__address: core2:6000
+      NEO4J_causal__clustering_raft__advertised__address: core2:7000
+      NEO4J_dbms_connector_http_advertised__address: core2:7474
+      NEO4J_dbms_connector_bolt_advertised__address: core2:7687
+    volumes:
+      - ./tests/resources:/import
+    env_file:
+      - .env
+
+  core3:
+    image: neo4j:4.4-enterprise
+    healthcheck:
+      test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - neo4j
+    environment:
+      <<: *common-core
+      NEO4J_causal__clustering_discovery__advertised__address: core3:5000
+      NEO4J_causal__clustering_transaction__advertised__address: core3:6000
+      NEO4J_causal__clustering_raft__advertised__address: core3:7000
+      NEO4J_dbms_connector_http_advertised__address: core3:7474
+      NEO4J_dbms_connector_bolt_advertised__address: core3:7687
+    volumes:
+      - ./tests/resources:/import
+    env_file:
+      - .env
+
+  readreplica1:
+    image: neo4j:4.4-enterprise
+    healthcheck:
+      test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - neo4j
+    environment:
+      <<: *common-cluster
+      NEO4J_dbms_mode: READ_REPLICA
+      NEO4J_causal__clustering_discovery__advertised__address: readreplica1:5000
+      NEO4J_causal__clustering_transaction__advertised__address: readreplica1:6000
+      NEO4J_causal__clustering_raft__advertised__address: readreplica1:7000
+      NEO4J_dbms_connector_http_advertised__address: readreplica1:7474
+      NEO4J_dbms_connector_bolt_advertised__address: readreplica1:7687
+    env_file:
+      - .env
+    volumes:
+      - ./tests/resources:/import
