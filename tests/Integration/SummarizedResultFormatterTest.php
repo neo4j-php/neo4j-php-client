@@ -104,7 +104,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
     public function testDateTime(): void
     {
         $dt = new DateTimeImmutable();
-        $ls = $this->getClient()->run('RETURN $x AS x', ['x' => $dt])->first()->get('x');
+        $ls = $this->getSession()->run('RETURN $x AS x', ['x' => $dt])->first()->get('x');
 
         $this->assertInstanceOf(DateTimeZoneId::class, $ls);
         $this->assertEquals($dt, $ls->toDateTime());
