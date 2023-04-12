@@ -42,7 +42,7 @@ final class ConsistencyTest extends EnvironmentAwareIntegrationTest
 
         $tsx->commit([Statement::create('MERGE (n:bbb) SET n.name="bbb" return n')]);
 
-        $results = $this->getSession()->run('MATCH (n:aaa|ccc|bbb) RETURN n ORDER BY n.name', []);
+        $results = $this->getSession()->run('MATCH (n) WHERE n.name = "aaa" OR n.name = "bbb" OR n.name = "ccc" RETURN n ORDER BY n.name');
 
         self::assertEquals(3, $results->count());
         self::assertEquals(['name' => 'aaa'], $results->first()->getAsNode('n')->getProperties()->toArray());
