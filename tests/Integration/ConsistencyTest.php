@@ -13,67 +13,40 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Formatter\BasicFormatter;
 
-use function str_starts_with;
-
-/**
- * @psalm-import-type BasicResults from \Laudis\Neo4j\Formatter\BasicFormatter
- *
- * @extends EnvironmentAwareIntegrationTest<BasicResults>
- */
 final class ConsistencyTest extends EnvironmentAwareIntegrationTest
 {
-    protected static function formatter(): FormatterInterface
+    public function testConsistency(): void
     {
-        /** @psalm-suppress InvalidReturnStatement */
-        return new BasicFormatter();
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testConsistency(string $alias): void
-    {
-        $res = $this->getClient()->transaction(function (TSX $tsx) {
-            $tsx->run('MATCH (x) DETACH DELETE x', []);
+        $res = $this->getSession()->transaction(function (TSX $tsx) {
             $res = $tsx->run('MERGE (n:zzz {name: "bbbb"}) RETURN n');
             self::assertEquals(1, $res->count());
-            self::assertEquals(['name' => 'bbbb'], $res->first()->get('n'));
+            self::assertEquals(['name' => 'bbbb'], $res->first()->getAsNode('n')->getProperties()->toArray());
 
             return $tsx->run('MATCH (n:zzz {name: $name}) RETURN n', ['name' => 'bbbb']);
-        }, $alias);
+        });
 
         self::assertEquals(1, $res->count());
-        self::assertEquals(['name' => 'bbbb'], $res->first()->get('n'));
+        self::assertEquals(['name' => 'bbbb'], $res->first()->getAsNode('n')->getProperties()->toArray());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testConsistencyTransaction(string $alias): void
+    public function testConsistencyTransaction(): void
     {
-        if (str_starts_with($alias, 'neo4j')) {
-            self::markTestSkipped('Cannot guarantee successful test in cluster');
-        }
+        $tsx = $this->getSession()->beginTransaction([
+            Statement::create('MERGE (n:aaa) SET n.name="aaa" return n'),
+        ]);
 
-        $this->getClient()->run('MATCH (x) DETACH DELETE x', [], $alias);
-        $tsx = $this->getClient()->beginTransaction([
-            Statement::create('CREATE (n:aaa) SET n.name="aaa" return n'),
-        ], $alias);
+        $tsx->run('MERGE (n:ccc) SET n.name="ccc"');
 
-        $tsx->run('CREATE (n:ccc) SET n.name="ccc"');
+        $tsx->commit([Statement::create('MERGE (n:bbb) SET n.name="bbb" return n')]);
 
-        $tsx->commit([Statement::create('CREATE (n:bbb) SET n.name="bbb" return n')]);
-
-        $results = $this->getClient()->run('MATCH (n) RETURN n ORDER BY n.name', [], $alias);
+        $results = $this->getSession()->run('MATCH (n) WHERE n.name = "aaa" OR n.name = "bbb" OR n.name = "ccc" RETURN n ORDER BY n.name');
 
         self::assertEquals(3, $results->count());
-        self::assertEquals(['name' => 'aaa'], $results->first()->get('n'));
-        self::assertEquals(['name' => 'bbb'], $results->get(1)->get('n'));
-        self::assertEquals(['name' => 'ccc'], $results->last()->get('n'));
+        self::assertEquals(['name' => 'aaa'], $results->first()->getAsNode('n')->getProperties()->toArray());
+        self::assertEquals(['name' => 'bbb'], $results->get(1)->getAsNode('n')->getProperties()->toArray());
+        self::assertEquals(['name' => 'ccc'], $results->last()->getAsNode('n')->getProperties()->toArray());
     }
 }

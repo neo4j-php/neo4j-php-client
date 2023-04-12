@@ -18,6 +18,7 @@ use DateTime;
 use DateTimeZone;
 use InvalidArgumentException;
 use Iterator;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\ParameterHelper;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -77,7 +78,7 @@ final class ParameterHelperTest extends TestCase
         self::assertEquals(['a' => 'b', 'c' => 'd'], ParameterHelper::formatParameters([
             'a' => 'b',
             'c' => 'd',
-        ])->toArray());
+        ], ConnectionProtocol::BOLT_V44())->toArray());
     }
 
     public function testFormatParameterInteger(): void
@@ -85,7 +86,7 @@ final class ParameterHelperTest extends TestCase
         self::assertEquals([2 => 'b', 3 => 'd'], ParameterHelper::formatParameters([
             2 => 'b',
             3 => 'd',
-        ])->toArray());
+        ], ConnectionProtocol::BOLT_V44())->toArray());
     }
 
     public function testFormatParameterVector(): void
@@ -93,20 +94,20 @@ final class ParameterHelperTest extends TestCase
         self::assertEquals(['b', 'd'], ParameterHelper::formatParameters([
             'b',
             'd',
-        ])->toArray());
+        ], ConnectionProtocol::BOLT_V44())->toArray());
     }
 
     public function testFormatParameterIterable(): void
     {
         self::assertEquals([[1, 2]], ParameterHelper::formatParameters([
             [1, 2],
-        ])->toArray());
+        ], ConnectionProtocol::BOLT_V44())->toArray());
     }
 
     public function testFormatParameterInvalidIterable(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        ParameterHelper::formatParameters(self::$invalidIterable);
+        ParameterHelper::formatParameters(self::$invalidIterable, ConnectionProtocol::BOLT_V44());
     }
 
     public function testFormatParameterInvalidIterable2(): void
@@ -116,25 +117,25 @@ final class ParameterHelperTest extends TestCase
             'a' => [
                 self::$invalidIterable,
             ],
-        ]);
+        ], ConnectionProtocol::BOLT_V44());
     }
 
     public function testAsParameterEmptyVector(): void
     {
-        $result = ParameterHelper::asParameter([]);
+        $result = ParameterHelper::asParameter([], ConnectionProtocol::BOLT_V44());
         self::assertIsArray($result);
         self::assertCount(0, $result);
     }
 
     public function testAsParameterEmptyMap(): void
     {
-        $result = ParameterHelper::asParameter([]);
+        $result = ParameterHelper::asParameter([], ConnectionProtocol::BOLT_V44());
         self::assertIsArray($result);
     }
 
     public function testAsParameterEmptyArray(): void
     {
-        $result = ParameterHelper::asParameter([]);
+        $result = ParameterHelper::asParameter([], ConnectionProtocol::BOLT_V44());
         self::assertIsArray($result);
     }
 
@@ -145,7 +146,7 @@ final class ParameterHelperTest extends TestCase
             {
                 return 'abc';
             }
-        });
+        }, ConnectionProtocol::BOLT_V44());
         self::assertEquals('abc', $result);
     }
 
@@ -153,14 +154,21 @@ final class ParameterHelperTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Cannot format parameter of type: stdClass to work with Neo4J');
-        ParameterHelper::asParameter(new stdClass());
+        ParameterHelper::asParameter(new stdClass(), ConnectionProtocol::BOLT_V44());
     }
 
     public function testDateTime(): void
     {
-        $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), true);
+        $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), ConnectionProtocol::BOLT_V44());
 
         self::assertInstanceOf(DateTimeZoneId::class, $date);
         self::assertEquals('Europe/Brussels', $date->tz_id());
+    }
+
+    public function testDateTime5(): void
+    {
+        $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), ConnectionProtocol::BOLT_V5());
+
+        self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTimeZoneId::class, $date);
     }
 }

@@ -67,6 +67,8 @@ use stdClass;
  * @psalm-type BoltMeta = array{t_first: int, fields: list<string>, qid ?: int}
  *
  * @template ResultFormat
+ *
+ * @deprecated Next major version will only use SummarizedResultFormatter
  */
 interface FormatterInterface
 {

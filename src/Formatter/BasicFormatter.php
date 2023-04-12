@@ -42,6 +42,8 @@ use UnexpectedValueException;
  * @psalm-type BasicResults = CypherList<CypherMap<scalar|array|null>>
  *
  * @implements FormatterInterface<BasicResults>
+ *
+ * @deprecated Next major version will only use SummarizedResultFormatter
  */
 final class BasicFormatter implements FormatterInterface
 {

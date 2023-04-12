@@ -18,128 +18,68 @@ use Generator;
 use function getenv;
 
 use InvalidArgumentException;
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Common\Uri;
-use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
-use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Formatter\OGMFormatter;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
-use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
 
-use function str_starts_with;
-
-/**
- * @psalm-import-type OGMTypes from OGMFormatter
- *
- * @extends EnvironmentAwareIntegrationTest<SummarizedResult<CypherMap<OGMTypes>>>
- */
 final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
 {
-    protected static function formatter(): FormatterInterface
+    public function testListParameterHelper(): void
     {
-        return SummarizedResultFormatter::create();
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        foreach (self::connectionAliases() as $alias) {
-            $this->getClient()->run('MATCH (x) DETACH DELETE x', [], $alias[0]);
-        }
-    }
-
-    protected static function createClient(): ClientInterface
-    {
-        $connections = self::buildConnections();
-
-        $builder = ClientBuilder::create();
-        foreach ($connections as $i => $connection) {
-            $uri = Uri::create($connection);
-            $builder = $builder->withDriver($uri->getScheme().'_'.$i, $connection);
-        }
-
-        /** @psalm-suppress InvalidReturnStatement */
-        return $builder->withFormatter(self::formatter())->build();
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testListParameterHelper(string $alias): void
-    {
-        $result = $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run('MATCH (x) WHERE x.slug IN $listOrMap RETURN x', [
+        $result = $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run('MATCH (x) WHERE x.slug IN $listOrMap RETURN x', [
             'listOrMap' => ParameterHelper::asList([]),
-        ]), $alias);
+        ]));
         self::assertEquals(0, $result->count());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testValidListParameterHelper(string $alias): void
+    public function testValidListParameterHelper(): void
     {
-        $result = $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run('RETURN $listOrMap AS x', [
+        $result = $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run('RETURN $listOrMap AS x', [
             'listOrMap' => ParameterHelper::asList([1, 2, 3]),
-        ]), $alias);
+        ]));
         self::assertEquals(1, $result->count());
         self::assertEquals([1, 2, 3], $result->first()->getAsArrayList('x')->toArray());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testMergeTransactionFunction(string $alias): void
+    public function testMergeTransactionFunction(): void
     {
         $this->expectException(Neo4jException::class);
-        $this->getClient()->writeTransaction(static fn (TSX $tsx) => /** @psalm-suppress ALL */
+        $this->getSession()->writeTransaction(static fn (TSX $tsx) => /** @psalm-suppress ALL */
 $tsx->run('MERGE (x {y: "z"}:X) return x')->first()
             ->getAsMap('x')
-            ->getAsString('y'), $alias);
+            ->getAsString('y'));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testValidMapParameterHelper(string $alias): void
+    public function testValidMapParameterHelper(): void
     {
-        $result = $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run('RETURN $listOrMap AS x', [
+        $result = $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run('RETURN $listOrMap AS x', [
             'listOrMap' => ParameterHelper::asMap(['a' => 'b', 'c' => 'd']),
-        ]), $alias);
+        ]));
         self::assertEquals(1, $result->count());
         self::assertEquals(['a' => 'b', 'c' => 'd'], $result->first()->getAsMap('x')->toArray());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testArrayParameterHelper(string $alias): void
+    public function testArrayParameterHelper(): void
     {
         $this->expectNotToPerformAssertions();
-        $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
+        $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
-CYPHER, ['listOrMap' => []]), $alias);
+CYPHER, ['listOrMap' => []]));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testInvalidParameter(string $alias): void
+    public function testInvalidParameter(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->getClient()->transaction(fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
+        $this->getSession()->transaction(fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
-CYPHER, ['listOrMap' => self::generate()]), $alias);
+CYPHER, ['listOrMap' => self::generate()]));
     }
 
     private static function generate(): Generator
@@ -149,51 +89,39 @@ CYPHER, ['listOrMap' => self::generate()]), $alias);
         }
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testInvalidParameters(string $alias): void
+    public function testInvalidParameters(): void
     {
         $this->expectException(InvalidArgumentException::class);
         /** @var iterable<string, iterable<mixed, mixed>|scalar|null> $generator */
         $generator = self::generate();
-        $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
+        $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:Node {slug: 'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
-CYPHER, ['listOrMap' => $generator]), $alias);
+CYPHER, ['listOrMap' => $generator]));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testCreationAndResult(string $alias): void
+    public function testCreationAndResult(): void
     {
-        $result = $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run('MERGE (x:Node {x:$x}) RETURN x', ['x' => 'x']), $alias)->first();
+        $result = $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run('MERGE (x:Node {x:$x}) RETURN x', ['x' => 'x']))->first();
 
-        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals('x', $result->getAsNode('x')->getProperties()->get('x'));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testPath(string $alias): void
+    public function testPath(): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http cannot detected nested attributes');
-        }
-
-        $results = $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
+        $results = $this->getSession(['bolt', 'neo4j'])->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
 WITH b
 MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
 RETURN x, y, z
-CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alias);
+LIMIT 1
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
 
         self::assertEquals(1, $results->count());
         $result = $results->first();
         self::assertEquals(3, $result->count());
-        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals('x', $result->getAsNode('x')->getProperty('x'));
         self::assertEquals(
             [['attribute' => 'xy'], ['attribute' => 'yz']],
             /** @psalm-suppress MissingClosureReturnType */
@@ -204,17 +132,14 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alia
                  */
 $r->getProperties()->toArray())->toArray()
         );
-        self::assertEquals(['z' => 'z'], $result->getAsNode('z')->getProperties()->toArray());
+        self::assertEquals('z', $result->getAsNode('z')->getProperty('z'));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testNullListAndMap(string $alias): void
+    public function testNullListAndMap(): void
     {
-        $results = $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
+        $results = $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
 RETURN null AS x, [1, 2, 3] AS y, {x: 'x', y: 'y', z: 'z'} AS z
-CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alias);
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
 
         self::assertEquals(1, $results->count());
         $result = $results->first();
@@ -224,32 +149,26 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alia
         self::assertEquals(['x' => 'x', 'y' => 'y', 'z' => 'z'], $result->getAsMap('z')->toArray());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testListAndMapInput(string $alias): void
+    public function testListAndMapInput(): void
     {
-        $results = $this->getClient()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
+        $results = $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (x:Node {x: $x.x})
 WITH x
 MERGE (y:Node {list: $y})
 RETURN x, y
 LIMIT 1
-CYPHER, ['x' => ['x' => 'x'], 'y' => [1, 2, 3]]), $alias);
+CYPHER, ['x' => ['x' => 'x'], 'y' => [1, 2, 3]]));
 
         self::assertEquals(1, $results->count());
         $result = $results->first();
         self::assertEquals(2, $result->count());
-        self::assertEquals(['x' => 'x'], $result->getAsNode('x')->getProperties()->toArray());
+        self::assertEquals('x', $result->getAsNode('x')->getProperty('x'));
         self::assertEquals(['list' => [1, 2, 3]], $result->getAsNode('y')->getProperties()->toRecursiveArray());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testPathReturnType(string $alias): void
+    public function testPathReturnType(): void
     {
-        $results = $this->getClient()->transaction(static function (TSX $tsx) {
+        $results = $this->getSession()->transaction(static function (TSX $tsx) {
             $tsx->run(<<<'CYPHER'
 MERGE (:Node {x: 'x'}) - [:Rel] -> (x:Node {x: 'y'})
 WITH x
@@ -260,7 +179,7 @@ CYPHER, []);
 MATCH (a:Node {x: 'x'}), (b:Node {x: 'z'}), p = shortestPath((a)-[*]-(b))
 RETURN p
 CYPHER);
-        }, $alias);
+        });
 
         self::assertEquals(1, $results->count());
         $result = $results->first();
@@ -273,41 +192,31 @@ CYPHER);
 $x->getProperties()->toArray())->toArray());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testPeriodicCommit(string $alias): void
+    public function testPeriodicCommit(): void
     {
         if (getenv('TESTING_ENVIRONMENT') !== 'local') {
             self::markTestSkipped('Only local environment has access to local files');
         }
 
-        $this->getClient()->run(<<<CYPHER
+        $this->getSession()->run(<<<CYPHER
 USING PERIODIC COMMIT 10
 LOAD CSV FROM 'file:///csv-example.csv' AS line
 MERGE (n:File {name: line[0]});
-CYPHER, [], $alias);
+CYPHER, []);
 
-        $result = $this->getClient()->run('MATCH (n:File) RETURN count(n) AS count');
+        $result = $this->getSession()->run('MATCH (n:File) RETURN count(n) AS count');
         self::assertEquals(20, $result->first()->get('count'));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testPeriodicCommitFail(string $alias): void
+    public function testPeriodicCommitFail(): void
     {
         if (getenv('TESTING_ENVIRONMENT') !== 'local') {
             self::markTestSkipped('Only local environment has access to local files');
-        }
-
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('HTTP allows periodic commits during an actual transaction');
         }
 
         $this->expectException(Neo4jException::class);
 
-        $tsx = $this->getClient()->beginTransaction([], $alias);
+        $tsx = $this->getSession(['neo4j', 'bolt'])->beginTransaction([]);
         $tsx->run(<<<CYPHER
 USING PERIODIC COMMIT 10
 LOAD CSV FROM 'file:///csv-example.csv' AS line
@@ -317,153 +226,73 @@ CYPHER
         $tsx->commit();
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testLongQueryFunction(string $alias): void
+    public function testLongQueryFunction(): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not support timeouts at the moment');
-        }
-
         $this->expectNotToPerformAssertions();
-        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
-            $tsx->run('CALL apoc.util.sleep(20000)');
-        }, $alias, TransactionConfiguration::default()->withTimeout(100000));
+        $this->getSession(['bolt', 'neo4j'])->writeTransaction(static function (TransactionInterface $tsx) {
+            $tsx->run('CALL apoc.util.sleep(2)');
+        }, TransactionConfiguration::default()->withTimeout(5));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testLongQueryFunctionNegative(string $alias): void
+    public function testLongQueryFunctionNegative(): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not support timeouts at the moment');
-        }
-
         $this->expectException(Neo4jException::class);
-        $this->getClient()->writeTransaction(static function (TransactionInterface $tsx) {
+        $this->getSession(['bolt', 'neo4j'])->writeTransaction(static function (TransactionInterface $tsx) {
             $tsx->run(<<<'CYPHER'
             UNWIND range(1, 10000) AS id
             MERGE (x:Node {id: id})
             CYPHER);
-        }, $alias, TransactionConfiguration::default()->withTimeout(1));
+        }, TransactionConfiguration::default()->withTimeout(1));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testLongQueryUnmanaged(string $alias): void
+    public function testDiscardAfterTimeout(): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not support timeouts at the moment');
-        }
-        $this->expectException(Neo4jException::class);
-        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
-        $tsx->run(<<<'CYPHER'
-        UNWIND range(1, 10000) AS id
-        MERGE (x:Node {id: id})
-        CYPHER);
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testSimpleTimeout(string $alias): void
-    {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not support timeouts at the moment');
-        }
-
         try {
-            $this->getClient()
-                ->getDriver($alias)
-                ->createSession()
-                ->run('UNWIND range(1, 1000000) AS x MERGE (:Number {value: x})', [], TransactionConfiguration::default()->withTimeout(10));
+            $this->getSession(['bolt', 'neo4j'])
+                ->run('CALL apoc.util.sleep(2000000) RETURN 5 as x', [], TransactionConfiguration::default()->withTimeout(2))
+                ->first()
+                ->get('x');
         } catch (Neo4jException $e) {
             self::assertEquals('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
         }
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testDiscardAfterTimeout(string $alias): void
+    public function testTimeoutNoReturn(): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not support timeouts at the moment');
+        $result = $this->getSession(['bolt', 'neo4j'])
+            ->run('CALL apoc.util.sleep(2000000)', [], TransactionConfiguration::default()->withTimeout(2));
+
+        try {
+            unset($result);
+        } catch (Neo4jException $e) {
+            $this->assertEquals('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
         }
-
-        $this->expectException(Neo4jException::class);
-
-        $result = $this->getClient()
-            ->getDriver($alias)
-            ->createSession()
-            ->run('UNWIND range(1, 1000000) AS x MERGE (:Number {value: x})', [], TransactionConfiguration::default()->withTimeout(150));
-
-        unset($result);
     }
 
-//    /**
-//     * @dataProvider connectionAliases
-//     *
-//     * @doesNotPerformAssertions
-//     */
-//    public function testTimeoutNoReturn(string $alias): void
-//    {
-//        if (str_starts_with($alias, 'http')) {
-//            self::markTestSkipped('Http does not support timeouts at the moment');
-//        }
-//
-//        $result = $this->getClient()
-//            ->getDriver($alias)
-//            ->createSession()
-//            ->run('CALL apoc.util.sleep(2000000)', [], TransactionConfiguration::default()->withTimeout(150));
-//
-//        unset($result);
-//    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testTimeout(string $alias): void
+    public function testTimeout(): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not support timeouts at the moment');
-        }
-
-        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+        $tsx = $this->getSession(['bolt', 'neo4j'])->beginTransaction([], TransactionConfiguration::default()->withTimeout(1));
         try {
             $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
         } catch (Neo4jException $e) {
             self::assertEquals('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
-            $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(20));
+            $tsx = $this->getSession()->beginTransaction([], TransactionConfiguration::default()->withTimeout(20));
             self::assertEquals(1, $tsx->run('RETURN 1 AS one')->first()->get('one'));
         }
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testTimeoutRecovery(string $alias): void
+    public function testTimeoutRecovery(): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('Http does not support timeouts at the moment');
-        }
-
         $this->expectNotToPerformAssertions();
-        $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1000));
+        $tsx = $this->getSession(['bolt', 'neo4j'])->beginTransaction([], TransactionConfiguration::default()->withTimeout(2));
         $tsx->run('CALL apoc.util.sleep(20000)');
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testConstraintHandling(string $alias): void
+    public function testConstraintHandling(): void
     {
-        $session = $this->getClient()->getDriver($alias)->createSession();
+        $session = $this->getSession();
 
-        $session->run('MATCH (x) DETACH DELETE x');
+        $session->run('MATCH (test:Test{id: \'123\'}) DETACH DELETE test');
         $session->run("CREATE (test:Test{id: '123'})");
 
         $session->run('CREATE CONSTRAINT IF NOT EXISTS FOR (test:Test) REQUIRE test.id IS UNIQUE');
@@ -472,26 +301,18 @@ CYPHER
         $session->run("CREATE (test:Test {id: '123'}) RETURN test");
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testFetchSize(string $alias): void
+    public function testFetchSize(): void
     {
-        $client = $this->getClient();
-
-        // Add 4000 user nodes
-        for ($i = 0; $i < 4000; ++$i) {
-            $client->run('CREATE (user:User)', [], $alias);
-        }
+        $client = $this->getSession();
 
         // Confirm that the database contains 4000 unique user nodes
-        $userCountResults = $client->run('MATCH (user:User) RETURN COUNT(DISTINCT(ID(user))) as user_count', [], $alias);
+        $userCountResults = $client->run('RETURN 4000 as user_count');
         $userCount = $userCountResults->getAsMap(0)->getAsInt('user_count');
 
         $this->assertEquals(4000, $userCount);
 
         // Retrieve the ids of all user nodes
-        $results = $client->run('MATCH (user:User) RETURN ID(user) AS id', [], $alias);
+        $results = $client->run('UNWIND range(1, 4000) AS id RETURN id', []);
 
         // Loop through the results and add each id to an array
         $userIds = [];
@@ -508,17 +329,10 @@ CYPHER
         $this->assertEquals($userIds, $uniqueUserIds);
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testLongQueryUnmanagedNegative(string $alias): void
+    public function testLongQueryUnmanagedNegative(): void
     {
-        if (str_starts_with($alias, 'http')) {
-            self::markTestSkipped('HTTP does not support tsx timeout at the moment.');
-        }
-
         try {
-            $tsx = $this->getClient()->beginTransaction([], $alias, TransactionConfiguration::default()->withTimeout(1));
+            $tsx = $this->getSession(['bolt', 'neo4j'])->beginTransaction([], TransactionConfiguration::default()->withTimeout(1));
             $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
         } catch (Neo4jException $e) {
             self::assertEquals('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());

@@ -13,55 +13,25 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Dotenv\Dotenv;
-
-use function explode;
-use function is_string;
-
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
 use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
 use Laudis\Neo4j\BoltFactory;
-use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
-use PHPUnit\Framework\TestCase;
 
-final class BoltResultIntegrationTest extends TestCase
+final class BoltResultIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    /**
-     * @return array<string, list<string>>
-     */
-    public function buildConnections(): array
+    public function testIterationLong(): void
     {
-        $connections = $_ENV['CONNECTIONS'] ?? false;
-        if (!is_string($connections)) {
-            Dotenv::createImmutable(__DIR__.'/../../')->load();
-            /** @var string|mixed $connections */
-            $connections = $_ENV['CONNECTIONS'] ?? false;
-            if (!is_string($connections)) {
-                return ['bolt://neo4j:test@neo4j' => ['bolt://neo4j:test@neo4j']];
-            }
+        if ($this->getUri()->getScheme() !== 'bolt') {
+            self::markTestSkipped('No bolt uri provided');
         }
 
-        $tbr = [];
-        foreach (explode(',', $connections) as $connection) {
-            $tbr[$connection] = [$connection];
-        }
-
-        return $tbr;
-    }
-
-    /**
-     * @dataProvider  buildConnections
-     */
-    public function testIterationLong(string $connection): void
-    {
-        $uri = Uri::create($connection);
         $i = 0;
         $factory = new BoltFactory(
             SystemWideConnectionFactory::getInstance(),
@@ -69,7 +39,7 @@ final class BoltResultIntegrationTest extends TestCase
             new SslConfigurationFactory()
         );
         $connection = $factory->createConnection(
-            new ConnectionRequestData($uri, Authenticate::fromUrl($uri), 'a/b', new SslConfiguration(SslMode::FROM_URL(), false)),
+            new ConnectionRequestData($this->getUri(), Authenticate::fromUrl($this->getUri()), 'a/b', new SslConfiguration(SslMode::FROM_URL(), false)),
             SessionConfiguration::default()
         );
 

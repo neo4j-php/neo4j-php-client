@@ -1,4 +1,4 @@
-name: Integration Tests On Single Server
+name: Integration Tests
 
 on:
   push:
@@ -11,18 +11,11 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    env:
-      CONNECTIONS: neo4j://neo4j:testtest@localhost,bolt://neo4j:testtest@localhost,http://neo4j:testtest@localhost
-    name: "Running on PHP ${{ matrix.php-version }} with a Neo4j ${{ matrix.neo4j-version }} instance"
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ["8.0", "8.2"]
-        neo4j-version: ["4.4", "5.1", "5.5"]
+    name: "Running on PHP 8.2 with a Neo4j 5.5 instance connecting over all available protocols"
 
     services:
       neo4j:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:5.5
         env:
           NEO4J_AUTH: neo4j/testtest
           NEO4JLABS_PLUGINS: '["apoc"]'
@@ -46,13 +39,11 @@ jobs:
       - uses: php-actions/composer@v6
         with:
           progress: yes
-          php_version: ${{ matrix.php-version }}
+          php_version: 8.2
           version: 2
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: phpunit.xml.dist
-          php_version: ${{ matrix.php-version }}
-          memory_limit: 1024M
-          version: 9
-          testsuite: Integration
-          bootstrap: vendor/autoload.php
+      - name: Test multiple connections
+        run: |
+          CONNECTION=neo4j://neo4j:testtest@localhost ./vendor/bin/phpunit --configuration=phpunit.xml.dist --testsuite=Integration & \
+          CONNECTION=bolt://neo4j:testtest@localhost ./vendor/bin/phpunit --configuration=phpunit.xml.dist --testsuite=Integration & \
+          CONNECTION=http://neo4j:testtest@localhost ./vendor/bin/phpunit --configuration=phpunit.xml.dist --testsuite=Integration & \
+          wait

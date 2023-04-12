@@ -18,15 +18,11 @@ namespace Laudis\Neo4j\Tests\Integration;
 use function compact;
 
 use DateInterval;
-use Exception;
 
 use function json_encode;
 
-use JsonException;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
-use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -42,43 +38,22 @@ use Laudis\Neo4j\Types\Time;
 
 use function range;
 use function sprintf;
-use function str_contains;
 
 /**
- * @psalm-import-type OGMResults from OGMFormatter
- *
- * @extends EnvironmentAwareIntegrationTest<OGMResults>
- *
  * @psalm-suppress MixedArrayAccess
  */
 final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
 {
-    protected static function formatter(): FormatterInterface
+    public function testNull(): void
     {
-        return OGMFormatter::create();
-    }
-
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testNull(string $alias): void
-    {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN null as x'), $alias);
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN null as x'));
 
         self::assertNull($results->first()->get('x'));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     *
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     */
-    public function testList(string $alias): void
+    public function testList(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN range(5, 15) as list, range(16, 35) as list2'), $alias);
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN range(5, 15) as list, range(16, 35) as list2'));
 
         $list = $results->first()->get('list');
         $list2 = $results->first()->get('list2');
@@ -91,42 +66,31 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
         self::assertEquals(json_encode(range(16, 35), JSON_THROW_ON_ERROR), json_encode($list2, JSON_THROW_ON_ERROR));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     *
-     * @throws JsonException
-     */
-    public function testMap(string $alias): void
+    public function testMap(): void
     {
-        $map = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN {a: "b", c: "d"} as map')->first()->get('map'), $alias);
+        $map = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN {a: "b", c: "d"} as map')->first()->get('map'));
         self::assertInstanceOf(CypherMap::class, $map);
         self::assertEquals(['a' => 'b', 'c' => 'd'], $map->toArray());
         self::assertEquals(json_encode(['a' => 'b', 'c' => 'd'], JSON_THROW_ON_ERROR), json_encode($map, JSON_THROW_ON_ERROR));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testBoolean(string $alias): void
+    public function testBoolean(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN true as bool1, false as bool2'), $alias);
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN true as bool1, false as bool2'));
 
         self::assertEquals(1, $results->count());
         self::assertIsBool($results->first()->get('bool1'));
         self::assertIsBool($results->first()->get('bool2'));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testInteger(string $alias): void
+    public function testInteger(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<CYPHER
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<CYPHER
 UNWIND [{num: 1}, {num: 2}, {num: 3}] AS x
 RETURN x.num
 ORDER BY x.num ASC
 CYPHER
-        ), $alias);
+        ));
 
         self::assertEquals(3, $results->count());
         self::assertEquals(1, $results[0]['x.num']);
@@ -134,39 +98,28 @@ CYPHER
         self::assertEquals(3, $results[2]['x.num']);
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testFloat(string $alias): void
+    public function testFloat(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN 0.1 AS float'), $alias);
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN 0.1 AS float'));
 
         self::assertIsFloat($results->first()->get('float'));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testString(string $alias): void
+    public function testString(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN "abc" AS string'), $alias);
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN "abc" AS string'));
 
         self::assertIsString($results->first()->get('string'));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     *
-     * @throws JsonException
-     */
-    public function testDate(string $alias): void
+    public function testDate(): void
     {
-        $results = $this->getClient()->transaction(function (TransactionInterface $tsx) {
+        $results = $this->getSession()->transaction(function (TransactionInterface $tsx) {
             $query = $this->articlesQuery();
             $query .= 'RETURN article.datePublished as published_at';
 
             return $tsx->run($query);
-        }, $alias);
+        });
 
         self::assertEquals(3, $results->count());
 
@@ -191,12 +144,9 @@ CYPHER
             json_encode($results[2]['published_at'], JSON_THROW_ON_ERROR));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testTime(string $alias): void
+    public function testTime(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN time("12:00:00.000000000") AS time'), $alias);
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN time("12:00:00.000000000") AS time'));
 
         $time = $results->first()->get('time');
         self::assertInstanceOf(Time::class, $time);
@@ -204,19 +154,16 @@ CYPHER
         self::assertEquals(12.0 * 60 * 60 * 1_000_000_000, $time->nanoSeconds);
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testLocalTime(string $alias): void
+    public function testLocalTime(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN localtime("12") AS time'), $alias);
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN localtime("12") AS time'));
 
         /** @var LocalTime $time */
         $time = $results->first()->get('time');
         self::assertInstanceOf(LocalTime::class, $time);
         self::assertEquals(43_200_000_000_000, $time->getNanoseconds());
 
-        $results = $this->getClient()->run('RETURN localtime("09:23:42.000") AS time', [], $alias);
+        $results = $this->getSession()->run('RETURN localtime("09:23:42.000") AS time', []);
 
         /** @var LocalTime $time */
         $time = $results->first()->get('time');
@@ -225,19 +172,14 @@ CYPHER
         self::assertEquals(33_822_000_000_000, $time->nanoseconds);
     }
 
-    /**
-     * @dataProvider connectionAliases
-     *
-     * @throws JsonException
-     */
-    public function testDateTime(string $alias): void
+    public function testDateTime(): void
     {
-        $results = $this->getClient()->transaction(function (TransactionInterface $tsx) {
+        $results = $this->getSession()->transaction(function (TransactionInterface $tsx) {
             $query = $this->articlesQuery();
             $query .= 'RETURN article.created as created_at';
 
             return $tsx->run($query);
-        }, $alias);
+        });
 
         self::assertEquals(3, $results->count());
 
@@ -261,27 +203,18 @@ CYPHER
         }
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testLocalDateTime(string $alias): void
+    public function testLocalDateTime(): void
     {
-        $result = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN localdatetime() as local')->first()->get('local'), $alias);
+        $result = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN localdatetime() as local')->first()->get('local'));
 
         self::assertInstanceOf(LocalDateTime::class, $result);
         $date = $result->toDateTime();
         self::assertEquals($result->getSeconds(), $date->getTimestamp());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     *
-     * @throws JsonException
-     * @throws Exception
-     */
-    public function testDuration(string $alias): void
+    public function testDuration(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<CYPHER
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<CYPHER
 UNWIND [
   duration({days: 14, hours:16, minutes: 12}),
   duration({months: 5, days: 1.5}),
@@ -292,7 +225,7 @@ UNWIND [
 ] AS aDuration
 RETURN aDuration
 CYPHER
-        ), $alias);
+        ));
 
         self::assertEquals(6, $results->count());
         self::assertEquals(new Duration(0, 14, 58320, 0), $results[0]['aDuration']);
@@ -317,14 +250,9 @@ CYPHER
         self::assertEquals('{"months":5,"days":1,"seconds":43200,"nanoseconds":0}', json_encode($duration, JSON_THROW_ON_ERROR));
     }
 
-    /**
-     * @dataProvider connectionAliases
-     *
-     * @throws JsonException
-     */
-    public function testPoint(string $alias): void
+    public function testPoint(): void
     {
-        $result = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN point({x: 3, y: 4}) AS point'), $alias);
+        $result = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN point({x: 3, y: 4}) AS point'));
         self::assertInstanceOf(CypherList::class, $result);
         $row = $result->first();
         self::assertInstanceOf(CypherMap::class, $row);
@@ -350,15 +278,7 @@ CYPHER
         );
     }
 
-    /**
-     * @dataProvider connectionAliases
-     *
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     * @throws JsonException
-     */
-    public function testNode(string $alias): void
+    public function testNode(): void
     {
         $uuid = 'cc60fd69-a92b-47f3-9674-2f27f3437d66';
         $email = 'a@b.c';
@@ -366,10 +286,10 @@ CYPHER
 
         $arguments = compact('email', 'uuid', 'type');
 
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(
             'MERGE (u:User{email: $email})-[:LIKES]->(p:Food:Pizza {type: $type}) ON CREATE SET u.uuid=$uuid RETURN u, p',
             $arguments
-        ), $alias);
+        ));
 
         self::assertEquals(1, $results->count());
 
@@ -404,19 +324,13 @@ CYPHER
         );
     }
 
-    /**
-     * @dataProvider connectionAliases
-     *
-     * @throws JsonException
-     * @throws JsonException
-     */
-    public function testRelationship(string $alias): void
+    public function testRelationship(): void
     {
-        $result = $this->getClient()->transaction(static function (TransactionInterface $tsx) {
+        $result = $this->getSession()->transaction(static function (TransactionInterface $tsx) {
             $tsx->run('MATCH (n) DETACH DELETE n');
 
             return $tsx->run('MERGE (x:X {x: 1}) - [xy:XY {x: 1, y: 1}] -> (y:Y {y: 1}) RETURN xy')->first()->get('xy');
-        }, $alias);
+        });
 
         self::assertInstanceOf(Relationship::class, $result);
         self::assertEquals('XY', $result->getType());
@@ -435,30 +349,24 @@ CYPHER
         );
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testPath(string $alias): void
+    public function testPath(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
 MERGE (b:Node {x:$x}) - [:HasNode {attribute: $xy}] -> (:Node {y:$y}) - [:HasNode {attribute: $yz}] -> (:Node {z:$z})
 WITH b
 MATCH (x:Node) - [y:HasNode*2] -> (z:Node)
 RETURN x, y, z
-CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alias);
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
 
         self::assertEquals(1, $results->count());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testPath2(string $alias): void
+    public function testPath2(): void
     {
-        $results = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
+        $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
 CREATE path = ((a:Node {x:$x}) - [b:HasNode {attribute: $xy}] -> (c:Node {y:$y}) - [d:HasNode {attribute: $yz}] -> (e:Node {z:$z}))
 RETURN path
-CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alias);
+CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
 
         self::assertEquals(1, $results->count());
         $path = $results->first()->get('path');
@@ -474,12 +382,9 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']), $alia
         self::assertEquals(['attribute' => 'yz'], $path->getRelationships()->get(1)->getProperties()->toArray());
     }
 
-    /**
-     * @dataProvider connectionAliases
-     */
-    public function testPropertyTypes(string $alias): void
+    public function testPropertyTypes(): void
     {
-        $result = $this->getClient()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<CYPHER
+        $result = $this->getSession(['neo4j', 'bolt'])->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<CYPHER
 WITH
     point({x: 3, y: 4}) AS p,
     range(5, 15) AS l,
@@ -502,23 +407,19 @@ MERGE (a:AllInOne {
 
 RETURN a
 CYPHER
-        ), $alias);
+        ));
 
         $node = $result->first()->get('a');
 
-        if (str_contains($alias, 'http')) {
-            self::markTestSkipped('Http does not support nested properties');
-        } else {
-            self::assertInstanceOf(Node::class, $node);
-            self::assertInstanceOf(PointInterface::class, $node->thePoint);
-            self::assertInstanceOf(CypherList::class, $node->theList);
-            self::assertInstanceOf(Date::class, $node->theDate);
-            self::assertInstanceOf(DateTime::class, $node->theDateTime);
-            self::assertInstanceOf(Duration::class, $node->theDuration);
-            self::assertInstanceOf(LocalDateTime::class, $node->theLocalDateTime);
-            self::assertInstanceOf(LocalTime::class, $node->theLocalTime);
-            self::assertInstanceOf(Time::class, $node->theTime);
-        }
+        self::assertInstanceOf(Node::class, $node);
+        self::assertInstanceOf(PointInterface::class, $node->thePoint);
+        self::assertInstanceOf(CypherList::class, $node->theList);
+        self::assertInstanceOf(Date::class, $node->theDate);
+        self::assertInstanceOf(DateTime::class, $node->theDateTime);
+        self::assertInstanceOf(Duration::class, $node->theDuration);
+        self::assertInstanceOf(LocalDateTime::class, $node->theLocalDateTime);
+        self::assertInstanceOf(LocalTime::class, $node->theLocalTime);
+        self::assertInstanceOf(Time::class, $node->theTime);
     }
 
     private function articlesQuery(): string

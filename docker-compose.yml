@@ -17,7 +17,7 @@ x-definitions:
     NEO4J_initial_server_mode__constraint: 'PRIMARY'
   x-common:
     &common
-    image: neo4j:5.3
+    image: neo4j:5.5
     user: ${USER_ID}:${GROUP_ID}
     healthcheck:
       test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]

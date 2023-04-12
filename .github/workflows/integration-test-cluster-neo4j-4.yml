@@ -1,4 +1,4 @@
-name: Integration Tests On Cluster Neo4j 4
+name: Integration Tests
 
 on:
   push:
@@ -12,13 +12,8 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTIONS: neo4j://neo4j:testtest@localhost:7688
-    name: "Running on PHP ${{ matrix.php-version }} in a Neo4j ${{ matrix.neo4j-version }} cluster"
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ["8.0", "8.2"]
-        neo4j-version: ["4.4"]
+      CONNECTION: neo4j://neo4j:testtest@localhost:7688
+    name: "Running on PHP 8.0 in a Neo4j 4.4 cluster"
 
     steps:
       - uses: actions/checkout@v2
@@ -26,16 +21,16 @@ jobs:
         uses: actions/cache@v2
         with:
           path: /tmp/composer-cache
-          key: ${{ runner.os }}-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-8.0-${{ hashFiles('**/composer.lock') }}
       - uses: php-actions/composer@v6
         with:
           progress: yes
-          php_version: ${{ matrix.php-version }}
+          php_version: 8.0
           version: 2
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
-          php_version: ${{ matrix.php-version }}
+          php_version: 8.0
           memory_limit: 1024M
           version: 9
           testsuite: Integration

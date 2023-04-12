@@ -33,6 +33,7 @@ use function is_object;
 use function is_string;
 
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use stdClass;
@@ -80,13 +81,13 @@ final class ParameterHelper
      */
     public static function asParameter(
         mixed $value,
-        bool $boltDriver = false
+        ConnectionProtocol $protocol
     ): iterable|int|float|bool|string|stdClass|IStructure|null {
         return self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
-            self::convertBoltConvertibles($value, $boltDriver) ??
-            self::convertTemporalTypes($value, $boltDriver) ??
-            self::filledIterableToArray($value, $boltDriver) ??
+            self::convertBoltConvertibles($value, $protocol) ??
+            self::convertTemporalTypes($value, $protocol) ??
+            self::filledIterableToArray($value, $protocol) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
     }
@@ -148,10 +149,10 @@ final class ParameterHelper
         return null;
     }
 
-    private static function filledIterableToArray(mixed $value, bool $boltDriver): ?array
+    private static function filledIterableToArray(mixed $value, ConnectionProtocol $protocol): ?array
     {
         if (is_iterable($value)) {
-            return self::iterableToArray($value, $boltDriver);
+            return self::iterableToArray($value, $protocol);
         }
 
         return null;
@@ -162,7 +163,7 @@ final class ParameterHelper
      *
      * @return CypherMap<iterable|scalar|stdClass|null>
      */
-    public static function formatParameters(iterable $parameters, bool $boltDriver = false): CypherMap
+    public static function formatParameters(iterable $parameters, ConnectionProtocol $connection): CypherMap
     {
         /** @var array<string, iterable|scalar|stdClass|null> $tbr */
         $tbr = [];
@@ -175,13 +176,13 @@ final class ParameterHelper
                 $msg = 'The parameters must have an integer or string as key values, '.gettype($key).' received.';
                 throw new InvalidArgumentException($msg);
             }
-            $tbr[(string) $key] = self::asParameter($value, $boltDriver);
+            $tbr[(string) $key] = self::asParameter($value, $connection);
         }
 
         return new CypherMap($tbr);
     }
 
-    private static function iterableToArray(iterable $value, bool $boltDriver): array
+    private static function iterableToArray(iterable $value, ConnectionProtocol $protocol): array
     {
         $tbr = [];
         /**
@@ -190,7 +191,7 @@ final class ParameterHelper
          */
         foreach ($value as $key => $val) {
             if (is_int($key) || is_string($key)) {
-                $tbr[$key] = self::asParameter($val, $boltDriver);
+                $tbr[$key] = self::asParameter($val, $protocol);
             } else {
                 $msg = 'Iterable parameters must have an integer or string as key values, '.gettype($key).' received.';
                 throw new InvalidArgumentException($msg);
@@ -200,19 +201,27 @@ final class ParameterHelper
         return $tbr;
     }
 
-    private static function convertBoltConvertibles(mixed $value, bool $boltDriver): ?IStructure
+    private static function convertBoltConvertibles(mixed $value, ConnectionProtocol $protocol): ?IStructure
     {
-        if ($boltDriver && $value instanceof BoltConvertibleInterface) {
+        if ($protocol->isBolt() && $value instanceof BoltConvertibleInterface) {
             return $value->convertToBolt();
         }
 
         return null;
     }
 
-    private static function convertTemporalTypes(mixed $value, bool $boltDriver): ?IStructure
+    private static function convertTemporalTypes(mixed $value, ConnectionProtocol $protocol): ?IStructure
     {
-        if ($boltDriver) {
+        if ($protocol->isBolt()) {
             if ($value instanceof DateTimeInterface) {
+                if ($protocol->compare(ConnectionProtocol::BOLT_V44()) > 0) {
+                    return new \Bolt\protocol\v5\structures\DateTimeZoneId(
+                        $value->getTimestamp(),
+                        ((int) $value->format('u')) * 1000,
+                        $value->getTimezone()->getName()
+                    );
+                }
+
                 return new DateTimeZoneId(
                     $value->getTimestamp(),
                     ((int) $value->format('u')) * 1000,

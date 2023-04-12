@@ -13,60 +13,71 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Dotenv\Dotenv;
-use Laudis\Neo4j\Basic\Driver;
-use Laudis\Neo4j\Basic\Session;
-use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
+use Laudis\Neo4j\Types\ArrayList;
+use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
-use PHPUnit\Framework\TestCase;
+use Laudis\Neo4j\Types\Path;
 
-final class EdgeCasesTest extends TestCase
+final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
 {
-    private ?Session $session = null;
-
-    protected function setUp(): void
+    public static function setUpBeforeClass(): void
     {
-        parent::setUp();
-        if (($uri = $this->getBoltUri()) !== null) {
-            $this->session = Driver::create($uri)->createSession();
+        parent::setUpBeforeClass();
+        self::$session->run(MoviesFixture::CQL);
+    }
+
+    public function testCanHandleMapLiterals(): void
+    {
+        $results = self::$session->run('MATCH (n:Person)-[r:ACTED_IN]->(m) RETURN n, {movie: m, roles: r.roles} AS actInfo LIMIT 5');
+
+        foreach ($results as $result) {
+            $actorInfo = $result->get('actInfo');
+
+            $this->assertInstanceOf(CypherMap::class, $actorInfo);
+            $this->assertTrue($actorInfo->hasKey('roles'));
+            $this->assertTrue($actorInfo->hasKey('movie'));
         }
     }
 
-    private function getBoltUri(): ?string
+    public function testComplex(): void
     {
-        /** @var string|mixed $connections */
-        $connections = $_ENV['CONNECTIONS'] ?? false;
-        if (!is_string($connections)) {
-            Dotenv::createImmutable(__DIR__.'/../../')->load();
-            /** @var string|mixed $connections */
-            $connections = $_ENV['CONNECTIONS'] ?? false;
-            if (!is_string($connections)) {
-                $connections = 'bolt://neo4j:test@neo4j,neo4j://neo4j:test@core1,http://neo4j:test@neo4j';
-            }
-        }
-        foreach (explode(',', $connections) as $uri) {
-            $psrUri = Uri::create($uri);
-            if ($psrUri->getScheme() === 'neo4j') {
-                return $psrUri->__toString();
-            }
-        }
+        $results = $this->getSession()->run(<<<'CYPHER'
+        MATCH (n:Person)-[r:ACTED_IN]->(m), p = () - [] -> () - [] -> ()
+        SET m.point = point({latitude:12, longitude: 56, height: 1000})
+        RETURN  n,
+                p,
+                {movie: m, roles: r.roles} AS actInfo,
+                m,
+                point({latitude:13, longitude: 56, height: 1000}) as point
+        LIMIT 1
+        CYPHER);
 
-        return null;
+        foreach ($results as $result) {
+            $actorInfo = $result->get('actInfo');
+
+            self::assertInstanceOf(CypherMap::class, $actorInfo);
+            self::assertTrue($actorInfo->hasKey('roles'));
+            self::assertTrue($actorInfo->hasKey('movie'));
+
+            self::assertInstanceOf(ArrayList::class, $actorInfo->get('roles'));
+            self::assertInstanceOf(Node::class, $actorInfo->get('movie'));
+            // this can be a cyphermap in HTTP protocol
+            $point = $actorInfo->getAsNode('movie')->getProperty('point');
+            self::assertTrue($point instanceof PointInterface || $point instanceof CypherMap);
+            self::assertIsObject($actorInfo->getAsNode('movie')->getProperty('point'));
+            self::assertInstanceOf(Path::class, $result->get('p'));
+            self::assertInstanceOf(Node::class, $result->get('m'));
+            self::assertInstanceOf(PointInterface::class, $result->get('point'));
+        }
     }
 
     public function testRunALotOfStatements(): void
     {
-        if ($this->session === null) {
-            self::markTestSkipped('No neo4j uri provided');
-        }
-
-        $this->session->run('MATCH (n) DETACH DELETE n');
-        $this->session->run(MoviesFixture::CQL);
-
-        $persons = $this->session->run('MATCH (p:Person) RETURN p');
-        $movies = $this->session->run('MATCH (m:Movie) RETURN m');
+        $persons = $this->getSession()->run('MATCH (p:Person) RETURN p');
+        $movies = $this->getSession()->run('MATCH (m:Movie) RETURN m');
 
         $personIds = [];
         foreach ($persons->toArray() as $record) {
@@ -96,20 +107,13 @@ final class EdgeCasesTest extends TestCase
             }
         }
 
-        $this->session->runStatements($statements);
+        $this->getSession()->runStatements($statements);
         self::assertCount(4978, $statements);
     }
 
     public function testGettingKeysFromArraylist(): void
     {
-        if ($this->session === null) {
-            self::markTestSkipped('No neo4j uri provided');
-        }
-
-        $this->session->run('MATCH (n) DETACH DELETE n');
-        $this->session->run(MoviesFixture::CQL);
-
-        $result = $this->session->run('MATCH (n:Person)-[r:ACTED_IN]->(m)
+        $result = $this->getSession()->run('MATCH (n:Person)-[r:ACTED_IN]->(m)
         RETURN n, {roles: r.roles, movie: m} AS actInfo LIMIT 1');
 
         $resultKeys = [];

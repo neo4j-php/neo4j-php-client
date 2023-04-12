@@ -52,7 +52,6 @@
         "psalm/plugin-phpunit": "^0.15.1",
         "monolog/monolog": "^2.2",
         "psr/log": "^1.1",
-        "vlucas/phpdotenv": "^5.0",
         "symfony/uid": "^5.0",
         "symfony/var-dumper": "^5.0",
         "cache/integration-tests": "dev-master",

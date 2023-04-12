@@ -20,17 +20,17 @@ class CacheTest extends SimpleCacheTest
 {
     /** @psalm-suppress MissingPropertyType */
     protected $skippedTests = [
-        'testGetInvalidKeys' => 'Handled by dynamic typing',
-        'testGetMultipleInvalidKeys' => 'Handled by dynamic typing',
-        'testGetMultipleNoIterable' => 'Handled by dynamic typing',
-        'testSetInvalidKeys' => 'Handled by dynamic typing',
-        'testSetMultipleNoIterable' => 'Handled by dynamic typing',
-        'testHasInvalidKeys' => 'Handled by dynamic typing',
-        'testDeleteInvalidKeys' => 'Handled by dynamic typing',
-        'testDeleteMultipleInvalidKeys' => 'Handled by dynamic typing',
-        'testDeleteMultipleNoIterable' => 'Handled by dynamic typing',
-        'testSetInvalidTtl' => 'Handled by dynamic typing',
-        'testSetMultipleInvalidTtl' => 'Handled by dynamic typing',
+        'testGetInvalidKeys' => 'Handled by strict dynamic typing',
+        'testGetMultipleInvalidKeys' => 'Handled by strict dynamic typing',
+        'testGetMultipleNoIterable' => 'Handled by strict dynamic typing',
+        'testSetInvalidKeys' => 'Handled by strict dynamic typing',
+        'testSetMultipleNoIterable' => 'Handled by strict dynamic typing',
+        'testHasInvalidKeys' => 'Handled by strict dynamic typing',
+        'testDeleteInvalidKeys' => 'Handled by strict dynamic typing',
+        'testDeleteMultipleInvalidKeys' => 'Handled by strict dynamic typing',
+        'testDeleteMultipleNoIterable' => 'Handled by strict dynamic typing',
+        'testSetInvalidTtl' => 'Handled by strict dynamic typing',
+        'testSetMultipleInvalidTtl' => 'Handled by strict dynamic typing',
     ];
 
     public function createSimpleCache(): Cache

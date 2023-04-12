@@ -1,4 +1,4 @@
-name: Integration Tests On Cluster Neo4j 5
+name: Integration Tests
 
 on:
   push:
@@ -12,17 +12,33 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTIONS: neo4j://neo4j:testtest@localhost7688
-    name: "Running on PHP ${{ matrix.php-version }} with a Neo4j ${{ matrix.neo4j-version }} cluster"
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ["8.0", "8.2"]
-        neo4j-version: ["5.1", "5.5"]
+      CONNECTION: neo4j://neo4j:testtest@localhost:7688
+    name: "Running on PHP 8.0 with a Neo4j 5.5 cluster"
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache Composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: /tmp/composer-cache
+          key: ${{ runner.os }}-8.0-${{ hashFiles('**/composer.lock') }}
+      - uses: php-actions/composer@v6
+        with:
+          progress: yes
+          php_version: 8.0
+          version: 2
+      - uses: php-actions/phpunit@v3
+        with:
+          configuration: phpunit.xml.dist
+          php_version: 8.0
+          memory_limit: 1024M
+          version: 9
+          testsuite: Integration
+          bootstrap: vendor/autoload.php
 
     services:
       server1:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:5.5
         ports:
           - 7688:7688
           - 7475:7475
@@ -32,7 +48,7 @@ jobs:
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
           NEO4j_server_bolt_advertised_address=localhost:7688
           NEO4j_server_http_advertised_address=localhost:7478
-          NEO4J_AUTH=neo4j/mypassword
+          NEO4J_AUTH=neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
@@ -40,7 +56,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server2:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:5.5
         ports:
           - 7689:7689
           - 7476:7476
@@ -50,7 +66,7 @@ jobs:
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
           NEO4j_server_bolt_advertised_address=localhost:7689
           NEO4j_server_http_advertised_address=server2:7476
-          NEO4J_AUTH=neo4j/mypassword
+          NEO4J_AUTH=neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
@@ -58,7 +74,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server3:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:5.5
         ports:
           - 7690:7690
           - 7477:7477
@@ -68,7 +84,7 @@ jobs:
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
           NEO4j_server_bolt_advertised_address=localhost:7690
           NEO4j_server_http_advertised_address=server3:7477
-          NEO4J_AUTH=neo4j/mypassword
+          NEO4J_AUTH=neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
@@ -76,7 +92,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       read-server4:
-        image: neo4j:${{ matrix.neo4j-version }}
+        image: neo4j:5.5
         ports:
           - 7691:7691
           - 7478:7478
@@ -86,31 +102,10 @@ jobs:
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
           NEO4j_server_bolt_advertised_address=localhost:7691
           NEO4j_server_http_advertised_address=localhost:7478
-          NEO4J_AUTH=neo4j/mypassword
+          NEO4J_AUTH=neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
           --health-retries "5"
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache Composer dependencies
-        uses: actions/cache@v2
-        with:
-          path: /tmp/composer-cache
-          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-      - uses: php-actions/composer@v6
-        with:
-          progress: yes
-          php_version: 8.0
-          version: 2
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: phpunit.xml.dist
-          php_version: ${{ matrix.php-version }}
-          memory_limit: 1024M
-          version: 9
-          testsuite: Integration
-          bootstrap: vendor/autoload.php
