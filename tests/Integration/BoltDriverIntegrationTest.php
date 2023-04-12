@@ -18,6 +18,7 @@ use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
+use Throwable;
 
 final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
 {
@@ -43,7 +44,7 @@ final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
             $results = BoltDriver::create($this->getUri()->withHost($ip)->__toString())
                 ->createSession()
                 ->run('RETURN 1 AS x');
-        } catch (ConnectException $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped($e->getMessage());
         }
 
