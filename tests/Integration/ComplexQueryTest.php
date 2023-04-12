@@ -338,4 +338,9 @@ CYPHER
             self::assertEquals('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
         }
     }
+
+    public function testReturnNoResults(): void
+    {
+        self::assertEquals([], $this->getSession()->run('UNWIND [] AS x RETURN x')->toRecursiveArray());
+    }
 }
