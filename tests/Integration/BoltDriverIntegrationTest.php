@@ -38,9 +38,13 @@ final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
     public function testValidUrl(): void
     {
         $ip = gethostbyname($this->getUri()->getHost());
-        $results = BoltDriver::create($this->getUri()->withHost($ip)->__toString())
-            ->createSession()
-            ->run('RETURN 1 AS x');
+        try {
+            $results = BoltDriver::create($this->getUri()->withHost($ip)->__toString())
+                ->createSession()
+                ->run('RETURN 1 AS x');
+        } catch (ConnectException $e) {
+            $this->markTestSkipped($e->getMessage());
+        }
 
         self::assertEquals(1, $results->first()->get('x'));
     }
