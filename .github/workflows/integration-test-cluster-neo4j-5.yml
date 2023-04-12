@@ -15,6 +15,27 @@ jobs:
       CONNECTION: neo4j://neo4j:testtest@localhost:7688
     name: "Running on PHP 8.0 with a Neo4j 5.5 cluster"
 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache Composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: /tmp/composer-cache
+          key: ${{ runner.os }}-8.0-${{ hashFiles('**/composer.lock') }}
+      - uses: php-actions/composer@v6
+        with:
+          progress: yes
+          php_version: 8.0
+          version: 2
+      - uses: php-actions/phpunit@v3
+        with:
+          configuration: phpunit.xml.dist
+          php_version: 8.0
+          memory_limit: 1024M
+          version: 9
+          testsuite: Integration
+          bootstrap: vendor/autoload.php
+
     services:
       server1:
         image: neo4j:5.5
@@ -27,7 +48,7 @@ jobs:
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
           NEO4j_server_bolt_advertised_address=localhost:7688
           NEO4j_server_http_advertised_address=localhost:7478
-          NEO4J_AUTH=neo4j/mypassword
+          NEO4J_AUTH=neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
@@ -45,7 +66,7 @@ jobs:
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
           NEO4j_server_bolt_advertised_address=localhost:7689
           NEO4j_server_http_advertised_address=server2:7476
-          NEO4J_AUTH=neo4j/mypassword
+          NEO4J_AUTH=neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
@@ -63,7 +84,7 @@ jobs:
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
           NEO4j_server_bolt_advertised_address=localhost:7690
           NEO4j_server_http_advertised_address=server3:7477
-          NEO4J_AUTH=neo4j/mypassword
+          NEO4J_AUTH=neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
@@ -81,31 +102,10 @@ jobs:
           NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
           NEO4j_server_bolt_advertised_address=localhost:7691
           NEO4j_server_http_advertised_address=localhost:7478
-          NEO4J_AUTH=neo4j/mypassword
+          NEO4J_AUTH=neo4j/testtest
         options: >-
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
           --health-retries "5"
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache Composer dependencies
-        uses: actions/cache@v2
-        with:
-          path: /tmp/composer-cache
-          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-      - uses: php-actions/composer@v6
-        with:
-          progress: yes
-          php_version: 8.0
-          version: 2
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: phpunit.xml.dist
-          php_version: 8.0
-          memory_limit: 1024M
-          version: 9
-          testsuite: Integration
-          bootstrap: vendor/autoload.php
