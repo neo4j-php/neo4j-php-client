@@ -3,9 +3,7 @@
 [![GitHub](https://img.shields.io/github/license/neo4j-php/neo4j-php-client)](https://github.com/laudis-technologies/neo4j-php-client/blob/main/LICENSE)
 [![Code Climate maintainability](https://img.shields.io/codeclimate/maintainability/laudis-technologies/neo4j-php-client)](https://codeclimate.com/github/laudis-technologies/neo4j-php-client/maintainability)
 [![Packagist PHP Version Support (custom server)](https://img.shields.io/packagist/php-v/laudis/neo4j-php-client)](https://packagist.org/packages/laudis/neo4j-php-client)
-
 [![Latest Stable Version](https://poser.pugx.org/laudis/neo4j-php-client/v)](https://packagist.org/packages/laudis/neo4j-php-client)
-[![Commits Since latest](https://img.shields.io/github/commits-since/neo4j-php/neo4j-php-client/latest)](https://github.com/neo4j-php/neo4j-php-client/commits/main)
 
 [![Packagist Downloads](https://img.shields.io/packagist/dt/laudis/neo4j-php-client)](https://packagist.org/packages/laudis/neo4j-php-client/stats)
 [![Packagist Downloads](https://img.shields.io/packagist/dm/laudis/neo4j-php-client)](https://packagist.org/packages/laudis/neo4j-php-client/stats)
