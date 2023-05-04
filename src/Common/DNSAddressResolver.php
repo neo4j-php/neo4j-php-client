@@ -38,10 +38,14 @@ class DNSAddressResolver implements AddressResolverInterface
         yield $host;
 
         try {
-            /** @var list<array{ip?: string|null}> $records */
+            /** @var list<array{ip?: string|null}>|false $records */
             $records = dns_get_record($host, DNS_A | DNS_AAAA);
         } catch (Throwable) {
             $records = []; // Failed DNS queries should not halt execution
+        }
+
+        if ($records === false) {
+            $records = [];
         }
 
         if (count($records) === 0) {
@@ -59,10 +63,14 @@ class DNSAddressResolver implements AddressResolverInterface
     private function tryReverseLookup(string $host): iterable
     {
         try {
-            /** @var list<array{target?: string|null}> $records */
+            /** @var list<array{target?: string|null}>|false $records */
             $records = dns_get_record($host.'.in-addr.arpa');
         } catch (Throwable) {
             $records = []; // Failed DNS queries should not halt execution
+        }
+
+        if ($records === false) {
+            $records = [];
         }
 
         if (count($records) !== 0) {
