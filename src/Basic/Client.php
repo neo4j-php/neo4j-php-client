@@ -77,4 +77,19 @@ final class Client implements ClientInterface
     {
         return $this->client->verifyConnectivity($driver);
     }
+
+    public function bindTransaction(?string $alias = null, ?TransactionConfiguration $config = null): void
+    {
+        $this->client->bindTransaction($alias, $config);
+    }
+
+    public function commitBoundTransaction(?string $alias = null, int $depth = 1): void
+    {
+        $this->client->commitBoundTransaction($alias, $depth);
+    }
+
+    public function rollbackBoundTransaction(?string $alias = null, int $depth = 1): void
+    {
+        $this->client->rollbackBoundTransaction($alias, $depth);
+    }
 }

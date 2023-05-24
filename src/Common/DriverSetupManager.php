@@ -137,6 +137,11 @@ class DriverSetupManager implements Countable
         return $alias ?? $this->default ?? array_key_first($this->driverSetups) ?? 'default';
     }
 
+    public function getDefaultAlias(): string
+    {
+        return $this->decideAlias(null);
+    }
+
     /**
      * @psalm-mutation-free
      */
