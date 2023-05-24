@@ -109,4 +109,19 @@ interface ClientInterface extends TransactionInterface
      * Checks to see if the driver can make a valid connection to the configured neo4j server.
      */
     public function verifyConnectivity(?string $driver = null): bool;
+
+    /**
+     * Binds a transaction to the client, so it runs all subsequent queries on the latest transaction instead of a session or the previously bound transaction.
+     */
+    public function bindTransaction(?string $alias = null, ?TransactionConfiguration $config = null): void;
+
+    /**
+     * Release a transaction from the client by committing it, so it runs all subsequent queries on a session or the previously bound transaction instead of the latest transaction. You can control the amount of transactions to be released by the depth parameter, with -1 being all transactions.
+     */
+    public function commitBoundTransaction(?string $alias = null, int $depth = 1): void;
+
+    /**
+     * Release a transaction from the client by rolling it back, so it runs all subsequent queries on a session or the previously bound transaction instead of the latest transaction. You can control the amount of transactions to be released by the depth parameter, with -1 being all transactions.
+     */
+    public function rollbackBoundTransaction(?string $alias = null, int $depth = 1): void;
 }

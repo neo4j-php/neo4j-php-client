@@ -34,6 +34,11 @@ use Laudis\Neo4j\Types\CypherList;
 final class Client implements ClientInterface
 {
     /**
+     * @var array<string, list<UnmanagedTransactionInterface<ResultFormat>>>
+     */
+    private array $boundTransactions = [];
+
+    /**
      * @psalm-mutation-free
      *
      * @param DriverSetupManager<ResultFormat> $driverSetups
@@ -106,6 +111,42 @@ final class Client implements ClientInterface
     public function verifyConnectivity(?string $driver = null): bool
     {
         return $this->driverSetups->verifyConnectivity($this->defaultSessionConfiguration, $driver);
+    }
+
+    public function bindTransaction(?string $alias = null, ?TransactionConfiguration $config = null): void
+    {
+        $alias ??= $this->driverSetups->getDefaultAlias();
+
+        $this->boundTransactions[$alias] ??= [];
+        $this->boundTransactions[$alias][] = $this->beginTransaction(null, $alias, $config);
+    }
+
+    public function rollbackBoundTransaction(?string $alias = null, int $depth = 1): void
+    {
+        $this->popTransactions(static fn (UnmanagedTransactionInterface $tsx) => $tsx->rollback(), $alias, $depth);
+    }
+
+    /**
+     * @param callable(UnmanagedTransactionInterface<ResultFormat>): void $handler
+     */
+    private function popTransactions(callable $handler, ?string $alias = null, int $depth = 1): void
+    {
+        $alias ??= $this->driverSetups->getDefaultAlias();
+
+        if (!array_key_exists($alias, $this->boundTransactions)) {
+            return;
+        }
+
+        while (count($this->boundTransactions[$alias]) !== 0 && $depth !== 0) {
+            $tsx = array_pop($this->boundTransactions[$alias]);
+            $handler($tsx);
+            --$depth;
+        }
+    }
+
+    public function commitBoundTransaction(?string $alias = null, int $depth = 1): void
+    {
+        $this->popTransactions(static fn (UnmanagedTransactionInterface $tsx) => $tsx->commit(), $alias, $depth);
     }
 
     private function getTsxConfig(?TransactionConfiguration $config): TransactionConfiguration
