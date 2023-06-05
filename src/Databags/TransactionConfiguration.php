@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use function is_callable;
-
 /**
  * Configuration object for transactions.
  *
@@ -26,21 +24,21 @@ final class TransactionConfiguration
     public const DEFAULT_METADATA = '[]';
 
     /**
-     * @param pure-callable():(float|null)|float|null                                                             $timeout  timeout in seconds
-     * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
+     * @param float|null                               $timeout  timeout in seconds
+     * @param iterable<string, scalar|array|null>|null $metaData
      */
     public function __construct(
-        private $timeout = null,
-        private $metaData = null
+        private float|null $timeout = null,
+        private iterable|null $metaData = null
     ) {}
 
     /**
      * @pure
      *
-     * @param pure-callable():(float|null)|float|null                                                             $timeout  timeout in seconds
-     * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
+     * @param float|null                               $timeout  timeout in seconds
+     * @param iterable<string, scalar|array|null>|null $metaData
      */
-    public static function create($timeout = null, $metaData = null): self
+    public static function create(float|null $timeout = null, iterable|null $metaData = null): self
     {
         return new self($timeout, $metaData);
     }
@@ -60,12 +58,7 @@ final class TransactionConfiguration
      */
     public function getMetaData(): ?iterable
     {
-        $tbr = $this->metaData;
-        if (is_callable($tbr)) {
-            $tbr = $tbr();
-        }
-
-        return $tbr;
+        return $this->metaData;
     }
 
     /**
@@ -73,20 +66,15 @@ final class TransactionConfiguration
      */
     public function getTimeout(): ?float
     {
-        $tbr = $this->timeout;
-        if (is_callable($tbr)) {
-            $tbr = $tbr();
-        }
-
-        return $tbr;
+        return $this->timeout;
     }
 
     /**
      * Creates a new transaction object with the provided timeout.
      *
-     * @param pure-callable():(float|null)|float|null $timeout timeout in seconds
+     * @param float|null $timeout timeout in seconds
      */
-    public function withTimeout($timeout): self
+    public function withTimeout(float|null $timeout): self
     {
         return new self($timeout, $this->metaData);
     }
@@ -94,9 +82,9 @@ final class TransactionConfiguration
     /**
      * Creates a new transaction object with the provided metadata.
      *
-     * @param pure-callable():(iterable<string, scalar|array|null>|null)|iterable<string, scalar|array|null>|null $metaData
+     * @param iterable<string, scalar|array|null>|null $metaData
      */
-    public function withMetaData($metaData): self
+    public function withMetaData(iterable|null $metaData): self
     {
         return new self($this->timeout, $metaData);
     }

@@ -51,13 +51,13 @@ final class DriverConfiguration
      * @psalm-external-mutation-free
      */
     public function __construct(
-        private ?string $userAgent,
-        $httpPsrBindings,
+        private string|null $userAgent,
+        callable|HttpPsrBindings|null $httpPsrBindings,
         private SslConfiguration $sslConfig,
-        private ?int $maxPoolSize,
-        $cache,
-        private ?float $acquireConnectionTimeout,
-        $semaphore
+        private int|null $maxPoolSize,
+        CacheInterface|callable|null $cache,
+        private float|null $acquireConnectionTimeout,
+        callable|SemaphoreFactoryInterface|null $semaphore
     ) {
         $this->httpPsrBindings = $httpPsrBindings;
         $this->cache = $cache;
@@ -65,18 +65,18 @@ final class DriverConfiguration
     }
 
     /**
-     * @param pure-callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
+     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      *
      * @pure
      */
-    public static function create(?string $userAgent, $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize, CacheInterface $cache, float $acquireConnectionTimeout, SemaphoreFactoryInterface $semaphore): self
+    public static function create(?string $userAgent, callable|HttpPsrBindings|null $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize, CacheInterface $cache, float $acquireConnectionTimeout, SemaphoreFactoryInterface $semaphore): self
     {
         return new self($userAgent, $httpPsrBindings, $sslConfig, $maxPoolSize, $cache, $acquireConnectionTimeout, $semaphore);
     }
 
     /**
      * Creates a default configuration with a user agent based on the driver version
-     * and HTTP PSR implementation auto detected from the environment.
+     * and HTTP PSR implementation auto-detected from the environment.
      *
      * @pure
      */

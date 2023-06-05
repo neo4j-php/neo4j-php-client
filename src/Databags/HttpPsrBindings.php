@@ -43,11 +43,11 @@ final class HttpPsrBindings
     /**
      * @psalm-mutation-free
      *
-     * @param ClientInterface|callable():ClientInterface|null                 $client
-     * @param StreamFactoryInterface|callable():StreamFactoryInterface|null   $streamFactory
-     * @param RequestFactoryInterface|callable():RequestFactoryInterface|null $requestFactory
+     * @param callable():ClientInterface|ClientInterface|null                 $client
+     * @param callable():StreamFactoryInterface|StreamFactoryInterface|null   $streamFactory
+     * @param callable():RequestFactoryInterface|RequestFactoryInterface|null $requestFactory
      */
-    public function __construct($client = null, $streamFactory = null, $requestFactory = null)
+    public function __construct(callable|ClientInterface|null $client = null, callable|StreamFactoryInterface $streamFactory = null, callable|RequestFactoryInterface $requestFactory = null)
     {
         $this->client = $client ?? static fn (): ClientInterface => Psr18ClientDiscovery::find();
         $this->streamFactory = $streamFactory ?? static fn (): StreamFactoryInterface => Psr17FactoryDiscovery::findStreamFactory();
@@ -57,11 +57,11 @@ final class HttpPsrBindings
     /**
      * @pure
      *
-     * @param ClientInterface|callable():ClientInterface|null                 $client
-     * @param StreamFactoryInterface|callable():StreamFactoryInterface|null   $streamFactory
-     * @param RequestFactoryInterface|callable():RequestFactoryInterface|null $requestFactory
+     * @param callable():ClientInterface|ClientInterface|null                 $client
+     * @param callable():StreamFactoryInterface|StreamFactoryInterface|null   $streamFactory
+     * @param callable():RequestFactoryInterface|RequestFactoryInterface|null $requestFactory
      */
-    public static function create($client = null, $streamFactory = null, $requestFactory = null): self
+    public static function create(callable|ClientInterface $client = null, callable|StreamFactoryInterface $streamFactory = null, callable|RequestFactoryInterface $requestFactory = null): self
     {
         return new self($client, $streamFactory, $requestFactory);
     }

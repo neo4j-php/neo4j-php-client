@@ -23,7 +23,7 @@ final class Bookmark
     /**
      * @param list<string> $bookmarks
      */
-    public function __construct(?iterable $bookmarks = null)
+    public function __construct(?array $bookmarks = null)
     {
         $this->values = $bookmarks ?? [];
     }

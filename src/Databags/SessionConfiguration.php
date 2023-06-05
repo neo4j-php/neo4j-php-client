@@ -13,9 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use function call_user_func;
-use function is_callable;
-
 use Laudis\Neo4j\Enum\AccessMode;
 
 use function parse_str;
@@ -35,26 +32,21 @@ final class SessionConfiguration
     public const DEFAULT_BOOKMARKS = '[]';
 
     /**
-     * @param pure-callable():(int|null)|int|null                           $fetchSize
-     * @param pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark>|null $bookmarks
-     * @param pure-callable():((AccessMode | null))|AccessMode|null $accessMode
+     * @param list<Bookmark>|null $bookmarks
      */
     public function __construct(
         private ?string $database = null,
-        private $fetchSize = null,
-        private $accessMode = null,
-        private $bookmarks = null
+        private int|null $fetchSize = null,
+        private AccessMode|null $accessMode = null,
+        private array|null $bookmarks = null
     ) {}
 
     /**
      * @pure
      *
-     * @param string|null $database
-     * @param pure-callable():(int|null)|int|null                      $fetchSize
-     * @param pure-callable():(AccessMode|null)|AccessMode|null        $defaultAccessMode
-     * @param pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark> $bookmarks
+     * @param list<Bookmark>|null $bookmarks
      */
-    public static function create($database = null, $fetchSize = null, $defaultAccessMode = null, $bookmarks = null): self
+    public static function create(string|null $database = null, int|null $fetchSize = null, AccessMode|null $defaultAccessMode = null, array|null $bookmarks = null): self
     {
         return new self($database, $fetchSize, $defaultAccessMode, $bookmarks);
     }
@@ -69,30 +61,24 @@ final class SessionConfiguration
 
     /**
      * Creates a new session with the provided database.
-     *
-     * @param string|null $database
      */
-    public function withDatabase($database): self
+    public function withDatabase(?string $database): self
     {
         return new self($database, $this->fetchSize, $this->accessMode, $this->bookmarks);
     }
 
     /**
      * Creates a new session with the provided fetch size.
-     *
-     * @param pure-callable():(int|null)|int|null $size
      */
-    public function withFetchSize($size): self
+    public function withFetchSize(?int $size): self
     {
         return new self($this->database, $size, $this->accessMode, $this->bookmarks);
     }
 
     /**
      * Creates a new session with the provided access mode.
-     *
-     * @param pure-callable():(AccessMode|null)|AccessMode|null $defaultAccessMode
      */
-    public function withAccessMode($defaultAccessMode): self
+    public function withAccessMode(?AccessMode $defaultAccessMode): self
     {
         return new self($this->database, $this->fetchSize, $defaultAccessMode, $this->bookmarks);
     }
@@ -100,9 +86,9 @@ final class SessionConfiguration
     /**
      * Creates a new session with the provided bookmarks.
      *
-     * @param pure-callable():(iterable<Bookmark>|null)|iterable<Bookmark>|null $bookmarks
+     * @param list<Bookmark>|null $bookmarks
      */
-    public function withBookmarks($bookmarks): self
+    public function withBookmarks(?array $bookmarks): self
     {
         return new self($this->database, $this->fetchSize, $this->accessMode, $bookmarks);
     }
@@ -112,9 +98,7 @@ final class SessionConfiguration
      */
     public function getFetchSize(): int
     {
-        $fetchSize = is_callable($this->fetchSize) ? call_user_func($this->fetchSize) : $this->fetchSize;
-
-        return $fetchSize ?? self::DEFAULT_FETCH_SIZE;
+        return $this->fetchSize ?? self::DEFAULT_FETCH_SIZE;
     }
 
     /**
@@ -124,10 +108,7 @@ final class SessionConfiguration
      */
     public function getAccessMode(): AccessMode
     {
-        $accessMode = is_callable($this->accessMode) ? call_user_func($this->accessMode) : $this->accessMode;
-
-        /** @psalm-suppress ImpureMethodCall */
-        return $accessMode ?? AccessMode::WRITE();
+        return $this->accessMode ?? AccessMode::WRITE();
     }
 
     /**
@@ -141,13 +122,11 @@ final class SessionConfiguration
     /**
      * Returns the initial bookmarks.
      *
-     * @return iterable<Bookmark>
+     * @return list<Bookmark>
      */
-    public function getBookmarks(): iterable
+    public function getBookmarks(): array
     {
-        $bookmarks = is_callable($this->bookmarks) ? call_user_func($this->bookmarks) : $this->bookmarks;
-
-        return $bookmarks ?? [];
+        return $this->bookmarks ?? [];
     }
 
     /**
