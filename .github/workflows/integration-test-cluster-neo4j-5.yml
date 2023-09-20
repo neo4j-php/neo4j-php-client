@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONNECTION: neo4j://neo4j:testtest@localhost:7688
-    name: "Running on PHP 8.0 with a Neo4j 5-enterprise cluster"
+    name: "Running on PHP 8.0 with a Neo4j 5.10-enterprise cluster"
 
     steps:
       - uses: actions/checkout@v2
@@ -38,72 +38,84 @@ jobs:
 
     services:
       server1:
-        image: neo4j:5-enterprise
+        image: neo4j:5.10-enterprise
         ports:
-          - 7688:7688
-          - 7475:7475
+          - 7687:7687
+          - 7473:7473
+          - 7474:7474
         env:
           NEO4J_initial_server_mode__constraint: PRIMARY
           NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
-          NEO4j_server_bolt_advertised_address: localhost:7688
-          NEO4j_server_http_advertised_address: localhost:7478
+          NEO4j_server_bolt_advertised_address: localhost:7687
+          NEO4j_server_http_advertised_address: localhost:7474
+          NEO4J_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/testtest
         options: >-
+          --hostname server1
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
           --health-retries "5"
       server2:
-        image: neo4j:5-enterprise
+        image: neo4j:5.10-enterprise
         ports:
-          - 7689:7689
-          - 7476:7476
+          - 8687:7687
+          - 8473:7473
+          - 8474:7474
         env:
           NEO4J_initial_server_mode__constraint: PRIMARY
           NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
-          NEO4j_server_bolt_advertised_address: localhost:7689
-          NEO4j_server_http_advertised_address: server2:7476
+          NEO4j_server_bolt_advertised_address: localhost:8687
+          NEO4j_server_http_advertised_address: localhost:8474
+          NEO4J_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/testtest
         options: >-
+          --hostname server2
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
           --health-retries "5"
       server3:
-        image: neo4j:5-enterprise
+        image: neo4j:5.10-enterprise
         ports:
-          - 7690:7690
-          - 7477:7477
+          - 9474:7474
+          - 9473:7473
+          - 9687:7687
         env:
           NEO4J_initial_server_mode__constraint: PRIMARY
           NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
-          NEO4j_server_bolt_advertised_address: localhost:7690
-          NEO4j_server_http_advertised_address: server3:7477
+          NEO4j_server_bolt_advertised_address: localhost:9687
+          NEO4j_server_http_advertised_address: localhost:9474
+          NEO4J_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/testtest
         options: >-
+          --hostname server3
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
           --health-retries "5"
       read-server4:
-        image: neo4j:5-enterprise
+        image: neo4j:5.10-enterprise
         ports:
-          - 7691:7691
-          - 7478:7478
+          - 10474:7474
+          - 10473:7473
+          - 10687:7687
         env:
-          NEO4J_initial_server_mode__constraint: PRIMARY
+          NEO4J_initial_server_mode__constraint: SECONDARY
           NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
           NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
-          NEO4j_server_bolt_advertised_address: localhost:7691
-          NEO4j_server_http_advertised_address: localhost:7478
+          NEO4j_server_bolt_advertised_address: localhost:10687
+          NEO4j_server_http_advertised_address: localhost:10474
+          NEO4J_PLUGINS: '["apoc"]'
           NEO4J_AUTH: neo4j/testtest
         options: >-
+          --hostname read-server4
           --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"

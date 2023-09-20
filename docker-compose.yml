@@ -8,17 +8,15 @@ x-definitions:
   x-shared-cluster-env:
     &common-cluster-env
     <<: *common-env
-    NEO4J_EDITION: 'enterprise'
     NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
-    EXTENDED_CONF: 'yes'
+    NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
   x-shared-core-env:
     &common-core-env
     <<: *common-cluster-env
     NEO4J_initial_server_mode__constraint: 'PRIMARY'
   x-common:
     &common
-    image: neo4j:5.5
-    user: ${USER_ID}:${GROUP_ID}
+    image: neo4j:5-enterprise
     healthcheck:
       test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
     env_file:
@@ -29,7 +27,6 @@ x-definitions:
       context: .
       dockerfile: Dockerfile
     image: neo4j-php-client:latest
-    user: ${USER_ID}:${GROUP_ID}
     volumes:
       - .:/opt/project
   x-common-cluster:
@@ -38,8 +35,6 @@ x-definitions:
     image: neo4j:5-enterprise
     networks:
       neo4j-cluster:
-        aliases:
-          - neo4j-network
 
 networks:
   neo4j:
@@ -57,95 +52,63 @@ services:
       - .env
   neo4j:
     <<: *common
+    image: neo4j:5.10-community
     hostname: neo4j
     networks:
       - neo4j
-      - neo4j-cluster
     ports:
-      - "7687:7687"
-      - "7474:7474"
+      - "11687:7687"
+      - "11474:7474"
     environment:
       <<: *common-env
-      NEO4J_EDITION: community
-    volumes:
-      - ./neo4j/neo4j.conf:/conf/neo4j.conf
-      - ./neo4j/data/neo4j:/var/lib/neo4j/data
-      - ./neo4j/logs/neo4j:/var/lib/neo4j/logs
-      - ./neo4j/conf/neo4j:/var/lib/neo4j/conf
-      - ./neo4j/import/neo4j:/var/lib/neo4j/import
-      - ./neo4j/metrics/neo4j:/var/lib/neo4j/metrics
-      - ./neo4j/licenses/neo4j:/var/lib/neo4j/licenses
-      - ./neo4j/ssl/neo4j:/var/lib/neo4j/ssl
+      NEO4j_server_bolt_advertised_address: localhost:11687
+      NEO4j_server_http_advertised_address: localhost:11474
 
   server1:
     <<: *common-cluster
     hostname: server1
     ports:
-      - "7688:7687"
-      - "7475:7474"
-    volumes:
-      - ./neo4j/neo4j-cluster.conf:/conf/neo4j.conf
-      - ./neo4j/data/server1:/var/lib/neo4j/data
-      - ./neo4j/logs/server1:/var/lib/neo4j/logs
-      - ./neo4j/conf/server1:/var/lib/neo4j/conf
-      - ./neo4j/import/server1:/var/lib/neo4j/import
-      - ./neo4j/metrics/server1:/var/lib/neo4j/metrics
-      - ./neo4j/licenses/server1:/var/lib/neo4j/licenses
-      - ./neo4j/ssl/server1:/var/lib/neo4j/ssl
+      - "7687:7687"
+      - "7473:7473"
+      - "7474:7474"
     environment:
       <<: *common-core-env
+      NEO4j_server_bolt_advertised_address: localhost:7687
+      NEO4j_server_http_advertised_address: localhost:7474
 
   server2:
     <<: *common-cluster
     hostname: server2
     ports:
-      - "7689:7687"
-      - "7476:7474"
+      - "8687:7687"
+      - "8473:7473"
+      - "8474:7474"
     environment:
       <<: *common-core-env
-    volumes:
-      - ./neo4j/neo4j-cluster.conf:/conf/neo4j.conf
-      - ./neo4j/data/server2:/var/lib/neo4j/data
-      - ./neo4j/logs/server2:/var/lib/neo4j/logs
-      - ./neo4j/conf/server2:/var/lib/neo4j/conf
-      - ./neo4j/import/server2:/var/lib/neo4j/import
-      - ./neo4j/metrics/server2:/var/lib/neo4j/metrics
-      - ./neo4j/licenses/server2:/var/lib/neo4j/licenses
-      - ./neo4j/ssl/server2:/var/lib/neo4j/ssl
+      NEO4j_server_bolt_advertised_address: localhost:8687
+      NEO4j_server_http_advertised_address: localhost:8474
 
   server3:
     <<: *common-cluster
     hostname: server3
     ports:
-      - "7690:7687"
-      - "7477:7474"
+      - "9474:7474"
+      - "9473:7473"
+      - "9687:7687"
     environment:
       <<: *common-core-env
-    volumes:
-      - ./neo4j/neo4j-cluster.conf:/conf/neo4j.conf
-      - ./neo4j/data/server3:/var/lib/neo4j/data
-      - ./neo4j/logs/server3:/var/lib/neo4j/logs
-      - ./neo4j/conf/server3:/var/lib/neo4j/conf
-      - ./neo4j/import/server3:/var/lib/neo4j/import
-      - ./neo4j/metrics/server3:/var/lib/neo4j/metrics
-      - ./neo4j/licenses/server3:/var/lib/neo4j/licenses
-      - ./neo4j/ssl/server3:/var/lib/neo4j/ssl
+      NEO4j_server_bolt_advertised_address: localhost:9687
+      NEO4j_server_http_advertised_address: localhost:9474
 
   server4:
     <<: *common-cluster
     hostname: server4
     ports:
-      - "7691:7687"
-      - "7478:7474"
+      - "10474:7474"
+      - "10473:7473"
+      - "10687:7687"
     environment:
       <<: *common-cluster-env
       NEO4J_initial_server_mode__constraint: 'SECONDARY'
-    volumes:
-      - ./neo4j/neo4j-cluster.conf:/conf/neo4j.conf
-      - ./neo4j/data/server4:/var/lib/neo4j/data
-      - ./neo4j/logs/server4:/var/lib/neo4j/logs
-      - ./neo4j/conf/server4:/var/lib/neo4j/conf
-      - ./neo4j/import/server4:/var/lib/neo4j/import
-      - ./neo4j/metrics/server4:/var/lib/neo4j/metrics
-      - ./neo4j/licenses/server4:/var/lib/neo4j/licenses
-      - ./neo4j/ssl/server4:/var/lib/neo4j/ssl
+      NEO4j_server_bolt_advertised_address: localhost:10687
+      NEO4j_server_http_advertised_address: localhost:10474
