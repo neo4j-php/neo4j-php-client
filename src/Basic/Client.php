@@ -58,6 +58,11 @@ final class Client implements ClientInterface
         return $this->client->getDriver($alias);
     }
 
+    public function hasDriver(string $alias): bool
+    {
+        return $this->client->hasDriver($alias);
+    }
+
     public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
         return $this->client->writeTransaction($tsxHandler, $alias, $config);

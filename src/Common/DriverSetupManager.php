@@ -77,6 +77,11 @@ class DriverSetupManager implements Countable
         return $tbr;
     }
 
+    public function hasDriver(string $alias): bool
+    {
+        return array_key_exists($alias, $this->driverSetups);
+    }
+
     /**
      * @return DriverInterface<ResultFormat>
      */
