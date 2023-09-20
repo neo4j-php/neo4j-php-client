@@ -21,12 +21,6 @@
 
 An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
 
-### Follow along on the livestream
-
-We are currently running a biweekly neo4j + laravel livestream were we are building the RealWorld example app.
-
-The [github repostiory can be found here](https://github.com/neo4j-examples/php-laravel-neo4j-realworld-example), there are also [recordings](https://www.youtube.com/playlist?list=PL9Hl4pk2FsvViI9wmdDpRS7tZ8V6j4uJs). The live stream usually starts at 5 PM Brussels time on Wednesday, but you can [follow Florent on twitter](https://twitter.com/fbiville) for live updates in case the schedule changes.
-
 ## Start your driving experience in three easy steps
 
 ### Step 1: install via composer
