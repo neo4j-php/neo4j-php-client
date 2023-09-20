@@ -153,6 +153,11 @@ final class Client implements ClientInterface
         return $this->driverSetups->verifyConnectivity($this->defaultSessionConfiguration, $driver);
     }
 
+    public function hasDriver(string $alias): bool
+    {
+        return $this->driverSetups->hasDriver($alias);
+    }
+
     public function bindTransaction(?string $alias = null, ?TransactionConfiguration $config = null): void
     {
         $alias ??= $this->driverSetups->getDefaultAlias();

@@ -77,6 +77,11 @@ interface ClientInterface extends TransactionInterface
     public function getDriver(?string $alias): DriverInterface;
 
     /**
+     * Checks to see if the Client has the driver registered with the provided alias.
+     */
+    public function hasDriver(string $alias): bool;
+
+    /**
      * @template U
      *
      * @param callable(TransactionInterface<ResultFormat>):U $tsxHandler
