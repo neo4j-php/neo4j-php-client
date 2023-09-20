@@ -75,9 +75,46 @@ echo $result; // echos 'z'
 ## Decide how to send your Cypher queries
 
 You can control the driver using three different approaches:
-- *Transaction functions* (recommended and portable)
 - *Auto committed queries* (easiest and most intuitive)
+- *Transaction functions* (most portable)
 - *Unmanaged transactions* (for the highest degree of control)
+
+
+### Auto committed queries
+
+Auto committed queries are the most straightforward and most intuitive but have many drawbacks when running complex business logic or within a high availability environment.
+
+#### Run a simple cypher query
+
+```php
+$client->run(
+    'MERGE (user {email: $email})', //The query is a required parameter
+    ['email' => 'abc@hotmail.com'],  //Requests can be optionally added
+    'backup' //The default connection can be overridden
+);
+```
+
+#### Run a statement object:
+
+```php
+use Laudis\Neo4j\Databags\Statement;
+
+$statement = new Statement('MERGE (user {email: $email})', ['email' => 'abc@hotmail.com']);
+$client->runStatement($statement, 'default');
+```
+
+#### Running multiple queries at once
+
+The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database calls, especially when using the HTTP protocol.
+
+```php
+use Laudis\Neo4j\Databags\Statement;
+
+$results = $client->runStatements([
+    Statement::create('MATCH (x) RETURN x LIMIT 100'),
+    Statement::create('MERGE (x:Person {email: $email})', ['email' => 'abc@hotmail.com'])
+]);
+```
 
 ### Transaction functions
 
@@ -119,42 +156,6 @@ $client->writeTransaction(static function (TransactionInterface $tsx) use ($id) 
     $tsx->run('MERGE (x {y: $id}:X) return x', ['id' => $id]);
 });
 $externalCounter->incrementNodesCreated();
-```
-
-### Auto committed queries
-
-Auto committed queries are the most straightforward and most intuitive but have many drawbacks when running complex business logic or within a high availability environment.
-
-#### Run a simple cypher query
-
-```php
-$client->run(
-    'MERGE (user {email: $email})', //The query is a required parameter
-    ['email' => 'abc@hotmail.com'],  //Requests can be optionally added
-    'backup' //The default connection can be overridden
-);
-```
-
-#### Run a statement object:
-
-```php
-use Laudis\Neo4j\Databags\Statement;
-
-$statement = new Statement('MERGE (user {email: $email})', ['email' => 'abc@hotmail.com']);
-$client->runStatement($statement, 'default');
-```
-
-#### Running multiple queries at once
-
-The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database calls, especially when using the HTTP protocol.
-
-```php
-use Laudis\Neo4j\Databags\Statement;
-
-$results = $client->runStatements([
-    Statement::create('MATCH (x) RETURN x LIMIT 100'),
-    Statement::create('MERGE (x:Person {email: $email})', ['email' => 'abc@hotmail.com'])
-]);
 ```
 
 ### Unmanaged transactions
