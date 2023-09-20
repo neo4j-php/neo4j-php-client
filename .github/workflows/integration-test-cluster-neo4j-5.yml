@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONNECTION: neo4j://neo4j:testtest@localhost:7688
-    name: "Running on PHP 8.0 with a Neo4j 5.6.0-enterprise cluster"
+    name: "Running on PHP 8.0 with a Neo4j 5-enterprise cluster"
 
     steps:
       - uses: actions/checkout@v2
@@ -38,7 +38,7 @@ jobs:
 
     services:
       server1:
-        image: neo4j:5.6.0-enterprise
+        image: neo4j:5-enterprise
         ports:
           - 7688:7688
           - 7475:7475
@@ -56,7 +56,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server2:
-        image: neo4j:5.6.0-enterprise
+        image: neo4j:5-enterprise
         ports:
           - 7689:7689
           - 7476:7476
@@ -74,7 +74,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server3:
-        image: neo4j:5.6.0-enterprise
+        image: neo4j:5-enterprise
         ports:
           - 7690:7690
           - 7477:7477
@@ -92,7 +92,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       read-server4:
-        image: neo4j:5.6.0-enterprise
+        image: neo4j:5-enterprise
         ports:
           - 7691:7691
           - 7478:7478

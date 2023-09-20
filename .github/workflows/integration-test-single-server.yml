@@ -15,7 +15,7 @@ jobs:
 
     services:
       neo4j:
-        image: neo4j:5.5
+        image: neo4j:5
         env:
           NEO4J_AUTH: neo4j/testtest
           NEO4JLABS_PLUGINS: '["apoc"]'
