@@ -19,7 +19,18 @@
 
 ## See the driver in action
 
-An example project exists on the [neo4j github](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
+ - [An implementation of the class movie database](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
+ - [An complete implementation of the realworld example](https://github.com/neo4j-examples/php-laravel-neo4j-realworld-example). It uses Laravel to implement the [real world example](https://github.com/gothinkster/realworld) project, _the mother of all demo apps_.
+ - [The friends api](https://github.com/neo4j-examples/friends-php-client) for the world's most corny example project leveraging the power of Neo4j.
+
+For some more detailed write-ups you can refer to these blogposts:
+
+ - [How to build a JSON RESTful API with Neo4j, PHP and Open API](https://medium.com/neo4j/how-to-build-a-json-restful-api-with-neo4j-php-and-openapi-e45bf0a8956)
+ - [Building a Web App with Neo4j, AuraDB and PHP](https://medium.com/neo4j/building-a-web-app-with-neo4j-auradb-and-php-990deca0d213)
+ - [Connect to Neo4j with PHP](https://medium.com/neo4j/connect-to-neo4j-with-php-e10e24afedff)
+ - [Enterprise level PHP and Neo4j](https://medium.com/neo4j/enterprise-level-php-and-neo4j-e467a789e6b4)
+
+Or watch any of these [videos](https://www.youtube.com/watch?v=qwz5XVtbfSY&list=PL9Hl4pk2FsvViI9wmdDpRS7tZ8V6j4uJs).
 
 ## Start your driving experience in three easy steps
 
