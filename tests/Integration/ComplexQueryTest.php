@@ -253,7 +253,7 @@ CYPHER
                 ->first()
                 ->get('x');
         } catch (Neo4jException $e) {
-            self::assertContains('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
+            self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
         }
     }
 
@@ -265,7 +265,7 @@ CYPHER
         try {
             unset($result);
         } catch (Neo4jException $e) {
-            $this->assertContains('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
+            $this->assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
         }
     }
 
@@ -275,7 +275,7 @@ CYPHER
         try {
             $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
         } catch (Neo4jException $e) {
-            self::assertContains('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
+            self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
             $tsx = $this->getSession()->beginTransaction([], TransactionConfiguration::default()->withTimeout(20));
             self::assertEquals(1, $tsx->run('RETURN 1 AS one')->first()->get('one'));
         }
@@ -328,7 +328,7 @@ CYPHER
             $tsx = $this->getSession(['bolt', 'neo4j'])->beginTransaction([], TransactionConfiguration::default()->withTimeout(1));
             $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
         } catch (Neo4jException $e) {
-            self::assertContains('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
+            self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
         }
     }
 
