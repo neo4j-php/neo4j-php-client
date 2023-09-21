@@ -11,11 +11,11 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: "Running on PHP 8.2 with a Neo4j 5.5 instance connecting over all available protocols"
+    name: "Running on PHP 8.2 with a Neo4j 5 instance connecting over all available protocols"
 
     services:
       neo4j:
-        image: neo4j:5.5
+        image: neo4j:5
         env:
           NEO4J_AUTH: neo4j/testtest
           NEO4JLABS_PLUGINS: '["apoc"]'

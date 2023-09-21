@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Basic;
 
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
@@ -53,9 +52,19 @@ final class Client implements ClientInterface
         return new UnmanagedTransaction($this->client->beginTransaction($statements, $alias, $config));
     }
 
-    public function getDriver(?string $alias): DriverInterface
+    public function getDriver(?string $alias): Driver
     {
-        return $this->client->getDriver($alias);
+        $driver = $this->client->getDriver($alias);
+        if ($driver instanceof Driver) {
+            return $driver;
+        }
+
+        return new Driver($driver);
+    }
+
+    public function hasDriver(string $alias): bool
+    {
+        return $this->client->hasDriver($alias);
     }
 
     public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
