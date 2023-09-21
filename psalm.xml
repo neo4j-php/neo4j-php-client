@@ -8,6 +8,7 @@
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     hoistConstants="true"
+    errorBaseline="--set-baseline=psalm-baseline.xml"
 >
     <projectFiles>
         <directory name="src"/>
@@ -46,9 +47,6 @@
             </errorLevel>
         </MissingConstructor>
     </issueHandlers>
-    <stubs>
-        <file name="./vendor/vimeo/psalm/stubs/ext-ds.phpstub"/>
-    </stubs>
     <plugins>
         <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
     </plugins>
