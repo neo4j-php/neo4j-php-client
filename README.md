@@ -375,9 +375,29 @@ A **client** manages **drivers** and routes the queries to the correct drivers b
 
 The **driver** object is the thread-safe backbone that gives access to Neo4j. It owns a connection pool and can spawn **sessions** for carrying out work.
 
+```php
+use Laudis\Neo4j\Basic\Driver;
+use Laudis\Neo4j\Databags\DriverConfiguration;
+
+$driver = Driver::create(
+    uri: 'neo4j://user:mypassword@Localhost:7687',
+    configuration: DriverConfiguration::create()->withUserAgent('MyApp/1.0.0')
+);
+```
+
 ### Session
 
 **Sessions** are lightweight containers for causally chained sequences of **transactions**. They borrow **connections** from the connection pool as required and chain transactions using **bookmarks**.
+
+```php
+use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Enum\AccessMode;
+
+$session = $driver->createSession(SessionConfiguration::create()
+    ->withDatabase('my-database')
+    ->withAccessMode(AccessMode::READ())
+);
+```
 
 ### Transaction
 
