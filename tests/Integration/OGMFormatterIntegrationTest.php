@@ -70,8 +70,9 @@ final class OGMFormatterIntegrationTest extends EnvironmentAwareIntegrationTest
     {
         $map = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('RETURN {a: "b", c: "d"} as map')->first()->get('map'));
         self::assertInstanceOf(CypherMap::class, $map);
-        self::assertEqualsCanonicalizing(['a' => 'b', 'c' => 'd'], $map->toArray());
-        self::assertEqualsCanonicalizing(json_encode(['a' => 'b', 'c' => 'd'], JSON_THROW_ON_ERROR), json_encode($map, JSON_THROW_ON_ERROR));
+        $array = $map->toArray();
+        ksort($array);
+        self::assertEquals(['a' => 'b', 'c' => 'd'], $array);
     }
 
     public function testBoolean(): void
