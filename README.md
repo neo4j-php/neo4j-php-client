@@ -265,13 +265,12 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => Pa
 $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []]); // will return an empty CypherList
 ```
 
-### Neo4j Version Support
+### Version compatibility matrix
 
-| **Version** | **Tested** |
-|-------------|------------|
-| 3.0 +       | Yes        |
-| 4.0 +       | Yes        |
-| 5.0 +       | Yes        |
+| **Driver Version** | **PHP Version** | **Neo4j Version** |
+|--------------------|-----------------|-------------------|
+| ^2.8               | 7.4, ^8.0       | ^3.5, ^4.0        |
+| ^3.0               | ^8.0            | ^4.0, ^5.0        |
 
 ### Neo4j Feature Support
 
