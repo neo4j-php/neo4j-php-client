@@ -44,7 +44,7 @@ final class BoltFactoryTest extends TestCase
         $protocolFactory = $this->createMock(ProtocolFactory::class);
         $protocolFactory->method('createProtocol')
             ->willReturnCallback(static fn (IConnection $connection) => [
-                new V5(new Packer(), new Unpacker(), $connection, new ServerState()),
+                new V5(1, $connection, new ServerState()),
                 ['server' => 'abc', 'connection_id' => 'i'],
                 ]);
 
