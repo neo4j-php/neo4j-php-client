@@ -13,22 +13,25 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use function base64_encode;
-
 use Bolt\helpers\Auth;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
 use Exception;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\UriInterface;
+use Stringable;
 
 /**
  * Authenticates connections using a basic username and password.
+ *
+ * @internal
  */
-final class BasicAuth implements AuthenticateInterface
+final class BasicAuth implements AuthenticateInterface, Stringable
 {
     /**
      * @psalm-external-mutation-free
@@ -41,23 +44,21 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @psalm-mutation-free
      */
-    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
+    public function authenticateHttp(RequestInterface $request, string $userAgent): RequestInterface
     {
-        $combo = base64_encode($this->username.':'.$this->password);
-
         /**
          * @psalm-suppress ImpureMethodCall Request is a pure object:
          *
          * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
          */
-        return $request->withHeader('Authorization', 'Basic '.$combo)
+        return $request->withHeader('Authorization', sprintf('Basic %s:%s', $this->username, $this->password))
             ->withHeader('User-Agent', $userAgent);
     }
 
     /**
      * @throws Exception
      */
-    public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
+    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
     {
         $response = $bolt->hello(Auth::basic($this->username, $this->password, $userAgent));
         if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
@@ -68,8 +69,8 @@ final class BasicAuth implements AuthenticateInterface
         return $response->getContent();
     }
 
-    public function toString(UriInterface $uri): string
+    public function __toString(): string
     {
-        return sprintf('Basic %s:%s@%s:%s', $this->username, '######', $uri->getHost(), $uri->getPort() ?? '');
+        return sprintf('Basic %s:%s', $this->username, '######');
     }
 }

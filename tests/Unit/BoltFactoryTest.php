@@ -14,8 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use Bolt\connection\IConnection;
-use Bolt\packstream\v1\Packer;
-use Bolt\packstream\v1\Unpacker;
 use Bolt\protocol\ServerState;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Authentication\Authenticate;

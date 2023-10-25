@@ -17,22 +17,25 @@ use Bolt\helpers\Auth;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\UriInterface;
-
-use function sprintf;
+use Stringable;
 
 /**
  * Doesn't authenticate connections.
+ *
+ * @internal
  */
-final class NoAuth implements AuthenticateInterface
+final class NoAuth implements AuthenticateInterface, Stringable
 {
     /**
      * @psalm-mutation-free
      */
-    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
+    public function authenticateHttp(RequestInterface $request, string $userAgent): RequestInterface
     {
         /**
          * @psalm-suppress ImpureMethodCall Request is a pure object:
@@ -42,7 +45,7 @@ final class NoAuth implements AuthenticateInterface
         return $request->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
+    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
     {
         $response = $bolt->hello(Auth::none($userAgent));
         if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
@@ -53,8 +56,8 @@ final class NoAuth implements AuthenticateInterface
         return $response->getContent();
     }
 
-    public function toString(UriInterface $uri): string
+    public function __toString(): string
     {
-        return sprintf('No Auth %s:%s', $uri->getHost(), $uri->getPort() ?? '');
+        return 'No Auth';
     }
 }

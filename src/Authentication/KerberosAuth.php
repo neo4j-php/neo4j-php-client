@@ -17,17 +17,24 @@ use Bolt\helpers\Auth;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\UriInterface;
+use RuntimeException;
 
 use function sprintf;
 
+use Stringable;
+
 /**
  * Authenticates connections using a kerberos token.
+ *
+ * @internal
  */
-final class KerberosAuth implements AuthenticateInterface
+final class KerberosAuth implements AuthenticateInterface, Stringable
 {
     /**
      * @psalm-external-mutation-free
@@ -39,18 +46,12 @@ final class KerberosAuth implements AuthenticateInterface
     /**
      * @psalm-mutation-free
      */
-    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
+    public function authenticateHttp(RequestInterface $request, string $userAgent): RequestInterface
     {
-        /**
-         * @psalm-suppress ImpureMethodCall Request is a pure object:
-         *
-         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
-         */
-        return $request->withHeader('Authorization', 'Kerberos '.$this->token)
-            ->withHeader('User-Agent', $userAgent);
+        throw new RuntimeException('Cannot authenticate http requests with Kerberos, use bolt instead.');
     }
 
-    public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
+    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
     {
         $response = $bolt->hello(Auth::kerberos($this->token, $userAgent));
         if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
@@ -61,8 +62,8 @@ final class KerberosAuth implements AuthenticateInterface
         return $response->getContent();
     }
 
-    public function toString(UriInterface $uri): string
+    public function __toString(): string
     {
-        return sprintf('Kerberos %s@%s:%s', $this->token, $uri->getHost(), $uri->getPort() ?? '');
+        return sprintf('Kerberos %s', $this->token);
     }
 }
