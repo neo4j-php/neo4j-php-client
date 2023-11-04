@@ -120,6 +120,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $table = $this->cache->get($key, null);
         $triedAddresses = [];
 
+        $latestError = null;
+
         if ($table == null) {
             $addresses = $this->resolver->getAddresses((string) $this->data->getUri());
             foreach ($addresses as $address) {
@@ -129,8 +131,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
                     $table = $this->routingTable($connection, $config);
-                } catch (Throwable) {
+                } catch (Throwable $e) {
                     // todo - once client side logging is implemented it must be conveyed here.
+                    $latestError = $e;
                     continue; // We continue if something is wrong with the current server
                 }
 
@@ -142,7 +145,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
 
         if ($table === null) {
-            throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $this->data->getUri()->getHost(), implode('", "', $triedAddresses)));
+            throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $this->data->getUri()->getHost(), implode('", "', $triedAddresses)), previous: $latestError);
         }
 
         $server = $this->getNextServer($table, $config->getAccessMode()) ?? $this->data->getUri();
