@@ -17,6 +17,9 @@ use Bolt\protocol\Response;
 use Bolt\protocol\ServerState;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -31,9 +34,11 @@ use Psr\Http\Message\UriInterface;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
+ *
+ * @internal
  */
 class BoltConnection implements ConnectionInterface
 {
@@ -45,16 +50,11 @@ class BoltConnection implements ConnectionInterface
      *       edge cases where the result set will be pulled or discarded when it is not strictly necessary, and we
      *       should introduce a "manual" mode later down the road to allow the end users to optimise the result
      *       consumption themselves.
-     *       A great moment to do this would be when neo4j 5 is released as it will presumably allow us to do more
-     *       stuff with PULL and DISCARD messages.
      *
      * @var list<WeakReference<CypherList>>
      */
     private array $subscribedResults = [];
 
-    /**
-     * @return array{0: V4_4|V5, 1: Connection}
-     */
     public function getImplementation(): array
     {
         return [$this->boltProtocol, $this->connection];
@@ -64,7 +64,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5 $boltProtocol,
+        private V4_4|V5|V5_1|V5_2|V5_3 $boltProtocol,
         private Connection $connection,
         private AuthenticateInterface $auth,
         private string $userAgent,
@@ -135,7 +135,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return in_array($this->protocol()->serverState->get(), ['DISCONNECTED', 'DEFUNCT'], true);
+        return in_array($this->boltProtocol->serverState->get(), ['DISCONNECTED', 'DEFUNCT'], true);
     }
 
     public function setTimeout(float $timeout): void
@@ -163,7 +163,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
-        $response = $this->protocol()->reset()
+        $response = $this->boltProtocol->reset()
             ->getResponse();
 
         $this->assertNoFailure($response);
@@ -181,7 +181,7 @@ class BoltConnection implements ConnectionInterface
         $this->consumeResults();
         $extra = $this->buildRunExtra($database, $timeout, $holder);
 
-        $response = $this->protocol()
+        $response = $this->boltProtocol
             ->begin($extra)
             ->getResponse();
 
@@ -196,7 +196,7 @@ class BoltConnection implements ConnectionInterface
     public function discard(?int $qid): void
     {
         $extra = $this->buildResultExtra(null, $qid);
-        $bolt = $this->protocol();
+        $bolt = $this->boltProtocol;
 
         $response = $bolt->discard($extra)
             ->getResponse();
@@ -214,7 +214,7 @@ class BoltConnection implements ConnectionInterface
     public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder): array
     {
         $extra = $this->buildRunExtra($database, $timeout, $holder);
-        $response = $this->protocol()->run($text, $parameters, $extra)
+        $response = $this->boltProtocol->run($text, $parameters, $extra)
             ->getResponse();
 
         $this->assertNoFailure($response);
@@ -231,7 +231,7 @@ class BoltConnection implements ConnectionInterface
     public function commit(): void
     {
         $this->consumeResults();
-        $response = $this->protocol()
+        $response = $this->boltProtocol
             ->commit()
             ->getResponse();
 
@@ -246,16 +246,11 @@ class BoltConnection implements ConnectionInterface
     public function rollback(): void
     {
         $this->consumeResults();
-        $response = $this->protocol()
+        $response = $this->boltProtocol
             ->rollback()
             ->getResponse();
 
         $this->assertNoFailure($response);
-    }
-
-    public function protocol(): V4_4|V5
-    {
-        return $this->boltProtocol;
     }
 
     /**
@@ -270,7 +265,8 @@ class BoltConnection implements ConnectionInterface
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
         $tbr = [];
-        foreach ($this->protocol()->pull($extra)->getResponses() as $response) {
+        /** @var Response $response */
+        foreach ($this->boltProtocol->pull($extra)->getResponses() as $response) {
             $this->assertNoFailure($response);
 
             $tbr[] = $response->getContent();
@@ -282,12 +278,12 @@ class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if (!$this->protocol()->serverState->is(ServerState::FAILED) && $this->isOpen()) {
-            if ($this->protocol()->serverState->is(ServerState::STREAMING, ServerState::TX_STREAMING)) {
+        if (!$this->boltProtocol->serverState->is(ServerState::FAILED) && $this->isOpen()) {
+            if ($this->boltProtocol->serverState->is(ServerState::STREAMING, ServerState::TX_STREAMING)) {
                 $this->consumeResults();
             }
 
-            $this->protocol()->goodbye();
+            $this->boltProtocol->goodbye();
 
             unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
         }
@@ -326,7 +322,7 @@ class BoltConnection implements ConnectionInterface
 
     public function getServerState(): string
     {
-        return $this->protocol()->serverState->get();
+        return $this->boltProtocol->serverState->get();
     }
 
     public function subscribeResult(CypherList $result): void

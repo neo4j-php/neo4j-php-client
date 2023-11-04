@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use function extension_loaded;
-
+use Laudis\Neo4j\Common\UriConfiguration;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
+use function extension_loaded;
 
 /**
  * Singleton connection factory based on the installed extensions.

@@ -14,14 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\CypherMap;
 
 /**
  * An unmanaged transaction needs to be committed or rolled back manually.
- *
- * @template T
- *
- * @extends TransactionInterface<T>
  *
  * @see https://neo4j.com/docs/cypher-manual/current/introduction/transactions/
  */
@@ -32,9 +30,9 @@ interface UnmanagedTransactionInterface extends TransactionInterface
      *
      * @param iterable<Statement> $statements
      *
-     * @return CypherList<T>
+     * @return ArrayList<CypherMap>
      */
-    public function commit(iterable $statements = []): CypherList;
+    public function commit(iterable $statements = []): ArrayList;
 
     /**
      * Rolls back the transaction.

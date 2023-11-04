@@ -15,75 +15,62 @@ namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\ArrayList;
 
 /**
  * A lightweight container for causally chained sequences of transactions to carry out work.
  *
- * @template ResultFormat
- *
- * @extends TransactionInterface<ResultFormat>
+ * @extends TransactionInterface
  */
 interface SessionInterface extends TransactionInterface
 {
     /**
      * @param iterable<Statement> $statements
-     *
-     * @throws Neo4jException
-     *
-     * @return CypherList<ResultFormat>
      */
-    public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList;
+    public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): ArrayList;
 
-    /**
-     * @return ResultFormat
-     */
-    public function runStatement(Statement $statement, ?TransactionConfiguration $config = null);
+    public function runStatement(Statement $statement, ?TransactionConfiguration $config = null): SummarizedResult;
 
-    /**
-     * @param iterable<string, mixed> $parameters
-     *
-     * @return ResultFormat
-     */
-    public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null);
+    public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null): SummarizedResult;
 
     /**
      * @psalm-param iterable<Statement>|null $statements
      *
      * @throws Neo4jException
      *
-     * @return UnmanagedTransactionInterface<ResultFormat>
+     * @return UnmanagedTransactionInterface
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
 
     /**
      * @template HandlerResult
      *
-     * @param callable(TransactionInterface<ResultFormat>):HandlerResult $tsxHandler
+     * @param callable(TransactionInterface):HandlerResult $tsxHandler
      *
      * @return HandlerResult
      */
-    public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
+    public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null): mixed;
 
     /**
      * @template HandlerResult
      *
-     * @param callable(TransactionInterface<ResultFormat>):HandlerResult $tsxHandler
+     * @param callable(TransactionInterface):HandlerResult $tsxHandler
      *
      * @return HandlerResult
      */
-    public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
+    public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null): mixed;
 
     /**
      * @template HandlerResult
      *
-     * @param callable(TransactionInterface<ResultFormat>):HandlerResult $tsxHandler
+     * @param callable(TransactionInterface):HandlerResult $tsxHandler
      *
      * @return HandlerResult
      */
-    public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
+    public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null): mixed;
 
     public function getLastBookmark(): Bookmark;
 }

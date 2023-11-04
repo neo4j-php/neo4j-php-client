@@ -19,6 +19,7 @@ use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
@@ -65,11 +66,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
-        $tbr = $this->runStatements($statements)->each(static function ($list) {
-            if ($list instanceof AbstractCypherSequence) {
-                $list->preload();
-            }
-        });
+        $tbr = $this->runStatements($statements)->each(static fn (SummarizedResult $result) => $result->preload());
 
         $this->connection->commit();
         $this->isCommitted = true;

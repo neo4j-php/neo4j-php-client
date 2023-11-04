@@ -14,13 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\ArrayList;
 
 /**
  * Transactions are atomic units of work that may contain one or more query.
- *
- * @template ResultFormat
  *
  * @see https://neo4j.com/docs/cypher-manual/current/introduction/transactions/
  */
@@ -29,21 +28,21 @@ interface TransactionInterface
     /**
      * @param iterable<string, mixed> $parameters
      *
-     * @return ResultFormat
+     * @throws Neo4jException
      */
-    public function run(string $statement, iterable $parameters = []);
+    public function run(string $statement, iterable $parameters = []): SummarizedResult;
 
     /**
-     * @return ResultFormat
+     * @throws Neo4jException
      */
-    public function runStatement(Statement $statement);
+    public function runStatement(Statement $statement): SummarizedResult;
 
     /**
      * @param iterable<Statement> $statements
      *
      * @throws Neo4jException
      *
-     * @return CypherList<ResultFormat>
+     * @return ArrayList<SummarizedResult>
      */
-    public function runStatements(iterable $statements): CypherList;
+    public function runStatements(iterable $statements): ArrayList;
 }

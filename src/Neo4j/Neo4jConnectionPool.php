@@ -22,7 +22,6 @@ use Generator;
 use function implode;
 
 use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Cache;
@@ -205,7 +204,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $key = implode(
             ':',
-            array_filter([$data->getUserAgent(), $uri->getHost(), $config ? $config->getDatabase() : null, $uri->getPort() ?? '7687'])
+            array_filter([$data->getUserAgent(), $uri->getHost(), $config?->getDatabase() ?? '', $uri->getPort() ?? '7687'])
         );
 
         return str_replace([
