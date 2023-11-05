@@ -23,22 +23,22 @@ use Laudis\Neo4j\Contracts\MessageInterface;
 /**
  * @internal
  *
- * @see https://neo4j.com/docs/bolt/current/bolt/message/#messages-discard
+ * @see https://neo4j.com/docs/bolt/current/bolt/message/#messages-pull
  */
-class Discard implements MessageInterface
+class Pull implements MessageInterface
 {
     public function __construct(
         private int $n,
         private int|null $qid
     ) {}
 
-    public function send(V4_4|V5|V5_2|V5_1|V5_3 $bolt): void
+    public function send(V4_4|V5|V5_1|V5_2|V5_3 $bolt): void
     {
         $extra = ['n' => $this->n];
         if ($this->qid !== null) {
             $extra['qid'] = $this->qid;
         }
 
-        $bolt->discard($extra);
+        $bolt->pull($extra);
     }
 }
