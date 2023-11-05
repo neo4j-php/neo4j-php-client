@@ -20,6 +20,7 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Laudis\Neo4j\Contracts\MessageInterface;
 use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Enum\AccessMode;
 
 /**
  * @psalm-readonly
@@ -28,7 +29,7 @@ use Laudis\Neo4j\Databags\Bookmark;
  *
  * @see https://neo4j.com/docs/bolt/current/bolt/message/#messages-run
  */
-class Run implements MessageInterface
+class Run extends TransactionMessage
 {
     /**
      * @param array<string, mixed> $parameters
@@ -39,46 +40,20 @@ class Run implements MessageInterface
     public function __construct(
         private string $text,
         private array $parameters,
-        private array $bookmarks,
-        private int|null $txTimeout,
-        private array $txMetadata,
-        private string|null $database,
-        private string|null $impersonatedUser,
-        private string|null $notificationsMinimumSeverity,
-        private array $notificationsDisabledCategories
-    ) {}
+        array $bookmarks,
+        int|null $txTimeout,
+        array $txMetadata,
+        AccessMode|null $mode,
+        string|null $database,
+        string|null $impersonatedUser,
+        string|null $notificationsMinimumSeverity,
+        array $notificationsDisabledCategories
+    ) {
+        parent::__construct($bookmarks, $txTimeout, $txMetadata, $mode, $database, $impersonatedUser, $notificationsMinimumSeverity, $notificationsDisabledCategories);
+    }
 
-    public function send(V4_4|V5|V5_1|V5_2|V5_3 $bolt): void
+    public function sendWithPreDecoratedExtraData(array $extra, V4_4|V5|V5_1|V5_2|V5_3 $bolt): void
     {
-        $extra = [];
-        if ($this->bookmarks !== []) {
-            $extra['bookmarks'] = $this->bookmarks;
-        }
-
-        if ($this->txTimeout !== null) {
-            $extra['tx_timeout'] = $this->txTimeout;
-        }
-
-        if ($this->txMetadata !== []) {
-            $extra['tx_metadata'] = $this->txMetadata;
-        }
-
-        if ($this->database !== null) {
-            $extra['db'] = $this->database;
-        }
-
-        if ($this->impersonatedUser !== null) {
-            $extra['imp_user'] = $this->impersonatedUser;
-        }
-
-        if ($this->notificationsMinimumSeverity !== null) {
-            $extra['notifications_minimum_severity'] = $this->notificationsMinimumSeverity;
-        }
-
-        if ($this->notificationsDisabledCategories !== []) {
-            $extra['notifications_disabled_categories'] = $this->notificationsDisabledCategories;
-        }
-
         $bolt->run($this->text, $this->parameters, $extra);
     }
 }
