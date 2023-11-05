@@ -30,6 +30,7 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
+use MongoDB\Driver\Server;
 use Psr\Http\Message\UriInterface;
 use WeakReference;
 
@@ -322,6 +323,7 @@ class BoltConnection implements ConnectionInterface
 
     public function getServerState(): string
     {
+        /** @var ServerState::* */
         return $this->boltProtocol->serverState->get();
     }
 

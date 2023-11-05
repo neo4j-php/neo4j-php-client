@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+use Bolt\protocol\ServerState;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
@@ -60,6 +61,8 @@ interface ConnectionInterface
 
     /**
      * Returns the assumed server state.
+     *
+     * @return ServerState::*
      */
     public function getServerState(): string;
 
