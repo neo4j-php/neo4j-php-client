@@ -51,11 +51,6 @@ class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
 
-    public function getImplementation(): V4_4|V5|V5_1|V5_2|V5_3
-    {
-        return $this->boltProtocol;
-    }
-
     /**
      * @psalm-mutation-free
      */

@@ -27,11 +27,6 @@ use Psr\Http\Message\UriInterface;
 interface ConnectionInterface
 {
     /**
-     * @return ProtocolImplementation
-     */
-    public function getImplementation();
-
-    /**
      * Returns the agent the servers uses to identify itself.
      *
      * @psalm-mutation-free
