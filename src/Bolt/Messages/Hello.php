@@ -31,7 +31,6 @@ use Laudis\Neo4j\Contracts\MessageInterface;
 class Hello implements MessageInterface
 {
     /**
-     * @param list<string>                                                                                $patchBolt
      * @param list<string>                                                                                $routing
      * @param list<string>                                                                                $notificationsDisabledCategories
      * @param array{scheme: string}&array<string, string>                                                 $auth
@@ -40,7 +39,6 @@ class Hello implements MessageInterface
     public function __construct(
         private array $auth,
         private string|null $userAgent,
-        private array $patchBolt,
         private array $routing,
         private string|null $notificationsMinimumSeverity,
         private array $notificationsDisabledCategories,
@@ -55,10 +53,6 @@ class Hello implements MessageInterface
 
         if ($this->userAgent !== null) {
             $extra['user_agent'] = $this->userAgent;
-        }
-
-        if ($this->patchBolt !== []) {
-            $extra['patch_bolt'] = $this->patchBolt;
         }
 
         if ($this->routing !== []) {
