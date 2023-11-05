@@ -23,8 +23,6 @@ use function substr_count;
  * Factory responsible for creating authentication logic.
  *
  * @psalm-immutable
- *
- * @api
  */
 final class Authenticate
 {

@@ -30,12 +30,11 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
-use MongoDB\Driver\Server;
 use Psr\Http\Message\UriInterface;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3, 1: Connection}>
+ * @implements ConnectionInterface<V4_4|V5|V5_1|V5_2|V5_3>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  *
@@ -56,9 +55,9 @@ class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
 
-    public function getImplementation(): array
+    public function getImplementation(): V4_4|V5|V5_1|V5_2|V5_3
     {
-        return [$this->boltProtocol, $this->connection];
+        return $this->boltProtocol;
     }
 
     /**
@@ -66,7 +65,6 @@ class BoltConnection implements ConnectionInterface
      */
     public function __construct(
         private V4_4|V5|V5_1|V5_2|V5_3 $boltProtocol,
-        private Connection $connection,
         private AuthenticateInterface $auth,
         private string $userAgent,
         /** @psalm-readonly */
@@ -75,7 +73,7 @@ class BoltConnection implements ConnectionInterface
 
     public function getEncryptionLevel(): string
     {
-        return $this->connection->getEncryptionLevel();
+        return $this->config->getEncryptionLevel();
     }
 
     /**
@@ -137,11 +135,6 @@ class BoltConnection implements ConnectionInterface
     public function isOpen(): bool
     {
         return in_array($this->boltProtocol->serverState->get(), ['DISCONNECTED', 'DEFUNCT'], true);
-    }
-
-    public function setTimeout(float $timeout): void
-    {
-        $this->connection->setTimeout($timeout);
     }
 
     public function consumeResults(): void
