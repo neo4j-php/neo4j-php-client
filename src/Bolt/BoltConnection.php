@@ -21,9 +21,7 @@ use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
@@ -35,8 +33,6 @@ use WeakReference;
 
 /**
  * @implements ConnectionInterface<V4_4|V5|V5_1|V5_2|V5_3>
- *
- * @psalm-import-type BoltMeta from FormatterInterface
  *
  * @internal
  */
@@ -195,8 +191,6 @@ class BoltConnection implements ConnectionInterface
      * Runs a query/statement.
      *
      * Any of the preconditioned states are: 'STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
-     *
-     * @return BoltMeta
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder): array
     {
@@ -206,7 +200,6 @@ class BoltConnection implements ConnectionInterface
 
         $this->assertNoFailure($response);
 
-        /** @var BoltMeta */
         return $response->getContent();
     }
 
