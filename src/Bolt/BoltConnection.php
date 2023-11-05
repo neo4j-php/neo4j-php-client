@@ -65,8 +65,6 @@ class BoltConnection implements ConnectionInterface
      */
     public function __construct(
         private V4_4|V5|V5_1|V5_2|V5_3 $boltProtocol,
-        private AuthenticateInterface $auth,
-        private string $userAgent,
         /** @psalm-readonly */
         private ConnectionConfiguration $config
     ) {}
@@ -122,11 +120,6 @@ class BoltConnection implements ConnectionInterface
     public function getDatabaseInfo(): ?DatabaseInfo
     {
         return $this->config->getDatabaseInfo();
-    }
-
-    public function getAuthentication(): AuthenticateInterface
-    {
-        return $this->auth;
     }
 
     /**
@@ -323,11 +316,6 @@ class BoltConnection implements ConnectionInterface
     public function subscribeResult(CypherList $result): void
     {
         $this->subscribedResults[] = WeakReference::create($result);
-    }
-
-    public function getUserAgent(): string
-    {
-        return $this->userAgent;
     }
 
     private function assertNoFailure(Response $response): void
