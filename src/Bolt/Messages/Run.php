@@ -25,6 +25,8 @@ use Laudis\Neo4j\Databags\Bookmark;
  * @psalm-readonly
  *
  * @internal
+ *
+ * @see https://neo4j.com/docs/bolt/current/bolt/message/#messages-run
  */
 class Run implements MessageInterface
 {
@@ -36,14 +38,14 @@ class Run implements MessageInterface
      */
     public function __construct(
         private string $text,
-        private array $parameters = [],
-        private array $bookmarks = [],
-        private int|null $txTimeout = null,
-        private array $txMetadata = [],
-        private string|null $database = null,
-        private string|null $impersonatedUser = null,
-        private string|null $notificationsMinimumSeverity = null,
-        private array $notificationsDisabledCategories = []
+        private array $parameters,
+        private array $bookmarks,
+        private int|null $txTimeout,
+        private array $txMetadata,
+        private string|null $database,
+        private string|null $impersonatedUser,
+        private string|null $notificationsMinimumSeverity,
+        private array $notificationsDisabledCategories
     ) {}
 
     public function send(V4_4|V5|V5_1|V5_2|V5_3 $bolt): void
