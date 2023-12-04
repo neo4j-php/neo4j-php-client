@@ -22,7 +22,7 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
-use Laudis\Neo4j\Databags\BookmarkHolder;
+use Laudis\Neo4j\Contracts\MessageInterface;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
@@ -149,106 +149,15 @@ class BoltConnection implements ConnectionInterface
         $this->subscribedResults = [];
     }
 
-    /**
-     * Begins a transaction.
-     *
-     * Any of the preconditioned states are: 'READY', 'INTERRUPTED'.
-     */
-    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder): void
+    public function write(MessageInterface $message): array
     {
-        $this->consumeResults();
-        $extra = $this->buildRunExtra($database, $timeout, $holder);
+        $message->send($this->boltProtocol);
 
-        $response = $this->boltProtocol
-            ->begin($extra)
-            ->getResponse();
-
-        $this->assertNoFailure($response);
-    }
-
-    /**
-     * Discards a result.
-     *
-     * Any of the preconditioned states are: 'STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
-     */
-    public function discard(?int $qid): void
-    {
-        $extra = $this->buildResultExtra(null, $qid);
-        $bolt = $this->boltProtocol;
-
-        $response = $bolt->discard($extra)
-            ->getResponse();
-
-        $this->assertNoFailure($response);
-    }
-
-    /**
-     * Runs a query/statement.
-     *
-     * Any of the preconditioned states are: 'STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
-     */
-    public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder): array
-    {
-        $extra = $this->buildRunExtra($database, $timeout, $holder);
-        $response = $this->boltProtocol->run($text, $parameters, $extra)
-            ->getResponse();
+        $response = $this->boltProtocol->getResponse();
 
         $this->assertNoFailure($response);
 
         return $response->getContent();
-    }
-
-    /**
-     * Commits a transaction.
-     *
-     * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
-     */
-    public function commit(): void
-    {
-        $this->consumeResults();
-        $response = $this->boltProtocol
-            ->commit()
-            ->getResponse();
-
-        $this->assertNoFailure($response);
-    }
-
-    /**
-     * Rolls back a transaction.
-     *
-     * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
-     */
-    public function rollback(): void
-    {
-        $this->consumeResults();
-        $response = $this->boltProtocol
-            ->rollback()
-            ->getResponse();
-
-        $this->assertNoFailure($response);
-    }
-
-    /**
-     * Pulls a result set.
-     *
-     * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
-     *
-     * @return non-empty-list<list>
-     */
-    public function pull(?int $qid, ?int $fetchSize): array
-    {
-        $extra = $this->buildResultExtra($fetchSize, $qid);
-
-        $tbr = [];
-        /** @var Response $response */
-        foreach ($this->boltProtocol->pull($extra)->getResponses() as $response) {
-            $this->assertNoFailure($response);
-
-            $tbr[] = $response->getContent();
-        }
-
-        /** @var non-empty-list<list> */
-        return $tbr;
     }
 
     public function __destruct()
@@ -264,46 +173,10 @@ class BoltConnection implements ConnectionInterface
         }
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder): array
-    {
-        $extra = [];
-        if ($database) {
-            $extra['db'] = $database;
-        }
-        if ($timeout) {
-            $extra['tx_timeout'] = (int) ($timeout * 1000);
-        }
-
-        if (!$holder->getBookmark()->isEmpty()) {
-            $extra['bookmarks'] = $holder->getBookmark()->values();
-        }
-
-        return $extra;
-    }
-
-    private function buildResultExtra(?int $fetchSize, ?int $qid): array
-    {
-        $extra = [];
-        if ($fetchSize !== null) {
-            $extra['n'] = $fetchSize;
-        }
-
-        if ($qid !== null) {
-            $extra['qid'] = $qid;
-        }
-
-        return $extra;
-    }
-
     public function getServerState(): string
     {
         /** @var ServerState::* */
         return $this->boltProtocol->serverState->get();
-    }
-
-    public function subscribeResult(CypherList $result): void
-    {
-        $this->subscribedResults[] = WeakReference::create($result);
     }
 
     private function assertNoFailure(Response $response): void
