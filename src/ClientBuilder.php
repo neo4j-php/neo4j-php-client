@@ -49,8 +49,6 @@ final class ClientBuilder
      */
     public function __construct(
         /** @psalm-readonly */
-        private DriverConfiguration $defaultDriverConfig,
-        /** @psalm-readonly */
         private SessionConfiguration $defaultSessionConfig,
         /** @psalm-readonly */
         private TransactionConfiguration $defaultTransactionConfig,
@@ -67,7 +65,6 @@ final class ClientBuilder
     public static function create(): ClientBuilder
     {
         return new self(
-            DriverConfiguration::default(),
             SessionConfiguration::default(),
             TransactionConfiguration::default(),
             new DriverSetupManager(SummarizedResultFormatter::create(), DriverConfiguration::default())
@@ -134,7 +131,6 @@ final class ClientBuilder
     public function withFormatter(FormatterInterface $formatter): self
     {
         return new self(
-            $this->defaultDriverConfig,
             $this->defaultSessionConfig,
             $this->defaultTransactionConfig,
             $this->driverSetups->withFormatter($formatter)
