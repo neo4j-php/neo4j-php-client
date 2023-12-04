@@ -26,7 +26,7 @@ x-definitions:
     build:
       context: .
       dockerfile: Dockerfile
-    image: neo4j-php-client:latest
+#    image: neo4j-php-client:latest
     volumes:
       - .:/opt/project
   x-common-cluster:

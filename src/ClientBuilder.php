@@ -163,7 +163,8 @@ final class ClientBuilder
     public function withDefaultDriverConfiguration(DriverConfiguration $config): self
     {
         $tbr = clone $this;
-        $tbr->defaultDriverConfig = $config;
+
+        $tbr->driverSetups = $tbr->driverSetups->withDriverConfiguration($config);
 
         return $tbr;
     }
