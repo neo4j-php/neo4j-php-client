@@ -127,7 +127,10 @@ final class BoltOGMTranslator
 
     private function makeBoltTimezoneIdentifier(BoltDateTimeZoneId $time): DateTimeZoneId
     {
-        return new DateTimeZoneId($time->seconds(), $time->nanoseconds(), $time->tz_id());
+        /** @var non-empty-string $tzId */
+        $tzId = $time->tz_id();
+
+        return new DateTimeZoneId($time->seconds(), $time->nanoseconds(), $tzId);
     }
 
     private function makeFromBoltDuration(BoltDuration $duration): Duration
