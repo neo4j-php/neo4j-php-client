@@ -62,6 +62,9 @@ class DriverSetupManager implements Countable
         return $this->configuration;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function withDriverConfiguration(DriverConfiguration $config): self
     {
         $tbr = clone $this;
