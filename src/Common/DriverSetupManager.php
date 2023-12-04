@@ -57,6 +57,20 @@ class DriverSetupManager implements Countable
         private DriverConfiguration $configuration
     ) {}
 
+    public function getDriverConfiguration(): DriverConfiguration
+    {
+        return $this->configuration;
+    }
+
+    public function withDriverConfiguration(DriverConfiguration $config): self
+    {
+        $tbr = clone $this;
+
+        $tbr->configuration = $config;
+
+        return $tbr;
+    }
+
     /**
      * @psalm-mutation-free
      */

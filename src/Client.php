@@ -55,6 +55,21 @@ final class Client implements ClientInterface
         private TransactionConfiguration $defaultTransactionConfiguration
     ) {}
 
+    public function getDriverSetups(): DriverSetupManager
+    {
+        return $this->driverSetups;
+    }
+
+    public function getDefaultSessionConfiguration(): SessionConfiguration
+    {
+        return $this->defaultSessionConfiguration;
+    }
+
+    public function getDefaultTransactionConfiguration(): TransactionConfiguration
+    {
+        return $this->defaultTransactionConfiguration;
+    }
+
     public function run(string $statement, iterable $parameters = [], ?string $alias = null)
     {
         return $this->runStatement(Statement::create($statement, $parameters), $alias);
