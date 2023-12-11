@@ -446,15 +446,16 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
 
     public function valid(): bool
     {
-        return $this->currentPosition < $this->generatorPosition || $this->getGenerator()->valid();
+        return $this->currentPosition < $this->generatorPosition || array_key_exists($this->currentPosition, $this->keyCache) || $this->getGenerator()->valid();
     }
 
     public function rewind(): void
     {
-        $this->currentPosition = max(
-            $this->currentPosition - $this->cacheLimit - 1,
-            0
-        );
+        if ($this->currentPosition > $this->cacheLimit) {
+            throw new BadMethodCallException('Cannot rewind cursor: limit exceeded. In order to increase the amount of prefetched (and consequently cached) rows, increase the fetch limit in the session configuration.');
+        }
+
+        $this->currentPosition = 0;
     }
 
     public function next(): void
@@ -489,7 +490,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      */
     protected function cacheKey()
     {
-        return $this->keyCache[$this->currentPosition % max($this->cacheLimit - 1, 1)];
+        return $this->keyCache[$this->currentPosition % max($this->cacheLimit, 1)];
     }
 
     /**
@@ -519,9 +520,9 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     {
         $generator = $this->getGenerator();
 
-        if (count($this->cache) % $this->cacheLimit === 0) {
-            $this->cache = [];
-            $this->keyCache = [];
+        if (count($this->cache) !== 0 && count($this->cache) % ($this->cacheLimit + 1) === 0) {
+            $this->cache = [array_key_last($this->cache) => $this->cache[array_key_last($this->cache)]];
+            $this->keyCache = [$this->keyCache[array_key_last($this->keyCache)]];
         }
 
         if ($this->cache === [] && $generator->valid()) {
