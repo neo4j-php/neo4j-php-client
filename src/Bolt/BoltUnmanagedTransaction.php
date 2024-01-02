@@ -105,7 +105,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $parameters->toArray(),
                 $this->database,
                 $this->tsxConfig->getTimeout(),
-                $this->bookmarkHolder
+                $this->bookmarkHolder,
+                $this->config->getAccessMode()
             );
         } catch (Throwable $e) {
             $this->isRolledBack = true;

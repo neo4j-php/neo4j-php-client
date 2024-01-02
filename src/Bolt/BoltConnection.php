@@ -179,7 +179,7 @@ class BoltConnection implements ConnectionInterface
     public function begin(?string $database, ?float $timeout, BookmarkHolder $holder): void
     {
         $this->consumeResults();
-        $extra = $this->buildRunExtra($database, $timeout, $holder);
+        $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE());
 
         $response = $this->protocol()
             ->begin($extra)
@@ -211,9 +211,9 @@ class BoltConnection implements ConnectionInterface
      *
      * @return BoltMeta
      */
-    public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder): array
+    public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
     {
-        $extra = $this->buildRunExtra($database, $timeout, $holder);
+        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode);
         $response = $this->protocol()->run($text, $parameters, $extra)
             ->getResponse();
 
@@ -293,7 +293,7 @@ class BoltConnection implements ConnectionInterface
         }
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder): array
+    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
     {
         $extra = [];
         if ($database) {
@@ -305,6 +305,10 @@ class BoltConnection implements ConnectionInterface
 
         if (!$holder->getBookmark()->isEmpty()) {
             $extra['bookmarks'] = $holder->getBookmark()->values();
+        }
+
+        if ($mode) {
+            $extra['mode'] = AccessMode::WRITE() === $mode ? 'w' : 'r';
         }
 
         return $extra;
