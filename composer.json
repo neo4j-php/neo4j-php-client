@@ -1,5 +1,5 @@
 {
-    "name": "laudis/neo4j-php-client",
+    "name": "kitlabs/neo4j-php-client",
     "type": "library",
     "description": "Neo4j-PHP-Client is the most advanced PHP Client for Neo4j",
     "keywords": [
@@ -22,9 +22,9 @@
     ],
     "require": {
         "php": "^8.0",
-        "laudis/typed-enum": "^1.3.2",
+        "laudis/typed-enum": "^1.3",
         "php-http/discovery": "^1.13",
-        "psr/http-message": "^1.0",
+        "psr/http-message": "^1.0|^2.0",
         "psr/http-factory": "^1.0",
         "psr/http-client": "^1.0",
         "php-http/message": "^1.0",
