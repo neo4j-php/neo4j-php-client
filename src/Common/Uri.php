@@ -161,7 +161,7 @@ final class Uri implements UriInterface, Stringable
         return $this->fragment;
     }
 
-    public function withScheme($scheme)
+    public function withScheme(string $scheme): UriInterface
     {
         return new self(
             strtolower($scheme),
@@ -174,7 +174,7 @@ final class Uri implements UriInterface, Stringable
         );
     }
 
-    public function withUserInfo($user, $password = null)
+    public function withUserInfo($user, ?string $password = null): UriInterface
     {
         $info = $user;
         if ($password !== null && $password !== '') {
@@ -192,7 +192,7 @@ final class Uri implements UriInterface, Stringable
         );
     }
 
-    public function withHost($host)
+    public function withHost(string $host): UriInterface
     {
         return new self(
             $this->scheme,
@@ -205,7 +205,7 @@ final class Uri implements UriInterface, Stringable
         );
     }
 
-    public function withPort($port)
+    public function withPort(?int $port): UriInterface
     {
         return new self(
             $this->scheme,
@@ -218,7 +218,7 @@ final class Uri implements UriInterface, Stringable
         );
     }
 
-    public function withPath($path)
+    public function withPath(string $path): UriInterface
     {
         return new self(
             $this->scheme,
@@ -231,7 +231,7 @@ final class Uri implements UriInterface, Stringable
         );
     }
 
-    public function withQuery($query)
+    public function withQuery(string $query): UriInterface
     {
         return new self(
             $this->scheme,
@@ -244,7 +244,7 @@ final class Uri implements UriInterface, Stringable
         );
     }
 
-    public function withFragment($fragment)
+    public function withFragment(string $fragment): UriInterface
     {
         return new self(
             $this->scheme,
