@@ -54,6 +54,7 @@ use UnexpectedValueException;
  * @psalm-import-type OGMTypes from OGMFormatter
  *
  * @psalm-immutable
+ * @psalm-pure
  */
 final class BoltOGMTranslator
 {
@@ -64,6 +65,7 @@ final class BoltOGMTranslator
 
     public function __construct()
     {
+        /** @psalm-suppress InvalidPropertyAssignmentValue */
         $this->rawToTypes = [
             BoltNode::class => $this->makeFromBoltNode(...),
             BoltDate::class => $this->makeFromBoltDate(...),

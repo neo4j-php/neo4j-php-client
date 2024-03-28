@@ -58,7 +58,8 @@ use stdClass;
  *     constraints-removed?: int,
  *     contains-updates?: bool,
  *     contains-system-updates?: bool,
- *     system-updates?: int
+ *     system-updates?: int,
+ *     db?: string
  * }
  * @psalm-type CypherError = array{code: string, message: string}
  * @psalm-type CypherRowResponse = array{row: list<scalar|null|array<array-key,scalar|null|array>>}
