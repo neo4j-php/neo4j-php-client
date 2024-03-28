@@ -38,7 +38,7 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
     {
         $this->expectException(RuntimeException::class);
 
-        $this->getSession()->transaction(static function (TSX $tsx) {
+        $this->getSession()->transaction(static function (TSX $tsx): never {
             $params = [
                 'id' => 'xyz',
             ];

@@ -69,11 +69,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private SemaphoreInterface $semaphore,
-        private BoltFactory $factory,
-        private ConnectionRequestData $data,
-        private CacheInterface $cache,
-        private AddressResolverInterface $resolver
+        private readonly SemaphoreInterface $semaphore,
+        private readonly BoltFactory $factory,
+        private readonly ConnectionRequestData $data,
+        private readonly CacheInterface $cache,
+        private readonly AddressResolverInterface $resolver
     ) {}
 
     public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self

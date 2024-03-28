@@ -60,25 +60,25 @@ final class BoltOGMTranslator
     /**
      * @var array<string, pure-callable(mixed):OGMTypes>
      */
-    private array $rawToTypes;
+    private readonly array $rawToTypes;
 
     public function __construct()
     {
         $this->rawToTypes = [
-            BoltNode::class => [$this, 'makeFromBoltNode'],
-            BoltDate::class => [$this, 'makeFromBoltDate'],
-            BoltDuration::class => [$this, 'makeFromBoltDuration'],
-            BoltDateTime::class => [$this, 'makeFromBoltDateTime'],
-            BoltTime::class => [$this, 'makeFromBoltTime'],
-            BoltLocalDateTime::class => [$this, 'makeFromBoltLocalDateTime'],
-            BoltLocalTime::class => [$this, 'makeFromBoltLocalTime'],
-            BoltRelationship::class => [$this, 'makeFromBoltRelationship'],
-            BoltUnboundRelationship::class => [$this, 'makeFromBoltUnboundRelationship'],
-            BoltPath::class => [$this, 'makeFromBoltPath'],
-            BoltPoint2D::class => [$this, 'makeFromBoltPoint2D'],
-            BoltPoint3D::class => [$this, 'makeFromBoltPoint3D'],
-            BoltDateTimeZoneId::class => [$this, 'makeBoltTimezoneIdentifier'],
-            'array' => [$this, 'mapArray'],
+            BoltNode::class => $this->makeFromBoltNode(...),
+            BoltDate::class => $this->makeFromBoltDate(...),
+            BoltDuration::class => $this->makeFromBoltDuration(...),
+            BoltDateTime::class => $this->makeFromBoltDateTime(...),
+            BoltTime::class => $this->makeFromBoltTime(...),
+            BoltLocalDateTime::class => $this->makeFromBoltLocalDateTime(...),
+            BoltLocalTime::class => $this->makeFromBoltLocalTime(...),
+            BoltRelationship::class => $this->makeFromBoltRelationship(...),
+            BoltUnboundRelationship::class => $this->makeFromBoltUnboundRelationship(...),
+            BoltPath::class => $this->makeFromBoltPath(...),
+            BoltPoint2D::class => $this->makeFromBoltPoint2D(...),
+            BoltPoint3D::class => $this->makeFromBoltPoint3D(...),
+            BoltDateTimeZoneId::class => $this->makeBoltTimezoneIdentifier(...),
+            'array' => $this->mapArray(...),
             'int' => static fn (int $x): int => $x,
             'null' => static fn (): ?object => null,
             'bool' => static fn (bool $x): bool => $x,

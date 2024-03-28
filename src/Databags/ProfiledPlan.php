@@ -29,14 +29,14 @@ final class ProfiledPlan extends AbstractCypherObject
      * @param CypherList<ProfiledPlan> $children
      */
     public function __construct(
-        private CypherList $children,
-        private int $dbHits,
-        private bool $hasPageCacheStats,
-        private float $pageCacheHitRatio,
-        private int $pageCacheHits,
-        private int $pageCacheMisses,
-        private int $records,
-        private int $time
+        private readonly CypherList $children,
+        private readonly int $dbHits,
+        private readonly bool $hasPageCacheStats,
+        private readonly float $pageCacheHitRatio,
+        private readonly int $pageCacheHits,
+        private readonly int $pageCacheMisses,
+        private readonly int $records,
+        private readonly int $time
     ) {}
 
     /**

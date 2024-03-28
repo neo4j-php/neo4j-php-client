@@ -35,10 +35,10 @@ final class SessionConfiguration
      * @param list<Bookmark>|null $bookmarks
      */
     public function __construct(
-        private ?string $database = null,
-        private int|null $fetchSize = null,
-        private AccessMode|null $accessMode = null,
-        private array|null $bookmarks = null
+        private readonly ?string $database = null,
+        private readonly int|null $fetchSize = null,
+        private readonly AccessMode|null $accessMode = null,
+        private readonly array|null $bookmarks = null
     ) {}
 
     /**

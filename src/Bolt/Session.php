@@ -41,7 +41,7 @@ use Laudis\Neo4j\Types\CypherList;
 final class Session implements SessionInterface
 {
     /** @psalm-readonly */
-    private BookmarkHolder $bookmarkHolder;
+    private readonly BookmarkHolder $bookmarkHolder;
 
     /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
@@ -51,12 +51,12 @@ final class Session implements SessionInterface
      */
     public function __construct(
         /** @psalm-readonly */
-        private SessionConfiguration $config,
-        private ConnectionPoolInterface $pool,
+        private readonly SessionConfiguration $config,
+        private readonly ConnectionPoolInterface $pool,
         /**
          * @psalm-readonly
          */
-        private FormatterInterface $formatter
+        private readonly FormatterInterface $formatter
     ) {
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }

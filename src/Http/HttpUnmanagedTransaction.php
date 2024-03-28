@@ -49,15 +49,15 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function __construct(
         /** @psalm-readonly */
-        private RequestInterface $request,
+        private readonly RequestInterface $request,
         /** @psalm-readonly */
-        private HttpConnection $connection,
+        private readonly HttpConnection $connection,
         /** @psalm-readonly */
-        private StreamFactoryInterface $factory,
+        private readonly StreamFactoryInterface $factory,
         /**
          * @psalm-readonly
          */
-        private FormatterInterface $formatter
+        private readonly FormatterInterface $formatter
     ) {}
 
     public function run(string $statement, iterable $parameters = [])

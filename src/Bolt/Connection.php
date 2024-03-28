@@ -24,8 +24,8 @@ class Connection
      * @param ''|'s'|'ssc' $ssl
      */
     public function __construct(
-        private IConnection $connection,
-        private string $ssl
+        private readonly IConnection $connection,
+        private readonly string $ssl
     ) {}
 
     public function getIConnection(): IConnection

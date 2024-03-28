@@ -21,11 +21,11 @@ namespace Laudis\Neo4j\Databags;
 final class Notification
 {
     public function __construct(
-        private string $code,
-        private string $description,
-        private ?InputPosition $inputPosition,
-        private string $severity,
-        private string $title
+        private readonly string $code,
+        private readonly string $description,
+        private readonly ?InputPosition $inputPosition,
+        private readonly string $severity,
+        private readonly string $title
     ) {}
 
     /**

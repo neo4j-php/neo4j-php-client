@@ -33,7 +33,7 @@ final class KerberosAuth implements AuthenticateInterface
      * @psalm-external-mutation-free
      */
     public function __construct(
-        private string $token
+        private readonly string $token
     ) {}
 
     /**

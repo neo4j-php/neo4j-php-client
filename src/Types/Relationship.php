@@ -27,8 +27,8 @@ final class Relationship extends UnboundRelationship
      */
     public function __construct(
         int $id,
-        private int $startNodeId,
-        private int $endNodeId,
+        private readonly int $startNodeId,
+        private readonly int $endNodeId,
         string $type,
         CypherMap $properties,
         ?string $elementId

@@ -34,11 +34,11 @@ final class HttpConnection implements ConnectionInterface
      */
     public function __construct(
         /** @psalm-readonly */
-        private ClientInterface $client,
+        private readonly ClientInterface $client,
         /** @psalm-readonly */
-        private ConnectionConfiguration $config,
-        private AuthenticateInterface $authenticate,
-        private string $userAgent
+        private readonly ConnectionConfiguration $config,
+        private readonly AuthenticateInterface $authenticate,
+        private readonly string $userAgent
     ) {}
 
     /**

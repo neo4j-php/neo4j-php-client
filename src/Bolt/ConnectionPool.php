@@ -39,9 +39,9 @@ final class ConnectionPool implements ConnectionPoolInterface
     private array $activeConnections = [];
 
     public function __construct(
-        private SemaphoreInterface $semaphore,
-        private BoltFactory $factory,
-        private ConnectionRequestData $data
+        private readonly SemaphoreInterface $semaphore,
+        private readonly BoltFactory $factory,
+        private readonly ConnectionRequestData $data
     ) {}
 
     public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, SemaphoreInterface $semaphore): self

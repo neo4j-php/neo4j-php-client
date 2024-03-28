@@ -65,11 +65,11 @@ class BoltConnection implements ConnectionInterface
      */
     public function __construct(
         private V4_4|V5 $boltProtocol,
-        private Connection $connection,
-        private AuthenticateInterface $auth,
-        private string $userAgent,
+        private readonly Connection $connection,
+        private readonly AuthenticateInterface $auth,
+        private readonly string $userAgent,
         /** @psalm-readonly */
-        private ConnectionConfiguration $config
+        private readonly ConnectionConfiguration $config
     ) {}
 
     public function getEncryptionLevel(): string

@@ -38,9 +38,9 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
      * @param non-empty-string $tzId
      */
     public function __construct(
-        private int $seconds,
-        private int $nanoseconds,
-        private string $tzId
+        private readonly int $seconds,
+        private readonly int $nanoseconds,
+        private readonly string $tzId
     ) {}
 
     /**

@@ -31,7 +31,7 @@ use Laudis\TypedEnum\TypedEnum;
  *
  * @psalm-suppress MutableDependency
  */
-final class QueryTypeEnum extends TypedEnum implements JsonSerializable
+final class QueryTypeEnum extends TypedEnum implements JsonSerializable, \Stringable
 {
     private const READ_ONLY = 'read_only';
     private const READ_WRITE = 'read_write';
@@ -58,7 +58,7 @@ final class QueryTypeEnum extends TypedEnum implements JsonSerializable
         return self::READ_ONLY();
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getValue();
     }

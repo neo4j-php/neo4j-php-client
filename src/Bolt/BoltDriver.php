@@ -47,9 +47,9 @@ final class BoltDriver implements DriverInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private UriInterface $parsedUrl,
-        private ConnectionPool $pool,
-        private FormatterInterface $formatter
+        private readonly UriInterface $parsedUrl,
+        private readonly ConnectionPool $pool,
+        private readonly FormatterInterface $formatter
     ) {}
 
     /**
@@ -103,7 +103,7 @@ final class BoltDriver implements DriverInterface
         $config ??= SessionConfiguration::default();
         try {
             GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             return false;
         }
 

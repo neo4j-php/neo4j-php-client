@@ -34,7 +34,7 @@ final class Driver implements DriverInterface
      * @psalm-external-mutation-free
      */
     public function __construct(
-        private DriverInterface $driver
+        private readonly DriverInterface $driver
     ) {}
 
     /**

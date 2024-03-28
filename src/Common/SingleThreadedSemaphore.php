@@ -27,7 +27,7 @@ class SingleThreadedSemaphore implements SemaphoreInterface
     private static array $instances = [];
 
     private function __construct(
-        private int $max
+        private readonly int $max
     ) {}
 
     public static function create(string $key, int $max): self

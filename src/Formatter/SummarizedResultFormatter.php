@@ -64,7 +64,7 @@ final class SummarizedResultFormatter implements FormatterInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private OGMFormatter $formatter
+        private readonly OGMFormatter $formatter
     ) {}
 
     /**

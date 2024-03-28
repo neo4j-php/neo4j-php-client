@@ -22,10 +22,10 @@ use Psr\Http\Message\UriInterface;
 final class ConnectionRequestData
 {
     public function __construct(
-        private UriInterface $uri,
-        private AuthenticateInterface $auth,
-        private string $userAgent,
-        private SslConfiguration $config
+        private readonly UriInterface $uri,
+        private readonly AuthenticateInterface $auth,
+        private readonly string $userAgent,
+        private readonly SslConfiguration $config
     ) {}
 
     public function getUri(): UriInterface

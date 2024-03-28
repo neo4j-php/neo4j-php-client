@@ -30,7 +30,7 @@ final class Session implements SessionInterface
      * @param SessionInterface<SummarizedResult<CypherMap>> $session
      */
     public function __construct(
-        private SessionInterface $session
+        private readonly SessionInterface $session
     ) {}
 
     /**

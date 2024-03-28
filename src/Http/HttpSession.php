@@ -56,23 +56,23 @@ final class HttpSession implements SessionInterface
         /**
          * @psalm-readonly
          */
-        private Resolvable $streamFactory,
+        private readonly Resolvable $streamFactory,
         /** @psalm-readonly */
-        private HttpConnectionPool $pool,
+        private readonly HttpConnectionPool $pool,
         /** @psalm-readonly */
-        private SessionConfiguration $config,
+        private readonly SessionConfiguration $config,
         /**
          * @psalm-readonly
          */
-        private FormatterInterface $formatter,
+        private readonly FormatterInterface $formatter,
         /**
          * @psalm-readonly
          */
-        private Resolvable $requestFactory,
+        private readonly Resolvable $requestFactory,
         /**
          * @psalm-readonly
          */
-        private Resolvable $uri,
+        private readonly Resolvable $uri,
         AuthenticateInterface $auth,
         string $userAgent
     ) {}

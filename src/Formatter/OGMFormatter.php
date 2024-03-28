@@ -67,9 +67,9 @@ final class OGMFormatter implements FormatterInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private BoltOGMTranslator $boltTranslator,
-        private JoltHttpOGMTranslator $joltTranslator,
-        private LegacyHttpOGMTranslator $legacyHttpTranslator
+        private readonly BoltOGMTranslator $boltTranslator,
+        private readonly JoltHttpOGMTranslator $joltTranslator,
+        private readonly LegacyHttpOGMTranslator $legacyHttpTranslator
     ) {}
 
     /**

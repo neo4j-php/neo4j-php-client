@@ -49,16 +49,16 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function __construct(
         /** @psalm-readonly */
-        private ?string $database,
+        private readonly ?string $database,
         /**
          * @psalm-readonly
          */
-        private FormatterInterface $formatter,
+        private readonly FormatterInterface $formatter,
         /** @psalm-readonly */
-        private BoltConnection $connection,
-        private SessionConfiguration $config,
-        private TransactionConfiguration $tsxConfig,
-        private BookmarkHolder $bookmarkHolder
+        private readonly BoltConnection $connection,
+        private readonly SessionConfiguration $config,
+        private readonly TransactionConfiguration $tsxConfig,
+        private readonly BookmarkHolder $bookmarkHolder
     ) {}
 
     public function commit(iterable $statements = []): CypherList

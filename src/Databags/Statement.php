@@ -28,8 +28,8 @@ final class Statement extends AbstractCypherObject
      * @param iterable<string, mixed> $parameters
      */
     public function __construct(
-        private string $text,
-        private iterable $parameters
+        private readonly string $text,
+        private readonly iterable $parameters
     ) {}
 
     /**

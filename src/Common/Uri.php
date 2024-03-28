@@ -32,13 +32,13 @@ use function strtolower;
 final class Uri implements UriInterface, Stringable
 {
     public function __construct(
-        private string $scheme,
-        private string $userInfo,
+        private readonly string $scheme,
+        private readonly string $userInfo,
         private string $host,
-        private ?int $port,
+        private readonly ?int $port,
         private string $path,
-        private string $query,
-        private string $fragment
+        private readonly string $query,
+        private readonly string $fragment
     ) {}
 
     /**

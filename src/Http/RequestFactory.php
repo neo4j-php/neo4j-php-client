@@ -28,13 +28,13 @@ final class RequestFactory implements RequestFactoryInterface
      */
     public function __construct(
         /** @readonly */
-        private RequestFactoryInterface $requestFactory,
+        private readonly RequestFactoryInterface $requestFactory,
         /** @readonly */
-        private AuthenticateInterface $authenticate,
+        private readonly AuthenticateInterface $authenticate,
         /** @readonly */
-        private UriInterface $authUri,
+        private readonly UriInterface $authUri,
         /** @readonly */
-        private string $userAgent
+        private readonly string $userAgent
     ) {}
 
     public function createRequest(string $method, $uri): RequestInterface

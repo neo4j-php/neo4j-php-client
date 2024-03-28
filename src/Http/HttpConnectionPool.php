@@ -49,18 +49,18 @@ final class HttpConnectionPool implements ConnectionPoolInterface
         /**
          * @psalm-readonly
          */
-        private Resolvable $client,
+        private readonly Resolvable $client,
         /**
          * @psalm-readonly
          */
-        private Resolvable $requestFactory,
+        private readonly Resolvable $requestFactory,
         /**
          * @psalm-readonly
          */
-        private Resolvable $streamFactory,
-        private AuthenticateInterface $auth,
-        private string $userAgent,
-        private Resolvable $tsxUrl
+        private readonly Resolvable $streamFactory,
+        private readonly AuthenticateInterface $auth,
+        private readonly string $userAgent,
+        private readonly Resolvable $tsxUrl
     ) {}
 
     public function acquire(SessionConfiguration $config): Generator

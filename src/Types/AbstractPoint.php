@@ -30,8 +30,8 @@ use Laudis\Neo4j\Contracts\PointInterface;
 abstract class AbstractPoint extends AbstractPropertyObject implements PointInterface, BoltConvertibleInterface
 {
     public function __construct(
-        private float $x,
-        private float $y
+        private readonly float $x,
+        private readonly float $y
     ) {}
 
     abstract public function getCrs(): string;

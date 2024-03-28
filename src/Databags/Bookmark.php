@@ -18,7 +18,7 @@ use function array_unique;
 final class Bookmark
 {
     /** @var list<string> */
-    private array $values;
+    private readonly array $values;
 
     /**
      * @param list<string> $bookmarks

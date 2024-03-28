@@ -40,7 +40,7 @@ use function uniqid;
  */
 final class HttpDriver implements DriverInterface
 {
-    private string $key;
+    private readonly string $key;
 
     /**
      * @psalm-mutation-free
@@ -48,10 +48,10 @@ final class HttpDriver implements DriverInterface
      * @param FormatterInterface<T> $formatter
      */
     public function __construct(
-        private UriInterface $uri,
-        private DriverConfiguration $config,
-        private FormatterInterface $formatter,
-        private AuthenticateInterface $auth
+        private readonly UriInterface $uri,
+        private readonly DriverConfiguration $config,
+        private readonly FormatterInterface $formatter,
+        private readonly AuthenticateInterface $auth
     ) {
         /** @psalm-suppress ImpureFunctionCall */
         $this->key = uniqid();
