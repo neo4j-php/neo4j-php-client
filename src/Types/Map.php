@@ -245,13 +245,14 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<mixed, NewValue> $values
      *
+     * @psalm-suppress LessSpecificImplementedReturnType
+     *
      * @return self<TValue|NewValue>
      *
      * @psalm-mutation-free
      */
     public function merge(iterable $values): Map
     {
-        /** @var self<TValue|NewValue> */
         return $this->withOperation(function () use ($values) {
             $tbr = $this->toArray();
             $values = Map::fromIterable($values);

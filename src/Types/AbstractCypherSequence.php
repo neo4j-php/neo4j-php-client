@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Generator;
 use function array_key_exists;
 use function array_reverse;
 
@@ -70,20 +71,20 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     protected int $generatorPosition = 0;
 
     /**
-     * @var (callable():(\Iterator<TKey, TValue>))|\Iterator<TKey, TValue>
+     * @var (callable():(Iterator<TKey, TValue>))|Iterator<TKey, TValue>
      */
     protected $generator;
 
     /**
      * @template Value
      *
-     * @param callable():(\Generator<mixed, Value>) $operation
+     * @param callable():(Generator<mixed, Value>) $operation
      *
      * @return static<Value, TKey>
      *
      * @psalm-mutation-free
      */
-    abstract protected function withOperation($operation): self;
+    abstract protected function withOperation(callable $operation): self;
 
     /**
      * Copies the sequence.
@@ -282,7 +283,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return $this->withOperation(function () use ($comparator) {
             $iterable = $this->toArray();
 
-            if ($comparator) {
+            if ($comparator !== null) {
                 uasort($iterable, $comparator);
             } else {
                 asort($iterable);
@@ -298,6 +299,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      * @return ArrayList<mixed>
      *
      * @psalm-mutation-free
+     * @psalm-suppress MixedArrayAccess
      */
     public function pluck(string $key): ArrayList
     {
@@ -318,6 +320,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      * @return Map<mixed>
      *
      * @psalm-mutation-free
+     * @psalm-suppress MixedArrayAccess
      */
     public function keyBy(string $key): Map
     {
@@ -467,6 +470,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
             $generator->next();
 
             if ($generator->valid()) {
+                /** @var TKey */
                 $this->keyCache[] = $generator->key();
                 $this->cache[$generator->key()] = $generator->current();
             }
@@ -520,14 +524,16 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     {
         $generator = $this->getGenerator();
 
-        if (count($this->cache) !== 0 && count($this->cache) % ($this->cacheLimit + 1) === 0) {
+        if (count($this->keyCache) !== 0 && count($this->cache) !== 0 && count($this->cache) % ($this->cacheLimit + 1) === 0) {
             $this->cache = [array_key_last($this->cache) => $this->cache[array_key_last($this->cache)]];
             $this->keyCache = [$this->keyCache[array_key_last($this->keyCache)]];
         }
 
         if ($this->cache === [] && $generator->valid()) {
-            $this->cache[$generator->key()] = $generator->current();
-            $this->keyCache[] = $generator->key();
+            /** @var TKey $key */
+            $key = $generator->key();
+            $this->cache[$key] = $generator->current();
+            $this->keyCache[] = $key;
         }
     }
 
