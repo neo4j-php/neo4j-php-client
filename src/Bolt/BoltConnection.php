@@ -284,14 +284,18 @@ class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if ($this->protocol()->serverState === ServerState::FAILED && $this->isOpen()) {
-            if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
-                $this->consumeResults();
+        try {
+            if ($this->boltProtocol->serverState === ServerState::FAILED && $this->isOpen()) {
+                if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
+                    $this->consumeResults();
+                }
+
+                $this->protocol()->goodbye();
+
+                unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
+        } catch (\Throwable) {
 
-            $this->protocol()->goodbye();
-
-            unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
         }
     }
 

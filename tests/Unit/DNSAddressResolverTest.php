@@ -28,7 +28,7 @@ class DNSAddressResolverTest extends TestCase
 
     public function testResolverGhlenDotCom(): void
     {
-        $records = iterator_to_array($this->resolver->getAddresses('test.ghlen.com'));
+        $records = iterator_to_array($this->resolver->getAddresses('test.ghlen.com'), false);
 
         $this->assertEqualsCanonicalizing(['test.ghlen.com', '123.123.123.123', '123.123.123.124'], $records);
         $this->assertNotEmpty($records);
@@ -37,7 +37,7 @@ class DNSAddressResolverTest extends TestCase
 
     public function testResolverGoogleDotComReverse(): void
     {
-        $records = iterator_to_array($this->resolver->getAddresses('8.8.8.8'));
+        $records = iterator_to_array($this->resolver->getAddresses('8.8.8.8'), false);
 
         $this->assertNotEmpty($records);
         $this->assertContains('8.8.8.8', $records);
@@ -45,7 +45,7 @@ class DNSAddressResolverTest extends TestCase
 
     public function testBogus(): void
     {
-        $addresses = iterator_to_array($this->resolver->getAddresses('bogus'));
-        $this->assertEquals('bogus', $addresses);
+        $addresses = iterator_to_array($this->resolver->getAddresses('bogus'), false);
+        $this->assertEquals(['bogus'], $addresses);
     }
 }
