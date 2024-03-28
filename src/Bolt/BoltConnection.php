@@ -295,7 +295,6 @@ class BoltConnection implements ConnectionInterface
                 unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
         } catch (\Throwable) {
-
         }
     }
 
