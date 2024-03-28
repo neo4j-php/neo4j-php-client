@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\protocol\Response;
-use Bolt\protocol\ServerState;
+use Bolt\enum\ServerState;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
@@ -282,7 +282,7 @@ class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if (!$this->protocol()->serverState->is(ServerState::FAILED) && $this->isOpen()) {
+        if (!$this->protocol()->serverState === ServerState::FAILED && $this->isOpen()) {
             if ($this->protocol()->serverState->is(ServerState::STREAMING, ServerState::TX_STREAMING)) {
                 $this->consumeResults();
             }

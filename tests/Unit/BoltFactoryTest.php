@@ -14,9 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use Bolt\connection\IConnection;
-use Bolt\packstream\v1\Packer;
-use Bolt\packstream\v1\Unpacker;
-use Bolt\protocol\ServerState;
+use Bolt\enum\ServerState;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;
@@ -41,12 +39,19 @@ final class BoltFactoryTest extends TestCase
         $basicConnectionFactory = $this->createMock(BasicConnectionFactoryInterface::class);
         $basicConnectionFactory->method('create')
             ->willReturn(new Connection($this->createMock(IConnection::class), ''));
+
+
         $protocolFactory = $this->createMock(ProtocolFactory::class);
         $protocolFactory->method('createProtocol')
-            ->willReturnCallback(static fn (IConnection $connection) => [
-                new V5(new Packer(), new Unpacker(), $connection, new ServerState()),
-                ['server' => 'abc', 'connection_id' => 'i'],
-                ]);
+            ->willReturnCallback(static function (IConnection $connection) {
+                $protocol = new V5(1, $connection);
+                $protocol->serverState = ServerState::READY;
+
+                return [
+                    $protocol,
+                    ['server' => 'abc', 'connection_id' => 'i'],
+                ];
+            });
 
         $this->factory = new BoltFactory(
             $basicConnectionFactory,
