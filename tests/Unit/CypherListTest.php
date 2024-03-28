@@ -459,6 +459,42 @@ final class CypherListTest extends TestCase
         self::assertEquals(array_sum(range(5, 7)), $sumAfter);
     }
 
+    public function testRewindValid(): void
+    {
+        $list = $this->list->withCacheLimit(4);
+
+        $x = iterator_to_array($list);
+        $y = iterator_to_array($list);
+
+        $this->assertEquals(['A', 'B', 'C'], $x);
+        $this->assertEquals(['A', 'B', 'C'], $y);
+    }
+
+    public function testRewindValidExact(): void
+    {
+        $list = $this->list->withCacheLimit(3);
+
+        $x = iterator_to_array($list);
+        $y = iterator_to_array($list);
+
+        $this->assertEquals(['A', 'B', 'C'], $x);
+        $this->assertEquals(['A', 'B', 'C'], $y);
+    }
+
+    public function testRewindInValid(): void
+    {
+        $list = $this->list->withCacheLimit(2);
+
+        $x = iterator_to_array($list);
+
+        $this->assertEquals(['A', 'B', 'C'], $x);
+
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('Cannot rewind cursor: limit exceeded. In order to increase the amount of prefetched (and consequently cached) rows, increase the fetch limit in the session configuration.');
+
+        iterator_to_array($list);
+    }
+
     /**
      * @return Generator<int, int>
      */
