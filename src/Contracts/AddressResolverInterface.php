@@ -13,12 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+use Generator;
+
 interface AddressResolverInterface
 {
     /**
      * Returns the addresses.
      *
-     * @return iterable<string>
+     * @return Generator<string>
      */
-    public function getAddresses(string $host): iterable;
+    public function getAddresses(string $host): Generator;
 }

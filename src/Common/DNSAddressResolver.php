@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use Generator;
+use Traversable;
 use function array_filter;
 use function array_map;
 use function array_unique;
@@ -29,9 +31,9 @@ use Throwable;
 class DNSAddressResolver implements AddressResolverInterface
 {
     /**
-     * @return iterable<string>
+     * @return Generator<string>
      */
-    public function getAddresses(string $host): iterable
+    public function getAddresses(string $host): Generator
     {
         // By using the generator pattern we make sure to call the heavy DNS IO operations
         // as late as possible
