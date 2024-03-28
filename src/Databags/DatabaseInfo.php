@@ -19,6 +19,8 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
  * Stores relevant information of a database.
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class DatabaseInfo extends AbstractCypherObject
 {

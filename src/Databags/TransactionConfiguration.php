@@ -99,11 +99,11 @@ final class TransactionConfiguration
         $config ??= self::default();
 
         $metaData = $config->metaData;
-        if ($metaData) {
+        if ($metaData !== null) {
             $tsxConfig = $tsxConfig->withMetaData($metaData);
         }
         $timeout = $config->timeout;
-        if ($timeout) {
+        if ($timeout !== null) {
             $tsxConfig = $tsxConfig->withTimeout($timeout);
         }
 

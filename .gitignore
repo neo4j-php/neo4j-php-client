@@ -13,3 +13,4 @@ composer.lock
 .env
 /docs/_build
 cachegrind.out.*
+.phpunit.cache/

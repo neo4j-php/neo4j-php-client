@@ -48,6 +48,8 @@ abstract class Abstract3DPoint extends AbstractPoint implements PointInterface, 
     }
 
     /**
+     * @psalm-suppress ImplementedReturnTypeMismatch
+     *
      * @return array{x: float, y: float, z: float, srid: int, crs: Crs}
      */
     public function toArray(): array

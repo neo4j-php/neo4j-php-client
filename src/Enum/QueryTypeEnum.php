@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Enum;
 use JsonSerializable;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\TypedEnum\TypedEnum;
+use Stringable;
 
 /**
  * The actual type of query after is has been run.
@@ -31,7 +32,7 @@ use Laudis\TypedEnum\TypedEnum;
  *
  * @psalm-suppress MutableDependency
  */
-final class QueryTypeEnum extends TypedEnum implements JsonSerializable, \Stringable
+final class QueryTypeEnum extends TypedEnum implements JsonSerializable, Stringable
 {
     private const READ_ONLY = 'read_only';
     private const READ_WRITE = 'read_write';

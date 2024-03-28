@@ -23,15 +23,16 @@ use const DNS_AAAA;
 
 use function dns_get_record;
 
+use Generator;
 use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Throwable;
 
 class DNSAddressResolver implements AddressResolverInterface
 {
     /**
-     * @return iterable<string>
+     * @return Generator<string>
      */
-    public function getAddresses(string $host): iterable
+    public function getAddresses(string $host): Generator
     {
         // By using the generator pattern we make sure to call the heavy DNS IO operations
         // as late as possible

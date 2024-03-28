@@ -154,15 +154,18 @@ final class LegacyHttpOGMTranslator
     }
 
     /**
-     * @param stdClass|array|scalar|null $value
+     * @param array|scalar|stdClass|null $value
      *
      * @return array{0: OGMTypes, 1: HttpMetaInfo}
      *
      * @psalm-suppress MixedArgumentTypeCoercion
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedAssignment
+     * @psalm-suppress InvalidReturnStatement
+     * @psalm-suppress ArgumentTypeCoercion
+     * @psalm-suppress InvalidReturnType
      */
-    private function translateValue($value, HttpMetaInfo $meta): array
+    private function translateValue(float|array|bool|int|string|stdClass|null $value, HttpMetaInfo $meta): array
     {
         if (is_object($value)) {
             return $this->translateObject($value, $meta);
@@ -416,6 +419,7 @@ final class LegacyHttpOGMTranslator
     {
         /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         if (str_contains($value, '.')) {
+            /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
             [$format, $secondsFraction] = explode('.', $value);
             $nanoseconds = (int) substr($secondsFraction, 6);
             $microseconds = (int) str_pad((string) ((int) substr($secondsFraction, 0, 6)), 6, '0');
@@ -464,14 +468,19 @@ final class LegacyHttpOGMTranslator
      */
     private function translateDateTime(string $value): DateTime
     {
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$date, $time] = explode('T', $value);
         $tz = null;
-        /** @psalm-suppress ImpureFunctionCall false positive in version php 7.4 */
         if (str_contains($time, '+')) {
+            /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
             [$time, $timezone] = explode('+', $time);
+
+            /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
             [$tzHours, $tzMinutes] = explode(':', $timezone);
             $tz = (int) $tzHours * 60 * 60 + (int) $tzMinutes * 60;
         }
+
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$time, $milliseconds] = explode('.', $time);
 
         $dateTime = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);
@@ -488,7 +497,9 @@ final class LegacyHttpOGMTranslator
 
     private function translateLocalDateTime(string $value): LocalDateTime
     {
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$date, $time] = explode('T', $value);
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$time, $milliseconds] = explode('.', $time);
 
         $dateTime = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date.' '.$time);

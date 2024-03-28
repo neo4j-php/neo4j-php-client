@@ -13,8 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\enum\ServerState;
+use Bolt\enum\Signature;
 use Bolt\protocol\Response;
-use Bolt\protocol\ServerState;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
@@ -135,7 +136,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return !in_array($this->protocol()->serverState->get(), ['DISCONNECTED', 'DEFUNCT'], true);
+        return !in_array($this->protocol()->serverState, [ServerState::DISCONNECTED, ServerState::DEFUNCT], true);
     }
 
     public function setTimeout(float $timeout): void
@@ -220,7 +221,7 @@ class BoltConnection implements ConnectionInterface
         $this->assertNoFailure($response);
 
         /** @var BoltMeta */
-        return $response->getContent();
+        return $response->content;
     }
 
     /**
@@ -270,10 +271,11 @@ class BoltConnection implements ConnectionInterface
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
         $tbr = [];
+        /** @var Response $response */
         foreach ($this->protocol()->pull($extra)->getResponses() as $response) {
             $this->assertNoFailure($response);
 
-            $tbr[] = $response->getContent();
+            $tbr[] = $response->content;
         }
 
         /** @var non-empty-list<list> */
@@ -282,24 +284,27 @@ class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if (!$this->protocol()->serverState->is(ServerState::FAILED) && $this->isOpen()) {
-            if ($this->protocol()->serverState->is(ServerState::STREAMING, ServerState::TX_STREAMING)) {
-                $this->consumeResults();
+        try {
+            if ($this->boltProtocol->serverState === ServerState::FAILED && $this->isOpen()) {
+                if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
+                    $this->consumeResults();
+                }
+
+                $this->protocol()->goodbye();
+
+                unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
-
-            $this->protocol()->goodbye();
-
-            unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
+        } catch (\Throwable) {
         }
     }
 
     private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
     {
         $extra = [];
-        if ($database) {
+        if ($database !== null) {
             $extra['db'] = $database;
         }
-        if ($timeout) {
+        if ($timeout !== null) {
             $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
@@ -330,7 +335,7 @@ class BoltConnection implements ConnectionInterface
 
     public function getServerState(): string
     {
-        return $this->protocol()->serverState->get();
+        return $this->protocol()->serverState->name;
     }
 
     public function subscribeResult(CypherList $result): void
@@ -345,7 +350,7 @@ class BoltConnection implements ConnectionInterface
 
     private function assertNoFailure(Response $response): void
     {
-        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
+        if ($response->signature === Signature::FAILURE) {
             throw Neo4jException::fromBoltResponse($response);
         }
     }

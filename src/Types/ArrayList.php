@@ -106,6 +106,9 @@ class ArrayList extends AbstractCypherSequence
      *
      * @param iterable<mixed, NewValue> $values
      *
+     * @psalm-suppress LessSpecificImplementedReturnType
+     * @psalm-suppress ImplementedReturnTypeMismatch
+     *
      * @return static<TValue|NewValue>
      *
      * @psalm-mutation-free

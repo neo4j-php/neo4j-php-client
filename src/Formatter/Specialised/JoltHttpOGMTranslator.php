@@ -64,6 +64,8 @@ use UnexpectedValueException;
  * @psalm-immutable
  *
  * @psalm-import-type OGMTypes from OGMFormatter
+ *
+ * @psalm-suppress PossiblyUndefinedArrayOffset
  */
 final class JoltHttpOGMTranslator
 {

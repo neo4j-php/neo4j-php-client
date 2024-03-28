@@ -21,6 +21,8 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
  * @todo deprecate and create Query Object
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class Statement extends AbstractCypherObject
 {
