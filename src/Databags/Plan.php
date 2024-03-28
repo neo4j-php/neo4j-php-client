@@ -23,6 +23,8 @@ use Laudis\Neo4j\Types\CypherMap;
  * @see https://neo4j.com/docs/cypher-manual/current/execution-plans/
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class Plan extends AbstractCypherObject
 {
