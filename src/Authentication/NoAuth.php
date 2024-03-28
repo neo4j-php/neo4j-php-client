@@ -42,9 +42,9 @@ final class NoAuth implements AuthenticateInterface
         return $request->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
+    public function authenticateBolt(V4_4|V5 $protocol, string $userAgent): array
     {
-        $response = $bolt->hello(Auth::none($userAgent));
+        $response = $protocol->hello(Auth::none($userAgent));
         if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
             throw Neo4jException::fromBoltResponse($response);
         }

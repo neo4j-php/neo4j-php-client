@@ -15,10 +15,13 @@ namespace Laudis\Neo4j\Authentication;
 
 use function base64_encode;
 
-use Bolt\helpers\Auth;
-use Bolt\protocol\Response;
+use Bolt\enum\Signature;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use Exception;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -57,15 +60,34 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @throws Exception
      */
-    public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
+    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
-        $response = $bolt->hello(Auth::basic($this->username, $this->password, $userAgent));
-        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
+        if (method_exists($protocol, 'logon')) {
+            $response = $protocol->hello(['user_agent' => $userAgent])->getResponse();
+            if ($response->signature === Signature::FAILURE) {
+                throw Neo4jException::fromBoltResponse($response);
+            }
+
+            $response = $protocol->logon([
+                'scheme' => 'basic',
+                'principal' => $this->username,
+                'credentials' => $this->password,
+            ])->getResponse();
+        } else {
+            $response = $protocol->hello([
+                'user_agent' => $userAgent,
+                'scheme' => 'basic',
+                'principal' => $this->username,
+                'credentials' => $this->password,
+            ])->getResponse();
+        }
+
+        if ($response->signature === Signature::FAILURE) {
             throw Neo4jException::fromBoltResponse($response);
         }
 
         /** @var array{server: string, connection_id: string, hints: list} */
-        return $response->getContent();
+        return $response->content;
     }
 
     public function toString(UriInterface $uri): string

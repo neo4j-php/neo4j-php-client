@@ -50,9 +50,9 @@ final class KerberosAuth implements AuthenticateInterface
             ->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
+    public function authenticateBolt(V4_4|V5 $protocol, string $userAgent): array
     {
-        $response = $bolt->hello(Auth::kerberos($this->token, $userAgent));
+        $response = $protocol->hello(Auth::kerberos($this->token, $userAgent));
         if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
             throw Neo4jException::fromBoltResponse($response);
         }

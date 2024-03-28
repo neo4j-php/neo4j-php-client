@@ -47,9 +47,9 @@ final class OpenIDConnectAuth implements AuthenticateInterface
             ->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
+    public function authenticateBolt(V4_4|V5 $protocol, string $userAgent): array
     {
-        $response = $bolt->hello(Auth::bearer($this->token, $userAgent));
+        $response = $protocol->hello(Auth::bearer($this->token, $userAgent));
         if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
             throw Neo4jException::fromBoltResponse($response);
         }
