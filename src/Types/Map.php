@@ -190,7 +190,7 @@ class Map extends AbstractCypherSequence
     {
         return $this->withOperation(function () use ($comparator) {
             $pairs = $this->pairs()->sorted(static function (Pair $x, Pair $y) use ($comparator) {
-                if ($comparator) {
+                if ($comparator !== null) {
                     return $comparator($x->getKey(), $y->getKey());
                 }
 
@@ -245,12 +245,13 @@ class Map extends AbstractCypherSequence
      *
      * @param iterable<mixed, NewValue> $values
      *
-     * @return static<TValue|NewValue>
+     * @return self<TValue|NewValue>
      *
      * @psalm-mutation-free
      */
     public function merge(iterable $values): Map
     {
+        /** @var self<TValue|NewValue> */
         return $this->withOperation(function () use ($values) {
             $tbr = $this->toArray();
             $values = Map::fromIterable($values);

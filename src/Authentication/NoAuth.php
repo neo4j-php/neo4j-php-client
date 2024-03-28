@@ -13,10 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\helpers\Auth;
-use Bolt\protocol\Response;
+use Bolt\enum\Signature;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
+use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
@@ -42,15 +46,24 @@ final class NoAuth implements AuthenticateInterface
         return $request->withHeader('User-Agent', $userAgent);
     }
 
-    public function authenticateBolt(V4_4|V5 $protocol, string $userAgent): array
+    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
-        $response = $protocol->hello(Auth::none($userAgent));
-        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
-            throw Neo4jException::fromBoltResponse($response);
+        if (method_exists($protocol, 'logon')) {
+            $protocol->hello(['user_agent' => $userAgent]);
+            ResponseHelper::getResponse($protocol);
+
+            $protocol->logon([
+                'scheme' => 'none',
+            ]);
+        } else {
+            $protocol->hello([
+                'user_agent' => $userAgent,
+                'scheme' => 'none',
+            ]);
         }
 
         /** @var array{server: string, connection_id: string, hints: list} */
-        return $response->getContent();
+        return ResponseHelper::getResponse($protocol)->content;
     }
 
     public function toString(UriInterface $uri): string

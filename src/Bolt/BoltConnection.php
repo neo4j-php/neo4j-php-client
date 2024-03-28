@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\protocol\Response;
 use Bolt\enum\ServerState;
+use Bolt\enum\Signature;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
@@ -220,7 +221,7 @@ class BoltConnection implements ConnectionInterface
         $this->assertNoFailure($response);
 
         /** @var BoltMeta */
-        return $response->getContent();
+        return $response->content;
     }
 
     /**
@@ -270,10 +271,11 @@ class BoltConnection implements ConnectionInterface
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
         $tbr = [];
+        /** @var Response $response */
         foreach ($this->protocol()->pull($extra)->getResponses() as $response) {
             $this->assertNoFailure($response);
 
-            $tbr[] = $response->getContent();
+            $tbr[] = $response->content;
         }
 
         /** @var non-empty-list<list> */
@@ -282,8 +284,8 @@ class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if (!$this->protocol()->serverState === ServerState::FAILED && $this->isOpen()) {
-            if ($this->protocol()->serverState->is(ServerState::STREAMING, ServerState::TX_STREAMING)) {
+        if ($this->protocol()->serverState === ServerState::FAILED && $this->isOpen()) {
+            if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
                 $this->consumeResults();
             }
 
@@ -296,10 +298,10 @@ class BoltConnection implements ConnectionInterface
     private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
     {
         $extra = [];
-        if ($database) {
+        if ($database !== null) {
             $extra['db'] = $database;
         }
-        if ($timeout) {
+        if ($timeout !== null) {
             $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
@@ -330,7 +332,7 @@ class BoltConnection implements ConnectionInterface
 
     public function getServerState(): string
     {
-        return $this->protocol()->serverState->get();
+        return $this->protocol()->serverState->name;
     }
 
     public function subscribeResult(CypherList $result): void
@@ -345,7 +347,7 @@ class BoltConnection implements ConnectionInterface
 
     private function assertNoFailure(Response $response): void
     {
-        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
+        if ($response->signature === Signature::FAILURE) {
             throw Neo4jException::fromBoltResponse($response);
         }
     }

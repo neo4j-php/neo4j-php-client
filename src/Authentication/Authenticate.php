@@ -82,7 +82,9 @@ final class Authenticate
         $userInfo = $uri->getUserInfo();
 
         if (substr_count($userInfo, ':') === 1) {
-            [$user, $pass] = explode(':', $userInfo);
+            /** @var array{0: string, 1: string} $explode */
+            $explode = explode(':', $userInfo);
+            [$user, $pass] = $explode;
 
             return self::basic($user, $pass);
         }

@@ -144,8 +144,8 @@ final class BasicFormatter implements FormatterInterface
 
     private function mapPath(Path $path): array
     {
-        $relationships = $path->rels();
-        $nodes = $path->nodes();
+        $relationships = $path->rels;
+        $nodes = $path->nodes;
         $tbr = [];
         /**
          * @var mixed $node
