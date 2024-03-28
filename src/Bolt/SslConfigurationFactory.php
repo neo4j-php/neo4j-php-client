@@ -31,10 +31,12 @@ class SslConfigurationFactory
     public function create(UriInterface $uri, SslConfiguration $config): array
     {
         $mode = $config->getMode();
+        /** @var ''|'s'|'ssc' $sslConfig */
         $sslConfig = '';
         if ($mode === SslMode::FROM_URL()) {
             $scheme = $uri->getScheme();
             $explosion = explode('+', $scheme, 2);
+            /** @var ''|'s'|'ssc' $sslConfig */
             $sslConfig = $explosion[1] ?? '';
         } elseif ($mode === SslMode::ENABLE()) {
             $sslConfig = 's';
@@ -46,7 +48,7 @@ class SslConfigurationFactory
             return [$sslConfig, $this->enableSsl($uri->getHost(), $sslConfig, $config)];
         }
 
-        return [$sslConfig, []];
+        return ['', []];
     }
 
     /**

@@ -136,7 +136,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return !in_array($this->protocol()->serverState->get(), ['DISCONNECTED', 'DEFUNCT'], true);
+        return !in_array($this->protocol()->serverState, [ServerState::DISCONNECTED, ServerState::DEFUNCT], true);
     }
 
     public function setTimeout(float $timeout): void
