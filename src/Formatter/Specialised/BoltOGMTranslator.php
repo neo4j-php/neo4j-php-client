@@ -54,6 +54,7 @@ use UnexpectedValueException;
  * @psalm-import-type OGMTypes from OGMFormatter
  *
  * @psalm-immutable
+ *
  * @psalm-pure
  */
 final class BoltOGMTranslator

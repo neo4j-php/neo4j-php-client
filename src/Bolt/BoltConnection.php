@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\protocol\Response;
 use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
+use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Common\ConnectionConfiguration;

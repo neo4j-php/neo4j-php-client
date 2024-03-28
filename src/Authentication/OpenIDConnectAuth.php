@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\enum\Signature;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
@@ -22,7 +21,6 @@ use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 

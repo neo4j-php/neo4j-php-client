@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use Generator;
-use Traversable;
 use function array_filter;
 use function array_map;
 use function array_unique;
@@ -25,6 +23,7 @@ use const DNS_AAAA;
 
 use function dns_get_record;
 
+use Generator;
 use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Throwable;
 

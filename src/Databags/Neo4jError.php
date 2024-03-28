@@ -40,6 +40,7 @@ final class Neo4jError
     {
         /**
          * @psalm-suppress ImpurePropertyFetch
+         *
          * @var array{code: string, message:string} $content
          */
         $content = $response->content;

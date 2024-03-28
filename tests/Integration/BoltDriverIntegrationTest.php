@@ -24,6 +24,7 @@ final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
 {
     /**
      * @throws Exception
+     *
      * @psalm-suppress MixedMethodCall
      */
     public function testValidHostname(): void
@@ -37,6 +38,7 @@ final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
 
     /**
      * @throws Exception
+     *
      * @psalm-suppress MixedMethodCall
      */
     public function testValidUrl(): void

@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Generator;
 use function array_key_exists;
 use function array_reverse;
 
@@ -25,6 +24,7 @@ use function call_user_func;
 use function count;
 
 use Countable;
+use Generator;
 
 use function get_object_vars;
 use function implode;
@@ -299,6 +299,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      * @return ArrayList<mixed>
      *
      * @psalm-mutation-free
+     *
      * @psalm-suppress MixedArrayAccess
      */
     public function pluck(string $key): ArrayList
@@ -320,6 +321,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      * @return Map<mixed>
      *
      * @psalm-mutation-free
+     *
      * @psalm-suppress MixedArrayAccess
      */
     public function keyBy(string $key): Map
