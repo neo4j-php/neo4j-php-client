@@ -41,12 +41,12 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 
     public function testAvailabilityFullImplementation(): void
     {
-        $results = $this->getSession()
-            ->beginTransaction()
+        $transaction = $this->getSession()->beginTransaction();
+        $results = $transaction
             ->run('UNWIND [1] AS x RETURN x')
             ->first()
             ->get('x');
-
+        $transaction->rollback();
         self::assertEquals(1, $results);
     }
 
