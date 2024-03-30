@@ -131,14 +131,9 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])));
 
     public function testInvalidStatement(): void
     {
-        $exception = false;
-        try {
-            $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
-            $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->runStatement($statement));
-        } catch (Neo4jException) {
-            $exception = true;
-        }
-        self::assertTrue($exception);
+        $this->expectException(Neo4jException::class);
+        $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
+        $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->runStatement($statement));
     }
 
     public function testStatements(): void
