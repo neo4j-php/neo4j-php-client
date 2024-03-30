@@ -23,6 +23,7 @@ use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
+use Exception;
 
 use function sprintf;
 
@@ -49,26 +50,29 @@ final class OpenIDConnectAuth implements AuthenticateInterface
             ->withHeader('User-Agent', $userAgent);
     }
 
+    /**
+     * @return array{server: string, connection_id: string, hints: array}
+     * @throws Exception
+     */
     public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
         if (method_exists($protocol, 'logon')) {
             $protocol->hello(['user_agent' => $userAgent]);
-            ResponseHelper::getResponse($protocol);
-
+            $response = ResponseHelper::getResponse($protocol);
             $protocol->logon([
                 'scheme' => 'bearer',
                 'credentials' => $this->token,
             ]);
+            ResponseHelper::getResponse($protocol);
+            return $response->content;
         } else {
             $protocol->hello([
                 'user_agent' => $userAgent,
                 'scheme' => 'bearer',
                 'credentials' => $this->token,
             ]);
+            return ResponseHelper::getResponse($protocol)->content;
         }
-
-        /** @var array{server: string, connection_id: string, hints: list} */
-        return ResponseHelper::getResponse($protocol)->content;
     }
 
     public function toString(UriInterface $uri): string
