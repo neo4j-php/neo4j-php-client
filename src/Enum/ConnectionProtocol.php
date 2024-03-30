@@ -20,6 +20,10 @@ use Bolt\protocol\V4_2;
 use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 
@@ -33,6 +37,10 @@ use Laudis\TypedEnum\TypedEnum;
  * @method static ConnectionProtocol BOLT_V43()
  * @method static ConnectionProtocol BOLT_V44()
  * @method static ConnectionProtocol BOLT_V5()
+ * @method static ConnectionProtocol BOLT_V5_1()
+ * @method static ConnectionProtocol BOLT_V5_2()
+ * @method static ConnectionProtocol BOLT_V5_3()
+ * @method static ConnectionProtocol BOLT_V5_4()
  * @method static ConnectionProtocol HTTP()
  *
  * @extends TypedEnum<string>
@@ -50,6 +58,10 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
     private const BOLT_V43 = '4.3';
     private const BOLT_V44 = '4.4';
     private const BOLT_V5 = '5';
+    private const BOLT_V5_1 = '5.1';
+    private const BOLT_V5_2 = '5.2';
+    private const BOLT_V5_3 = '5.3';
+    private const BOLT_V5_4 = '5.4';
     private const HTTP = 'http';
 
     public function isBolt(): bool
@@ -63,7 +75,7 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
      *
      * @psalm-suppress ImpureMethodCall
      */
-    public static function determineBoltVersion(V3|V4|V4_1|V4_2|V4_3|V4_4|V5 $bolt): self
+    public static function determineBoltVersion(V3|V4|V4_1|V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4 $bolt): self
     {
         $version = self::resolve($bolt->getVersion());
 

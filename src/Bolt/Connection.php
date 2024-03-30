@@ -14,12 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\IConnection;
-use Bolt\protocol\AProtocol;
 
 class Connection
 {
-    private ?AProtocol $protocol = null;
-
     /**
      * @param ''|'s'|'ssc' $ssl
      */
