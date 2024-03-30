@@ -57,19 +57,21 @@ final class BasicAuth implements AuthenticateInterface
     }
 
     /**
+     * @return array{server: string, connection_id: string, hints: array}
      * @throws Exception
      */
     public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
         if (method_exists($protocol, 'logon')) {
             $protocol->hello(['user_agent' => $userAgent]);
-            ResponseHelper::getResponse($protocol);
-
+            $response = ResponseHelper::getResponse($protocol);
             $protocol->logon([
                 'scheme' => 'basic',
                 'principal' => $this->username,
                 'credentials' => $this->password,
             ]);
+            ResponseHelper::getResponse($protocol);
+            return $response->content;
         } else {
             $protocol->hello([
                 'user_agent' => $userAgent,
@@ -77,10 +79,8 @@ final class BasicAuth implements AuthenticateInterface
                 'principal' => $this->username,
                 'credentials' => $this->password,
             ]);
+            return ResponseHelper::getResponse($protocol)->content;
         }
-
-        /** @var array{server: string, connection_id: string, hints: list} */
-        return ResponseHelper::getResponse($protocol)->content;
     }
 
     public function toString(UriInterface $uri): string
