@@ -16,8 +16,7 @@ namespace Laudis\Neo4j\Bolt;
 use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
 use Bolt\protocol\Response;
-use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
+use Bolt\protocol\{V4_4, V5, V5_3, V5_4};
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -32,7 +31,7 @@ use Psr\Http\Message\UriInterface;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_4|V5|V5_3|V5_4, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  */
@@ -54,7 +53,7 @@ class BoltConnection implements ConnectionInterface
     private array $subscribedResults = [];
 
     /**
-     * @return array{0: V4_4|V5, 1: Connection}
+     * @return array{0: V4_4|V5|V5_3|V5_4, 1: Connection}
      */
     public function getImplementation(): array
     {
@@ -65,7 +64,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5 $boltProtocol,
+        private V4_4|V5|V5_3|V5_4 $boltProtocol,
         private readonly Connection $connection,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
@@ -254,7 +253,7 @@ class BoltConnection implements ConnectionInterface
         $this->assertNoFailure($response);
     }
 
-    public function protocol(): V4_4|V5
+    public function protocol(): V4_4|V5|V5_3|V5_4
     {
         return $this->boltProtocol;
     }
