@@ -15,7 +15,10 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\connection\IConnection;
-use Bolt\protocol\{V4_4, V5, V5_3, V5_4};
+use Bolt\protocol\V4_4;
+use Bolt\protocol\V5;
+use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use RuntimeException;
 

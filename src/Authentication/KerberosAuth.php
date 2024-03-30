@@ -19,11 +19,11 @@ use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
+use Exception;
 use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
-use Exception;
 
 use function sprintf;
 
@@ -54,8 +54,9 @@ final class KerberosAuth implements AuthenticateInterface
     }
 
     /**
-     * @return array{server: string, connection_id: string, hints: array}
      * @throws Exception
+     *
+     * @return array{server: string, connection_id: string, hints: list}
      */
     public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
@@ -68,6 +69,8 @@ final class KerberosAuth implements AuthenticateInterface
                 'credentials' => $this->token,
             ]);
             ResponseHelper::getResponse($protocol);
+
+            /** @var array{server: string, connection_id: string, hints: list} */
             return $response->content;
         } else {
             $protocol->hello([
@@ -76,6 +79,8 @@ final class KerberosAuth implements AuthenticateInterface
                 'principal' => '',
                 'credentials' => $this->token,
             ]);
+
+            /** @var array{server: string, connection_id: string, hints: list} */
             return ResponseHelper::getResponse($protocol)->content;
         }
     }
