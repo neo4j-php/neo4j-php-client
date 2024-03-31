@@ -109,6 +109,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->config->getAccessMode()
             );
         } catch (Throwable $e) {
+            $this->connection->reset();
             $this->isRolledBack = true;
             throw $e;
         }
