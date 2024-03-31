@@ -87,13 +87,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
 
     public function testInvalidRun(): void
     {
-        $exception = false;
-        try {
-            $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']));
-        } catch (Neo4jException) {
-            $exception = true;
-        }
-        self::assertTrue($exception);
+        $this->expectException(Neo4jException::class);
+        $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']));
     }
 
     public function testInvalidRunRetry(): void
@@ -106,7 +101,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
         }
         self::assertTrue($exception);
 
-        $this->getSession()->run('RETURN 1 AS one');
+        $response = $this->getSession()->run('RETURN 1 AS one');
+        $this->assertEquals(1, $response->first()->get('one'));
     }
 
     public function testValidStatement(): void
@@ -142,7 +138,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])));
         $response = $this->getSession()->runStatements([
             Statement::create('MERGE (x:TestNode {test: $test})', $params),
             Statement::create('MERGE (x:OtherTestNode {test: $otherTest})', $params),
-            Statement::create('RETURN 1 AS x', []),
+            Statement::create('RETURN 1 AS x'),
         ]);
 
         self::assertEquals(3, $response->count());
