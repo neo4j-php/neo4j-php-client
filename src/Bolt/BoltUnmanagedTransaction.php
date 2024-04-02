@@ -71,8 +71,14 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         });
 
-        $this->connection->commit();
-        $this->isCommitted = true;
+        try {
+            $this->connection->commit();
+            $this->isCommitted = true;
+        } catch (Throwable $e) {
+            $this->isCommitted = false;
+            $this->isRolledBack = true;
+            throw $e;
+        }
 
         return $tbr;
     }
@@ -109,7 +115,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->config->getAccessMode()
             );
         } catch (Throwable $e) {
-            $this->connection->reset();
             $this->isRolledBack = true;
             throw $e;
         }
