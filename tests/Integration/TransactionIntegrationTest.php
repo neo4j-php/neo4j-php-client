@@ -13,13 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Laudis\Neo4j\Bolt\BoltDriver;
-use Laudis\Neo4j\Bolt\Connection;
-use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
-use ReflectionClass;
-use Throwable;
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 
 final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
 {
@@ -215,28 +211,18 @@ CYPHER
         self::assertFalse($tsx->isCommitted());
     }
 
-    // TODO commit on READY state cause stuck neo4j connection on older version and disconnect at newer
-//    public function testCommitInvalid(): void
-//    {
-//        $tsx = $this->getSession()->beginTransaction();
-//        $tsx->commit();
-//
-//        self::assertTrue($tsx->isFinished());
-//        self::assertFalse($tsx->isRolledBack());
-//        self::assertTrue($tsx->isCommitted());
-//
-//        $exception = false;
-//        try {
-//            $tsx->commit();
-//        } catch (Throwable) {
-//            $exception = true;
-//        }
-//        self::assertTrue($exception);
-//
-//        self::assertTrue($tsx->isFinished());
-//        self::assertTrue($tsx->isRolledBack());
-//        self::assertFalse($tsx->isCommitted());
-//    }
+    public function testCommitInvalid(): void
+    {
+        $tsx = $this->getSession()->beginTransaction();
+        $tsx->commit();
+
+        self::assertTrue($tsx->isFinished());
+        self::assertFalse($tsx->isRolledBack());
+        self::assertTrue($tsx->isCommitted());
+
+        $this->expectException(Neo4jException::class);
+        $tsx->commit();
+    }
 
     public function testRollbackValid(): void
     {
@@ -248,28 +234,18 @@ CYPHER
         self::assertFalse($tsx->isCommitted());
     }
 
-    // TODO rollback on READY state cause stuck neo4j connection on older version and disconnect at newer
-//    public function testRollbackInvalid(): void
-//    {
-//        $tsx = $this->getSession()->beginTransaction();
-//        $tsx->rollback();
-//
-//        self::assertTrue($tsx->isFinished());
-//        self::assertTrue($tsx->isRolledBack());
-//        self::assertFalse($tsx->isCommitted());
-//
-//        $exception = false;
-//        try {
-//            $tsx->rollback();
-//        } catch (Throwable) {
-//            $exception = true;
-//        }
-//        self::assertTrue($exception);
-//
-//        self::assertTrue($tsx->isFinished());
-//        self::assertTrue($tsx->isRolledBack());
-//        self::assertFalse($tsx->isCommitted());
-//    }
+    public function testRollbackInvalid(): void
+    {
+        $tsx = $this->getSession()->beginTransaction();
+        $tsx->rollback();
+
+        self::assertTrue($tsx->isFinished());
+        self::assertTrue($tsx->isRolledBack());
+        self::assertFalse($tsx->isCommitted());
+
+        $this->expectException(Neo4jException::class);
+        $tsx->rollback();
+    }
 
 //    /**
 //     * TODO - rework this test
@@ -306,9 +282,7 @@ CYPHER
 //        self::assertCount(3, $cache[$key]);
 //    }
 
-    /**
-     * @doesNotPerformAssertions
-     */
+    #[DoesNotPerformAssertions]
     public function testTransactionRunNoConsumeResult(): void
     {
         $tsx = $this->getSession()->beginTransaction([]);
@@ -317,9 +291,7 @@ CYPHER
         $tsx->commit();
     }
 
-    /**
-     * @doesNotPerformAssertions
-     */
+    #[DoesNotPerformAssertions]
     public function testTransactionRunNoConsumeButSaveResult(): void
     {
         $tsx = $this->getSession()->beginTransaction([]);
