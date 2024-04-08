@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONNECTION: neo4j://neo4j:testtest@localhost:7687
-    name: "Running on PHP 8.0 with a Neo4j 5.10-enterprise cluster"
+    name: "Running on PHP 8.1 with a Neo4j 5.10-enterprise cluster"
 
     steps:
       - uses: actions/checkout@v2
@@ -25,14 +25,13 @@ jobs:
       - uses: php-actions/composer@v6
         with:
           progress: yes
-          php_version: 8.0
+          php_version: 8.1
           version: 2
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
-          php_version: 8.0
+          php_version: 8.1
           memory_limit: 1024M
-          version: 9
           testsuite: Integration
           bootstrap: vendor/autoload.php
 
