@@ -32,6 +32,7 @@ jobs:
           configuration: phpunit.xml.dist
           php_version: 8.1
           memory_limit: 1024M
+          version: 10
           testsuite: Integration
           bootstrap: vendor/autoload.php
 
