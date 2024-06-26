@@ -186,7 +186,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $bolt->route([], [], ['db' => $config->getDatabase()])
             ->getResponse()
-            ->content;
+            ->getContent();
 
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();
