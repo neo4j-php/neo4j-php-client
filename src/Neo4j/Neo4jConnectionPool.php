@@ -123,7 +123,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $latestError = null;
 
         if ($table == null) {
-            $addresses = $this->resolver->getAddresses((string) $this->data->getUri());
+            $addresses = (function () {
+                yield gethostbyname($this->data->getUri()->getHost());
+                yield from $this->resolver->getAddresses($this->data->getUri()->getHost());
+            })();
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
                 $pool = $this->createOrGetPool(Uri::create($address));
