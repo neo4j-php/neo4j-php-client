@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use Bolt\connection\IConnection;
-use Bolt\enum\ServerState;
+use Bolt\protocol\ServerState;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;
@@ -43,8 +43,9 @@ final class BoltFactoryTest extends TestCase
         $protocolFactory = $this->createMock(ProtocolFactory::class);
         $protocolFactory->method('createProtocol')
             ->willReturnCallback(static function (IConnection $connection) {
-                $protocol = new V5(1, $connection);
-                $protocol->serverState = ServerState::READY;
+                $serverState = new ServerState();
+                $serverState->set(ServerState::READY);
+                $protocol = new V5(1, $connection, $serverState);
 
                 return [
                     $protocol,
