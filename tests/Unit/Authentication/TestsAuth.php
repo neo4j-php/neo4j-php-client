@@ -79,7 +79,7 @@ trait TestsAuth
             $this->expectExceptionMessage($exception->getMessage());
         }
 
-        $response = $instance->authenticateBolt($bolt, $userAgent);
+        $response = $instance->authenticate($bolt, $userAgent);
 
         $this->assertEquals($contents, $response);
     }

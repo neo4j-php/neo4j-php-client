@@ -41,15 +41,7 @@ final class OpenIDConnectAuth implements AuthenticateInterface, Stringable
         private string $token
     ) {}
 
-    /**
-     * @psalm-mutation-free
-     */
-    public function authenticateHttp(RequestInterface $request, string $userAgent): RequestInterface
-    {
-        throw new RuntimeException('Cannot authenticate http requests with OpenID Connect, use bolt instead.');
-    }
-
-    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
+    public function authenticate(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
     {
         $response = $bolt->hello(Auth::bearer($this->token, $userAgent));
         if ($response->getSignature() === Response::SIGNATURE_FAILURE) {

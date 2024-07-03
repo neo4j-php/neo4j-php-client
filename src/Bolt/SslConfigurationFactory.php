@@ -23,7 +23,7 @@ use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
 use Psr\Http\Message\UriInterface;
 
-class SslConfigurationFactory
+final class SslConfigurationFactory
 {
     /**
      * @return array{0: 's'|'ssc'|'', 1: array{verify_peer?: bool, peer_name?: string, SNI_enabled?: bool, allow_self_signed?: bool}}

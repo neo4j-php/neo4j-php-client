@@ -33,10 +33,6 @@ use Throwable;
 /**
  * Manages a transaction over the bolt protocol.
  *
- * @template T
- *
- * @implements UnmanagedTransactionInterface<T>
- *
  * @psalm-import-type BoltMeta from FormatterInterface
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
@@ -83,7 +79,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @throws Throwable
      */
-    public function run(string $statement, iterable $parameters = [])
+    public function run(string $statement, iterable $parameters = []): SummarizedResult
     {
         return $this->runStatement(new Statement($statement, $parameters));
     }
@@ -91,7 +87,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @throws Throwable
      */
-    public function runStatement(Statement $statement)
+    public function runStatement(Statement $statement): SummarizedResult
     {
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
         $start = microtime(true);

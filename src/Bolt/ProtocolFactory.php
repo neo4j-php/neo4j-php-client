@@ -36,7 +36,7 @@ class ProtocolFactory
             throw new RuntimeException('Client only supports bolt version 4.4.* and ^5.0');
         }
 
-        $response = $auth->authenticateBolt($protocol, $userAgent);
+        $response = $auth->authenticate($protocol, $userAgent);
 
         return [$protocol, $response];
     }

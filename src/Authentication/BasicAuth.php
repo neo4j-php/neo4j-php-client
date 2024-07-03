@@ -42,23 +42,9 @@ final class BasicAuth implements AuthenticateInterface, Stringable
     ) {}
 
     /**
-     * @psalm-mutation-free
-     */
-    public function authenticateHttp(RequestInterface $request, string $userAgent): RequestInterface
-    {
-        /**
-         * @psalm-suppress ImpureMethodCall Request is a pure object:
-         *
-         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
-         */
-        return $request->withHeader('Authorization', sprintf('Basic %s:%s', $this->username, $this->password))
-            ->withHeader('User-Agent', $userAgent);
-    }
-
-    /**
      * @throws Exception
      */
-    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
+    public function authenticate(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
     {
         $response = $bolt->hello(Auth::basic($this->username, $this->password, $userAgent));
         if ($response->getSignature() === Response::SIGNATURE_FAILURE) {

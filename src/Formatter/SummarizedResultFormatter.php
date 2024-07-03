@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use function in_array;
 use function is_int;
 
@@ -53,79 +55,62 @@ use UnexpectedValueException;
 final class SummarizedResultFormatter implements FormatterInterface
 {
     /**
+     * @psalm-mutation-free
+     */
+    public function __construct(
+        private BoltOGMTranslator $boltTranslator
+    ) {}
+
+    /**
+     * Creates a new instance of itself.
+     *
      * @pure
      */
     public static function create(): self
     {
-        return new self(OGMFormatter::create());
+        return new self(new BoltOGMTranslator());
     }
 
     /**
-     * @psalm-mutation-free
+     * @param BoltMeta $meta
+     *
+     * @return CypherList<CypherMap<OGMTypes>>
      */
-    public function __construct(
-        private OGMFormatter $formatter
-    ) {}
+    public function basicFormat(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder): CypherList
+    {
+        $tbr = (new CypherList(function () use ($result, $meta) {
+            foreach ($result as $row) {
+                yield $this->formatRow($meta, $row);
+            }
+        }))->withCacheLimit($result->getFetchSize());
+
+        $connection->subscribeResult($tbr);
+        $result->addFinishedCallback(function (array $response) use ($holder) {
+            if (array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
+                $holder->setBookmark(new Bookmark([$response['bookmark']]));
+            }
+        });
+
+        return $tbr;
+    }
 
     /**
-     * @param CypherList<CypherMap<OGMTypes>> $results
+     * @param BoltMeta    $meta
+     * @param list<mixed> $result
      *
-     * @return SummarizedResult<CypherMap<OGMTypes>>
+     * @return CypherMap<OGMTypes>
      *
      * @psalm-mutation-free
      */
-    public function formatHttpStats(stdClass $response, HttpConnection $connection, Statement $statement, float $resultAvailableAfter, float $resultConsumedAfter, CypherList $results): SummarizedResult
+    private function formatRow(array $meta, array $result): CypherMap
     {
-        if (isset($response->summary) && $response->summary instanceof stdClass) {
-            /** @var stdClass $stats */
-            $stats = $response->summary->stats;
-        } elseif (isset($response->stats)) {
-            /** @var stdClass $stats */
-            $stats = $response->stats;
-        } else {
-            throw new UnexpectedValueException('No stats found in the response set');
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
+        foreach ($meta['fields'] as $i => $column) {
+            $map[$column] = $this->boltTranslator->mapValueToType($result[$i]);
         }
 
-        /**
-         * @psalm-suppress MixedPropertyFetch
-         * @psalm-suppress MixedArgument
-         */
-        $counters = new SummaryCounters(
-            $stats->nodes_created ?? 0,
-            $stats->nodes_deleted ?? 0,
-            $stats->relationships_created ?? 0,
-            $stats->relationships_deleted ?? 0,
-            $stats->properties_set ?? 0,
-            $stats->labels_added ?? 0,
-            $stats->labels_removed ?? 0,
-            $stats->indexes_added ?? 0,
-            $stats->indexes_removed ?? 0,
-            $stats->constraints_added ?? 0,
-            $stats->constraints_removed ?? 0,
-            $stats->contains_updates ?? false,
-            $stats->contains_system_updates ?? false,
-            $stats->system_updates ?? 0,
-        );
-
-        $summary = new ResultSummary(
-            $counters,
-            $connection->getDatabaseInfo(),
-            new CypherList(),
-            null,
-            null,
-            $statement,
-            QueryTypeEnum::fromCounters($counters),
-            $resultAvailableAfter,
-            $resultConsumedAfter,
-            new ServerInfo(
-                $connection->getServerAddress(),
-                $connection->getProtocol(),
-                $connection->getServerAgent()
-            )
-        );
-
-        /** @var SummarizedResult<CypherMap<OGMTypes>> */
-        return new SummarizedResult($summary, $results);
+        return new CypherMap($map);
     }
 
     /**
@@ -193,7 +178,7 @@ final class SummarizedResultFormatter implements FormatterInterface
             );
         });
 
-        $formattedResult = $this->formatter->formatBoltResult($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement, $holder);
+        $formattedResult = $this->basicFormat($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement, $holder);
 
         /**
          * @psalm-suppress MixedArgument
@@ -201,46 +186,5 @@ final class SummarizedResultFormatter implements FormatterInterface
          * @var SummarizedResult<CypherMap<OGMTypes>>
          */
         return (new SummarizedResult($summary, $formattedResult))->withCacheLimit($result->getFetchSize());
-    }
-
-    /**
-     * @psalm-mutation-free
-     *
-     * @psalm-suppress ImpureMethodCall
-     */
-    public function formatHttpResult(ResponseInterface $response, stdClass $body, HttpConnection $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList
-    {
-        /** @var list<SummarizedResult<CypherMap<OGMTypes>>> */
-        $tbr = [];
-
-        $toDecorate = $this->formatter->formatHttpResult($response, $body, $connection, $resultsAvailableAfter, $resultsConsumedAfter, $statements);
-        $i = 0;
-        foreach ($statements as $statement) {
-            /** @var list<stdClass> $results */
-            $results = $body->results;
-            $result = $results[$i];
-            $tbr[] = $this->formatHttpStats($result, $connection, $statement, $resultsAvailableAfter, $resultsConsumedAfter, $toDecorate->get($i));
-            ++$i;
-        }
-
-        return new CypherList($tbr);
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function decorateRequest(RequestInterface $request, ConnectionInterface $connection): RequestInterface
-    {
-        return $this->formatter->decorateRequest($request, $connection);
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function statementConfigOverride(ConnectionInterface $connection): array
-    {
-        return array_merge($this->formatter->statementConfigOverride($connection), [
-            'includeStats' => true,
-        ]);
     }
 }
