@@ -12,7 +12,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      CONNECTION: neo4j://neo4j:testtest@localhost:7688
+      CONNECTION: neo4j://neo4j:testtest@core1:7688
     name: "Running on PHP 8.1 in a Neo4j 4.4 cluster"
 
     steps:
