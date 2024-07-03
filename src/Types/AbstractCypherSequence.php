@@ -24,6 +24,7 @@ use function call_user_func;
 use function count;
 
 use Countable;
+use Generator;
 
 use function get_object_vars;
 use function implode;
@@ -70,20 +71,20 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     protected int $generatorPosition = 0;
 
     /**
-     * @var (callable():(\Iterator<TKey, TValue>))|\Iterator<TKey, TValue>
+     * @var (callable():(Iterator<TKey, TValue>))|Iterator<TKey, TValue>
      */
     protected $generator;
 
     /**
      * @template Value
      *
-     * @param callable():(\Generator<mixed, Value>) $operation
+     * @param callable():(Generator<mixed, Value>) $operation
      *
      * @return static<Value, TKey>
      *
      * @psalm-mutation-free
      */
-    abstract protected function withOperation($operation): self;
+    abstract protected function withOperation(callable $operation): self;
 
     /**
      * Copies the sequence.
@@ -282,7 +283,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         return $this->withOperation(function () use ($comparator) {
             $iterable = $this->toArray();
 
-            if ($comparator) {
+            if ($comparator !== null) {
                 uasort($iterable, $comparator);
             } else {
                 asort($iterable);
@@ -298,6 +299,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      * @return ArrayList<mixed>
      *
      * @psalm-mutation-free
+     *
+     * @psalm-suppress MixedArrayAccess
      */
     public function pluck(string $key): ArrayList
     {
@@ -318,6 +321,8 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      * @return Map<mixed>
      *
      * @psalm-mutation-free
+     *
+     * @psalm-suppress MixedArrayAccess
      */
     public function keyBy(string $key): Map
     {
@@ -446,15 +451,16 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
 
     public function valid(): bool
     {
-        return $this->currentPosition < $this->generatorPosition || $this->getGenerator()->valid();
+        return $this->currentPosition < $this->generatorPosition || array_key_exists($this->currentPosition, $this->keyCache) || $this->getGenerator()->valid();
     }
 
     public function rewind(): void
     {
-        $this->currentPosition = max(
-            $this->currentPosition - $this->cacheLimit - 1,
-            0
-        );
+        if ($this->currentPosition > $this->cacheLimit) {
+            throw new BadMethodCallException('Cannot rewind cursor: limit exceeded. In order to increase the amount of prefetched (and consequently cached) rows, increase the fetch limit in the session configuration.');
+        }
+
+        $this->currentPosition = 0;
     }
 
     public function next(): void
@@ -466,6 +472,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
             $generator->next();
 
             if ($generator->valid()) {
+                /** @var TKey */
                 $this->keyCache[] = $generator->key();
                 $this->cache[$generator->key()] = $generator->current();
             }
@@ -489,7 +496,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      */
     protected function cacheKey()
     {
-        return $this->keyCache[$this->currentPosition % max($this->cacheLimit - 1, 1)];
+        return $this->keyCache[$this->currentPosition % max($this->cacheLimit, 1)];
     }
 
     /**
@@ -519,14 +526,16 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     {
         $generator = $this->getGenerator();
 
-        if (count($this->cache) % $this->cacheLimit === 0) {
-            $this->cache = [];
-            $this->keyCache = [];
+        if (count($this->keyCache) !== 0 && count($this->cache) !== 0 && count($this->cache) % ($this->cacheLimit + 1) === 0) {
+            $this->cache = [array_key_last($this->cache) => $this->cache[array_key_last($this->cache)]];
+            $this->keyCache = [$this->keyCache[array_key_last($this->keyCache)]];
         }
 
         if ($this->cache === [] && $generator->valid()) {
-            $this->cache[$generator->key()] = $generator->current();
-            $this->keyCache[] = $generator->key();
+            /** @var TKey $key */
+            $key = $generator->key();
+            $this->cache[$key] = $generator->current();
+            $this->keyCache[] = $key;
         }
     }
 

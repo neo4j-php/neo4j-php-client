@@ -37,9 +37,9 @@ final class BoltResult implements Iterator
     private array $finishedCallbacks = [];
 
     public function __construct(
-        private BoltConnection $connection,
-        private int $fetchSize,
-        private int $qid
+        private readonly BoltConnection $connection,
+        private readonly int $fetchSize,
+        private readonly int $qid
     ) {}
 
     public function getFetchSize(): int

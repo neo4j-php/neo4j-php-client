@@ -28,6 +28,8 @@ use Laudis\Neo4j\Types\CypherList;
  * - information about connection environment
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class ResultSummary extends AbstractCypherObject
 {
@@ -35,16 +37,16 @@ final class ResultSummary extends AbstractCypherObject
      * @param CypherList<Notification> $notifications
      */
     public function __construct(
-        private SummaryCounters $counters,
-        private DatabaseInfo $databaseInfo,
-        private CypherList $notifications,
-        private ?Plan $plan,
-        private ?ProfiledPlan $profiledPlan,
-        private Statement $statement,
-        private QueryTypeEnum $queryType,
-        private float $resultAvailableAfter,
-        private float $resultConsumedAfter,
-        private ServerInfo $serverInfo
+        private readonly SummaryCounters $counters,
+        private readonly DatabaseInfo $databaseInfo,
+        private readonly CypherList $notifications,
+        private readonly ?Plan $plan,
+        private readonly ?ProfiledPlan $profiledPlan,
+        private readonly Statement $statement,
+        private readonly QueryTypeEnum $queryType,
+        private readonly float $resultAvailableAfter,
+        private readonly float $resultConsumedAfter,
+        private readonly ServerInfo $serverInfo
     ) {}
 
     /**

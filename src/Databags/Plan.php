@@ -23,6 +23,8 @@ use Laudis\Neo4j\Types\CypherMap;
  * @see https://neo4j.com/docs/cypher-manual/current/execution-plans/
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class Plan extends AbstractCypherObject
 {
@@ -32,10 +34,10 @@ final class Plan extends AbstractCypherObject
      * @param CypherList<string> $identifiers
      */
     public function __construct(
-        private CypherMap $arguments,
-        private CypherList $list,
-        private CypherList $identifiers,
-        private string $operator
+        private readonly CypherMap $arguments,
+        private readonly CypherList $list,
+        private readonly CypherList $identifiers,
+        private readonly string $operator
     ) {}
 
     /**

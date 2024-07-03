@@ -27,10 +27,10 @@ interface AuthenticateInterface
      *
      * @return array{server: string, connection_id: string, hints: list}
      */
-    public function authenticate(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array;
+    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array;
 
     /**
      * Returns a string representation of the authentication.
      */
-    public function __toString(): string;
+    public function toString(UriInterface $uri): string;
 }

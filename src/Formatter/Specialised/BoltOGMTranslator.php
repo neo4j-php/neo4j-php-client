@@ -54,31 +54,34 @@ use UnexpectedValueException;
  * @psalm-import-type OGMTypes from OGMFormatter
  *
  * @psalm-immutable
+ *
+ * @psalm-pure
  */
 final class BoltOGMTranslator
 {
     /**
      * @var array<string, pure-callable(mixed):OGMTypes>
      */
-    private array $rawToTypes;
+    private readonly array $rawToTypes;
 
     public function __construct()
     {
+        /** @psalm-suppress InvalidPropertyAssignmentValue */
         $this->rawToTypes = [
-            BoltNode::class => [$this, 'makeFromBoltNode'],
-            BoltDate::class => [$this, 'makeFromBoltDate'],
-            BoltDuration::class => [$this, 'makeFromBoltDuration'],
-            BoltDateTime::class => [$this, 'makeFromBoltDateTime'],
-            BoltTime::class => [$this, 'makeFromBoltTime'],
-            BoltLocalDateTime::class => [$this, 'makeFromBoltLocalDateTime'],
-            BoltLocalTime::class => [$this, 'makeFromBoltLocalTime'],
-            BoltRelationship::class => [$this, 'makeFromBoltRelationship'],
-            BoltUnboundRelationship::class => [$this, 'makeFromBoltUnboundRelationship'],
-            BoltPath::class => [$this, 'makeFromBoltPath'],
-            BoltPoint2D::class => [$this, 'makeFromBoltPoint2D'],
-            BoltPoint3D::class => [$this, 'makeFromBoltPoint3D'],
-            BoltDateTimeZoneId::class => [$this, 'makeBoltTimezoneIdentifier'],
-            'array' => [$this, 'mapArray'],
+            BoltNode::class => $this->makeFromBoltNode(...),
+            BoltDate::class => $this->makeFromBoltDate(...),
+            BoltDuration::class => $this->makeFromBoltDuration(...),
+            BoltDateTime::class => $this->makeFromBoltDateTime(...),
+            BoltTime::class => $this->makeFromBoltTime(...),
+            BoltLocalDateTime::class => $this->makeFromBoltLocalDateTime(...),
+            BoltLocalTime::class => $this->makeFromBoltLocalTime(...),
+            BoltRelationship::class => $this->makeFromBoltRelationship(...),
+            BoltUnboundRelationship::class => $this->makeFromBoltUnboundRelationship(...),
+            BoltPath::class => $this->makeFromBoltPath(...),
+            BoltPoint2D::class => $this->makeFromBoltPoint2D(...),
+            BoltPoint3D::class => $this->makeFromBoltPoint3D(...),
+            BoltDateTimeZoneId::class => $this->makeBoltTimezoneIdentifier(...),
+            'array' => $this->mapArray(...),
             'int' => static fn (int $x): int => $x,
             'null' => static fn (): ?object => null,
             'bool' => static fn (bool $x): bool => $x,
@@ -95,21 +98,21 @@ final class BoltOGMTranslator
          * @var string $name
          * @var mixed  $property
          */
-        foreach ($node->properties() as $name => $property) {
+        foreach ($node->properties as $name => $property) {
             $properties[$name] = $this->mapValueToType($property);
         }
 
         /** @var ?string|null $elementId */
         $elementId = null;
         if ($node instanceof \Bolt\protocol\v5\structures\Node) {
-            $elementId = $node->element_id();
+            $elementId = $node->element_id;
         }
         /**
          * @psalm-suppress MixedArgumentTypeCoercion
          */
         return new Node(
-            $node->id(),
-            new CypherList($node->labels()),
+            $node->id,
+            new CypherList($node->labels),
             new CypherMap($properties),
             $elementId
         );
@@ -117,50 +120,50 @@ final class BoltOGMTranslator
 
     private function makeFromBoltDate(BoltDate $date): Date
     {
-        return new Date($date->days());
+        return new Date($date->days);
     }
 
     private function makeFromBoltLocalDateTime(BoltLocalDateTime $time): LocalDateTime
     {
-        return new LocalDateTime($time->seconds(), $time->nanoseconds());
+        return new LocalDateTime($time->seconds, $time->nanoseconds);
     }
 
     private function makeBoltTimezoneIdentifier(BoltDateTimeZoneId $time): DateTimeZoneId
     {
         /** @var non-empty-string $tzId */
-        $tzId = $time->tz_id();
+        $tzId = $time->tz_id;
 
-        return new DateTimeZoneId($time->seconds(), $time->nanoseconds(), $tzId);
+        return new DateTimeZoneId($time->seconds, $time->nanoseconds, $tzId);
     }
 
     private function makeFromBoltDuration(BoltDuration $duration): Duration
     {
         return new Duration(
-            $duration->months(),
-            $duration->days(),
-            $duration->seconds(),
-            $duration->nanoseconds(),
+            $duration->months,
+            $duration->days,
+            $duration->seconds,
+            $duration->nanoseconds,
         );
     }
 
     private function makeFromBoltDateTime(BoltDateTime $datetime): DateTime
     {
         return new DateTime(
-            $datetime->seconds(),
-            $datetime->nanoseconds(),
-            $datetime->tz_offset_seconds(),
+            $datetime->seconds,
+            $datetime->nanoseconds,
+            $datetime->tz_offset_seconds,
             !$datetime instanceof \Bolt\protocol\v5\structures\DateTime
         );
     }
 
     private function makeFromBoltTime(BoltTime $time): Time
     {
-        return new Time($time->nanoseconds(), $time->tz_offset_seconds());
+        return new Time($time->nanoseconds, $time->tz_offset_seconds);
     }
 
     private function makeFromBoltLocalTime(BoltLocalTime $time): LocalTime
     {
-        return new LocalTime($time->nanoseconds());
+        return new LocalTime($time->nanoseconds);
     }
 
     private function makeFromBoltRelationship(BoltRelationship $rel): Relationship
@@ -171,21 +174,21 @@ final class BoltOGMTranslator
          * @var string $key
          * @var mixed  $property
          */
-        foreach ($rel->properties() as $key => $property) {
+        foreach ($rel->properties as $key => $property) {
             $map[$key] = $this->mapValueToType($property);
         }
 
         /** @var string|null $elementId */
         $elementId = null;
         if ($rel instanceof \Bolt\protocol\v5\structures\Relationship) {
-            $elementId = $rel->element_id();
+            $elementId = $rel->element_id;
         }
 
         return new Relationship(
-            $rel->id(),
-            $rel->startNodeId(),
-            $rel->endNodeId(),
-            $rel->type(),
+            $rel->id,
+            $rel->startNodeId,
+            $rel->endNodeId,
+            $rel->type,
             new CypherMap($map),
             $elementId
         );
@@ -199,18 +202,18 @@ final class BoltOGMTranslator
          * @var string $key
          * @var mixed  $property
          */
-        foreach ($rel->properties() as $key => $property) {
+        foreach ($rel->properties as $key => $property) {
             $map[$key] = $this->mapValueToType($property);
         }
 
         $elementId = null;
         if ($rel instanceof \Bolt\protocol\v5\structures\UnboundRelationship) {
-            $elementId = $rel->element_id();
+            $elementId = $rel->element_id;
         }
 
         return new UnboundRelationship(
-            $rel->id(),
-            $rel->type(),
+            $rel->id,
+            $rel->type,
             new CypherMap($map),
             $elementId
         );
@@ -218,40 +221,40 @@ final class BoltOGMTranslator
 
     private function makeFromBoltPoint2D(BoltPoint2d $x): AbstractPoint
     {
-        if ($x->srid() === CartesianPoint::SRID) {
-            return new CartesianPoint($x->x(), $x->y());
-        } elseif ($x->srid() === WGS84Point::SRID) {
-            return new WGS84Point($x->x(), $x->y());
+        if ($x->srid === CartesianPoint::SRID) {
+            return new CartesianPoint($x->x, $x->y);
+        } elseif ($x->srid === WGS84Point::SRID) {
+            return new WGS84Point($x->x, $x->y);
         }
-        throw new UnexpectedValueException('An srid of '.$x->srid().' has been returned, which has not been implemented.');
+        throw new UnexpectedValueException('An srid of '.$x->srid.' has been returned, which has not been implemented.');
     }
 
     private function makeFromBoltPoint3D(BoltPoint3D $x): Abstract3DPoint
     {
-        if ($x->srid() === Cartesian3DPoint::SRID) {
-            return new Cartesian3DPoint($x->x(), $x->y(), $x->z());
-        } elseif ($x->srid() === WGS843DPoint::SRID) {
-            return new WGS843DPoint($x->x(), $x->y(), $x->z());
+        if ($x->srid === Cartesian3DPoint::SRID) {
+            return new Cartesian3DPoint($x->x, $x->y, $x->z);
+        } elseif ($x->srid === WGS843DPoint::SRID) {
+            return new WGS843DPoint($x->x, $x->y, $x->z);
         }
-        throw new UnexpectedValueException('An srid of '.$x->srid().' has been returned, which has not been implemented.');
+        throw new UnexpectedValueException('An srid of '.$x->srid.' has been returned, which has not been implemented.');
     }
 
     private function makeFromBoltPath(BoltPath $path): Path
     {
         $nodes = [];
         /** @var list<BoltNode> $boltNodes */
-        $boltNodes = $path->nodes();
+        $boltNodes = $path->nodes;
         foreach ($boltNodes as $node) {
             $nodes[] = $this->makeFromBoltNode($node);
         }
         $relationships = [];
         /** @var list<BoltUnboundRelationship> $rels */
-        $rels = $path->rels();
+        $rels = $path->rels;
         foreach ($rels as $rel) {
             $relationships[] = $this->makeFromBoltUnboundRelationship($rel);
         }
         /** @var list<int> $ids */
-        $ids = $path->ids();
+        $ids = $path->ids;
 
         return new Path(
             new CypherList($nodes),
@@ -265,7 +268,7 @@ final class BoltOGMTranslator
      */
     private function mapArray(array $value): CypherList|CypherMap
     {
-        if (array_key_exists(0, $value)) {
+        if (array_is_list($value)) {
             /** @var array<OGMTypes> $vector */
             $vector = [];
             /** @var mixed $x */

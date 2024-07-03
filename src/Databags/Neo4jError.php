@@ -26,11 +26,11 @@ use InvalidArgumentException;
 final class Neo4jError
 {
     public function __construct(
-        private string $code,
-        private ?string $message,
-        private string $classification,
-        private string $category,
-        private string $title
+        private readonly string $code,
+        private readonly ?string $message,
+        private readonly string $classification,
+        private readonly string $category,
+        private readonly string $title
     ) {}
 
     /**
@@ -38,8 +38,12 @@ final class Neo4jError
      */
     public static function fromBoltResponse(Response $response): self
     {
-        /** @var array{code: string, message:string} $content */
-        $content = $response->getContent();
+        /**
+         * @psalm-suppress ImpurePropertyFetch
+         *
+         * @var array{code: string, message:string} $content
+         */
+        $content = $response->content;
 
         return self::fromMessageAndCode($content['code'], $content['message']);
     }

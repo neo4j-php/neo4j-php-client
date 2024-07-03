@@ -28,9 +28,9 @@ final class Path extends AbstractPropertyObject
      * @param CypherList<int>                 $ids
      */
     public function __construct(
-        private CypherList $nodes,
-        private CypherList $relationships,
-        private CypherList $ids
+        private readonly CypherList $nodes,
+        private readonly CypherList $relationships,
+        private readonly CypherList $ids
     ) {}
 
     /**

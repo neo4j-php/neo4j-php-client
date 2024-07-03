@@ -27,13 +27,13 @@ final class ConnectionConfiguration
      * @param ''|'s'|'ssc' $encryptionLevel
      */
     public function __construct(
-        private string $serverAgent,
-        private UriInterface $serverAddress,
-        private string $serverVersion,
-        private ConnectionProtocol $protocol,
-        private AccessMode $accessMode,
-        private ?DatabaseInfo $databaseInfo,
-        private string $encryptionLevel
+        private readonly string $serverAgent,
+        private readonly UriInterface $serverAddress,
+        private readonly string $serverVersion,
+        private readonly ConnectionProtocol $protocol,
+        private readonly AccessMode $accessMode,
+        private readonly ?DatabaseInfo $databaseInfo,
+        private readonly string $encryptionLevel
     ) {}
 
     public function getServerAgent(): string

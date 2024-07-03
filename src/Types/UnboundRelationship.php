@@ -32,10 +32,10 @@ class UnboundRelationship extends AbstractPropertyObject
      * @param CypherMap<OGMTypes> $properties
      */
     public function __construct(
-        private int $id,
-        private string $type,
-        private CypherMap $properties,
-        private ?string $elementId
+        private readonly int $id,
+        private readonly string $type,
+        private readonly CypherMap $properties,
+        private readonly ?string $elementId
     ) {}
 
     public function getElementId(): ?string

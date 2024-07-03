@@ -13,15 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\helpers\Auth;
-use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
 
 use function sprintf;
@@ -39,18 +36,34 @@ final class KerberosAuth implements AuthenticateInterface, Stringable
      * @psalm-external-mutation-free
      */
     public function __construct(
-        private string $token
+        private readonly string $token
     ) {}
 
     public function authenticate(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
     {
-        $response = $bolt->hello(Auth::kerberos($this->token, $userAgent));
-        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
-            throw Neo4jException::fromBoltResponse($response);
-        }
+        if (method_exists($protocol, 'logon')) {
+            $protocol->hello(['user_agent' => $userAgent]);
+            $response = ResponseHelper::getResponse($protocol);
+            $protocol->logon([
+                'scheme' => 'kerberos',
+                'principal' => '',
+                'credentials' => $this->token,
+            ]);
+            ResponseHelper::getResponse($protocol);
 
-        /** @var array{server: string, connection_id: string, hints: list} */
-        return $response->getContent();
+            /** @var array{server: string, connection_id: string, hints: list} */
+            return $response->content;
+        } else {
+            $protocol->hello([
+                'user_agent' => $userAgent,
+                'scheme' => 'kerberos',
+                'principal' => '',
+                'credentials' => $this->token,
+            ]);
+
+            /** @var array{server: string, connection_id: string, hints: list} */
+            return ResponseHelper::getResponse($protocol)->content;
+        }
     }
 
     public function __toString(): string

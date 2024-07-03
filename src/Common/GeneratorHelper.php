@@ -34,7 +34,7 @@ final class GeneratorHelper
     {
         $start = microtime(true);
         while ($generator->valid()) {
-            if ($timeout) {
+            if ($timeout !== null) {
                 self::guardTiming($start, $timeout);
             }
             $generator->next();

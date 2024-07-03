@@ -26,12 +26,14 @@ use Laudis\Neo4j\Contracts\PointInterface;
  * @psalm-immutable
  *
  * @psalm-import-type Crs from PointInterface
+ *
+ * @extends AbstractPropertyObject<float|int|string, float|int|string>
  */
 abstract class AbstractPoint extends AbstractPropertyObject implements PointInterface, BoltConvertibleInterface
 {
     public function __construct(
-        private float $x,
-        private float $y
+        private readonly float $x,
+        private readonly float $y
     ) {}
 
     abstract public function getCrs(): string;

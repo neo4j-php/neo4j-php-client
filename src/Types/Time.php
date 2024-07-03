@@ -26,8 +26,8 @@ use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 final class Time extends AbstractPropertyObject implements BoltConvertibleInterface
 {
     public function __construct(
-        private int $nanoSeconds,
-        private int $tzOffsetSeconds
+        private readonly int $nanoSeconds,
+        private readonly int $tzOffsetSeconds
     ) {}
 
     /**

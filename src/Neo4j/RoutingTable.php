@@ -28,8 +28,8 @@ final class RoutingTable
      * @param iterable<array{addresses: list<string>, role:string}> $servers
      */
     public function __construct(
-        private iterable $servers,
-        private int $ttl
+        private readonly iterable $servers,
+        private readonly int $ttl
     ) {}
 
     /**

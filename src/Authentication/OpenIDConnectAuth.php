@@ -13,17 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\helpers\Auth;
-use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
-use Bolt\protocol\V5_1;
-use Bolt\protocol\V5_2;
-use Bolt\protocol\V5_3;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
-use RuntimeException;
 
 use function sprintf;
 
@@ -38,18 +31,51 @@ final class OpenIDConnectAuth implements AuthenticateInterface, Stringable
      * @psalm-external-mutation-free
      */
     public function __construct(
-        private string $token
+        private readonly string $token
     ) {}
 
+    /**
+     * @psalm-mutation-free
+     */
+    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
+    {
+        /**
+         * @psalm-suppress ImpureMethodCall Request is a pure object:
+         *
+         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
+         */
+        return $request->withHeader('Authorization', 'Bearer '.$this->token)
+            ->withHeader('User-Agent', $userAgent);
+    }
+
+    /**
+     * @throws Exception
+     *
+     * @return array{server: string, connection_id: string, hints: list}
+     */
     public function authenticate(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
     {
-        $response = $bolt->hello(Auth::bearer($this->token, $userAgent));
-        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
-            throw Neo4jException::fromBoltResponse($response);
-        }
+        if (method_exists($protocol, 'logon')) {
+            $protocol->hello(['user_agent' => $userAgent]);
+            $response = ResponseHelper::getResponse($protocol);
+            $protocol->logon([
+                'scheme' => 'bearer',
+                'credentials' => $this->token,
+            ]);
+            ResponseHelper::getResponse($protocol);
 
-        /** @var array{server: string, connection_id: string, hints: list} */
-        return $response->getContent();
+            /** @var array{server: string, connection_id: string, hints: list} */
+            return $response->content;
+        } else {
+            $protocol->hello([
+                'user_agent' => $userAgent,
+                'scheme' => 'bearer',
+                'credentials' => $this->token,
+            ]);
+
+            /** @var array{server: string, connection_id: string, hints: list} */
+            return ResponseHelper::getResponse($protocol)->content;
+        }
     }
 
     public function __toString(): string

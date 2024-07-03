@@ -14,9 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use AppendIterator;
-
-use function array_values;
-
 use ArrayIterator;
 use Generator;
 
@@ -45,22 +42,18 @@ class ArrayList extends AbstractCypherSequence
     public function __construct($iterable = [])
     {
         if (is_array($iterable)) {
-            /** @var array<array-key, TValue> $iterable */
-            $this->keyCache = count($iterable) === 0 ? [] : range(0, count($iterable) - 1);
-            $this->cache = array_values($iterable);
-            $this->generator = new ArrayIterator([]);
-            $this->generatorPosition = count($this->keyCache);
-        } else {
-            $this->generator = static function () use ($iterable): Generator {
-                $i = 0;
-                /** @var Generator<mixed, TValue> $it */
-                $it = is_callable($iterable) ? $iterable() : $iterable;
-                foreach ($it as $value) {
-                    yield $i => $value;
-                    ++$i;
-                }
-            };
+            $iterable = new ArrayIterator($iterable);
         }
+
+        $this->generator = static function () use ($iterable): Generator {
+            $i = 0;
+            /** @var Generator<mixed, TValue> $it */
+            $it = is_callable($iterable) ? $iterable() : $iterable;
+            foreach ($it as $value) {
+                yield $i => $value;
+                ++$i;
+            }
+        };
     }
 
     /**
@@ -112,6 +105,9 @@ class ArrayList extends AbstractCypherSequence
      * @template NewValue
      *
      * @param iterable<mixed, NewValue> $values
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType
+     * @psalm-suppress ImplementedReturnTypeMismatch
      *
      * @return static<TValue|NewValue>
      *

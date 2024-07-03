@@ -31,10 +31,10 @@ use function sprintf;
 final class DateTime extends AbstractPropertyObject implements BoltConvertibleInterface
 {
     public function __construct(
-        private int $seconds,
-        private int $nanoseconds,
-        private int $tzOffsetSeconds,
-        private bool $legacy
+        private readonly int $seconds,
+        private readonly int $nanoseconds,
+        private readonly int $tzOffsetSeconds,
+        private readonly bool $legacy
     ) {}
 
     /**

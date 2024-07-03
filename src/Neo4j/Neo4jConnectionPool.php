@@ -68,11 +68,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private SemaphoreInterface $semaphore,
-        private BoltFactory $factory,
-        private ConnectionRequestData $data,
-        private CacheInterface $cache,
-        private AddressResolverInterface $resolver
+        private readonly SemaphoreInterface $semaphore,
+        private readonly BoltFactory $factory,
+        private readonly ConnectionRequestData $data,
+        private readonly CacheInterface $cache,
+        private readonly AddressResolverInterface $resolver
     ) {}
 
     public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self
@@ -122,7 +122,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $latestError = null;
 
         if ($table == null) {
-            $addresses = $this->resolver->getAddresses((string) $this->data->getUri());
+            $addresses = (function () {
+                yield gethostbyname($this->data->getUri()->getHost());
+                yield from $this->resolver->getAddresses($this->data->getUri()->getHost());
+            })();
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
                 $pool = $this->createOrGetPool(Uri::create($address));
@@ -185,7 +188,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $bolt->route([], [], ['db' => $config->getDatabase()])
             ->getResponse()
-            ->getContent();
+            ->content;
 
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();

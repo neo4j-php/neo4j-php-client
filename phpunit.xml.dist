@@ -1,20 +1,17 @@
-<phpunit colors="true" verbose="true"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         convertDeprecationsToExceptions="true"
->
-    <testsuites>
-        <testsuite name="Integration">
-            <directory>./tests/Integration</directory>
-        </testsuite>
-        <testsuite name="Performance">
-            <directory>./tests/Performance</directory>
-        </testsuite>
-        <testsuite name="Unit">
-            <directory>./tests/Unit</directory>
-        </testsuite>
-    </testsuites>
-    <php>
-        <env name="CONNECTION" value="neo4j://neo4j:testtest@localhost" />
-    </php>
+<?xml version="1.0"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" colors="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" cacheDirectory=".phpunit.cache">
+  <testsuites>
+    <testsuite name="Integration">
+      <directory>./tests/Integration</directory>
+    </testsuite>
+    <testsuite name="Performance">
+      <directory>./tests/Performance</directory>
+    </testsuite>
+    <testsuite name="Unit">
+      <directory>./tests/Unit</directory>
+    </testsuite>
+  </testsuites>
+  <php>
+    <env name="CONNECTION" value="neo4j://neo4j:testtest@localhost:11687"/>
+  </php>
 </phpunit>

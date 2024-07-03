@@ -28,10 +28,10 @@ use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 final class Duration extends AbstractPropertyObject implements BoltConvertibleInterface
 {
     public function __construct(
-        private int $months,
-        private int $days,
-        private int $seconds,
-        private int $nanoseconds
+        private readonly int $months,
+        private readonly int $days,
+        private readonly int $seconds,
+        private readonly int $nanoseconds
     ) {}
 
     /**

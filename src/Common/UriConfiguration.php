@@ -19,11 +19,11 @@ final class UriConfiguration
      * @param ''|'s'|'ssc' $sslLevel
      */
     public function __construct(
-        private string $host,
-        private ?int $port,
-        private string $sslLevel,
-        private array $sslConfiguration,
-        private ?float $timeout
+        private readonly string $host,
+        private readonly ?int $port,
+        private readonly string $sslLevel,
+        private readonly array $sslConfiguration,
+        private readonly ?float $timeout
     ) {}
 
     public function getHost(): string

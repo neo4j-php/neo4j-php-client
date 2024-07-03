@@ -50,9 +50,9 @@ final class Client implements ClientInterface
      * @param DriverSetupManager<ResultFormat> $driverSetups
      */
     public function __construct(
-        private DriverSetupManager $driverSetups,
-        private SessionConfiguration $defaultSessionConfiguration,
-        private TransactionConfiguration $defaultTransactionConfiguration
+        private readonly DriverSetupManager $driverSetups,
+        private readonly SessionConfiguration $defaultSessionConfiguration,
+        private readonly TransactionConfiguration $defaultTransactionConfiguration
     ) {}
 
     public function getDriverSetups(): DriverSetupManager

@@ -21,13 +21,15 @@ use Psr\Http\Message\UriInterface;
  * Provides some basic information of the server where the result is obtained from.
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class ServerInfo extends AbstractCypherObject
 {
     public function __construct(
-        private UriInterface $address,
-        private ConnectionProtocol $protocol,
-        private string $agent
+        private readonly UriInterface $address,
+        private readonly ConnectionProtocol $protocol,
+        private readonly string $agent
     ) {}
 
     /**

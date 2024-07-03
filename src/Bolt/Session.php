@@ -37,18 +37,18 @@ use Throwable;
 final class Session implements SessionInterface
 {
     /** @psalm-readonly */
-    private BookmarkHolder $bookmarkHolder;
+    private readonly BookmarkHolder $bookmarkHolder;
 
     /**
      * @psalm-mutation-free
      */
     public function __construct(
         /** @psalm-readonly */
-        private SessionConfiguration $config,
+        private readonly SessionConfiguration $config,
         /** @psalm-readonly */
-        private ConnectionPool|Neo4jConnectionPool $pool,
+        private readonly ConnectionPool|Neo4jConnectionPool $pool,
         /** @psalm-readonly */
-        private SummarizedResultFormatter $formatter
+        private readonly SummarizedResultFormatter $formatter
     ) {
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
@@ -134,7 +134,7 @@ final class Session implements SessionInterface
         // We try and let the server do the timeout management.
         // Since the client should not run indefinitely, we just add the client side by two, just in case
         $timeout = $config->getTimeout();
-        if ($timeout) {
+        if ($timeout !== null) {
             $timeout = ($timeout < 30) ? 30 : $timeout;
             $connection->setTimeout($timeout + 2);
         }

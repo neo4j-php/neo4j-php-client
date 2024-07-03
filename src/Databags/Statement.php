@@ -21,6 +21,8 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
  * @todo deprecate and create Query Object
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class Statement extends AbstractCypherObject
 {
@@ -28,8 +30,8 @@ final class Statement extends AbstractCypherObject
      * @param iterable<string, mixed> $parameters
      */
     public function __construct(
-        private string $text,
-        private iterable $parameters
+        private readonly string $text,
+        private readonly iterable $parameters
     ) {}
 
     /**

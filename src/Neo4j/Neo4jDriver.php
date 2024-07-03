@@ -50,9 +50,9 @@ final class Neo4jDriver implements DriverInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private UriInterface $parsedUrl,
-        private Neo4jConnectionPool $pool,
-        private FormatterInterface $formatter
+        private readonly UriInterface $parsedUrl,
+        private readonly Neo4jConnectionPool $pool,
+        private readonly FormatterInterface $formatter
     ) {}
 
     /**
