@@ -18,6 +18,7 @@ use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Contracts\MessageInterface;
 
 /**
@@ -25,14 +26,14 @@ use Laudis\Neo4j\Contracts\MessageInterface;
  *
  * @see https://neo4j.com/docs/bolt/current/bolt/message/#messages-pull
  */
-class Pull implements MessageInterface
+class Pull extends AbstractMessage implements MessageInterface
 {
     public function __construct(
-        private int $n,
-        private int|null $qid
+        private readonly int $n,
+        private readonly int|null $qid
     ) {}
 
-    public function send(V4_4|V5|V5_1|V5_2|V5_3 $bolt): void
+    public function send(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $bolt): void
     {
         $extra = ['n' => $this->n];
         if ($this->qid !== null) {

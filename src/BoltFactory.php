@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use function explode;
+
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
@@ -26,7 +28,6 @@ use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
-use function explode;
 
 /**
  * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.

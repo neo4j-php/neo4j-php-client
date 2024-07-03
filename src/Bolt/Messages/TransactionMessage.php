@@ -18,33 +18,34 @@ use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Enum\AccessMode;
 
 /**
  * @mixin Run
  */
-abstract class TransactionMessage
+abstract class TransactionMessage extends AbstractMessage
 {
     /**
-     * @param array<Bookmark>      $bookmarks
      * @param array<string, mixed> $txMetadata
      * @param list<string>         $notificationsDisabledCategories
      */
     public function __construct(
-        private array $bookmarks,
-        private int|null $txTimeout,
-        private array $txMetadata,
-        private AccessMode|null $mode,
-        private string|null $database,
-        private string|null $impersonatedUser,
-        private string|null $notificationsMinimumSeverity,
-        private array $notificationsDisabledCategories
+        private readonly BookmarkHolder  $bookmarks,
+        private readonly int|null        $txTimeout,
+        private readonly array|null      $txMetadata,
+        private readonly AccessMode|null $mode,
+        private readonly string|null     $database,
+        private readonly string|null     $impersonatedUser,
+        private readonly string|null     $notificationsMinimumSeverity,
+        private readonly array|null      $notificationsDisabledCategories
     ) {}
 
-    abstract protected function sendWithPreDecoratedExtraData(array $extra, V4_4|V5|V5_1|V5_2|V5_3 $bolt): void;
+    abstract protected function sendWithPreDecoratedExtraData(array $extra, V4_4|V5|V5_1|V5_2|V5_3|V5_4 $bolt): void;
 
-    public function send(V4_4|V5|V5_1|V5_2|V5_3 $bolt): void
+    public function send(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $bolt): void
     {
         $extra = $this->basicTransactionExtra();
 
@@ -54,8 +55,9 @@ abstract class TransactionMessage
     private function basicTransactionExtra(): array
     {
         $extra = [];
-        if ($this->bookmarks !== []) {
-            $extra['bookmarks'] = $this->bookmarks;
+        $bookmarks = array_map(static fn (Bookmark $bookmark) => $bookmark->bookmark, $this->bookmarks->bookmarks);
+        if ($bookmarks !== []) {
+            $extra['bookmarks'] = $bookmarks;
         }
 
         if ($this->mode !== null) {

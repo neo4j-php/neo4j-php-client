@@ -14,20 +14,13 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Formatter\CypherList;
-use Laudis\Neo4j\Formatter\CypherMap;
 
 /**
  * The driver creates sessions for carrying out work.
- *
- * @psalm-type ParsedUrl = array{host: string, pass: string|null, path: string, port: int, query: array<string,string>, scheme: string, user: string|null}
- * @psalm-type BasicDriver = DriverInterface<CypherList<CypherMap<string, scalar|array|null>>>
  */
 interface DriverInterface
 {
     /**
-     * @return SessionInterface
-     *
      * @psalm-mutation-free
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface;

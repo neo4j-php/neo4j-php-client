@@ -32,7 +32,8 @@
         "symfony/polyfill-php80": "^1.2",
         "psr/simple-cache": ">=2.0",
         "ext-json": "*",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "psr/event-dispatcher": "^1.0"
     },
     "provide": {
         "psr/simple-cache-implementation": "2.0|3.0"

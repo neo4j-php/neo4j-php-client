@@ -18,19 +18,20 @@ use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Contracts\MessageInterface;
 use LogicException;
 
-class Logon implements MessageInterface
+class Logon extends AbstractMessage implements MessageInterface
 {
     /**
      * @param array{scheme: string}&array<string, string> $auth
      */
     public function __construct(
-        private array $auth
+        private readonly array $auth
     ) {}
 
-    public function send(V4_4|V5|V5_2|V5_1|V5_3 $bolt): void
+    public function send(V4_4|V5|V5_2|V5_1|V5_3|V5_4 $bolt): void
     {
         if ($bolt instanceof V4_4 || $bolt instanceof V5) {
             throw new LogicException('Cannot run logon on bolt version 5.0 or lower. Version detected: '.$bolt->getVersion());

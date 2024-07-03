@@ -13,10 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\helpers\Auth;
-use Bolt\protocol\Response;
-use function base64_encode;
-
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
@@ -48,7 +44,7 @@ final class BasicAuth implements AuthenticateInterface, Stringable
      *
      * @return array{server: string, connection_id: string, hints: list}
      */
-    public function authenticate(V4_4|V5|V5_1|V5_2|V5_3 $bolt, string $userAgent): array
+    public function authenticate(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
         if (method_exists($protocol, 'logon')) {
             $protocol->hello(['user_agent' => $userAgent]);

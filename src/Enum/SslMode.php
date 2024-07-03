@@ -17,33 +17,11 @@ use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 use Stringable;
 
-/**
- * @method static self ENABLE()
- * @method static self DISABLE()
- * @method static self FROM_URL()
- * @method static self ENABLE_WITH_SELF_SIGNED()
- *
- * @extends TypedEnum<string>
- *
- * @psalm-immutable
- *
- * @psalm-suppress MutableDependency
- */
-final class SslMode extends TypedEnum implements JsonSerializable, Stringable
+enum SslMode : string
 {
-    private const ENABLE = 'enable';
-    private const ENABLE_WITH_SELF_SIGNED = 'enable_with_self_signed';
-    private const DISABLE = 'disable';
-    private const FROM_URL = 'from_url';
+    case ENABLE = 'enable';
+    case ENABLE_WITH_SELF_SIGNED = 'enable_with_self_signed';
+    case DISABLE = 'disable';
 
-    public function __toString(): string
-    {
-        /** @noinspection MagicMethodsValidityInspection */
-        return $this->getValue();
-    }
-
-    public function jsonSerialize(): string
-    {
-        return $this->getValue();
-    }
+    case FROM_URL = 'from_url';
 }

@@ -18,6 +18,7 @@ use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Contracts\MessageInterface;
 
 /**
@@ -25,16 +26,16 @@ use Laudis\Neo4j\Contracts\MessageInterface;
  *
  * @see https://neo4j.com/docs/bolt/current/bolt/message/#messages-route
  */
-class Route implements MessageInterface
+class Route extends AbstractMessage implements MessageInterface
 {
     public function __construct(
-        private array $routing,
-        private array $bookmarks,
-        private string|null $database,
-        private string|null $impersonatedUser,
+        private readonly array       $routing,
+        private readonly array       $bookmarks,
+        private readonly string|null $database,
+        private readonly string|null $impersonatedUser,
     ) {}
 
-    public function send(V4_4|V5|V5_2|V5_1|V5_3 $bolt): void
+    public function send(V4_4|V5|V5_2|V5_1|V5_3|V5_4 $bolt): void
     {
         $extra = [];
 

@@ -18,8 +18,9 @@ use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
-use Laudis\Neo4j\Contracts\MessageInterface;
+use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Enum\AccessMode;
 
 /**
@@ -33,16 +34,15 @@ class Run extends TransactionMessage
 {
     /**
      * @param array<string, mixed> $parameters
-     * @param array<Bookmark>      $bookmarks
      * @param array<string, mixed> $txMetadata
      * @param list<string>         $notificationsDisabledCategories
      */
     public function __construct(
-        private string $text,
-        private array $parameters,
-        array $bookmarks,
+        private readonly string $text,
+        private readonly array $parameters,
+        BookmarkHolder $bookmarks,
         int|null $txTimeout,
-        array $txMetadata,
+        array|null $txMetadata,
         AccessMode|null $mode,
         string|null $database,
         string|null $impersonatedUser,
@@ -52,7 +52,7 @@ class Run extends TransactionMessage
         parent::__construct($bookmarks, $txTimeout, $txMetadata, $mode, $database, $impersonatedUser, $notificationsMinimumSeverity, $notificationsDisabledCategories);
     }
 
-    public function sendWithPreDecoratedExtraData(array $extra, V4_4|V5|V5_1|V5_2|V5_3 $bolt): void
+    public function sendWithPreDecoratedExtraData(array $extra, V4_4|V5|V5_1|V5_2|V5_3|V5_4 $bolt): void
     {
         $bolt->run($this->text, $this->parameters, $extra);
     }

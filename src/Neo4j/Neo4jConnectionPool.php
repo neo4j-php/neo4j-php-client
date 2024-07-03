@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use Laudis\Neo4j\Common\DNSAddressResolver;
 use function array_unique;
 use function count;
 
@@ -31,7 +32,6 @@ use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
-use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -54,8 +54,7 @@ use function time;
 
 /**
  * Connection pool for with auto client-side routing.
- *
- * @psalm-import-type BasicDriver from DriverInterface
+
  *
  * @implements ConnectionPoolInterface<BoltConnection>
  */
@@ -72,10 +71,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         private readonly BoltFactory $factory,
         private readonly ConnectionRequestData $data,
         private readonly CacheInterface $cache,
-        private readonly AddressResolverInterface $resolver
+        private readonly DNSAddressResolver $resolver
     ) {}
 
-    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self
+    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, DNSAddressResolver $resolver, SemaphoreInterface $semaphore): self
     {
         return new self(
             $semaphore,

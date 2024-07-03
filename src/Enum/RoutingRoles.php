@@ -16,38 +16,9 @@ namespace Laudis\Neo4j\Enum;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 
-/**
- * The possible routing roles.
- *
- * @method static RoutingRoles LEADER()
- * @method static RoutingRoles FOLLOWER()
- * @method static RoutingRoles ROUTE()
- *
- * @extends TypedEnum<list<string>>
- *
- * @psalm-immutable
- *
- * @psalm-suppress MutableDependency
- */
-final class RoutingRoles extends TypedEnum implements JsonSerializable
+enum RoutingRoles: string
 {
-    private const LEADER = ['WRITE', 'LEADER'];
-    private const FOLLOWER = ['READ', 'FOLLOWER'];
-    private const ROUTE = ['ROUTE'];
-
-    /**
-     * @psalm-suppress ImpureMethodCall
-     */
-    public function jsonSerialize(): string
-    {
-        if ($this === self::LEADER()) {
-            return 'LEADER';
-        }
-
-        if ($this === self::FOLLOWER()) {
-            return 'FOLLOWER';
-        }
-
-        return 'ROUTE';
-    }
+    case ROUTE = 'ROUTE';
+    case READ = 'READ';
+    case WRITE = 'WRITE';
 }

@@ -27,59 +27,33 @@ use Bolt\protocol\V5_4;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 
-/**
- * Defines the protocol used in a connection.
- *
- * @method static ConnectionProtocol BOLT_V3()
- * @method static ConnectionProtocol BOLT_V40()
- * @method static ConnectionProtocol BOLT_V41()
- * @method static ConnectionProtocol BOLT_V42()
- * @method static ConnectionProtocol BOLT_V43()
- * @method static ConnectionProtocol BOLT_V44()
- * @method static ConnectionProtocol BOLT_V5()
- * @method static ConnectionProtocol BOLT_V5_1()
- * @method static ConnectionProtocol BOLT_V5_2()
- * @method static ConnectionProtocol BOLT_V5_3()
- * @method static ConnectionProtocol BOLT_V5_4()
- * @method static ConnectionProtocol HTTP()
- *
- * @extends TypedEnum<string>
- *
- * @psalm-immutable
- *
- * @psalm-suppress MutableDependency
- */
-final class ConnectionProtocol extends TypedEnum implements JsonSerializable
-{
-    private const BOLT_V3 = '3';
-    private const BOLT_V40 = '4';
-    private const BOLT_V41 = '4.1';
-    private const BOLT_V42 = '4.2';
-    private const BOLT_V43 = '4.3';
-    private const BOLT_V44 = '4.4';
-    private const BOLT_V5 = '5';
-    private const BOLT_V5_1 = '5.1';
-    private const BOLT_V5_2 = '5.2';
-    private const BOLT_V5_3 = '5.3';
-    private const BOLT_V5_4 = '5.4';
-    private const HTTP = 'http';
 
-    public function isBolt(): bool
-    {
-        /** @psalm-suppress ImpureMethodCall */
-        return $this !== self::HTTP();
-    }
+enum ConnectionProtocol: string
+{
+    case V3 = '3';
+    case V4_0 = '4';
+    case V4_1 = '4.1';
+    case V4_2 = '4.2';
+    case V4_3 = '4.3';
+    case V4_4 = '4.4';
+    case V5 = '5';
+    case V5_1 = '5.1';
+    case V5_2 = '5.2';
+    case V5_3 = '5.3';
+    case V5_4 = '5.4';
 
     /**
      * @pure
-     *
-     * @psalm-suppress ImpureMethodCall
      */
     public static function determineBoltVersion(V3|V4|V4_1|V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4 $bolt): self
     {
-        $version = self::resolve($bolt->getVersion());
+        foreach (self::cases() as $case) {
+            if ($case->name === basename(str_replace('\\', '/',  get_class($bolt)))) {
+                return $case;
+            }
+        }
 
-        return $version[0] ?? self::BOLT_V44();
+        return self::V4_4;
     }
 
     public function compare(ConnectionProtocol $protocol): int
@@ -87,8 +61,7 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
         $x = 0;
         $y = 0;
 
-        /** @psalm-suppress ImpureMethodCall */
-        foreach (array_values(self::getAllInstances()) as $index => $instance) {
+        foreach (self::cases() as $index => $instance) {
             if ($instance === $this) {
                 $x = $index;
             }
@@ -99,10 +72,5 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
         }
 
         return $x - $y;
-    }
-
-    public function jsonSerialize(): string
-    {
-        return $this->getValue();
     }
 }

@@ -18,7 +18,7 @@ use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
-use Psr\Http\Message\RequestInterface;
+use Bolt\protocol\V5_4;
 
 interface AuthenticateInterface
 {
@@ -27,10 +27,5 @@ interface AuthenticateInterface
      *
      * @return array{server: string, connection_id: string, hints: list}
      */
-    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array;
-
-    /**
-     * Returns a string representation of the authentication.
-     */
-    public function toString(UriInterface $uri): string;
+    public function authenticate(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array;
 }

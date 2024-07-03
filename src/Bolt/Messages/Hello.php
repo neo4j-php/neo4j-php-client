@@ -18,17 +18,17 @@ use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Contracts\MessageInterface;
 
 /**
-*
  *  @psalm-readonly
  *
  *  @internal
  *
  *  @see https://neo4j.com/docs/bolt/current/bolt/message/#messages-hello
  */
-class Hello implements MessageInterface
+class Hello extends AbstractMessage implements MessageInterface
 {
     /**
      * @param list<string>                                                                                $routing
@@ -45,7 +45,7 @@ class Hello implements MessageInterface
         private array $boltAgent,
     ) {}
 
-    public function send(V4_4|V5|V5_2|V5_1|V5_3 $bolt): void
+    public function send(V4_4|V5|V5_2|V5_1|V5_3|V5_4 $bolt): void
     {
         $extra = [
             'auth' => $this->auth,

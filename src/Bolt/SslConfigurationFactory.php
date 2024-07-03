@@ -33,14 +33,14 @@ final class SslConfigurationFactory
         $mode = $config->getMode();
         /** @var ''|'s'|'ssc' $sslConfig */
         $sslConfig = '';
-        if ($mode === SslMode::FROM_URL()) {
+        if ($mode === SslMode::FROM_URL) {
             $scheme = $uri->getScheme();
             $explosion = explode('+', $scheme, 2);
             /** @var ''|'s'|'ssc' $sslConfig */
             $sslConfig = $explosion[1] ?? '';
-        } elseif ($mode === SslMode::ENABLE()) {
+        } elseif ($mode === SslMode::ENABLE) {
             $sslConfig = 's';
-        } elseif ($mode === SslMode::ENABLE_WITH_SELF_SIGNED()) {
+        } elseif ($mode === SslMode::ENABLE_WITH_SELF_SIGNED) {
             $sslConfig = 'ssc';
         }
 

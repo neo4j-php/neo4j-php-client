@@ -14,12 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Generator;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 
 /**
  * A connection pool acts as a connection factory by managing multiple connections.
- *
- * @template Connection of ConnectionInterface
  */
 interface ConnectionPoolInterface
 {
@@ -35,7 +34,7 @@ interface ConnectionPoolInterface
      *      int,
      *      float,
      *      bool,
-     *      Connection|null
+     *      BoltConnection|null
      * >
      */
     public function acquire(SessionConfiguration $config): Generator;
@@ -43,5 +42,5 @@ interface ConnectionPoolInterface
     /**
      * Releases a connection back to the pool.
      */
-    public function release(ConnectionInterface $connection): void;
+    public function release(BoltConnection $connection): void;
 }

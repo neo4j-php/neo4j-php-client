@@ -29,12 +29,11 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Types\ArrayList;
-use Throwable;
 
 /**
  * A session using bolt connections.
  */
-final class Session implements SessionInterface
+final class Session
 {
     /** @psalm-readonly */
     private readonly BookmarkHolder $bookmarkHolder;
@@ -128,7 +127,6 @@ final class Session implements SessionInterface
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
         $connection = $this->pool->acquire($sessionConfig);
-        /** @var BoltConnection $connection */
         $connection = GeneratorHelper::getReturnFromGenerator($connection);
 
         // We try and let the server do the timeout management.

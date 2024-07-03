@@ -28,7 +28,7 @@ final class TransactionConfiguration
      * @param iterable<string, scalar|array|null>|null $metaData
      */
     public function __construct(
-        private float|null $timeout = null,
+        private int|null $timeout = null,
         private iterable|null $metaData = null
     ) {}
 
@@ -54,7 +54,7 @@ final class TransactionConfiguration
     /**
      * Get the configured transaction metadata.
      *
-     * @return iterable<string, scalar|array|null>|null
+     * @return array<string, mixed>|null
      */
     public function getMetaData(): ?iterable
     {
@@ -62,9 +62,9 @@ final class TransactionConfiguration
     }
 
     /**
-     * Get the configured transaction timeout in seconds.
+     * Get the configured transaction timeout in ms.
      */
-    public function getTimeout(): ?float
+    public function getTimeout(): ?int
     {
         return $this->timeout;
     }
@@ -74,7 +74,7 @@ final class TransactionConfiguration
      *
      * @param float|null $timeout timeout in seconds
      */
-    public function withTimeout(float|null $timeout): self
+    public function withTimeout(int|null $timeout): self
     {
         return new self($timeout, $this->metaData);
     }

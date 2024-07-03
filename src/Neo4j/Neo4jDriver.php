@@ -92,7 +92,7 @@ final class Neo4jDriver implements DriverInterface
      *
      * @throws Exception
      */
-    public function createSession(?SessionConfiguration $config = null): SessionInterface
+    public function createSession(?SessionConfiguration $config = null): Session
     {
         $config ??= SessionConfiguration::default();
         $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl));

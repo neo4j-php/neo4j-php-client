@@ -32,8 +32,6 @@ use Throwable;
 
 /**
  * Drives a singular bolt connections.
- *
- * @psalm-import-type OGMResults from OGMFormatter
  */
 final class BoltDriver implements DriverInterface
 {
@@ -41,9 +39,9 @@ final class BoltDriver implements DriverInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private UriInterface $parsedUrl,
-        private ConnectionPool $pool,
-        private SummarizedResultFormatter $formatter
+        private readonly UriInterface               $parsedUrl,
+        private readonly ConnectionPool             $pool,
+        private readonly SummarizedResultFormatter  $formatter
     ) {}
 
     public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self

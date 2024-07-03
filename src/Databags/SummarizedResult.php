@@ -14,15 +14,14 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Generator;
+use Laudis\Neo4j\Common\Value;
 use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
  * A result containing the values and the summary.
  *
- * @template TValue
- *
- * @extends CypherList<TValue>
+ * @extends CypherList<int|float|string|>
  */
 final class SummarizedResult extends CypherList
 {
