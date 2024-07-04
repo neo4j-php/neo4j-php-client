@@ -19,12 +19,14 @@ use Laudis\Neo4j\Exception\NoSuchRecordException;
 final class ResultCursor implements Iterator
 {
     private int $position = -1;
-    private CombinedRecord|ResultSuccessResponse|null $current = null;
+    private CombinedRecord|null $current = null;
+
+    private ResultSuccessResponse|null $latestResultSuccessResponse = null;
 
     public function __construct(
         private readonly BoltConnection $connection,
-        private readonly Pull $pull,
-        private readonly RunResponse $response,
+        private readonly Pull           $pull,
+        private readonly RunResponse    $runResponse,
     ) {
     }
 
@@ -33,7 +35,7 @@ final class ResultCursor implements Iterator
      */
     public function keys(): array
     {
-        return $this->response->fields;
+        return $this->runResponse->fields;
     }
 
     /**
@@ -46,11 +48,7 @@ final class ResultCursor implements Iterator
      * @throws NoSuchRecordException if there is not exactly one record left in the stream
      */
     public function single(): CombinedRecord {
-        $response = $this->connection->sendMessage($this->pull);
 
-        if ($response->signature === Signature::RECORD) {
-
-        }
     }
 
     public function only(): null|int|float|array|bool|string|IStructure
@@ -112,10 +110,14 @@ final class ResultCursor implements Iterator
 
     public function next(): void
     {
-        $response = $this->connection->sendMessage($this->pull);
+        $response = $this->connection->getResponse();
 
         if ($response->signature === Signature::RECORD) {
+            $this->current = new CombinedRecord($this->runResponse, new Record($response->content));
+        } elseif ($response->signature === Signature::SUCCESS) {
+            $this->latestResultSuccessResponse = new ResultSuccessResponse(
 
+            );
         }
     }
 

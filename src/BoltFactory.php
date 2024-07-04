@@ -76,7 +76,7 @@ class BoltFactory
         return new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config);
     }
 
-    public function canReuseConnection(ConnectionInterface $connection, ConnectionRequestData $data, SessionConfiguration $config): bool
+    public function canReuseConnection(BoltConnection $connection, ConnectionRequestData $data, SessionConfiguration $config): bool
     {
         $databaseInfo = $connection->getDatabaseInfo();
         $database = $databaseInfo?->getName();
@@ -86,7 +86,7 @@ class BoltFactory
                $connection->getAuthentication()->toString($data->getUri()) === $data->getAuth()->toString($data->getUri()) &&
                $connection->getEncryptionLevel() === $this->sslConfigurationFactory->create($data->getUri(), $data->getSslConfig())[0] &&
                $connection->getUserAgent() === $data->getUserAgent() &&
-            $connection->getAccessMode() === $config->getAccessMode() &&
+               $connection->getAccessMode() === $config->getAccessMode() &&
                $database === $config->getDatabase();
     }
 

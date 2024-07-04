@@ -15,7 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\IConnection;
 
-class Connection
+final class Connection
 {
     /**
      * @param ''|'s'|'ssc' $ssl

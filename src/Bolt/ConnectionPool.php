@@ -90,7 +90,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         })();
     }
 
-    public function release(ConnectionInterface $connection): void
+    public function release(BoltConnection $connection): void
     {
         $this->semaphore->post();
 
@@ -106,7 +106,7 @@ final class ConnectionPool implements ConnectionPoolInterface
     /**
      * @return BoltConnection|null
      */
-    private function returnAnyAvailableConnection(SessionConfiguration $config): ?ConnectionInterface
+    private function returnAnyAvailableConnection(SessionConfiguration $config): ?BoltConnection
     {
         $streamingConnection = null;
         $requiresReconnectConnection = null;

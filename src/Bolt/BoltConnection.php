@@ -25,33 +25,26 @@ use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Bolt\Messages\Begin;
 use Laudis\Neo4j\Bolt\Messages\Commit;
 use Laudis\Neo4j\Bolt\Messages\Discard;
-use Laudis\Neo4j\Bolt\Messages\Pull;
 use Laudis\Neo4j\Bolt\Messages\Reset;
 use Laudis\Neo4j\Bolt\Messages\Rollback;
 use Laudis\Neo4j\Bolt\Messages\Route;
 use Laudis\Neo4j\Bolt\Messages\Run;
 use Laudis\Neo4j\Bolt\Responses\CommitResponse;
-use Laudis\Neo4j\Bolt\Responses\Record;
 use Laudis\Neo4j\Bolt\Responses\ResultSuccessResponse;
 use Laudis\Neo4j\Bolt\Responses\RouteResponse;
 use Laudis\Neo4j\Bolt\Responses\RunResponse;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\ResponseHelper;
-use Laudis\Neo4j\Common\Value;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\MessageInterface;
 use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
-use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\AccessMode;
-use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Enum\QueryTypeEnum;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Results\Result;
+use Laudis\Neo4j\Results\ResultCursor;
 use Laudis\Neo4j\Types\CypherList;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\UriInterface;
 use Throwable;
 use WeakReference;
 
@@ -61,7 +54,7 @@ use WeakReference;
  * @psalm-suppress PossiblyUndefinedStringArrayOffset We temporarily suppress these warnings as we are translating the weakly typed bolt library to the driver.
  * @psalm-suppress MixedArgument
  */
-class BoltConnection
+final class BoltConnection
 {
     /**
      * @note We are using references to "subscribed results" to maintain backwards compatibility and try and strike
@@ -72,7 +65,7 @@ class BoltConnection
      *       should introduce a "manual" mode later down the road to allow the end users to optimise the result
      *       consumption themselves.
      *
-     * @var list<WeakReference<Result>>
+     * @var list<WeakReference<ResultCursor>>
      */
     private array $subscribedResults = [];
 
@@ -130,9 +123,19 @@ class BoltConnection
     {
         $message->send($this->protocol());
 
-        $response = ResponseHelper::getResponse($this->protocol());
+        $response = $this->getResponse();
 
         $this->assertNoFailure($response);
+
+        return $response;
+    }
+
+    public function getResponse(): Response
+    {
+        $response = $this->protocol()->getResponse();
+        if ($response->signature === Signature::FAILURE) {
+            throw Neo4jException::fromBoltResponse($response);
+        }
 
         return $response;
     }
@@ -233,33 +236,6 @@ class BoltConnection
     public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
     {
         return $this->boltProtocol;
-    }
-
-    /**
-     * Pulls a result set.
-     *
-     * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
-     */
-    public function pull(int $fetchSize, ?int $qid): ResultBatch
-    {
-        $tbr = [];
-
-        $message = new Pull($fetchSize, $qid);
-        $message->send($this->protocol());
-
-        /** @var Response $response */
-        foreach ($this->protocol()->getResponses() as $response) {
-            $this->assertNoFailure($response);
-            if ($response->signature === Signature::RECORD) {
-                $tbr[] = new Record(array_values(array_map(static fn (mixed $value) => new Value($value), $response->content)));
-            }
-
-            if ($response->signature === Signature::SUCCESS) {
-                return new ResultBatch($tbr, $this->createResultSuccessResponse($response));
-            }
-        }
-
-        throw new ProtocolViolationException('PULL message must end with a SUCCESS, FAILURE or IGNORED response');
     }
 
     public function __destruct()

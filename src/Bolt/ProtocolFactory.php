@@ -22,7 +22,7 @@ use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use RuntimeException;
 
-class ProtocolFactory
+final class ProtocolFactory
 {
     /**
      * @return array{0: V4_4|V5|V5_3|V5_4, 1: array{server: string, connection_id: string, hints: list}}

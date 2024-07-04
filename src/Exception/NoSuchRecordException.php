@@ -2,6 +2,6 @@
 
 namespace Laudis\Neo4j\Exception;
 
-class NoSuchRecordException {
+final class NoSuchRecordException {
 
 }

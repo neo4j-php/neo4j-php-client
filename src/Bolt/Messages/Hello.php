@@ -37,12 +37,12 @@ class Hello extends AbstractMessage implements MessageInterface
      * @param array{product?: string, platform ?: string, language ?: string, language_details ?: string} $boltAgent
      */
     public function __construct(
-        private array $auth,
-        private string|null $userAgent,
-        private array $routing,
-        private string|null $notificationsMinimumSeverity,
-        private array $notificationsDisabledCategories,
-        private array $boltAgent,
+        private readonly array $auth,
+        private readonly string|null $userAgent,
+        private readonly array $routing,
+        private readonly string|null $notificationsMinimumSeverity,
+        private readonly array $notificationsDisabledCategories,
+        private readonly array $boltAgent,
     ) {}
 
     public function send(V4_4|V5|V5_2|V5_1|V5_3|V5_4 $bolt): void

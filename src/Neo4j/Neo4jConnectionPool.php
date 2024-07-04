@@ -195,9 +195,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         return new RoutingTable($servers, $ttl);
     }
 
-    public function release(ConnectionInterface $connection): void
+    public function release(BoltConnection $connection): void
     {
-        $this->createOrGetPool($connection->getServerAddress())->release($connection);
+        $this->createOrGetPool($connection->getConfig()->getServerAddress())->release($connection);
     }
 
     private function createKey(ConnectionRequestData $data, ?SessionConfiguration $config = null): string
