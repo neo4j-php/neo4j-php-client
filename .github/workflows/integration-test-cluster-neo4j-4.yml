@@ -16,6 +16,8 @@ jobs:
     name: "Running on PHP 8.1 in a Neo4j 4.4 cluster"
 
     steps:
+      - name: Ports
+        run: netstat -tulpn | grep LISTEN ; lsof -i -P -n | grep LISTEN
       - uses: actions/checkout@v2
       - name: Cache Composer dependencies
         uses: actions/cache@v2
