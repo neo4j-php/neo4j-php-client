@@ -201,10 +201,6 @@ class BoltConnection implements ConnectionInterface
      */
     public function discard(?int $qid): void
     {
-        if (!in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'DISCARD\' cannot be handled by a session which isn\'t in the STREAMING|TX_STREAMING state.')]);
-        }
-
         $extra = $this->buildResultExtra(null, $qid);
         $response = $this->protocol()
             ->discard($extra)
@@ -221,10 +217,6 @@ class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
     {
-        if (!in_array($this->protocol()->serverState, [ServerState::READY, ServerState::TX_READY, ServerState::TX_STREAMING], true)) {
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'RUN\' cannot be handled by a session which isn\'t in the READY|TX_READY|TX_STREAMING state.')]);
-        }
-
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode);
         $response = $this->protocol()
             ->run($text, $parameters, $extra)
@@ -242,10 +234,6 @@ class BoltConnection implements ConnectionInterface
     public function commit(): void
     {
         $this->consumeResults();
-
-        if ($this->protocol()->serverState !== ServerState::TX_READY) {
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'COMMIT\' cannot be handled by a session which isn\'t in the TX_READY state.')]);
-        }
 
         $response = $this->protocol()
             ->commit()
@@ -286,10 +274,6 @@ class BoltConnection implements ConnectionInterface
      */
     public function pull(?int $qid, ?int $fetchSize): array
     {
-        if (!in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'PULL\' cannot be handled by a session which isn\'t in the STREAMING|TX_STREAMING state.')]);
-        }
-
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
         $tbr = [];
