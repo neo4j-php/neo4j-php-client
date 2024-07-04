@@ -13,29 +13,48 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\enum\ServerState;
+use Bolt\enum\Signature;
 use Bolt\protocol\Response;
-use Bolt\protocol\ServerState;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
+use Laudis\Neo4j\Bolt\Messages\Begin;
+use Laudis\Neo4j\Bolt\Messages\Commit;
+use Laudis\Neo4j\Bolt\Messages\Discard;
+use Laudis\Neo4j\Bolt\Messages\Reset;
+use Laudis\Neo4j\Bolt\Messages\Rollback;
+use Laudis\Neo4j\Bolt\Messages\Route;
+use Laudis\Neo4j\Bolt\Messages\Run;
+use Laudis\Neo4j\Bolt\Responses\CommitResponse;
+use Laudis\Neo4j\Bolt\Responses\ResultSuccessResponse;
+use Laudis\Neo4j\Bolt\Responses\RouteResponse;
+use Laudis\Neo4j\Bolt\Responses\RunResponse;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Contracts\MessageInterface;
+use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
-use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Enum\AccessMode;
-use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Enum\QueryTypeEnum;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Results\Result;
+use Laudis\Neo4j\Results\ResultCursor;
 use Laudis\Neo4j\Types\CypherList;
-use Psr\Http\Message\UriInterface;
+use Throwable;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5, 1: Connection}>
+ * @internal
  *
- * @psalm-import-type BoltMeta from FormatterInterface
+ * @psalm-suppress PossiblyUndefinedStringArrayOffset We temporarily suppress these warnings as we are translating the weakly typed bolt library to the driver.
+ * @psalm-suppress MixedArgument
  */
-class BoltConnection implements ConnectionInterface
+final class BoltConnection
 {
     /**
      * @note We are using references to "subscribed results" to maintain backwards compatibility and try and strike
@@ -45,89 +64,27 @@ class BoltConnection implements ConnectionInterface
      *       edge cases where the result set will be pulled or discarded when it is not strictly necessary, and we
      *       should introduce a "manual" mode later down the road to allow the end users to optimise the result
      *       consumption themselves.
-     *       A great moment to do this would be when neo4j 5 is released as it will presumably allow us to do more
-     *       stuff with PULL and DISCARD messages.
      *
-     * @var list<WeakReference<CypherList>>
+     * @var list<WeakReference<ResultCursor>>
      */
     private array $subscribedResults = [];
-
-    /**
-     * @return array{0: V4_4|V5, 1: Connection}
-     */
-    public function getImplementation(): array
-    {
-        return [$this->boltProtocol, $this->connection];
-    }
 
     /**
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5 $boltProtocol,
-        private readonly Connection $connection,
-        private readonly AuthenticateInterface $auth,
-        private readonly string $userAgent,
-        /** @psalm-readonly */
+        private readonly V4_4|V5|V5_1|V5_2|V5_3  $boltProtocol,
         private readonly ConnectionConfiguration $config
-    ) {}
-
-    public function getEncryptionLevel(): string
+    )
     {
-        return $this->connection->getEncryptionLevel();
     }
 
     /**
-     * @psalm-mutation-free
+     * @return ConnectionConfiguration
      */
-    public function getServerAgent(): string
+    public function getConfig(): ConnectionConfiguration
     {
-        return $this->config->getServerAgent();
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function getServerAddress(): UriInterface
-    {
-        return $this->config->getServerAddress();
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function getServerVersion(): string
-    {
-        return $this->config->getServerVersion();
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function getProtocol(): ConnectionProtocol
-    {
-        return $this->config->getProtocol();
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function getAccessMode(): AccessMode
-    {
-        return $this->config->getAccessMode();
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function getDatabaseInfo(): ?DatabaseInfo
-    {
-        return $this->config->getDatabaseInfo();
-    }
-
-    public function getAuthentication(): AuthenticateInterface
-    {
-        return $this->auth;
+        return $this->config;
     }
 
     /**
@@ -135,20 +92,15 @@ class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return !in_array($this->protocol()->serverState->get(), ['DISCONNECTED', 'DEFUNCT'], true);
-    }
-
-    public function setTimeout(float $timeout): void
-    {
-        $this->connection->setTimeout($timeout);
+        return !in_array($this->protocol()->serverState, [ServerState::DISCONNECTED, ServerState::DEFUNCT], true);
     }
 
     public function consumeResults(): void
     {
         foreach ($this->subscribedResults as $result) {
             $result = $result->get();
-            if ($result) {
-                $result->preload();
+            if ($result !== null) {
+                $result->consume();
             }
         }
 
@@ -163,29 +115,54 @@ class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
-        $response = $this->protocol()->reset()
-            ->getResponse();
+        $this->sendMessage(new Reset());
+        $this->subscribedResults = [];
+    }
+
+    public function sendMessage(MessageInterface $message): Response
+    {
+        $message->send($this->protocol());
+
+        $response = $this->getResponse();
 
         $this->assertNoFailure($response);
 
-        $this->subscribedResults = [];
+        return $response;
+    }
+
+    public function getResponse(): Response
+    {
+        $response = $this->protocol()->getResponse();
+        if ($response->signature === Signature::FAILURE) {
+            throw Neo4jException::fromBoltResponse($response);
+        }
+
+        return $response;
     }
 
     /**
      * Begins a transaction.
      *
+     *
+     * @param array<string, mixed> $txMetadata
+     * @param list<string> $notificationsDisabledCategories
+     *
      * Any of the preconditioned states are: 'READY', 'INTERRUPTED'.
      */
-    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder): void
+    public function begin(
+        BookmarkHolder  $bookmarks,
+        int|null        $txTimeout,
+        array           $txMetadata,
+        AccessMode|null $mode,
+        string|null     $database,
+        string|null     $impersonatedUser,
+        string|null     $notificationsMinimumSeverity,
+        array           $notificationsDisabledCategories
+    ): void
     {
         $this->consumeResults();
-        $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE());
 
-        $response = $this->protocol()
-            ->begin($extra)
-            ->getResponse();
-
-        $this->assertNoFailure($response);
+        $this->sendMessage(new Begin($bookmarks, $txTimeout, $txMetadata, $mode, $database, $impersonatedUser, $notificationsMinimumSeverity, $notificationsDisabledCategories));
     }
 
     /**
@@ -193,34 +170,41 @@ class BoltConnection implements ConnectionInterface
      *
      * Any of the preconditioned states are: 'STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
      */
-    public function discard(?int $qid): void
+    public function discard(int $n, ?int $qid): ResultSuccessResponse
     {
-        $extra = $this->buildResultExtra(null, $qid);
-        $bolt = $this->protocol();
+        $result = $this->sendMessage(new Discard($n, $qid));
 
-        $response = $bolt->discard($extra)
-            ->getResponse();
-
-        $this->assertNoFailure($response);
+        return $this->createResultSuccessResponse($result);
     }
 
     /**
      * Runs a query/statement.
      *
-     * Any of the preconditioned states are: 'STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $txMetadata
+     * @param list<string> $notificationsDisabledCategories
      *
-     * @return BoltMeta
+     * Any of the preconditioned states are: 'STREAMING', 'TX_STREAMING', 'FAILED', 'INTERRUPTED'.
      */
-    public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
-    {
-        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode);
-        $response = $this->protocol()->run($text, $parameters, $extra)
-            ->getResponse();
+    public function run(
+        string $text,
+        array $parameters,
+        BookmarkHolder  $bookmarks,
+        int|null        $txTimeout,
+        array|null      $txMetadata,
+        AccessMode|null $mode,
+        string|null     $database,
+        string|null     $impersonatedUser,
+        string|null     $notificationsMinimumSeverity,
+        array|null      $notificationsDisabledCategories
+    ): RunResponse {
+        $response = $this->sendMessage(new Run($text, $parameters, $bookmarks, $txTimeout, $txMetadata, $mode, $database, $impersonatedUser, $notificationsMinimumSeverity, $notificationsDisabledCategories));
 
-        $this->assertNoFailure($response);
-
-        /** @var BoltMeta */
-        return $response->getContent();
+        return new RunResponse(
+            $response->content['fields'],
+            $response->content['t_first'],
+            $response->content['qid'],
+        );
     }
 
     /**
@@ -228,14 +212,13 @@ class BoltConnection implements ConnectionInterface
      *
      * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
      */
-    public function commit(): void
+    public function commit(): CommitResponse
     {
         $this->consumeResults();
-        $response = $this->protocol()
-            ->commit()
-            ->getResponse();
 
-        $this->assertNoFailure($response);
+        $response = $this->sendMessage(new Commit());
+
+        return new CommitResponse(array_key_exists('bookmark', $response->content) ? new Bookmark($response->content['bookmark']) : null);
     }
 
     /**
@@ -246,91 +229,34 @@ class BoltConnection implements ConnectionInterface
     public function rollback(): void
     {
         $this->consumeResults();
-        $response = $this->protocol()
-            ->rollback()
-            ->getResponse();
 
-        $this->assertNoFailure($response);
+        $this->sendMessage(new Rollback());
     }
 
-    public function protocol(): V4_4|V5
+    public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
     {
         return $this->boltProtocol;
     }
 
-    /**
-     * Pulls a result set.
-     *
-     * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
-     *
-     * @return non-empty-list<list>
-     */
-    public function pull(?int $qid, ?int $fetchSize): array
-    {
-        $extra = $this->buildResultExtra($fetchSize, $qid);
-
-        $tbr = [];
-        foreach ($this->protocol()->pull($extra)->getResponses() as $response) {
-            $this->assertNoFailure($response);
-
-            $tbr[] = $response->getContent();
-        }
-
-        /** @var non-empty-list<list> */
-        return $tbr;
-    }
-
     public function __destruct()
     {
-        if (!$this->protocol()->serverState->is(ServerState::FAILED) && $this->isOpen()) {
-            if ($this->protocol()->serverState->is(ServerState::STREAMING, ServerState::TX_STREAMING)) {
-                $this->consumeResults();
+        try {
+            if ($this->boltProtocol->serverState === ServerState::FAILED && $this->isOpen()) {
+                if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
+                    $this->consumeResults();
+                }
+
+                $this->protocol()->goodbye();
+
+                unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
-
-            $this->protocol()->goodbye();
-
-            unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
+        } catch (Throwable) {
         }
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
+    public function getServerState(): ServerState
     {
-        $extra = [];
-        if ($database) {
-            $extra['db'] = $database;
-        }
-        if ($timeout) {
-            $extra['tx_timeout'] = (int) ($timeout * 1000);
-        }
-
-        if (!$holder->getBookmark()->isEmpty()) {
-            $extra['bookmarks'] = $holder->getBookmark()->values();
-        }
-
-        if ($mode) {
-            $extra['mode'] = AccessMode::WRITE() === $mode ? 'w' : 'r';
-        }
-
-        return $extra;
-    }
-
-    private function buildResultExtra(?int $fetchSize, ?int $qid): array
-    {
-        $extra = [];
-        if ($fetchSize !== null) {
-            $extra['n'] = $fetchSize;
-        }
-
-        if ($qid !== null) {
-            $extra['qid'] = $qid;
-        }
-
-        return $extra;
-    }
-
-    public function getServerState(): string
-    {
-        return $this->protocol()->serverState->get();
+        return $this->protocol()->serverState;
     }
 
     public function subscribeResult(CypherList $result): void
@@ -338,15 +264,37 @@ class BoltConnection implements ConnectionInterface
         $this->subscribedResults[] = WeakReference::create($result);
     }
 
-    public function getUserAgent(): string
-    {
-        return $this->userAgent;
-    }
-
     private function assertNoFailure(Response $response): void
     {
-        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
+        if ($response->signature === Signature::FAILURE) {
+            $this->protocol()->reset()->getResponse(); // what if the reset fails? what should be expected behaviour?
             throw Neo4jException::fromBoltResponse($response);
         }
+    }
+
+    /**
+     * @param Response $response
+     * @return ResultSuccessResponse
+     */
+    private function createResultSuccessResponse(Response $response): ResultSuccessResponse
+    {
+        return new ResultSuccessResponse(
+            has_more: $response->content['has_more'],
+            bookmark: array_key_exists('bookmark', $response->content) ? new Bookmark($response->content['bookmark']) : null,
+            db: $response->content['db'] ?? null,
+            notification: $response->content['notification'] ?? null,
+            plan: $response->content['plan'] ?? null,
+            profile: $response->content['profile'] ?? null,
+            stats: $response->content['stats'] ?? null,
+            t_last: $response->content['t_last'] ?? null,
+            t_first: $response->content['t_first'] ?? null,
+            type: array_key_exists('type', $response->content) ? QueryTypeEnum::from($response->content['type']) : null,
+        );
+    }
+
+    public function route(): RouteResponse
+    {
+        $response = $this->sendMessage(new Route());
+        return new RouteResponse();
     }
 }

@@ -198,10 +198,14 @@ $x->getProperties()->toArray())->toArray());
             self::markTestSkipped('Only local environment has access to local files');
         }
 
+        $this->getSession()->run('MATCH (n:File) DELETE n');
+
         $this->getSession()->run(<<<CYPHER
-USING PERIODIC COMMIT 10
 LOAD CSV FROM 'file:///csv-example.csv' AS line
-MERGE (n:File {name: line[0]});
+CALL {
+    WITH line
+    MERGE (n:File {name: line[0]})
+} IN TRANSACTIONS OF 10 ROWS;
 CYPHER, []);
 
         $result = $this->getSession()->run('MATCH (n:File) RETURN count(n) AS count');
@@ -218,9 +222,11 @@ CYPHER, []);
 
         $tsx = $this->getSession(['neo4j', 'bolt'])->beginTransaction([]);
         $tsx->run(<<<CYPHER
-USING PERIODIC COMMIT 10
 LOAD CSV FROM 'file:///csv-example.csv' AS line
-MERGE (n:File {name: line[0]});
+CALL {
+    WITH line
+    MERGE (n:File {name: line[0]})
+} IN  TRANSACTIONS OF 10 ROWS;
 CYPHER
         );
         $tsx->commit();

@@ -23,7 +23,6 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
-use Laudis\Neo4j\Types\CypherList;
 
 /**
  * A collection of drivers with methods to run queries though them.

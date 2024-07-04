@@ -16,25 +16,9 @@ namespace Laudis\Neo4j\Enum;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 
-/**
- * Defines the access mode of a connection.
- *
- * @method static self READ()
- * @method static self WRITE()
- *
- * @extends TypedEnum<string>
- *
- * @psalm-immutable
- *
- * @psalm-suppress MutableDependency
- */
-final class AccessMode extends TypedEnum implements JsonSerializable
-{
-    private const READ = 'read';
-    private const WRITE = 'write';
 
-    public function jsonSerialize(): string
-    {
-        return $this->getValue();
-    }
+enum AccessMode : string
+{
+    case READ = 'read';
+    case WRITE = 'write';
 }

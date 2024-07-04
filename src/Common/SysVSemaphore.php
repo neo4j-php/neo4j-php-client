@@ -29,11 +29,8 @@ use function sem_release;
 
 class SysVSemaphore implements SemaphoreInterface
 {
-    /**
-     * @param resource $semaphore
-     */
     private function __construct(
-        private $semaphore
+        private readonly \SysvSemaphore $semaphore
     ) {}
 
     public static function create(string $key, int $max): self
@@ -41,7 +38,16 @@ class SysVSemaphore implements SemaphoreInterface
         $key = hash('sha512', $key, true);
         $key = substr($key, 0, 8);
 
-        return new self(sem_get(hexdec($key), $max));
+        if (!function_exists('sem_get')) {
+            throw new RuntimeException('Can only create a semaphore if the sysv extension is installed');
+        }
+
+        $semaphore = sem_get(hexdec($key), $max);
+        if ($semaphore === false) {
+            throw new RuntimeException('Could not create semaphore');
+        }
+
+        return new self($semaphore);
     }
 
     public function wait(): Generator

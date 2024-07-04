@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use function extension_loaded;
 
+use Laudis\Neo4j\Common\UriConfiguration;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 
 /**
@@ -28,12 +29,9 @@ class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
      * @param SocketConnectionFactory|StreamConnectionFactory $factory
      */
     private function __construct(
-        private $factory
+        private readonly SocketConnectionFactory|StreamConnectionFactory $factory
     ) {}
 
-    /**
-     * @psalm-suppress InvalidNullableReturnType
-     */
     public static function getInstance(): SystemWideConnectionFactory
     {
         if (self::$instance === null) {
@@ -45,7 +43,6 @@ class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
             }
         }
 
-        /** @psalm-suppress NullableReturnStatement */
         return self::$instance;
     }
 

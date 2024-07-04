@@ -19,6 +19,8 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
  * Contains counters for various operations that a query triggered.
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, int|bool>
  */
 final class SummaryCounters extends AbstractCypherObject
 {
@@ -40,7 +42,7 @@ final class SummaryCounters extends AbstractCypherObject
     ) {}
 
     /**
-     * Whether or not the query contained any updates.
+     * Whether the query contained any updates.
      */
     public function containsUpdates(): bool
     {

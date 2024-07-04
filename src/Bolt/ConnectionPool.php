@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\enum\ServerState;
 use Generator;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -30,9 +31,6 @@ use Psr\Http\Message\UriInterface;
 
 use function shuffle;
 
-/**
- * @implements ConnectionPoolInterface<BoltConnection>
- */
 final class ConnectionPool implements ConnectionPoolInterface
 {
     /** @var list<BoltConnection> */
@@ -92,7 +90,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         })();
     }
 
-    public function release(ConnectionInterface $connection): void
+    public function release(BoltConnection $connection): void
     {
         $this->semaphore->post();
 
@@ -108,7 +106,7 @@ final class ConnectionPool implements ConnectionPoolInterface
     /**
      * @return BoltConnection|null
      */
-    private function returnAnyAvailableConnection(SessionConfiguration $config): ?ConnectionInterface
+    private function returnAnyAvailableConnection(SessionConfiguration $config): ?BoltConnection
     {
         $streamingConnection = null;
         $requiresReconnectConnection = null;
@@ -132,7 +130,7 @@ final class ConnectionPool implements ConnectionPoolInterface
             // results open that aren't consumed yet.
             // https://github.com/neo4j-php/neo4j-php-client/issues/146
             // NOTE: we cannot work with TX_STREAMING as we cannot force the transaction to implicitly close.
-            if ($streamingConnection === null && $activeConnection->getServerState() === 'STREAMING') {
+            if ($streamingConnection === null && $activeConnection->getServerState() === ServerState::STREAMING) {
                 if ($this->factory->canReuseConnection($activeConnection, $this->data, $config)) {
                     $streamingConnection = $activeConnection;
                     if (method_exists($streamingConnection, 'consumeResults')) {

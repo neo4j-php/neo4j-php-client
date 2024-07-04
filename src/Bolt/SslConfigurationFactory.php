@@ -23,7 +23,7 @@ use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
 use Psr\Http\Message\UriInterface;
 
-class SslConfigurationFactory
+final class SslConfigurationFactory
 {
     /**
      * @return array{0: 's'|'ssc'|'', 1: array{verify_peer?: bool, peer_name?: string, SNI_enabled?: bool, allow_self_signed?: bool}}
@@ -31,14 +31,16 @@ class SslConfigurationFactory
     public function create(UriInterface $uri, SslConfiguration $config): array
     {
         $mode = $config->getMode();
+        /** @var ''|'s'|'ssc' $sslConfig */
         $sslConfig = '';
-        if ($mode === SslMode::FROM_URL()) {
+        if ($mode === SslMode::FROM_URL) {
             $scheme = $uri->getScheme();
             $explosion = explode('+', $scheme, 2);
+            /** @var ''|'s'|'ssc' $sslConfig */
             $sslConfig = $explosion[1] ?? '';
-        } elseif ($mode === SslMode::ENABLE()) {
+        } elseif ($mode === SslMode::ENABLE) {
             $sslConfig = 's';
-        } elseif ($mode === SslMode::ENABLE_WITH_SELF_SIGNED()) {
+        } elseif ($mode === SslMode::ENABLE_WITH_SELF_SIGNED) {
             $sslConfig = 'ssc';
         }
 
@@ -46,7 +48,7 @@ class SslConfigurationFactory
             return [$sslConfig, $this->enableSsl($uri->getHost(), $sslConfig, $config)];
         }
 
-        return [$sslConfig, []];
+        return ['', []];
     }
 
     /**

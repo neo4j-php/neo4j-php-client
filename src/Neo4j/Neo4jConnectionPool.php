@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use Laudis\Neo4j\Common\DNSAddressResolver;
 use function array_unique;
 use function count;
 
@@ -22,7 +23,6 @@ use Generator;
 use function implode;
 
 use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Cache;
@@ -32,7 +32,6 @@ use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
-use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -55,8 +54,7 @@ use function time;
 
 /**
  * Connection pool for with auto client-side routing.
- *
- * @psalm-import-type BasicDriver from DriverInterface
+
  *
  * @implements ConnectionPoolInterface<BoltConnection>
  */
@@ -73,10 +71,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         private readonly BoltFactory $factory,
         private readonly ConnectionRequestData $data,
         private readonly CacheInterface $cache,
-        private readonly AddressResolverInterface $resolver
+        private readonly DNSAddressResolver $resolver
     ) {}
 
-    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self
+    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, DNSAddressResolver $resolver, SemaphoreInterface $semaphore): self
     {
         return new self(
             $semaphore,
@@ -189,7 +187,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $bolt->route([], [], ['db' => $config->getDatabase()])
             ->getResponse()
-            ->getContent();
+            ->content;
 
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();
@@ -197,9 +195,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         return new RoutingTable($servers, $ttl);
     }
 
-    public function release(ConnectionInterface $connection): void
+    public function release(BoltConnection $connection): void
     {
-        $this->createOrGetPool($connection->getServerAddress())->release($connection);
+        $this->createOrGetPool($connection->getConfig()->getServerAddress())->release($connection);
     }
 
     private function createKey(ConnectionRequestData $data, ?SessionConfiguration $config = null): string
@@ -208,7 +206,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $key = implode(
             ':',
-            array_filter([$data->getUserAgent(), $uri->getHost(), $config ? $config->getDatabase() : null, $uri->getPort() ?? '7687'])
+            array_filter([$data->getUserAgent(), $uri->getHost(), $config?->getDatabase() ?? '', $uri->getPort() ?? '7687'])
         );
 
         return str_replace([

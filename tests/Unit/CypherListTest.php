@@ -264,6 +264,11 @@ final class CypherListTest extends TestCase
         self::assertEquals(3, $counter);
     }
 
+    /**
+     * @psalm-suppress UnevaluatedCode
+     * @psalm-suppress NoValue
+     * @psalm-suppress UnusedVariable
+     */
     public function testIterationEmpty(): void
     {
         $counter = 0;
@@ -443,8 +448,6 @@ final class CypherListTest extends TestCase
                 return $x;
             });
 
-        /** @var int $sumBefore */
-        /** @var int $sumAfter */
         $start = $range->get(0);
 
         self::assertEquals(5, $start);

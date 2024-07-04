@@ -13,48 +13,45 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\helpers\Auth;
-use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
+use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Laudis\Neo4j\Exception\Neo4jException;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\UriInterface;
-
-use function sprintf;
+use Stringable;
 
 /**
  * Doesn't authenticate connections.
+ *
+ * @internal
  */
-final class NoAuth implements AuthenticateInterface
+final class NoAuth implements AuthenticateInterface, Stringable
 {
-    /**
-     * @psalm-mutation-free
-     */
-    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
+    public function authenticate(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
-        /**
-         * @psalm-suppress ImpureMethodCall Request is a pure object:
-         *
-         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
-         */
-        return $request->withHeader('User-Agent', $userAgent);
-    }
+        if (method_exists($protocol, 'logon')) {
+            $protocol->logon([
+                'scheme' => 'none',
+            ]);
 
-    public function authenticateBolt(V4_4|V5 $bolt, string $userAgent): array
-    {
-        $response = $bolt->hello(Auth::none($userAgent));
-        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
-            throw Neo4jException::fromBoltResponse($response);
+            /** @var array{server: string, connection_id: string, hints: list} */
+            return ResponseHelper::getResponse($protocol)->content;
+        } else {
+            $protocol->hello([
+                'user_agent' => $userAgent,
+                'scheme' => 'none',
+            ]);
+
+            /** @var array{server: string, connection_id: string, hints: list} */
+            return ResponseHelper::getResponse($protocol)->content;
         }
-
-        /** @var array{server: string, connection_id: string, hints: list} */
-        return $response->getContent();
     }
 
-    public function toString(UriInterface $uri): string
+    public function __toString(): string
     {
-        return sprintf('No Auth %s:%s', $uri->getHost(), $uri->getPort() ?? '');
+        return 'No Auth';
     }
 }

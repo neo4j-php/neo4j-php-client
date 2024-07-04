@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use Bolt\protocol\V5;
 use Generator;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;
@@ -147,8 +148,12 @@ class BoltConnectionPoolTest extends TestCase
                         ->willReturn($semaphoreGenerator);
 
         $this->factory = $this->createMock(BoltFactory::class);
+        $boltConnection = $this->createMock(BoltConnection::class);
+        $boltConnection->method('protocol')->willReturn($this->createMock(V5::class));
         $this->factory->method('createConnection')
-                      ->willReturn($this->createMock(BoltConnection::class));
+                      ->willReturn($boltConnection);
+        $this->factory->method('reuseConnection')
+            ->willReturnCallback(fn (MockObject $x): MockObject => $x);
 
         $this->pool = new ConnectionPool(
             $this->semaphore, $this->factory, new ConnectionRequestData(

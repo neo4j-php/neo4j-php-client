@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Bolt\Connection;
-use Laudis\Neo4j\Bolt\UriConfiguration;
+use Laudis\Neo4j\Common\UriConfiguration;
 
 interface BasicConnectionFactoryInterface
 {

@@ -266,6 +266,11 @@ final class CypherMapTest extends TestCase
         self::assertEquals(3, $counter);
     }
 
+    /**
+     * @psalm-suppress UnevaluatedCode
+     * @psalm-suppress UnusedVariable
+     * @psalm-suppress NoValue
+     */
     public function testIterationEmpty(): void
     {
         $counter = 0;
@@ -420,6 +425,7 @@ final class CypherMapTest extends TestCase
 
     public function testInvalidConstruct(): void
     {
+        /** @psalm-suppress MissingTemplateParam */
         $map = new CypherMap(new class() implements IteratorAggregate {
             public function getIterator(): Generator
             {

@@ -19,10 +19,11 @@ use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
-use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
 
 use function microtime;
@@ -31,12 +32,6 @@ use Throwable;
 
 /**
  * Manages a transaction over the bolt protocol.
- *
- * @template T
- *
- * @implements UnmanagedTransactionInterface<T>
- *
- * @psalm-import-type BoltMeta from FormatterInterface
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
@@ -44,37 +39,19 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     private bool $isCommitted = false;
 
-    /**
-     * @param FormatterInterface<T> $formatter
-     */
     public function __construct(
-        /** @psalm-readonly */
         private readonly ?string $database,
-        /**
-         * @psalm-readonly
-         */
-        private readonly FormatterInterface $formatter,
-        /** @psalm-readonly */
+        private readonly SummarizedResultFormatter $formatter,
         private readonly BoltConnection $connection,
         private readonly SessionConfiguration $config,
         private readonly TransactionConfiguration $tsxConfig,
         private readonly BookmarkHolder $bookmarkHolder
     ) {}
 
-    public function commit(iterable $statements = []): CypherList
+    public function commit(): void
     {
-        // Force the results to pull all the results.
-        // After a commit, the connection will be in the ready state, making it impossible to use PULL
-        $tbr = $this->runStatements($statements)->each(static function ($list) {
-            if ($list instanceof AbstractCypherSequence) {
-                $list->preload();
-            }
-        });
-
         $this->connection->commit();
         $this->isCommitted = true;
-
-        return $tbr;
     }
 
     public function rollback(): void
@@ -86,7 +63,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @throws Throwable
      */
-    public function run(string $statement, iterable $parameters = [])
+    public function run(string $statement, iterable $parameters = []): SummarizedResult
     {
         return $this->runStatement(new Statement($statement, $parameters));
     }
@@ -94,19 +71,23 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @throws Throwable
      */
-    public function runStatement(Statement $statement)
+    public function runStatement(Statement $statement): SummarizedResult
     {
-        $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
+        $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getConfig()->getProtocol());
         $start = microtime(true);
 
         try {
             $meta = $this->connection->run(
                 $statement->getText(),
                 $parameters->toArray(),
-                $this->database,
-                $this->tsxConfig->getTimeout(),
                 $this->bookmarkHolder,
-                $this->config->getAccessMode()
+                $this->tsxConfig->getTimeout(),
+                $this->tsxConfig->getMetaData(),
+                $this->config->getAccessMode(),
+                $this->database,
+                null,
+                null,
+                null,
             );
         } catch (Throwable $e) {
             $this->isRolledBack = true;

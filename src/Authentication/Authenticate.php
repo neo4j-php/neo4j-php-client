@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Authentication;
 
 use function explode;
 
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\UriInterface;
 
 use function substr_count;
@@ -72,7 +71,7 @@ final class Authenticate
      *
      * @pure
      */
-    public static function fromUrl(UriInterface $uri): AuthenticateInterface
+    public static function fromUrl(UriInterface $uri): BasicAuth|NoAuth
     {
         /**
          * @psalm-suppress ImpureMethodCall Uri is a pure object:
@@ -82,7 +81,9 @@ final class Authenticate
         $userInfo = $uri->getUserInfo();
 
         if (substr_count($userInfo, ':') === 1) {
-            [$user, $pass] = explode(':', $userInfo);
+            /** @var array{0: string, 1: string} $explode */
+            $explode = explode(':', $userInfo);
+            [$user, $pass] = $explode;
 
             return self::basic($user, $pass);
         }
