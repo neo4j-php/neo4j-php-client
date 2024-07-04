@@ -129,7 +129,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             })();
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
-                $pool = $this->createOrGetPool(Uri::create($address));
+
+                $uri = Uri::create($address);
+                $port = $this->data->getUri()->getPort();
+                if ($port !== null) {
+                    $uri = $uri->withPort($port);
+                }
+
+                $pool = $this->createOrGetPool($uri);
                 try {
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
