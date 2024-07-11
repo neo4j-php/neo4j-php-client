@@ -356,7 +356,7 @@ class BoltConnection implements ConnectionInterface
     private function assertNoFailure(Response $response): void
     {
         if ($response->signature === Signature::FAILURE) {
-            $res = $this->protocol()->reset()->getResponse(); // what if the reset fails? what should be expected behaviour?
+            $this->protocol()->reset()->getResponse(); // what if the reset fails? what should be expected behaviour?
             throw Neo4jException::fromBoltResponse($response);
         }
     }
