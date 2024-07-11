@@ -23,6 +23,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Laudis\Neo4j\Types\Node;
 
 final class ComplexQueryTest extends EnvironmentAwareIntegrationTest

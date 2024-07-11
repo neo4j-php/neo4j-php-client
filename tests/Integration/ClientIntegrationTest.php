@@ -24,6 +24,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use ReflectionClass;
 
 final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest

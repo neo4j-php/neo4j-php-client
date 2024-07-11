@@ -23,6 +23,7 @@ use function json_encode;
 
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;

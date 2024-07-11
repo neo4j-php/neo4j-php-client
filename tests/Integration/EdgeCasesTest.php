@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
 use Laudis\Neo4j\Types\ArrayList;
 use Laudis\Neo4j\Types\CypherMap;

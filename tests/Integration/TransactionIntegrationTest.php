@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 
 final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
