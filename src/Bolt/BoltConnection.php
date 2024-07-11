@@ -290,7 +290,7 @@ class BoltConnection implements ConnectionInterface
     public function __destruct()
     {
         try {
-            if ($this->boltProtocol->serverState === ServerState::FAILED && $this->isOpen()) {
+            if ($this->isOpen()) {
                 if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
                     $this->consumeResults();
                 }
@@ -356,7 +356,7 @@ class BoltConnection implements ConnectionInterface
     private function assertNoFailure(Response $response): void
     {
         if ($response->signature === Signature::FAILURE) {
-            $this->protocol()->reset()->getResponse(); //what if the reset fails? what should be expected behaviour?
+            $res = $this->protocol()->reset()->getResponse(); //what if the reset fails? what should be expected behaviour?
             throw Neo4jException::fromBoltResponse($response);
         }
     }
