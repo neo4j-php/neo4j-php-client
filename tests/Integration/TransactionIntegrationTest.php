@@ -214,26 +214,26 @@ CYPHER
     public function testCommitInvalid(): void
     {
         $this->markTestSkipped('Skipped due to ConnectionTimeoutException');
-        $tsx = $this->getSession()->beginTransaction();
-        $tsx->commit();
-
-        self::assertTrue($tsx->isFinished());
-        self::assertFalse($tsx->isRolledBack());
-        self::assertTrue($tsx->isCommitted());
-
-        $this->expectException(Neo4jException::class);
-        $tsx->commit();
+//        $tsx = $this->getSession()->beginTransaction();
+//        $tsx->commit();
+//
+//        self::assertTrue($tsx->isFinished());
+//        self::assertFalse($tsx->isRolledBack());
+//        self::assertTrue($tsx->isCommitted());
+//
+//        $this->expectException(Neo4jException::class);
+//        $tsx->commit();
     }
 
     public function testRollbackValid(): void
     {
         $this->markTestSkipped('Skipped due to ConnectionTimeoutException');
-        $tsx = $this->getSession()->beginTransaction();
-        $tsx->rollback();
-
-        self::assertTrue($tsx->isFinished());
-        self::assertTrue($tsx->isRolledBack());
-        self::assertFalse($tsx->isCommitted());
+//        $tsx = $this->getSession()->beginTransaction();
+//        $tsx->rollback();
+//
+//        self::assertTrue($tsx->isFinished());
+//        self::assertTrue($tsx->isRolledBack());
+//        self::assertFalse($tsx->isCommitted());
     }
 
     public function testRollbackInvalid(): void
