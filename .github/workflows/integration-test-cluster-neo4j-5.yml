@@ -38,7 +38,7 @@ jobs:
 
     services:
       server1:
-        image: neo4j:5.10-enterprise
+        image: neo4j:5.20-enterprise
         ports:
           - 7687:7687
           - 7473:7473
@@ -59,7 +59,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server2:
-        image: neo4j:5.10-enterprise
+        image: neo4j:5.20-enterprise
         ports:
           - 8687:7687
           - 8473:7473
@@ -80,7 +80,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server3:
-        image: neo4j:5.10-enterprise
+        image: neo4j:5.20-enterprise
         ports:
           - 9474:7474
           - 9473:7473
@@ -101,7 +101,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       read-server4:
-        image: neo4j:5.10-enterprise
+        image: neo4j:5.20-enterprise
         ports:
           - 10474:7474
           - 10473:7473
