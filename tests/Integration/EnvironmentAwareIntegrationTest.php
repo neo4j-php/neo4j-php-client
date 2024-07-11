@@ -20,7 +20,7 @@ use Laudis\Neo4j\Basic\Session;
 use Laudis\Neo4j\Common\Uri;
 use PHPUnit\Framework\TestCase;
 
-abstract class EnvironmentAwareIntegrationTest extends TestCase
+class EnvironmentAwareIntegrationTest extends TestCase
 {
     protected static Session $session;
     protected static Driver $driver;
