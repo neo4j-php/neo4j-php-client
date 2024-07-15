@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONNECTION: neo4j://neo4j:testtest@localhost:7687
-    name: "Running on PHP 8.1 with a Neo4j 5.10-enterprise cluster"
+    name: "Running on PHP 8.1 with a Neo4j 5.20-enterprise cluster"
 
     steps:
       - uses: actions/checkout@v2
