@@ -117,7 +117,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $key = $this->createKey($this->data, $config);
 
         /** @var RoutingTable|null */
-        $table = $this->cache->get($key, null);
+        $table = $this->cache->get($key);
         $triedAddresses = [];
 
         $latestError = null;
@@ -129,7 +129,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             })();
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
-                $pool = $this->createOrGetPool(Uri::create($address));
+
+                $pool = $this->createOrGetPool($this->data->getUri()->withHost($address));
                 try {
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
@@ -189,7 +190,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $bolt->route([], [], ['db' => $config->getDatabase()])
             ->getResponse()
-            ->getContent();
+            ->content;
 
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();

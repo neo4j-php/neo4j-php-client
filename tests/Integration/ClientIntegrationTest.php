@@ -24,6 +24,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use ReflectionClass;
 
 final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
@@ -41,12 +42,12 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 
     public function testAvailabilityFullImplementation(): void
     {
-        $results = $this->getSession()
-            ->beginTransaction()
+        $transaction = $this->getSession()->beginTransaction();
+        $results = $transaction
             ->run('UNWIND [1] AS x RETURN x')
             ->first()
             ->get('x');
-
+        $transaction->rollback();
         self::assertEquals(1, $results);
     }
 
@@ -87,13 +88,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
 
     public function testInvalidRun(): void
     {
-        $exception = false;
-        try {
-            $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']));
-        } catch (Neo4jException) {
-            $exception = true;
-        }
-        self::assertTrue($exception);
+        $this->expectException(Neo4jException::class);
+        $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']));
     }
 
     public function testInvalidRunRetry(): void
@@ -106,7 +102,8 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
         }
         self::assertTrue($exception);
 
-        $this->getSession()->run('RETURN 1 AS one');
+        $response = $this->getSession()->run('RETURN 1 AS one');
+        $this->assertEquals(1, $response->first()->get('one'));
     }
 
     public function testValidStatement(): void
@@ -131,14 +128,9 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])));
 
     public function testInvalidStatement(): void
     {
-        $exception = false;
-        try {
-            $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
-            $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->runStatement($statement));
-        } catch (Neo4jException) {
-            $exception = true;
-        }
-        self::assertTrue($exception);
+        $this->expectException(Neo4jException::class);
+        $statement = Statement::create('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']);
+        $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->runStatement($statement));
     }
 
     public function testStatements(): void
@@ -147,7 +139,7 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])));
         $response = $this->getSession()->runStatements([
             Statement::create('MERGE (x:TestNode {test: $test})', $params),
             Statement::create('MERGE (x:OtherTestNode {test: $otherTest})', $params),
-            Statement::create('RETURN 1 AS x', []),
+            Statement::create('RETURN 1 AS x'),
         ]);
 
         self::assertEquals(3, $response->count());

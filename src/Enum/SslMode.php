@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Enum;
 
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
+use Stringable;
 
 /**
  * @method static self ENABLE()
@@ -28,7 +29,7 @@ use Laudis\TypedEnum\TypedEnum;
  *
  * @psalm-suppress MutableDependency
  */
-final class SslMode extends TypedEnum implements JsonSerializable, \Stringable
+final class SslMode extends TypedEnum implements JsonSerializable, Stringable
 {
     private const ENABLE = 'enable';
     private const ENABLE_WITH_SELF_SIGNED = 'enable_with_self_signed';

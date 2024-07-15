@@ -28,6 +28,8 @@ use Laudis\Neo4j\Types\CypherList;
  * - information about connection environment
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class ResultSummary extends AbstractCypherObject
 {

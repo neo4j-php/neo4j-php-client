@@ -17,6 +17,7 @@ use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Laudis\Neo4j\Types\CypherMap;
 
 final class BasicDriverTest extends EnvironmentAwareIntegrationTest

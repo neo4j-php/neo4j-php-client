@@ -129,7 +129,7 @@ final class SummarizedResultFormatter implements FormatterInterface
     }
 
     /**
-     * @param array{stats?: BoltCypherStats} $response
+     * @param array{stats?: BoltCypherStats}&array $response
      *
      * @psalm-mutation-free
      */
@@ -173,7 +173,6 @@ final class SummarizedResultFormatter implements FormatterInterface
             /** @var BoltCypherStats $response */
             $stats = $this->formatBoltStats($response);
             $resultConsumedAfter = microtime(true) - $runStart;
-            /** @var string */
             $db = $response['db'] ?? '';
             $summary = new ResultSummary(
                 $stats,

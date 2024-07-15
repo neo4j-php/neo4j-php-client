@@ -38,8 +38,12 @@ final class Neo4jError
      */
     public static function fromBoltResponse(Response $response): self
     {
-        /** @var array{code: string, message:string} $content */
-        $content = $response->getContent();
+        /**
+         * @psalm-suppress ImpurePropertyFetch
+         *
+         * @var array{code: string, message:string} $content
+         */
+        $content = $response->content;
 
         return self::fromMessageAndCode($content['code'], $content['message']);
     }

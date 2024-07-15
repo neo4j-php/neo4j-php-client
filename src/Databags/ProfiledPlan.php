@@ -19,9 +19,11 @@ use Laudis\Neo4j\Types\CypherList;
 /**
  * A plan that has been executed. This means a lot more information is available.
  *
- * @see \Laudis\Neo4j\Databags\Plan
+ * @see Plan
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class ProfiledPlan extends AbstractCypherObject
 {

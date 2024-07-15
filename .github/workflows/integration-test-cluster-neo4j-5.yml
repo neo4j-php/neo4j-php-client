@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONNECTION: neo4j://neo4j:testtest@localhost:7687
-    name: "Running on PHP 8.0 with a Neo4j 5.10-enterprise cluster"
+    name: "Running on PHP 8.1 with a Neo4j 5.20-enterprise cluster"
 
     steps:
       - uses: actions/checkout@v2
@@ -25,20 +25,20 @@ jobs:
       - uses: php-actions/composer@v6
         with:
           progress: yes
-          php_version: 8.0
+          php_version: 8.1
           version: 2
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
-          php_version: 8.0
+          php_version: 8.1
           memory_limit: 1024M
-          version: 9
+          version: 10
           testsuite: Integration
           bootstrap: vendor/autoload.php
 
     services:
       server1:
-        image: neo4j:5.10-enterprise
+        image: neo4j:5.20-enterprise
         ports:
           - 7687:7687
           - 7473:7473
@@ -59,7 +59,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server2:
-        image: neo4j:5.10-enterprise
+        image: neo4j:5.20-enterprise
         ports:
           - 8687:7687
           - 8473:7473
@@ -80,7 +80,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       server3:
-        image: neo4j:5.10-enterprise
+        image: neo4j:5.20-enterprise
         ports:
           - 9474:7474
           - 9473:7473
@@ -101,7 +101,7 @@ jobs:
           --health-timeout "15s"
           --health-retries "5"
       read-server4:
-        image: neo4j:5.10-enterprise
+        image: neo4j:5.20-enterprise
         ports:
           - 10474:7474
           - 10473:7473

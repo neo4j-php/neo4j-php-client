@@ -23,6 +23,7 @@ use function json_encode;
 
 use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
@@ -365,7 +366,7 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
     public function testPath2(): void
     {
         $results = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
-CREATE path = ((a:Node {x:$x}) - [b:HasNode {attribute: $xy}] -> (c:Node {y:$y}) - [d:HasNode {attribute: $yz}] -> (e:Node {z:$z}))
+CREATE path = (a:Node {x:$x}) - [b:HasNode {attribute: $xy}] -> (c:Node {y:$y}) - [d:HasNode {attribute: $yz}] -> (e:Node {z:$z})
 RETURN path
 CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
 

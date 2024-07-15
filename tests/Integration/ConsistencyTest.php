@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 
 final class ConsistencyTest extends EnvironmentAwareIntegrationTest
 {

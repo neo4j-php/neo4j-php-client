@@ -17,6 +17,7 @@ use function array_key_exists;
 
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 
 /**
  * @psalm-suppress MissingConstructor

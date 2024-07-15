@@ -21,6 +21,8 @@ use Psr\Http\Message\UriInterface;
  * Provides some basic information of the server where the result is obtained from.
  *
  * @psalm-immutable
+ *
+ * @extends AbstractCypherObject<string, mixed>
  */
 final class ServerInfo extends AbstractCypherObject
 {

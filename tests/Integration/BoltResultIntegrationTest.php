@@ -23,6 +23,7 @@ use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 
 final class BoltResultIntegrationTest extends EnvironmentAwareIntegrationTest
 {

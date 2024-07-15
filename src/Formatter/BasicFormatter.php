@@ -58,7 +58,7 @@ final class BasicFormatter implements FormatterInterface
     }
 
     /**
-     * @param array{fields: array<int, string>} $meta
+     * @param array{fields: array<int, string>, qid?: int, t_first: int} $meta
      *
      * @return CypherList<CypherMap<array|scalar|null>>
      */
@@ -127,7 +127,7 @@ final class BasicFormatter implements FormatterInterface
     }
 
     /**
-     * @param array{fields: array<int, string>} $meta
+     * @param array{fields: array<int, string>, qid?: int, t_first: int} $meta
      *
      * @return CypherMap<scalar|array|null>
      */
@@ -144,8 +144,8 @@ final class BasicFormatter implements FormatterInterface
 
     private function mapPath(Path $path): array
     {
-        $relationships = $path->rels();
-        $nodes = $path->nodes();
+        $relationships = $path->rels;
+        $nodes = $path->nodes;
         $tbr = [];
         /**
          * @var mixed $node

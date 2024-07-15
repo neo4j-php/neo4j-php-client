@@ -13,16 +13,20 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\enum\ServerState;
+use Bolt\enum\Signature;
 use Bolt\protocol\Response;
-use Bolt\protocol\ServerState;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -31,7 +35,7 @@ use Psr\Http\Message\UriInterface;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_4|V5|V5_3|V5_4, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  */
@@ -53,7 +57,7 @@ class BoltConnection implements ConnectionInterface
     private array $subscribedResults = [];
 
     /**
-     * @return array{0: V4_4|V5, 1: Connection}
+     * @return array{0: V4_4|V5|V5_3|V5_4, 1: Connection}
      */
     public function getImplementation(): array
     {
@@ -64,7 +68,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5 $boltProtocol,
+        private V4_4|V5|V5_3|V5_4 $boltProtocol,
         private readonly Connection $connection,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
@@ -135,7 +139,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return !in_array($this->protocol()->serverState->get(), ['DISCONNECTED', 'DEFUNCT'], true);
+        return !in_array($this->protocol()->serverState, [ServerState::DISCONNECTED, ServerState::DEFUNCT], true);
     }
 
     public function setTimeout(float $timeout): void
@@ -163,11 +167,10 @@ class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
-        $response = $this->protocol()->reset()
+        $response = $this->protocol()
+            ->reset()
             ->getResponse();
-
         $this->assertNoFailure($response);
-
         $this->subscribedResults = [];
     }
 
@@ -179,12 +182,15 @@ class BoltConnection implements ConnectionInterface
     public function begin(?string $database, ?float $timeout, BookmarkHolder $holder): void
     {
         $this->consumeResults();
-        $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE());
 
+        if ($this->protocol()->serverState !== ServerState::READY) {
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'BEGIN\' cannot be handled by a session which isn\'t in the READY state.')]);
+        }
+
+        $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE());
         $response = $this->protocol()
             ->begin($extra)
             ->getResponse();
-
         $this->assertNoFailure($response);
     }
 
@@ -195,12 +201,14 @@ class BoltConnection implements ConnectionInterface
      */
     public function discard(?int $qid): void
     {
+        if (!in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'DISCARD\' cannot be handled by a session which isn\'t in the STREAMING|TX_STREAMING state.')]);
+        }
+
         $extra = $this->buildResultExtra(null, $qid);
-        $bolt = $this->protocol();
-
-        $response = $bolt->discard($extra)
+        $response = $this->protocol()
+            ->discard($extra)
             ->getResponse();
-
         $this->assertNoFailure($response);
     }
 
@@ -213,14 +221,17 @@ class BoltConnection implements ConnectionInterface
      */
     public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
     {
+        if (!in_array($this->protocol()->serverState, [ServerState::READY, ServerState::TX_READY, ServerState::TX_STREAMING], true)) {
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'RUN\' cannot be handled by a session which isn\'t in the READY|TX_READY|TX_STREAMING state.')]);
+        }
+
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode);
-        $response = $this->protocol()->run($text, $parameters, $extra)
+        $response = $this->protocol()
+            ->run($text, $parameters, $extra)
             ->getResponse();
-
         $this->assertNoFailure($response);
-
         /** @var BoltMeta */
-        return $response->getContent();
+        return $response->content;
     }
 
     /**
@@ -231,10 +242,10 @@ class BoltConnection implements ConnectionInterface
     public function commit(): void
     {
         $this->consumeResults();
+
         $response = $this->protocol()
             ->commit()
             ->getResponse();
-
         $this->assertNoFailure($response);
     }
 
@@ -246,14 +257,18 @@ class BoltConnection implements ConnectionInterface
     public function rollback(): void
     {
         $this->consumeResults();
+
+        if ($this->protocol()->serverState !== ServerState::TX_READY) {
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'ROLLBACK\' cannot be handled by a session which isn\'t in the TX_READY state.')]);
+        }
+
         $response = $this->protocol()
             ->rollback()
             ->getResponse();
-
         $this->assertNoFailure($response);
     }
 
-    public function protocol(): V4_4|V5
+    public function protocol(): V4_4|V5|V5_3|V5_4
     {
         return $this->boltProtocol;
     }
@@ -267,13 +282,17 @@ class BoltConnection implements ConnectionInterface
      */
     public function pull(?int $qid, ?int $fetchSize): array
     {
+        if (!in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'PULL\' cannot be handled by a session which isn\'t in the STREAMING|TX_STREAMING state.')]);
+        }
+
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
         $tbr = [];
+        /** @var Response $response */
         foreach ($this->protocol()->pull($extra)->getResponses() as $response) {
             $this->assertNoFailure($response);
-
-            $tbr[] = $response->getContent();
+            $tbr[] = $response->content;
         }
 
         /** @var non-empty-list<list> */
@@ -282,24 +301,27 @@ class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
-        if (!$this->protocol()->serverState->is(ServerState::FAILED) && $this->isOpen()) {
-            if ($this->protocol()->serverState->is(ServerState::STREAMING, ServerState::TX_STREAMING)) {
-                $this->consumeResults();
+        try {
+            if ($this->isOpen()) {
+                if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
+                    $this->consumeResults();
+                }
+
+                $this->protocol()->goodbye();
+
+                unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
-
-            $this->protocol()->goodbye();
-
-            unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
+        } catch (\Throwable) {
         }
     }
 
     private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
     {
         $extra = [];
-        if ($database) {
+        if ($database !== null) {
             $extra['db'] = $database;
         }
-        if ($timeout) {
+        if ($timeout !== null) {
             $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
@@ -330,7 +352,7 @@ class BoltConnection implements ConnectionInterface
 
     public function getServerState(): string
     {
-        return $this->protocol()->serverState->get();
+        return $this->protocol()->serverState->name;
     }
 
     public function subscribeResult(CypherList $result): void
@@ -345,7 +367,8 @@ class BoltConnection implements ConnectionInterface
 
     private function assertNoFailure(Response $response): void
     {
-        if ($response->getSignature() === Response::SIGNATURE_FAILURE) {
+        if ($response->signature === Signature::FAILURE) {
+            $this->protocol()->reset()->getResponse(); // what if the reset fails? what should be expected behaviour?
             throw Neo4jException::fromBoltResponse($response);
         }
     }
