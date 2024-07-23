@@ -53,7 +53,7 @@ jobs:
           NEO4J_AUTH: neo4j/testtest
         options: >-
           --hostname server1
-          --health-cmd "../scripts/healthcheck.sh"
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
@@ -74,7 +74,7 @@ jobs:
           NEO4J_AUTH: neo4j/testtest
         options: >-
           --hostname server2
-          --health-cmd "../scripts/healthcheck.sh"
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
@@ -95,7 +95,7 @@ jobs:
           NEO4J_AUTH: neo4j/testtest
         options: >-
           --hostname server3
-          --health-cmd "../scripts/healthcheck.sh"
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
@@ -116,7 +116,7 @@ jobs:
           NEO4J_AUTH: neo4j/testtest
         options: >-
           --hostname read-server4
-          --health-cmd "../scripts/healthcheck.sh"
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
