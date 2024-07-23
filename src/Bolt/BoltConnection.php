@@ -18,6 +18,8 @@ use Bolt\enum\Signature;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
@@ -68,7 +70,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5|V5_3|V5_4 $boltProtocol,
+        private V4_4|V5|V5_1|V5_2|V5_3|V5_4 $boltProtocol,
         private readonly Connection $connection,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
