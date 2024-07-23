@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\connection\IConnection;
-use Bolt\error\BoltException;
 use Bolt\error\ConnectException;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
@@ -38,11 +37,10 @@ class ProtocolFactory
 
         try {
             $protocol = $bolt->build();
-        } catch (BoltException $e) {
-            if ($e instanceof ConnectException && $e->getMessage() === 'Wrong version') {
-                $bolt->setProtocolVersions(5.2, 5.1);
-                $protocol = $bolt->build();
-            }
+        } catch (ConnectException $e) {
+            // Assume incorrect protocol version
+            $bolt->setProtocolVersions(5.2, 5.1);
+            $protocol = $bolt->build();
         }
 
         if (!($protocol instanceof V4_4 || $protocol instanceof V5 || $protocol instanceof V5_1 || $protocol instanceof V5_2 || $protocol instanceof V5_3 || $protocol instanceof V5_4)) {
