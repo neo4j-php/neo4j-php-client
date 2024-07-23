@@ -53,7 +53,7 @@ jobs:
           NEO4J_AUTH: neo4j/testtest
         options: >-
           --hostname server1
-          --health-cmd "curl -s -H 'Authorization: Basic bmVvNGo6dGVzdHRlc3Q=' localhost:7474/db/system/cluster/status | grep -q '\"healthy\":true' || exit 1"
+          --health-cmd "../scripts/healthcheck.sh"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
@@ -74,7 +74,7 @@ jobs:
           NEO4J_AUTH: neo4j/testtest
         options: >-
           --hostname server2
-          --health-cmd "curl -s -H 'Authorization: Basic bmVvNGo6dGVzdHRlc3Q=' localhost:7474/db/system/cluster/status | grep -q '\"healthy\":true' || exit 1"
+          --health-cmd "../scripts/healthcheck.sh"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
@@ -95,7 +95,7 @@ jobs:
           NEO4J_AUTH: neo4j/testtest
         options: >-
           --hostname server3
-          --health-cmd "curl -s -H 'Authorization: Basic bmVvNGo6dGVzdHRlc3Q=' localhost:7474/db/system/cluster/status | grep -q '\"healthy\":true' || exit 1"
+          --health-cmd "../scripts/healthcheck.sh"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
@@ -116,7 +116,7 @@ jobs:
           NEO4J_AUTH: neo4j/testtest
         options: >-
           --hostname read-server4
-          --health-cmd "curl -s -H 'Authorization: Basic bmVvNGo6dGVzdHRlc3Q=' localhost:7474/db/system/cluster/status | grep -q '\"healthy\":true' || exit 1"
+          --health-cmd "../scripts/healthcheck.sh"
           --health-start-period "60s"
           --health-interval "30s"
           --health-timeout "15s"
