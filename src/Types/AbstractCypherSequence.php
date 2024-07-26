@@ -526,7 +526,9 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
     {
         $generator = $this->getGenerator();
 
-        if (count($this->keyCache) !== 0 && count($this->cache) !== 0 && count($this->cache) % ($this->cacheLimit + 1) === 0) {
+        $cacheLimit = $this->cacheLimit === PHP_INT_MAX ? PHP_INT_MAX : $this->cacheLimit + 1;
+
+        if (count($this->keyCache) !== 0 && count($this->cache) !== 0 && count($this->cache) % $cacheLimit === 0) {
             $this->cache = [array_key_last($this->cache) => $this->cache[array_key_last($this->cache)]];
             $this->keyCache = [$this->keyCache[array_key_last($this->keyCache)]];
         }
