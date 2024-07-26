@@ -27,6 +27,8 @@ jobs:
           progress: yes
           php_version: 8.1
           version: 2
+      - name: Wait for 60 seconds for Neo4j cluster to start
+        run: echo "Sleeping for 60 seconds" && sleep 60
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
