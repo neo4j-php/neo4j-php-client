@@ -22,11 +22,17 @@ use Psr\Http\Message\UriInterface;
 final class ConnectionRequestData
 {
     public function __construct(
+        private readonly string $hostname,
         private readonly UriInterface $uri,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
         private readonly SslConfiguration $config
     ) {}
+
+    public function getHostname(): string
+    {
+        return $this->hostname;
+    }
 
     public function getUri(): UriInterface
     {

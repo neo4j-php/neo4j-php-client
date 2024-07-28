@@ -157,6 +157,7 @@ class BoltConnectionPoolTest extends TestCase
 
         $this->pool = new ConnectionPool(
             $this->semaphore, $this->factory, new ConnectionRequestData(
+                '',
                 Uri::create(''),
                 Authenticate::disabled(),
                 '',

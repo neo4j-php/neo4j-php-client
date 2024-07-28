@@ -82,6 +82,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $semaphore,
             BoltFactory::create(),
             new ConnectionRequestData(
+                $uri->getHost(),
                 $uri,
                 $auth,
                 $conf->getUserAgent(),
@@ -92,9 +93,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         );
     }
 
-    public function createOrGetPool(UriInterface $uri): ConnectionPool
+    public function createOrGetPool(string $hostname, UriInterface $uri): ConnectionPool
     {
         $data = new ConnectionRequestData(
+            $hostname,
             $uri,
             $this->data->getAuth(),
             $this->data->getUserAgent(),
@@ -130,7 +132,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
 
-                $pool = $this->createOrGetPool($this->data->getUri()->withHost($address));
+                $pool = $this->createOrGetPool($this->data->getUri()->getHost(), $this->data->getUri()->withHost($address));
                 try {
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
@@ -158,7 +160,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $server = $server->withScheme($this->data->getUri()->getScheme());
         }
 
-        return $this->createOrGetPool($server)->acquire($config);
+        return $this->createOrGetPool($this->data->getUri()->getHost(), $server)->acquire($config);
     }
 
     /**
@@ -200,7 +202,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
     public function release(ConnectionInterface $connection): void
     {
-        $this->createOrGetPool($connection->getServerAddress())->release($connection);
+        $this->createOrGetPool($connection->getServerAddress()->getHost(), $connection->getServerAddress())->release($connection);
     }
 
     private function createKey(ConnectionRequestData $data, ?SessionConfiguration $config = null): string
