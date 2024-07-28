@@ -40,7 +40,7 @@ final class BoltResultIntegrationTest extends EnvironmentAwareIntegrationTest
             new SslConfigurationFactory()
         );
         $connection = $factory->createConnection(
-            new ConnectionRequestData($this->getUri(), Authenticate::fromUrl($this->getUri()), 'a/b', new SslConfiguration(SslMode::FROM_URL(), false)),
+            new ConnectionRequestData($this->getUri()->getHost(), $this->getUri(), Authenticate::fromUrl($this->getUri()), 'a/b', new SslConfiguration(SslMode::FROM_URL(), false)),
             SessionConfiguration::default()
         );
 

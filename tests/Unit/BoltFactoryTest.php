@@ -62,7 +62,7 @@ final class BoltFactoryTest extends TestCase
     public function testCreateBasic(): void
     {
         $connection = $this->factory->createConnection(
-            new ConnectionRequestData(Uri::create(''), Authenticate::disabled(), '', SslConfiguration::default()),
+            new ConnectionRequestData('', Uri::create(''), Authenticate::disabled(), '', SslConfiguration::default()),
             SessionConfiguration::default()
         );
 

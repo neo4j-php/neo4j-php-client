@@ -50,6 +50,7 @@ final class ConnectionPool implements ConnectionPoolInterface
             $semaphore,
             BoltFactory::create(),
             new ConnectionRequestData(
+                $uri->getHost(),
                 $uri,
                 $auth,
                 $conf->getUserAgent(),
