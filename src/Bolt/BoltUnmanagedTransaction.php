@@ -95,6 +95,18 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     public function rollback(): void
     {
+        if ($this->isFinished()) {
+            switch ($this->state) {
+                case TransactionState::TERMINATED:
+                    throw new ClientException("Can't rollback, transaction has been terminated");
+                case TransactionState::COMMITTED:
+                    throw new ClientException("Can't rollback, transaction has already been committed");
+                case TransactionState::ROLLED_BACK:
+                    throw new ClientException("Can't rollback, transaction has already been rolled back");
+                default:
+            }
+        }
+
         $this->connection->rollback();
         $this->state = TransactionState::ROLLED_BACK;
     }
@@ -180,7 +192,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     public function isRolledBack(): bool
     {
-        return $this->state == TransactionState::ROLLED_BACK;
+        return $this->state === TransactionState::ROLLED_BACK || $this->state === TransactionState::TERMINATED;
     }
 
     public function isCommitted(): bool
