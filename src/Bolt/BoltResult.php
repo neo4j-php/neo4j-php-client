@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\enum\ServerState;
 use function array_splice;
 use function count;
 
@@ -148,6 +149,10 @@ final class BoltResult implements Iterator
 
     public function discard(): void
     {
+        $serverState = $this->connection->protocol()->serverState;
+        if ($serverState !== ServerState::STREAMING || $serverState !== ServerState::TX_STREAMING) {
+            return;
+        }
         $this->connection->discard($this->qid === -1 ? null : $this->qid);
     }
 }
