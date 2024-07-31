@@ -20,6 +20,8 @@ use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Enum\TransactionState;
+use Laudis\Neo4j\Exception\ClientException;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\AbstractCypherSequence;
@@ -40,9 +42,7 @@ use Throwable;
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
-    private bool $isRolledBack = false;
-
-    private bool $isCommitted = false;
+    private TransactionState $state = TransactionState::ACTIVE;
 
     /**
      * @param FormatterInterface<T> $formatter
@@ -59,10 +59,26 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly SessionConfiguration $config,
         private readonly TransactionConfiguration $tsxConfig,
         private readonly BookmarkHolder $bookmarkHolder
-    ) {}
+    ) {
+    }
 
+    /**
+     * @throws ClientException|Throwable
+     */
     public function commit(iterable $statements = []): CypherList
     {
+        if ($this->isFinished()) {
+            switch ($this->state) {
+                case TransactionState::TERMINATED:
+                    throw new ClientException("Can't commit, transaction has been terminated");
+                case TransactionState::COMMITTED:
+                    throw new ClientException("Can't commit, transaction has already been committed");
+                case TransactionState::ROLLED_BACK:
+                    throw new ClientException("Can't commit, transaction has already been rolled back");
+                default:
+            }
+        }
+
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
         $tbr = $this->runStatements($statements)->each(static function ($list) {
@@ -72,7 +88,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         });
 
         $this->connection->commit();
-        $this->isCommitted = true;
+        $this->state = TransactionState::COMMITTED;
 
         return $tbr;
     }
@@ -80,7 +96,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function rollback(): void
     {
         $this->connection->rollback();
-        $this->isRolledBack = true;
+        $this->state = TransactionState::ROLLED_BACK;
     }
 
     /**
@@ -109,7 +125,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->config->getAccessMode()
             );
         } catch (Throwable $e) {
-            $this->isRolledBack = true;
+            $this->state = TransactionState::TERMINATED;
             throw $e;
         }
         $run = microtime(true);
@@ -140,18 +156,23 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @throws Neo4jException
+     * @param Neo4jException $e
      *
      * @return never
+     * @throws Neo4jException
+     *
      */
-    private function handleMessageException(Neo4jException $e): void
+    private function handleMessageException(Neo4jException $e): never
     {
         $exception = $e->getErrors()[0];
         if (!($exception->getClassification() === 'ClientError' && $exception->getCategory() === 'Request')) {
             $this->connection->reset();
         }
-        if (!$this->isFinished() && in_array($exception->getClassification(), TransactionHelper::ROLLBACK_CLASSIFICATIONS)) {
-            $this->isRolledBack = true;
+        if (!$this->isFinished() && in_array(
+                $exception->getClassification(),
+                TransactionHelper::ROLLBACK_CLASSIFICATIONS
+            )) {
+            $this->state = TransactionState::ROLLED_BACK;
         }
 
         throw $e;
@@ -159,16 +180,16 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     public function isRolledBack(): bool
     {
-        return $this->isRolledBack;
+        return $this->state == TransactionState::ROLLED_BACK;
     }
 
     public function isCommitted(): bool
     {
-        return $this->isCommitted;
+        return $this->state == TransactionState::COMMITTED;
     }
 
     public function isFinished(): bool
     {
-        return $this->isRolledBack() || $this->isCommitted();
+        return $this->state != TransactionState::ACTIVE;
     }
 }
