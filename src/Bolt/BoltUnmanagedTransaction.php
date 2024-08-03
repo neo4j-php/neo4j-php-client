@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\enum\ServerState;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -126,6 +127,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
         $start = microtime(true);
+
+        $serverState = $this->connection->protocol()->serverState;
+        if (in_array($serverState, [ServerState::STREAMING, ServerState::TX_STREAMING])) {
+            $this->connection->consumeResults();
+        }
 
         try {
             $meta = $this->connection->run(

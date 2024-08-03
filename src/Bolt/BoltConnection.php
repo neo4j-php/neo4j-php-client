@@ -151,7 +151,7 @@ class BoltConnection implements ConnectionInterface
 
     public function consumeResults(): void
     {
-        if ($this->protocol()->serverState !== ServerState::STREAMING || $this->protocol()->serverState !== ServerState::TX_STREAMING) {
+        if ($this->protocol()->serverState !== ServerState::STREAMING && $this->protocol()->serverState !== ServerState::TX_STREAMING) {
             $this->subscribedResults = [];
             return;
         }

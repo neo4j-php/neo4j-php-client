@@ -149,10 +149,6 @@ final class BoltResult implements Iterator
 
     public function discard(): void
     {
-        $serverState = $this->connection->protocol()->serverState;
-        if ($serverState !== ServerState::STREAMING || $serverState !== ServerState::TX_STREAMING) {
-            return;
-        }
         $this->connection->discard($this->qid === -1 ? null : $this->qid);
     }
 }
