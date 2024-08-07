@@ -16,9 +16,10 @@ namespace Laudis\Neo4j\Enum;
 /**
  * The state of a transaction.
  */
-enum TransactionState {
+enum TransactionState
+{
     /**
-     * The transaction is running with no explicit success or failure marked
+     * The transaction is running with no explicit success or failure marked.
      */
     case ACTIVE;
 
@@ -28,12 +29,12 @@ enum TransactionState {
     case TERMINATED;
 
     /**
-     * This transaction has successfully committed
+     * This transaction has successfully committed.
      */
     case COMMITTED;
 
     /**
-     * This transaction has been rolled back
+     * This transaction has been rolled back.
      */
     case ROLLED_BACK;
 }

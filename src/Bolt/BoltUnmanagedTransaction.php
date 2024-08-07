@@ -60,8 +60,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly SessionConfiguration $config,
         private readonly TransactionConfiguration $tsxConfig,
         private readonly BookmarkHolder $bookmarkHolder
-    ) {
-    }
+    ) {}
 
     /**
      * @throws ClientException|Throwable
@@ -174,11 +173,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
-     * @param Neo4jException $e
-     *
-     * @return never
      * @throws Neo4jException
-     *
      */
     private function handleMessageException(Neo4jException $e): never
     {
@@ -187,9 +182,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->connection->reset();
         }
         if (!$this->isFinished() && in_array(
-                $exception->getClassification(),
-                TransactionHelper::ROLLBACK_CLASSIFICATIONS
-            )) {
+            $exception->getClassification(),
+            TransactionHelper::ROLLBACK_CLASSIFICATIONS
+        )) {
             $this->state = TransactionState::ROLLED_BACK;
         }
 
