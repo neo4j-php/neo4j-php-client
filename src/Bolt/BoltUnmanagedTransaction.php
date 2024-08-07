@@ -176,25 +176,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         return new CypherList($tbr);
     }
 
-    /**
-     * @throws Neo4jException
-     */
-    private function handleMessageException(Neo4jException $e): never
-    {
-        $exception = $e->getErrors()[0];
-        if (!($exception->getClassification() === 'ClientError' && $exception->getCategory() === 'Request')) {
-            $this->connection->reset();
-        }
-        if (!$this->isFinished() && in_array(
-            $exception->getClassification(),
-            TransactionHelper::ROLLBACK_CLASSIFICATIONS
-        )) {
-            $this->state = TransactionState::ROLLED_BACK;
-        }
-
-        throw $e;
-    }
-
     public function isRolledBack(): bool
     {
         return $this->state === TransactionState::ROLLED_BACK || $this->state === TransactionState::TERMINATED;
