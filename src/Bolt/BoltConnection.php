@@ -28,7 +28,6 @@ use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -153,6 +152,7 @@ class BoltConnection implements ConnectionInterface
     {
         if ($this->protocol()->serverState !== ServerState::STREAMING && $this->protocol()->serverState !== ServerState::TX_STREAMING) {
             $this->subscribedResults = [];
+
             return;
         }
 
