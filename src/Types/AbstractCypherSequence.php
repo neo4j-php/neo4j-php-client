@@ -564,7 +564,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
         $this->preload();
 
         $tbr = get_object_vars($this);
-        $tbr['generator'] = new ArrayIterator($this->cache);
+        $tbr['generator'] = new ArrayIterator();
         $tbr['currentPosition'] = 0;
         $tbr['generatorPosition'] = 0;
 
