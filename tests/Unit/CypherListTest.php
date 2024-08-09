@@ -47,6 +47,21 @@ final class CypherListTest extends TestCase
         $this->list = new CypherList(['A', 'B', 'C']);
     }
 
+    // https://github.com/neo4j-php/neo4j-php-client/issues/220
+    public function testNoDoubleResultsAfterDeserialization(): void
+    {
+        $list = new CypherList(['A', 'B', 'C']);
+        $serialized = serialize($list);
+        $unserialized = unserialize($serialized);
+
+        $count = 0;
+        foreach ($unserialized as $item) {
+            ++$count;
+        }
+
+        self::assertEquals(3, $count);
+    }
+
     public function testFromIterableEqual(): void
     {
         $fromIterable = CypherList::fromIterable($this->list);
