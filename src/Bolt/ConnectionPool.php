@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Generator;
 use Laudis\Neo4j\BoltFactory;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
@@ -41,21 +42,23 @@ final class ConnectionPool implements ConnectionPoolInterface
     public function __construct(
         private readonly SemaphoreInterface $semaphore,
         private readonly BoltFactory $factory,
-        private readonly ConnectionRequestData $data
+        private readonly ConnectionRequestData $data,
+        private readonly ?Neo4jLogger $logger
     ) {}
 
     public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, SemaphoreInterface $semaphore): self
     {
         return new self(
             $semaphore,
-            BoltFactory::create(),
+            BoltFactory::create($conf->getLogger()),
             new ConnectionRequestData(
                 $uri->getHost(),
                 $uri,
                 $auth,
                 $conf->getUserAgent(),
                 $conf->getSslConfiguration()
-            )
+            ),
+            $conf->getLogger()
         );
     }
 
@@ -104,6 +107,11 @@ final class ConnectionPool implements ConnectionPoolInterface
                 return;
             }
         }
+    }
+
+    public function getLogger(): ?Neo4jLogger
+    {
+        return $this->logger;
     }
 
     /**

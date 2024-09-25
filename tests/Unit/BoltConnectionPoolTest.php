@@ -156,13 +156,16 @@ class BoltConnectionPoolTest extends TestCase
             ->willReturnCallback(fn (MockObject $x): MockObject => $x);
 
         $this->pool = new ConnectionPool(
-            $this->semaphore, $this->factory, new ConnectionRequestData(
+            $this->semaphore,
+            $this->factory,
+            new ConnectionRequestData(
                 '',
                 Uri::create(''),
                 Authenticate::disabled(),
                 '',
                 SslConfiguration::default()
-            )
+            ),
+            null,
         );
     }
 }

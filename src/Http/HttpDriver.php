@@ -81,7 +81,7 @@ final class HttpDriver implements DriverInterface
                 $uri,
                 $configuration ?? DriverConfiguration::default(),
                 $formatter,
-                $authenticate ?? Authenticate::fromUrl($uri)
+                $authenticate ?? Authenticate::fromUrl($uri, $configuration->getLogger())
             );
         }
 
@@ -89,7 +89,7 @@ final class HttpDriver implements DriverInterface
             $uri,
             $configuration ?? DriverConfiguration::default(),
             OGMFormatter::create(),
-            $authenticate ?? Authenticate::fromUrl($uri)
+            $authenticate ?? Authenticate::fromUrl($uri, $configuration->getLogger())
         );
     }
 
@@ -100,7 +100,7 @@ final class HttpDriver implements DriverInterface
     {
         $factory = $this->resolvableFactory();
         $config ??= SessionConfiguration::default();
-        $config = $config->merge(SessionConfiguration::fromUri($this->uri));
+        $config = $config->merge(SessionConfiguration::fromUri($this->uri, null));
         $streamFactoryResolve = $this->streamFactory();
 
         $tsxUrl = $this->tsxUrl($config);

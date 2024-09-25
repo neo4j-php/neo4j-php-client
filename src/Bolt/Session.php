@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use _PHPStan_9815bbba4\Psr\Log\LogLevel;
 use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -65,6 +67,7 @@ final class Session implements SessionInterface
     {
         $tbr = [];
 
+        $this->getLogger()?->log(LogLevel::INFO, 'Running statements', ['statements' => $statements]);
         $config = $this->mergeTsxConfig($config);
         foreach ($statements as $statement) {
             $tbr[] = $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
@@ -93,6 +96,7 @@ final class Session implements SessionInterface
 
     public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
+        $this->getLogger()?->log(LogLevel::INFO, 'Beginning write transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
 
         return TransactionHelper::retry(
@@ -103,6 +107,7 @@ final class Session implements SessionInterface
 
     public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
+        $this->getLogger()?->log(LogLevel::INFO, 'Beginning read transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
 
         return TransactionHelper::retry(
@@ -118,6 +123,7 @@ final class Session implements SessionInterface
 
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
+        $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
         $config = $this->mergeTsxConfig($config);
         $tsx = $this->startTransaction($config, $this->config);
 
@@ -133,6 +139,7 @@ final class Session implements SessionInterface
         SessionConfiguration $config,
         TransactionConfiguration $tsxConfig
     ): TransactionInterface {
+        $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
 
         return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $tsxConfig, $this->bookmarkHolder);
@@ -143,6 +150,7 @@ final class Session implements SessionInterface
      */
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
+        $this->getLogger()?->log(LogLevel::INFO, 'Acquiring connection', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         $connection = $this->pool->acquire($sessionConfig);
         /** @var BoltConnection $connection */
         $connection = GeneratorHelper::getReturnFromGenerator($connection);
@@ -160,6 +168,7 @@ final class Session implements SessionInterface
 
     private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig): UnmanagedTransactionInterface
     {
+        $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         try {
             $connection = $this->acquireConnection($config, $sessionConfig);
 
@@ -182,5 +191,10 @@ final class Session implements SessionInterface
     public function getLastBookmark(): Bookmark
     {
         return $this->bookmarkHolder->getBookmark();
+    }
+
+    private function getLogger(): ?Neo4jLogger
+    {
+        return $this->pool->getLogger();
     }
 }

@@ -72,7 +72,7 @@ final class BoltDriver implements DriverInterface
         }
 
         $configuration ??= DriverConfiguration::default();
-        $authenticate ??= Authenticate::fromUrl($uri);
+        $authenticate ??= Authenticate::fromUrl($uri, $configuration->getLogger());
         $semaphore = $configuration->getSemaphoreFactory()->create($uri, $configuration);
 
         /** @psalm-suppress InvalidArgument */
@@ -90,7 +90,7 @@ final class BoltDriver implements DriverInterface
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
-        $sessionConfig = SessionConfiguration::fromUri($this->parsedUrl);
+        $sessionConfig = SessionConfiguration::fromUri($this->parsedUrl, $this->pool->getLogger());
         if ($config !== null) {
             $sessionConfig = $sessionConfig->merge($config);
         }

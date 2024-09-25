@@ -27,6 +27,7 @@ use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\GeneratorHelper;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -73,14 +74,15 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         private readonly BoltFactory $factory,
         private readonly ConnectionRequestData $data,
         private readonly CacheInterface $cache,
-        private readonly AddressResolverInterface $resolver
+        private readonly AddressResolverInterface $resolver,
+        private readonly ?Neo4jLogger $logger,
     ) {}
 
     public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self
     {
         return new self(
             $semaphore,
-            BoltFactory::create(),
+            BoltFactory::create($conf->getLogger()),
             new ConnectionRequestData(
                 $uri->getHost(),
                 $uri,
@@ -89,7 +91,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 $conf->getSslConfiguration()
             ),
             Cache::getInstance(),
-            $resolver
+            $resolver,
+            $conf->getLogger()
         );
     }
 
@@ -105,7 +108,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $key = $this->createKey($data);
         if (!array_key_exists($key, self::$pools)) {
-            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data);
+            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data, $this->logger);
         }
 
         return self::$pools[$key];
@@ -161,6 +164,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
 
         return $this->createOrGetPool($this->data->getUri()->getHost(), $server)->acquire($config);
+    }
+
+    public function getLogger(): ?Neo4jLogger
+    {
+        return $this->logger;
     }
 
     /**

@@ -20,6 +20,7 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Exception;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
@@ -33,7 +34,8 @@ final class OpenIDConnectAuth implements AuthenticateInterface
      * @psalm-external-mutation-free
      */
     public function __construct(
-        private readonly string $token
+        private readonly string $token,
+        private readonly ?Neo4jLogger $logger
     ) {}
 
     /**
@@ -41,6 +43,7 @@ final class OpenIDConnectAuth implements AuthenticateInterface
      */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
+        $this->logger?->log(LogLevel::DEBUG, 'Authenticating using OpenIDConnectAuth');
         /**
          * @psalm-suppress ImpureMethodCall Request is a pure object:
          *
@@ -58,8 +61,10 @@ final class OpenIDConnectAuth implements AuthenticateInterface
     public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
         if (method_exists($protocol, 'logon')) {
+            $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent]);
             $protocol->hello(['user_agent' => $userAgent]);
             $response = ResponseHelper::getResponse($protocol);
+            $this->logger?->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'bearer']);
             $protocol->logon([
                 'scheme' => 'bearer',
                 'credentials' => $this->token,
@@ -69,6 +74,7 @@ final class OpenIDConnectAuth implements AuthenticateInterface
             /** @var array{server: string, connection_id: string, hints: list} */
             return $response->content;
         } else {
+            $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent, 'scheme' => 'bearer']);
             $protocol->hello([
                 'user_agent' => $userAgent,
                 'scheme' => 'bearer',

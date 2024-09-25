@@ -17,27 +17,41 @@ use function is_string;
 
 use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\Basic\Session;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 
 abstract class EnvironmentAwareIntegrationTest extends TestCase
 {
+    private static bool $isSetUp = false;
     protected static Session $session;
     protected static Driver $driver;
     protected static Uri $uri;
+    protected static Neo4jLogger $logger;
 
-    public static function setUpBeforeClass(): void
+    public function setUp(): void
     {
-        parent::setUpBeforeClass();
+        parent::setUp();
 
         $connection = $_ENV['CONNECTION'] ?? false;
         if (!is_string($connection)) {
             $connection = 'bolt://localhost';
         }
 
+        if (self::$isSetUp) {
+            return;
+        }
+
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $conf = DriverConfiguration::default()->withLogger(LogLevel::DEBUG, $this->createMock(LoggerInterface::class));
+        self::$logger = $conf->getLogger();
         self::$uri = Uri::create($connection);
-        self::$driver = Driver::create(self::$uri);
+        self::$driver = Driver::create(self::$uri, $conf);
         self::$session = self::$driver->createSession();
+        self::$isSetUp = true;
     }
 
     /**
@@ -97,5 +111,10 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
         $this->skipUnsupportedScheme($forceScheme);
 
         return self::$driver;
+    }
+
+    protected function getNeo4jLogger(): Neo4jLogger
+    {
+        return self::$logger;
     }
 }
