@@ -41,9 +41,6 @@ final class NoAuth implements AuthenticateInterface
         private readonly ?Neo4jLogger $logger
     ) {}
 
-    /**
-     * @psalm-mutation-free
-     */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
         $this->logger?->log(LogLevel::DEBUG, 'Authentication disabled');
@@ -63,10 +60,10 @@ final class NoAuth implements AuthenticateInterface
     public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
         if (method_exists($protocol, 'logon')) {
-            $this->logger->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent]);
+            $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent]);
             $protocol->hello(['user_agent' => $userAgent]);
             $response = ResponseHelper::getResponse($protocol);
-            $this->logger->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'none']);
+            $this->logger?->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'none']);
             $protocol->logon([
                 'scheme' => 'none',
             ]);
@@ -75,7 +72,7 @@ final class NoAuth implements AuthenticateInterface
             /** @var array{server: string, connection_id: string, hints: list} */
             return $response->content;
         } else {
-            $this->logger->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent, 'scheme' => 'none']);
+            $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent, 'scheme' => 'none']);
             $protocol->hello([
                 'user_agent' => $userAgent,
                 'scheme' => 'none',

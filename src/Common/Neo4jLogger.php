@@ -35,9 +35,6 @@ class Neo4jLogger
         private readonly ?LoggerInterface $logger,
     ) {}
 
-    /**
-     * @psalm-mutation-free
-     */
     public function log(string $level, string $message, array $context = []): void
     {
         if ($this->logger === null || !$this->shouldLog($level)) {

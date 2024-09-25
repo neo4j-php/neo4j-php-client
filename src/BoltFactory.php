@@ -42,7 +42,7 @@ class BoltFactory
         private readonly BasicConnectionFactoryInterface $connectionFactory,
         private readonly ProtocolFactory $protocolFactory,
         private readonly SslConfigurationFactory $sslConfigurationFactory,
-        private readonly ?Neo4jLogger $logger
+        private readonly ?Neo4jLogger $logger = null
     ) {}
 
     public static function create(?Neo4jLogger $logger): self

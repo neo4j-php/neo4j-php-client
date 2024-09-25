@@ -76,10 +76,11 @@ final class HttpDriver implements DriverInterface
             $uri = Uri::create($uri);
         }
 
+        $configuration ??= DriverConfiguration::default();
         if ($formatter !== null) {
             return new self(
                 $uri,
-                $configuration ?? DriverConfiguration::default(),
+                $configuration,
                 $formatter,
                 $authenticate ?? Authenticate::fromUrl($uri, $configuration->getLogger())
             );
@@ -87,7 +88,7 @@ final class HttpDriver implements DriverInterface
 
         return new self(
             $uri,
-            $configuration ?? DriverConfiguration::default(),
+            $configuration,
             OGMFormatter::create(),
             $authenticate ?? Authenticate::fromUrl($uri, $configuration->getLogger())
         );

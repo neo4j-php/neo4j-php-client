@@ -42,9 +42,6 @@ final class KerberosAuth implements AuthenticateInterface
         private readonly ?Neo4jLogger $logger,
     ) {}
 
-    /**
-     * @psalm-mutation-free
-     */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
         $this->logger?->log(LogLevel::DEBUG, 'Authenticating using KerberosAuth');

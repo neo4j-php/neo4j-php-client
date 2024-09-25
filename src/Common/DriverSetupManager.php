@@ -193,6 +193,9 @@ class DriverSetupManager implements Countable
         return $tbr;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getLogger(): ?Neo4jLogger
     {
         return $this->configuration->getLogger();

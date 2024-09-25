@@ -25,6 +25,7 @@ use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LogLevel;
 
 use function sprintf;
 
@@ -38,9 +39,6 @@ final class OpenIDConnectAuth implements AuthenticateInterface
         private readonly ?Neo4jLogger $logger
     ) {}
 
-    /**
-     * @psalm-mutation-free
-     */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
         $this->logger?->log(LogLevel::DEBUG, 'Authenticating using OpenIDConnectAuth');
