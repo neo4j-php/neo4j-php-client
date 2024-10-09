@@ -170,8 +170,7 @@ class BoltConnection implements ConnectionInterface
     public function consumeResults(): void
     {
         $this->logger?->log(LogLevel::DEBUG, 'Consuming results');
-        if ($this->protocol()->serverState !== ServerState::STREAMING && $this->protocol(
-        )->serverState !== ServerState::TX_STREAMING) {
+        if (!$this->isStreaming()) {
             $this->subscribedResults = [];
 
             return;
