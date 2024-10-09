@@ -26,4 +26,5 @@ jobs:
           up-flags: '--build'
       - name: Test
         run: |
+          docker compose run client composer install
           docker compose run client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
