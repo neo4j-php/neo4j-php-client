@@ -15,7 +15,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Cache Composer dependencies
       - name: Populate .env
         run: |
           echo "CONNECTION=neo4j://neo4j:testtest@neo4j" > .env
