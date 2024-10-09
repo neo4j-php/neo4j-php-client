@@ -24,6 +24,10 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
 {
     public function testLogger(): void
     {
+        // Close connections so that we can test the logger logging
+        // during authentication while acquiring a new connection
+        $this->driver->closeConnections();
+
         /** @var MockObject $logger */
         $logger = $this->getNeo4jLogger()->getLogger();
         /** @var Session $session */
