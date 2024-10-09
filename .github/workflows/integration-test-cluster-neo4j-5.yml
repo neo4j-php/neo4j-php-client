@@ -17,6 +17,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Populate .env
+        run: |
+          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" > .env
       - uses: cloudposse/github-action-docker-compose-test-run@main
         with:
           file: 'docker-compose.yml'
