@@ -172,6 +172,9 @@ final class ConnectionPool implements ConnectionPoolInterface
 
     public function close(): void
     {
+        foreach ($this->activeConnections as $activeConnection) {
+            $activeConnection->close();
+        }
         $this->activeConnections = [];
     }
 }
