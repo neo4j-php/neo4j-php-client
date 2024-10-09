@@ -24,15 +24,15 @@ use Laudis\Neo4j\Types\Path;
 
 final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
 {
-    public static function setUpBeforeClass(): void
+    public function setUp(): void
     {
-        parent::setUpBeforeClass();
-        self::$session->run(MoviesFixture::CQL);
+        parent::setUp();
+        $this->session->run(MoviesFixture::CQL);
     }
 
     public function testCanHandleMapLiterals(): void
     {
-        $results = self::$session->run('MATCH (n:Person)-[r:ACTED_IN]->(m) RETURN n, {movie: m, roles: r.roles} AS actInfo LIMIT 5');
+        $results = $this->session->run('MATCH (n:Person)-[r:ACTED_IN]->(m) RETURN n, {movie: m, roles: r.roles} AS actInfo LIMIT 5');
 
         foreach ($results as $result) {
             $actorInfo = $result->get('actInfo');
