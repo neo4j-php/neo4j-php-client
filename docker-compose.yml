@@ -57,8 +57,8 @@ services:
     networks:
       - neo4j
     ports:
-      - "11687:7687"
-      - "11474:7474"
+      - "7687:7687"
+      - "7474:7474"
     environment:
       <<: *common-env
       NEO4j_server_bolt_advertised_address: localhost:11687
@@ -68,9 +68,9 @@ services:
     <<: *common-cluster
     hostname: server1
     ports:
-      - "7687:7687"
-      - "7473:7473"
-      - "7474:7474"
+      - "11687:7687"
+      - "11473:7473"
+      - "11474:7474"
     environment:
       <<: *common-core-env
       NEO4j_server_bolt_advertised_address: localhost:7687
