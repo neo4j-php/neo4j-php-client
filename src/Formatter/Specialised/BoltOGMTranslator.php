@@ -300,7 +300,7 @@ final class BoltOGMTranslator
         $type = get_debug_type($value);
         foreach ($this->rawToTypes as $class => $formatter) {
             /** @psalm-suppress ArgumentTypeCoercion */
-            if ($type === $class || is_a($value, $class, true)) {
+            if ($type === $class || is_a($value, $class)) {
                 return $formatter($value);
             }
         }
