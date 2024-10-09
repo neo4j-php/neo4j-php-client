@@ -104,6 +104,10 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
 
     public function testDateTime(): void
     {
+        if (str_starts_with($_ENV['CONNECTION'] ?? '', 'http')) {
+            $this->markTestSkipped('http does not support datetime conversion');
+        }
+
         $dt = new DateTimeImmutable();
         $ls = $this->getSession()->run('RETURN $x AS x', ['x' => $dt])->first()->get('x');
 
