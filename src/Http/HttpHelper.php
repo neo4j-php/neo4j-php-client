@@ -49,7 +49,7 @@ final class HttpHelper
      */
     public static function interpretResponse(ResponseInterface $response): stdClass
     {
-        if ($response->getStatusCode() >= 400) {
+        if ($response->getStatusCode() >= 500) {
             throw new RuntimeException('HTTP Error: '.$response->getReasonPhrase());
         }
 
