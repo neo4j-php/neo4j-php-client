@@ -24,7 +24,6 @@ x-definitions:
     build:
       context: .
       dockerfile: Dockerfile
-#    image: neo4j-php-client:latest
     volumes:
       - .:/opt/project
   x-common-cluster:
@@ -48,6 +47,9 @@ services:
       - .:/opt/project
     env_file:
       - .env
+    depends_on:
+      neo4j:
+        condition: service_healthy
   neo4j:
     <<: *common
     image: neo4j:5.20-community
