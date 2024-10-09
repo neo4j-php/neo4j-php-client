@@ -52,7 +52,7 @@ final class ClientBuilder
         private SessionConfiguration $defaultSessionConfig,
         /** @psalm-readonly */
         private TransactionConfiguration $defaultTransactionConfig,
-        private DriverSetupManager $driverSetups
+        private DriverSetupManager $driverSetups,
     ) {}
 
     /**
@@ -80,7 +80,7 @@ final class ClientBuilder
     {
         $uri = Uri::create($url);
 
-        $authentication ??= Authenticate::fromUrl($uri);
+        $authentication ??= Authenticate::fromUrl($uri, $this->driverSetups->getLogger());
 
         return $this->withParsedUrl($alias, $uri, $authentication, $priority ?? 0);
     }

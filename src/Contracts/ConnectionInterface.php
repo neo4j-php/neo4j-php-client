@@ -112,4 +112,9 @@ interface ConnectionInterface
      * Returns the user agent handling this connection.
      */
     public function getUserAgent(): string;
+
+    /**
+     * Closes the connection.
+     */
+    public function close(): void;
 }

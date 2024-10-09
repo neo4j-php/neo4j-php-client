@@ -57,4 +57,9 @@ final class Driver implements DriverInterface
 
         return new self($driver);
     }
+
+    public function closeConnections(): void
+    {
+        $this->driver->closeConnections();
+    }
 }

@@ -23,6 +23,7 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
@@ -33,6 +34,7 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LogLevel;
 use WeakReference;
 
 /**
@@ -74,7 +76,8 @@ class BoltConnection implements ConnectionInterface
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
         /** @psalm-readonly */
-        private readonly ConnectionConfiguration $config
+        private readonly ConnectionConfiguration $config,
+        private readonly ?Neo4jLogger $logger,
     ) {}
 
     public function getEncryptionLevel(): string
@@ -140,7 +143,23 @@ class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return !in_array($this->protocol()->serverState, [ServerState::DISCONNECTED, ServerState::DEFUNCT], true);
+        return !in_array(
+            $this->protocol()->serverState,
+            [ServerState::DISCONNECTED, ServerState::DEFUNCT],
+            true
+        );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isStreaming(): bool
+    {
+        return in_array(
+            $this->protocol()->serverState,
+            [ServerState::STREAMING, ServerState::TX_STREAMING],
+            true
+        );
     }
 
     public function setTimeout(float $timeout): void
@@ -150,7 +169,8 @@ class BoltConnection implements ConnectionInterface
 
     public function consumeResults(): void
     {
-        if ($this->protocol()->serverState !== ServerState::STREAMING && $this->protocol()->serverState !== ServerState::TX_STREAMING) {
+        $this->logger?->log(LogLevel::DEBUG, 'Consuming results');
+        if (!$this->isStreaming()) {
             $this->subscribedResults = [];
 
             return;
@@ -174,6 +194,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
+        $this->logger?->log(LogLevel::DEBUG, 'RESET');
         $response = $this->protocol()
             ->reset()
             ->getResponse();
@@ -191,6 +212,7 @@ class BoltConnection implements ConnectionInterface
         $this->consumeResults();
 
         $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE());
+        $this->logger?->log(LogLevel::DEBUG, 'BEGIN', $extra);
         $response = $this->protocol()
             ->begin($extra)
             ->getResponse();
@@ -205,6 +227,7 @@ class BoltConnection implements ConnectionInterface
     public function discard(?int $qid): void
     {
         $extra = $this->buildResultExtra(null, $qid);
+        $this->logger?->log(LogLevel::DEBUG, 'DISCARD', $extra);
         $response = $this->protocol()
             ->discard($extra)
             ->getResponse();
@@ -218,9 +241,16 @@ class BoltConnection implements ConnectionInterface
      *
      * @return BoltMeta
      */
-    public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
-    {
+    public function run(
+        string $text,
+        array $parameters,
+        ?string $database,
+        ?float $timeout,
+        BookmarkHolder $holder,
+        ?AccessMode $mode
+    ): array {
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode);
+        $this->logger?->log(LogLevel::DEBUG, 'RUN', $extra);
         $response = $this->protocol()
             ->run($text, $parameters, $extra)
             ->getResponse();
@@ -236,6 +266,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function commit(): void
     {
+        $this->logger?->log(LogLevel::DEBUG, 'COMMIT');
         $this->consumeResults();
 
         $response = $this->protocol()
@@ -251,6 +282,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function rollback(): void
     {
+        $this->logger?->log(LogLevel::DEBUG, 'ROLLBACK');
         $this->consumeResults();
 
         $response = $this->protocol()
@@ -274,6 +306,7 @@ class BoltConnection implements ConnectionInterface
     public function pull(?int $qid, ?int $fetchSize): array
     {
         $extra = $this->buildResultExtra($fetchSize, $qid);
+        $this->logger?->log(LogLevel::DEBUG, 'PULL', $extra);
 
         $tbr = [];
         /** @var Response $response */
@@ -288,12 +321,18 @@ class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
+        $this->close();
+    }
+
+    public function close(): void
+    {
         try {
             if ($this->isOpen()) {
-                if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
+                if ($this->isStreaming()) {
                     $this->consumeResults();
                 }
 
+                $this->logger?->log(LogLevel::DEBUG, 'GOODBYE');
                 $this->protocol()->goodbye();
 
                 unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
@@ -355,6 +394,7 @@ class BoltConnection implements ConnectionInterface
     private function assertNoFailure(Response $response): void
     {
         if ($response->signature === Signature::FAILURE) {
+            $this->logger?->log(LogLevel::ERROR, 'FAILURE');
             $this->protocol()->reset()->getResponse(); // what if the reset fails? what should be expected behaviour?
             throw Neo4jException::fromBoltResponse($response);
         }

@@ -21,8 +21,11 @@ use function function_exists;
 use function is_callable;
 
 use Laudis\Neo4j\Common\Cache;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Contracts\SemaphoreFactoryInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
 
 use function sprintf;
@@ -42,11 +45,13 @@ final class DriverConfiguration
     private $cache;
     /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
     private $semaphoreFactory;
+    private ?Neo4jLogger $logger;
 
     /**
      * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      * @param callable():(CacheInterface|null)|CacheInterface|null $cache
      * @param callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null $semaphore
+     * @param string|null $logLevel The log level to use. If null, LogLevel::INFO is used.
      *
      * @psalm-external-mutation-free
      */
@@ -57,11 +62,18 @@ final class DriverConfiguration
         private int|null $maxPoolSize,
         CacheInterface|callable|null $cache,
         private float|null $acquireConnectionTimeout,
-        callable|SemaphoreFactoryInterface|null $semaphore
+        callable|SemaphoreFactoryInterface|null $semaphore,
+        ?string $logLevel,
+        ?LoggerInterface $logger
     ) {
         $this->httpPsrBindings = $httpPsrBindings;
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
+        if ($logger !== null) {
+            $this->logger = new Neo4jLogger($logLevel ?? LogLevel::INFO, $logger);
+        } else {
+            $this->logger = null;
+        }
     }
 
     /**
@@ -69,9 +81,28 @@ final class DriverConfiguration
      *
      * @pure
      */
-    public static function create(?string $userAgent, callable|HttpPsrBindings|null $httpPsrBindings, SslConfiguration $sslConfig, int $maxPoolSize, CacheInterface $cache, float $acquireConnectionTimeout, SemaphoreFactoryInterface $semaphore): self
-    {
-        return new self($userAgent, $httpPsrBindings, $sslConfig, $maxPoolSize, $cache, $acquireConnectionTimeout, $semaphore);
+    public static function create(
+        ?string $userAgent,
+        callable|HttpPsrBindings|null $httpPsrBindings,
+        SslConfiguration $sslConfig,
+        int $maxPoolSize,
+        CacheInterface $cache,
+        float $acquireConnectionTimeout,
+        SemaphoreFactoryInterface $semaphore,
+        ?string $logLevel,
+        ?LoggerInterface $logger,
+    ): self {
+        return new self(
+            $userAgent,
+            $httpPsrBindings,
+            $sslConfig,
+            $maxPoolSize,
+            $cache,
+            $acquireConnectionTimeout,
+            $semaphore,
+            $logLevel,
+            $logger
+        );
     }
 
     /**
@@ -82,7 +113,17 @@ final class DriverConfiguration
      */
     public static function default(): self
     {
-        return new self(null, HttpPsrBindings::default(), SslConfiguration::default(), null, null, null, null);
+        return new self(
+            null,
+            HttpPsrBindings::default(),
+            SslConfiguration::default(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
     }
 
     /**
@@ -155,7 +196,9 @@ final class DriverConfiguration
 
     public function getHttpPsrBindings(): HttpPsrBindings
     {
-        $this->httpPsrBindings = (is_callable($this->httpPsrBindings)) ? call_user_func($this->httpPsrBindings) : $this->httpPsrBindings;
+        $this->httpPsrBindings = (is_callable($this->httpPsrBindings)) ? call_user_func(
+            $this->httpPsrBindings
+        ) : $this->httpPsrBindings;
 
         return $this->httpPsrBindings ??= HttpPsrBindings::default();
     }
@@ -198,7 +241,9 @@ final class DriverConfiguration
 
     public function getSemaphoreFactory(): SemaphoreFactoryInterface
     {
-        $this->semaphoreFactory = (is_callable($this->semaphoreFactory)) ? call_user_func($this->semaphoreFactory) : $this->semaphoreFactory;
+        $this->semaphoreFactory = (is_callable($this->semaphoreFactory)) ? call_user_func(
+            $this->semaphoreFactory
+        ) : $this->semaphoreFactory;
 
         return $this->semaphoreFactory ??= SemaphoreFactory::getInstance();
     }
@@ -231,6 +276,22 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->semaphoreFactory = $factory;
+
+        return $tbr;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function getLogger(): ?Neo4jLogger
+    {
+        return $this->logger;
+    }
+
+    public function withLogger(?string $logLevel, ?LoggerInterface $logger): self
+    {
+        $tbr = clone $this;
+        $tbr->logger = new Neo4jLogger($logLevel ?? LogLevel::INFO, $logger);
 
         return $tbr;
     }
