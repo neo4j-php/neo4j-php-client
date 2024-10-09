@@ -46,8 +46,12 @@ final class ConnectionPool implements ConnectionPoolInterface
         private readonly ?Neo4jLogger $logger
     ) {}
 
-    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, SemaphoreInterface $semaphore): self
-    {
+    public static function create(
+        UriInterface $uri,
+        AuthenticateInterface $auth,
+        DriverConfiguration $conf,
+        SemaphoreInterface $semaphore
+    ): self {
         return new self(
             $semaphore,
             BoltFactory::create($conf->getLogger()),
@@ -164,5 +168,10 @@ final class ConnectionPool implements ConnectionPoolInterface
         }
 
         return null;
+    }
+
+    public function close(): void
+    {
+        $this->activeConnections = [];
     }
 }

@@ -127,4 +127,9 @@ CYPHER
     {
         // Nothing to release in the current HTTP Protocol implementation
     }
+
+    public function close(): void
+    {
+        // Nothing to close in the current HTTP Protocol implementation
+    }
 }

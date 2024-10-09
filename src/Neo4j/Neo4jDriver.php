@@ -111,4 +111,9 @@ final class Neo4jDriver implements DriverInterface
 
         return true;
     }
+
+    public function closeConnections(): void
+    {
+        $this->pool->close();
+    }
 }

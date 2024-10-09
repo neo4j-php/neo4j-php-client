@@ -198,4 +198,9 @@ final class HttpDriver implements DriverInterface
             return str_replace('{databaseName}', $database, $tsx);
         });
     }
+
+    public function closeConnections(): void
+    {
+        // Nothing to close in the current HTTP Protocol implementation
+    }
 }
