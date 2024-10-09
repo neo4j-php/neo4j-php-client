@@ -27,10 +27,10 @@ jobs:
           docker compose run client composer install
       - name: Test neo4j://
         run: |
-          docker compose run -e CONNECTION=neo4j://neo4j:testtest@localhost client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run -e CONNECTION=neo4j://neo4j:testtest@neo4j client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
       - name: Test bolt://
         run: |
-          docker compose run -e CONNECTION=bolt://neo4j:testtest@localhost client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run -e CONNECTION=bolt://neo4j:testtest@neo4j client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
       - name: Test http://
         run: |
-          docker compose run -e CONNECTION=http://neo4j:testtest@localhost client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run -e CONNECTION=http://neo4j:testtest@neo4j client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
