@@ -109,4 +109,9 @@ final class BoltDriver implements DriverInterface
 
         return true;
     }
+
+    public function closeConnections(): void
+    {
+        $this->pool->close();
+    }
 }

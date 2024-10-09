@@ -233,4 +233,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             ':',
         ], '|', $key);
     }
+
+    public function close(): void
+    {
+        foreach (self::$pools as $pool) {
+            $pool->close();
+        }
+        self::$pools = [];
+        $this->cache->clear();
+    }
 }
