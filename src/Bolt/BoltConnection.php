@@ -143,7 +143,23 @@ class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
-        return !in_array($this->protocol()->serverState, [ServerState::DISCONNECTED, ServerState::DEFUNCT], true);
+        return !in_array(
+            $this->protocol()->serverState,
+            [ServerState::DISCONNECTED, ServerState::DEFUNCT],
+            true
+        );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isStreaming(): bool
+    {
+        return in_array(
+            $this->protocol()->serverState,
+            [ServerState::STREAMING, ServerState::TX_STREAMING],
+            true
+        );
     }
 
     public function setTimeout(float $timeout): void
@@ -154,7 +170,8 @@ class BoltConnection implements ConnectionInterface
     public function consumeResults(): void
     {
         $this->logger?->log(LogLevel::DEBUG, 'Consuming results');
-        if ($this->protocol()->serverState !== ServerState::STREAMING && $this->protocol()->serverState !== ServerState::TX_STREAMING) {
+        if ($this->protocol()->serverState !== ServerState::STREAMING && $this->protocol(
+        )->serverState !== ServerState::TX_STREAMING) {
             $this->subscribedResults = [];
 
             return;
@@ -225,8 +242,14 @@ class BoltConnection implements ConnectionInterface
      *
      * @return BoltMeta
      */
-    public function run(string $text, array $parameters, ?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
-    {
+    public function run(
+        string $text,
+        array $parameters,
+        ?string $database,
+        ?float $timeout,
+        BookmarkHolder $holder,
+        ?AccessMode $mode
+    ): array {
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode);
         $this->logger?->log(LogLevel::DEBUG, 'RUN', $extra);
         $response = $this->protocol()
@@ -299,9 +322,14 @@ class BoltConnection implements ConnectionInterface
 
     public function __destruct()
     {
+        $this->close();
+    }
+
+    public function close(): void
+    {
         try {
             if ($this->isOpen()) {
-                if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
+                if ($this->isStreaming()) {
                     $this->consumeResults();
                 }
 
