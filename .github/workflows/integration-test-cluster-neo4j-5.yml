@@ -20,9 +20,10 @@ jobs:
       - name: Populate .env
         run: |
           echo "CONNECTION=neo4j://neo4j:testtest@neo4j" > .env
-      - uses: cloudposse/github-action-docker-compose-test-run@main
+      - uses: hoverkraft-tech/compose-action@v2.0.2
         with:
-          file: 'docker-compose.yml'
-          registry: 'registry.hub.docker.com'
-          service: 'client'
-          command: './vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration'
+          compose-file: './docker-compose.yml'
+          up-flags: '--build'
+      - name: Test
+        run: |
+          docker compose run client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
