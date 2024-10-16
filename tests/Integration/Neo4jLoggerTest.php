@@ -55,7 +55,7 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
                 ],
             ],
         ];
-        $logger->expects(self::exactly(3))->method('info')->willReturnCallback(
+        $logger->expects(self::exactly(count($expectedInfoLogs)))->method('info')->willReturnCallback(
             static function (string $message, array $context) use (&$infoLogs) {
                 $infoLogs[] = [$message, $context];
             }
@@ -63,23 +63,6 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
 
         $debugLogs = [];
         $expectedDebugLogs = [
-            [
-                'HELLO',
-                [
-                    'user_agent' => 'neo4j-php-client/2',
-                ],
-            ],
-            [
-                'LOGON',
-                [
-                    'scheme' => 'basic',
-                    'principal' => 'neo4j',
-                ],
-            ],
-            [
-                'GOODBYE',
-                [],
-            ],
             [
                 'HELLO',
                 [
@@ -104,7 +87,41 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
                 [],
             ],
         ];
-        $logger->expects(self::exactly(7))->method('debug')->willReturnCallback(
+
+        if ($this->getUri()->getScheme() === 'neo4j') {
+            array_splice(
+                $expectedDebugLogs,
+                0,
+                0,
+                [
+                    [
+                        'HELLO',
+                        [
+                            'user_agent' => 'neo4j-php-client/2',
+                        ],
+                    ],
+                    [
+                        'LOGON',
+                        [
+                            'scheme' => 'basic',
+                            'principal' => 'neo4j',
+                        ],
+                    ],
+                    [
+                        'ROUTE',
+                        [
+                            'db' => null,
+                        ],
+                    ],
+                    [
+                        'GOODBYE',
+                        [],
+                    ],
+                ],
+            );
+        }
+
+        $logger->expects(self::exactly(count($expectedDebugLogs)))->method('debug')->willReturnCallback(
             static function (string $message, array $context) use (&$debugLogs) {
                 $debugLogs[] = [$message, $context];
             }

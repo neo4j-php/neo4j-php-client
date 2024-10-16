@@ -41,6 +41,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
 
 use function random_int;
@@ -78,8 +79,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         private readonly ?Neo4jLogger $logger,
     ) {}
 
-    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self
-    {
+    public static function create(
+        UriInterface $uri,
+        AuthenticateInterface $auth,
+        DriverConfiguration $conf,
+        AddressResolverInterface $resolver,
+        SemaphoreInterface $semaphore
+    ): self {
         return new self(
             $semaphore,
             BoltFactory::create($conf->getLogger()),
@@ -128,14 +134,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $latestError = null;
 
         if ($table == null) {
-            $addresses = (function () {
-                yield gethostbyname($this->data->getUri()->getHost());
-                yield from $this->resolver->getAddresses($this->data->getUri()->getHost());
-            })();
+            $addresses = $this->getAddresses($this->data->getUri()->getHost());
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
 
-                $pool = $this->createOrGetPool($this->data->getUri()->getHost(), $this->data->getUri()->withHost($address));
+                $pool = $this->createOrGetPool(
+                    $this->data->getUri()->getHost(),
+                    $this->data->getUri()->withHost($address)
+                );
                 try {
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
@@ -147,6 +153,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
+                // TODO: release probably logs off the connection, it is not preferable
                 $pool->release($connection);
 
                 break;
@@ -197,6 +204,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         $bolt = $connection->protocol();
 
+        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $bolt->route([], [], ['db' => $config->getDatabase()])
             ->getResponse()
@@ -210,7 +218,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
     public function release(ConnectionInterface $connection): void
     {
-        $this->createOrGetPool($connection->getServerAddress()->getHost(), $connection->getServerAddress())->release($connection);
+        $this->createOrGetPool($connection->getServerAddress()->getHost(), $connection->getServerAddress())->release(
+            $connection
+        );
     }
 
     private function createKey(ConnectionRequestData $data, ?SessionConfiguration $config = null): string
@@ -219,7 +229,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $key = implode(
             ':',
-            array_filter([$data->getUserAgent(), $uri->getHost(), $config ? $config->getDatabase() : null, $uri->getPort() ?? '7687'])
+            array_filter(
+                [
+                    $data->getUserAgent(),
+                    $uri->getHost(),
+                    $config ? $config->getDatabase() : null,
+                    $uri->getPort() ?? '7687',
+                ]
+            )
         );
 
         return str_replace([
@@ -241,5 +258,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
         self::$pools = [];
         $this->cache->clear();
+    }
+
+    /**
+     * @return Generator<string>
+     */
+    private function getAddresses(string $host): Generator
+    {
+        yield gethostbyname($host);
+        yield from $this->resolver->getAddresses($host);
     }
 }
