@@ -77,6 +77,10 @@ final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
 
     public function testRunALotOfStatements(): void
     {
+        if (str_starts_with($_ENV['CONNECTION'] ?? '', 'http')) {
+            $this->markTestSkipped('HTTP mass queries overload tiny neo4j instances');
+        }
+
         $persons = $this->getSession()->run('MATCH (p:Person) RETURN p');
         $movies = $this->getSession()->run('MATCH (m:Movie) RETURN m');
 

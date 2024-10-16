@@ -23,7 +23,7 @@ jobs:
       - uses: hoverkraft-tech/compose-action@v2.0.2
         with:
           compose-file: './docker-compose-neo4j-4.yml'
-          up-flags: '--build'
+          up-flags: '--build --remove-orphans'
       - name: Test
         run: |
           docker compose run client composer install
