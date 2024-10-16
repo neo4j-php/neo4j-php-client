@@ -22,6 +22,7 @@ use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
+use Exception;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -78,8 +79,7 @@ class BoltConnection implements ConnectionInterface
         /** @psalm-readonly */
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
-    ) {
-    }
+    ) {}
 
     public function getEncryptionLevel(): string
     {
@@ -299,8 +299,9 @@ class BoltConnection implements ConnectionInterface
     public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
     {
         if (!isset($this->boltProtocol)) {
-            throw new \Exception('Connection is closed');
+            throw new Exception('Connection is closed');
         }
+
         return $this->boltProtocol;
     }
 
@@ -356,7 +357,7 @@ class BoltConnection implements ConnectionInterface
             $extra['db'] = $database;
         }
         if ($timeout !== null) {
-            $extra['tx_timeout'] = (int)($timeout * 1000);
+            $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
         if (!$holder->getBookmark()->isEmpty()) {
@@ -389,6 +390,7 @@ class BoltConnection implements ConnectionInterface
         if (!isset($this->boltProtocol)) {
             return ServerState::DISCONNECTED->name;
         }
+
         return $this->protocol()->serverState->name;
     }
 
