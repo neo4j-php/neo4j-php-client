@@ -44,4 +44,9 @@ interface ConnectionPoolInterface
      * Releases a connection back to the pool.
      */
     public function release(ConnectionInterface $connection): void;
+
+    /**
+     * Closes all connections in the pool.
+     */
+    public function close(): void;
 }

@@ -12,6 +12,6 @@
     </testsuite>
   </testsuites>
   <php>
-    <env name="CONNECTION" value="neo4j://neo4j:testtest@localhost:11687"/>
+    <env name="CONNECTION" value="neo4j://neo4j:testtest@localhost:7687"/>
   </php>
 </phpunit>

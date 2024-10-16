@@ -27,6 +27,7 @@ use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\GeneratorHelper;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -40,6 +41,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
 
 use function random_int;
@@ -73,14 +75,20 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         private readonly BoltFactory $factory,
         private readonly ConnectionRequestData $data,
         private readonly CacheInterface $cache,
-        private readonly AddressResolverInterface $resolver
+        private readonly AddressResolverInterface $resolver,
+        private readonly ?Neo4jLogger $logger,
     ) {}
 
-    public static function create(UriInterface $uri, AuthenticateInterface $auth, DriverConfiguration $conf, AddressResolverInterface $resolver, SemaphoreInterface $semaphore): self
-    {
+    public static function create(
+        UriInterface $uri,
+        AuthenticateInterface $auth,
+        DriverConfiguration $conf,
+        AddressResolverInterface $resolver,
+        SemaphoreInterface $semaphore
+    ): self {
         return new self(
             $semaphore,
-            BoltFactory::create(),
+            BoltFactory::create($conf->getLogger()),
             new ConnectionRequestData(
                 $uri->getHost(),
                 $uri,
@@ -89,7 +97,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 $conf->getSslConfiguration()
             ),
             Cache::getInstance(),
-            $resolver
+            $resolver,
+            $conf->getLogger()
         );
     }
 
@@ -105,7 +114,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $key = $this->createKey($data);
         if (!array_key_exists($key, self::$pools)) {
-            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data);
+            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data, $this->logger);
         }
 
         return self::$pools[$key];
@@ -125,14 +134,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $latestError = null;
 
         if ($table == null) {
-            $addresses = (function () {
-                yield gethostbyname($this->data->getUri()->getHost());
-                yield from $this->resolver->getAddresses($this->data->getUri()->getHost());
-            })();
+            $addresses = $this->getAddresses($this->data->getUri()->getHost());
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
 
-                $pool = $this->createOrGetPool($this->data->getUri()->getHost(), $this->data->getUri()->withHost($address));
+                $pool = $this->createOrGetPool(
+                    $this->data->getUri()->getHost(),
+                    $this->data->getUri()->withHost($address)
+                );
                 try {
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
@@ -144,6 +153,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
+                // TODO: release probably logs off the connection, it is not preferable
                 $pool->release($connection);
 
                 break;
@@ -161,6 +171,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
 
         return $this->createOrGetPool($this->data->getUri()->getHost(), $server)->acquire($config);
+    }
+
+    public function getLogger(): ?Neo4jLogger
+    {
+        return $this->logger;
     }
 
     /**
@@ -187,8 +202,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     private function routingTable(BoltConnection $connection, SessionConfiguration $config): RoutingTable
     {
-        $bolt = $connection->getImplementation()[0];
+        $bolt = $connection->protocol();
 
+        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $bolt->route([], [], ['db' => $config->getDatabase()])
             ->getResponse()
@@ -202,7 +218,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
     public function release(ConnectionInterface $connection): void
     {
-        $this->createOrGetPool($connection->getServerAddress()->getHost(), $connection->getServerAddress())->release($connection);
+        $this->createOrGetPool($connection->getServerAddress()->getHost(), $connection->getServerAddress())->release(
+            $connection
+        );
     }
 
     private function createKey(ConnectionRequestData $data, ?SessionConfiguration $config = null): string
@@ -211,7 +229,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $key = implode(
             ':',
-            array_filter([$data->getUserAgent(), $uri->getHost(), $config ? $config->getDatabase() : null, $uri->getPort() ?? '7687'])
+            array_filter(
+                [
+                    $data->getUserAgent(),
+                    $uri->getHost(),
+                    $config ? $config->getDatabase() : null,
+                    $uri->getPort() ?? '7687',
+                ]
+            )
         );
 
         return str_replace([
@@ -224,5 +249,23 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             '@',
             ':',
         ], '|', $key);
+    }
+
+    public function close(): void
+    {
+        foreach (self::$pools as $pool) {
+            $pool->close();
+        }
+        self::$pools = [];
+        $this->cache->clear();
+    }
+
+    /**
+     * @return Generator<string>
+     */
+    private function getAddresses(string $host): Generator
+    {
+        yield gethostbyname($host);
+        yield from $this->resolver->getAddresses($host);
     }
 }

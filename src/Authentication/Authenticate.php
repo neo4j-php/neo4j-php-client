@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Authentication;
 
 use function explode;
 
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -32,9 +33,9 @@ final class Authenticate
      *
      * @pure
      */
-    public static function basic(string $username, string $password): BasicAuth
+    public static function basic(string $username, string $password, ?Neo4jLogger $logger = null): BasicAuth
     {
-        return new BasicAuth($username, $password);
+        return new BasicAuth($username, $password, $logger);
     }
 
     /**
@@ -42,9 +43,9 @@ final class Authenticate
      *
      * @pure
      */
-    public static function kerberos(string $token): KerberosAuth
+    public static function kerberos(string $token, ?Neo4jLogger $logger = null): KerberosAuth
     {
-        return new KerberosAuth($token);
+        return new KerberosAuth($token, $logger);
     }
 
     /**
@@ -52,9 +53,9 @@ final class Authenticate
      *
      * @pure
      */
-    public static function oidc(string $token): OpenIDConnectAuth
+    public static function oidc(string $token, ?Neo4jLogger $logger = null): OpenIDConnectAuth
     {
-        return new OpenIDConnectAuth($token);
+        return new OpenIDConnectAuth($token, $logger);
     }
 
     /**
@@ -62,9 +63,9 @@ final class Authenticate
      *
      * @pure
      */
-    public static function disabled(): NoAuth
+    public static function disabled(?Neo4jLogger $logger = null): NoAuth
     {
-        return new NoAuth();
+        return new NoAuth($logger);
     }
 
     /**
@@ -72,7 +73,7 @@ final class Authenticate
      *
      * @pure
      */
-    public static function fromUrl(UriInterface $uri): AuthenticateInterface
+    public static function fromUrl(UriInterface $uri, ?Neo4jLogger $logger = null): AuthenticateInterface
     {
         /**
          * @psalm-suppress ImpureMethodCall Uri is a pure object:
@@ -86,9 +87,9 @@ final class Authenticate
             $explode = explode(':', $userInfo);
             [$user, $pass] = $explode;
 
-            return self::basic($user, $pass);
+            return self::basic($user, $pass, $logger);
         }
 
-        return self::disabled();
+        return self::disabled($logger);
     }
 }

@@ -76,20 +76,21 @@ final class HttpDriver implements DriverInterface
             $uri = Uri::create($uri);
         }
 
+        $configuration ??= DriverConfiguration::default();
         if ($formatter !== null) {
             return new self(
                 $uri,
-                $configuration ?? DriverConfiguration::default(),
+                $configuration,
                 $formatter,
-                $authenticate ?? Authenticate::fromUrl($uri)
+                $authenticate ?? Authenticate::fromUrl($uri, $configuration->getLogger())
             );
         }
 
         return new self(
             $uri,
-            $configuration ?? DriverConfiguration::default(),
+            $configuration,
             OGMFormatter::create(),
-            $authenticate ?? Authenticate::fromUrl($uri)
+            $authenticate ?? Authenticate::fromUrl($uri, $configuration->getLogger())
         );
     }
 
@@ -100,7 +101,7 @@ final class HttpDriver implements DriverInterface
     {
         $factory = $this->resolvableFactory();
         $config ??= SessionConfiguration::default();
-        $config = $config->merge(SessionConfiguration::fromUri($this->uri));
+        $config = $config->merge(SessionConfiguration::fromUri($this->uri, null));
         $streamFactoryResolve = $this->streamFactory();
 
         $tsxUrl = $this->tsxUrl($config);
@@ -196,5 +197,10 @@ final class HttpDriver implements DriverInterface
 
             return str_replace('{databaseName}', $database, $tsx);
         });
+    }
+
+    public function closeConnections(): void
+    {
+        // Nothing to close in the current HTTP Protocol implementation
     }
 }

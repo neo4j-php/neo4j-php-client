@@ -21,6 +21,7 @@ use Laudis\Neo4j\Bolt\SslConfigurationFactory;
 use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
 use Laudis\Neo4j\Bolt\UriConfiguration;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
@@ -40,12 +41,13 @@ class BoltFactory
     public function __construct(
         private readonly BasicConnectionFactoryInterface $connectionFactory,
         private readonly ProtocolFactory $protocolFactory,
-        private readonly SslConfigurationFactory $sslConfigurationFactory
+        private readonly SslConfigurationFactory $sslConfigurationFactory,
+        private readonly ?Neo4jLogger $logger = null
     ) {}
 
-    public static function create(): self
+    public static function create(?Neo4jLogger $logger): self
     {
-        return new self(SystemWideConnectionFactory::getInstance(), new ProtocolFactory(), new SslConfigurationFactory());
+        return new self(SystemWideConnectionFactory::getInstance(), new ProtocolFactory(), new SslConfigurationFactory(), $logger);
     }
 
     public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig): BoltConnection
@@ -73,11 +75,15 @@ class BoltFactory
             $sslLevel
         );
 
-        return new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config);
+        return new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger);
     }
 
     public function canReuseConnection(ConnectionInterface $connection, ConnectionRequestData $data, SessionConfiguration $config): bool
     {
+        if (!$connection->isOpen()) {
+            return false;
+        }
+
         $databaseInfo = $connection->getDatabaseInfo();
         $database = $databaseInfo?->getName();
 

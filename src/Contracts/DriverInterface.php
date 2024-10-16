@@ -38,4 +38,9 @@ interface DriverInterface
      * Returns true if the driver can make a valid connection with the server.
      */
     public function verifyConnectivity(?SessionConfiguration $config = null): bool;
+
+    /**
+     * Closes all connections in the pool.
+     */
+    public function closeConnections(): void;
 }

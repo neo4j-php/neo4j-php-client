@@ -75,7 +75,7 @@ final class Neo4jDriver implements DriverInterface
         }
 
         $configuration ??= DriverConfiguration::default();
-        $authenticate ??= Authenticate::fromUrl($uri);
+        $authenticate ??= Authenticate::fromUrl($uri, $configuration->getLogger());
         $resolver ??= new DNSAddressResolver();
         $semaphore = $configuration->getSemaphoreFactory()->create($uri, $configuration);
 
@@ -95,7 +95,7 @@ final class Neo4jDriver implements DriverInterface
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
         $config ??= SessionConfiguration::default();
-        $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl));
+        $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl, $this->pool->getLogger()));
 
         return new Session($config, $this->pool, $this->formatter);
     }
@@ -110,5 +110,10 @@ final class Neo4jDriver implements DriverInterface
         }
 
         return true;
+    }
+
+    public function closeConnections(): void
+    {
+        $this->pool->close();
     }
 }

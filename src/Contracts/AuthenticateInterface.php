@@ -25,8 +25,6 @@ use Psr\Http\Message\UriInterface;
 interface AuthenticateInterface
 {
     /**
-     * @psalm-mutation-free
-     *
      * Authenticates a RequestInterface with the provided configuration Uri and userAgent.
      */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface;

@@ -44,7 +44,7 @@ final class BoltResultIntegrationTest extends EnvironmentAwareIntegrationTest
             SessionConfiguration::default()
         );
 
-        $connection->getImplementation()[0]->run('UNWIND range(1, 100000) AS i RETURN i')
+        $connection->protocol()->run('UNWIND range(1, 100000) AS i RETURN i')
             ->getResponse();
         $result = new BoltResult($connection, 1000, -1);
         foreach ($result as $i => $x) {

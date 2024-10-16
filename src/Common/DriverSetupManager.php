@@ -113,7 +113,7 @@ class DriverSetupManager implements Countable
 
             /** @var SplPriorityQueue<int, DriverSetup> */
             $this->driverSetups['default'] = new SplPriorityQueue();
-            $setup = new DriverSetup(Uri::create(self::DEFAULT_DRIVER_CONFIG), Authenticate::disabled());
+            $setup = new DriverSetup(Uri::create(self::DEFAULT_DRIVER_CONFIG), Authenticate::disabled($config->getLogger()));
             $this->driverSetups['default']->insert($setup, PHP_INT_MIN);
 
             return $this->getDriver($config);
@@ -191,5 +191,13 @@ class DriverSetupManager implements Countable
         $tbr->formatter = $formatter;
 
         return $tbr;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getLogger(): ?Neo4jLogger
+    {
+        return $this->configuration->getLogger();
     }
 }
