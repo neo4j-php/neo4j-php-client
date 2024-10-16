@@ -24,6 +24,10 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
 {
     public function testLogger(): void
     {
+        if ($this->getUri()->getScheme() === 'http') {
+            self::markTestSkipped('This test is not applicable for the HTTP driver');
+        }
+
         // Close connections so that we can test the logger logging
         // during authentication while acquiring a new connection
         $this->driver->closeConnections();
