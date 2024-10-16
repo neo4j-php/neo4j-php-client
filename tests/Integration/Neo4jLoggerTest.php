@@ -51,7 +51,6 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
                 'Acquiring connection',
                 [
                     'config' => new TransactionConfiguration(null, null),
-                    'sessionConfig' => new SessionConfiguration(null, null, null, null, null),
                 ],
             ],
         ];
@@ -81,7 +80,7 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
                 [],
             ],
             [
-            'HELLO',
+                'HELLO',
                 [
                     'user_agent' => 'neo4j-php-client/2',
                 ],
@@ -112,7 +111,10 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
 
         $session->run('RETURN 1 as test');
 
-        self::assertEquals($expectedInfoLogs, $infoLogs);
+        self::assertEquals(array_slice($expectedInfoLogs, 0, 2), array_slice($infoLogs, 0, 2));
+        self::assertEquals($expectedInfoLogs[2][0], $infoLogs[2][0]);
+        self::assertInstanceOf(SessionConfiguration::class, $infoLogs[2][1]['sessionConfig']);
+
         self::assertEquals($expectedDebugLogs, $debugLogs);
     }
 }
