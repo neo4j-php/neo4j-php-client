@@ -17,12 +17,12 @@ use function array_key_exists;
 
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
-use PHPUnit\Framework\TestCase;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 
 /**
  * @psalm-suppress MissingConstructor
  */
-final class OIDCTest extends TestCase
+final class OIDCTest extends EnvironmentAwareIntegrationTest
 {
     public function testConnect(): void
     {

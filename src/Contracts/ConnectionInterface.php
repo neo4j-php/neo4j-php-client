@@ -96,8 +96,6 @@ interface ConnectionInterface
 
     /**
      * Checks to see if the connection is open.
-     *
-     * @psalm-mutation-free
      */
     public function isOpen(): bool;
 

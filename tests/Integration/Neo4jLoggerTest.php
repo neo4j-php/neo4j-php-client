@@ -33,6 +33,7 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
         /** @var Session $session */
         $session = $this->getSession();
 
+        /** @var array<int, array> $infoLogs */
         $infoLogs = [];
         $expectedInfoLogs = [
             [
@@ -111,8 +112,11 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
 
         $session->run('RETURN 1 as test');
 
+        self::assertCount(3, $infoLogs);
         self::assertEquals(array_slice($expectedInfoLogs, 0, 2), array_slice($infoLogs, 0, 2));
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         self::assertEquals($expectedInfoLogs[2][0], $infoLogs[2][0]);
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         self::assertInstanceOf(SessionConfiguration::class, $infoLogs[2][1]['sessionConfig']);
 
         self::assertEquals($expectedDebugLogs, $debugLogs);

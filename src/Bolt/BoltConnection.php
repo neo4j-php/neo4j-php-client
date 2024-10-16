@@ -39,7 +39,7 @@ use Psr\Log\LogLevel;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from FormatterInterface
  */
@@ -61,7 +61,7 @@ class BoltConnection implements ConnectionInterface
     private array $subscribedResults = [];
 
     /**
-     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4, 1: Connection}
+     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
      */
     public function getImplementation(): array
     {
@@ -139,9 +139,6 @@ class BoltConnection implements ConnectionInterface
         return $this->auth;
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function isOpen(): bool
     {
         if (!isset($this->boltProtocol)) {
@@ -155,9 +152,6 @@ class BoltConnection implements ConnectionInterface
         );
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function isStreaming(): bool
     {
         return in_array(
