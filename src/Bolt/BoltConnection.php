@@ -71,14 +71,15 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5|V5_1|V5_2|V5_3|V5_4 $boltProtocol,
+        private V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
         private readonly Connection $connection,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
         /** @psalm-readonly */
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
-    ) {}
+    ) {
+    }
 
     public function getEncryptionLevel(): string
     {
@@ -143,6 +144,10 @@ class BoltConnection implements ConnectionInterface
      */
     public function isOpen(): bool
     {
+        if (!isset($this->boltProtocol)) {
+            return false;
+        }
+
         return !in_array(
             $this->protocol()->serverState,
             [ServerState::DISCONNECTED, ServerState::DEFUNCT],
@@ -293,6 +298,9 @@ class BoltConnection implements ConnectionInterface
 
     public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
     {
+        if (!isset($this->boltProtocol)) {
+            throw new \Exception('Connection is closed');
+        }
         return $this->boltProtocol;
     }
 
@@ -348,7 +356,7 @@ class BoltConnection implements ConnectionInterface
             $extra['db'] = $database;
         }
         if ($timeout !== null) {
-            $extra['tx_timeout'] = (int) ($timeout * 1000);
+            $extra['tx_timeout'] = (int)($timeout * 1000);
         }
 
         if (!$holder->getBookmark()->isEmpty()) {
@@ -378,6 +386,9 @@ class BoltConnection implements ConnectionInterface
 
     public function getServerState(): string
     {
+        if (!isset($this->boltProtocol)) {
+            return ServerState::DISCONNECTED->name;
+        }
         return $this->protocol()->serverState->name;
     }
 

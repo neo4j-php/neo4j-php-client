@@ -80,6 +80,10 @@ class BoltFactory
 
     public function canReuseConnection(ConnectionInterface $connection, ConnectionRequestData $data, SessionConfiguration $config): bool
     {
+        if (!$connection->isOpen()) {
+            return false;
+        }
+
         $databaseInfo = $connection->getDatabaseInfo();
         $database = $databaseInfo?->getName();
 
