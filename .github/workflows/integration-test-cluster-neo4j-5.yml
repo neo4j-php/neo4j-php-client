@@ -25,6 +25,8 @@ jobs:
         run: |
           echo "PHP_VERSION=${{ matrix.php }}" > .env
           echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
+      - name: "[DEBUG]"
+        run: cat .env
       - uses: hoverkraft-tech/compose-action@v2.0.2
         name: Start services
         with:
