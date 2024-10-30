@@ -26,6 +26,7 @@ use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Http\HttpDriver;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Factory for creating drivers directly.
@@ -45,7 +46,7 @@ final class DriverFactory
      *           : DriverInterface<OGMResults>
      *           )
      */
-    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?FormatterInterface $formatter = null): DriverInterface
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?FormatterInterface $formatter = null, ?string $logLevel = null, ?LoggerInterface $logger = null): DriverInterface
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);

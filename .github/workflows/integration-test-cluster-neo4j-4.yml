@@ -21,6 +21,7 @@ jobs:
         run: |
           echo "CONNECTION=neo4j://neo4j:testtest@neo4j" > .env
       - uses: hoverkraft-tech/compose-action@v2.0.2
+        name: Start services
         with:
           compose-file: './docker-compose-neo4j-4.yml'
           up-flags: '--build --remove-orphans'

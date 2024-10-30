@@ -96,8 +96,6 @@ interface ConnectionInterface
 
     /**
      * Checks to see if the connection is open.
-     *
-     * @psalm-mutation-free
      */
     public function isOpen(): bool;
 
@@ -112,4 +110,9 @@ interface ConnectionInterface
      * Returns the user agent handling this connection.
      */
     public function getUserAgent(): string;
+
+    /**
+     * Closes the connection.
+     */
+    public function close(): void;
 }
