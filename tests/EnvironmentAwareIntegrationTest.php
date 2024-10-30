@@ -17,27 +17,40 @@ use function is_string;
 
 use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\Basic\Session;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
+use RuntimeException;
 
 abstract class EnvironmentAwareIntegrationTest extends TestCase
 {
-    protected static Session $session;
-    protected static Driver $driver;
-    protected static Uri $uri;
+    protected Session $session;
+    protected Driver $driver;
+    protected Uri $uri;
+    protected Neo4jLogger $logger;
 
-    public static function setUpBeforeClass(): void
+    public function setUp(): void
     {
-        parent::setUpBeforeClass();
+        parent::setUp();
 
         $connection = $_ENV['CONNECTION'] ?? false;
         if (!is_string($connection)) {
             $connection = 'bolt://localhost';
         }
 
-        self::$uri = Uri::create($connection);
-        self::$driver = Driver::create(self::$uri);
-        self::$session = self::$driver->createSession();
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $conf = DriverConfiguration::default()->withLogger(LogLevel::DEBUG, $this->createMock(LoggerInterface::class));
+        $logger = $conf->getLogger();
+        if ($logger === null) {
+            throw new RuntimeException('Logger not set');
+        }
+        $this->logger = $logger;
+        $this->uri = Uri::create($connection);
+        $this->driver = Driver::create($this->uri, $conf);
+        $this->session = $this->driver->createSession();
     }
 
     /**
@@ -47,7 +60,7 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     {
         $this->skipUnsupportedScheme($forceScheme);
 
-        return self::$session;
+        return $this->session;
     }
 
     /**
@@ -57,7 +70,7 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     {
         $this->skipUnsupportedScheme($forceScheme);
 
-        return self::$uri;
+        return $this->uri;
     }
 
     /**
@@ -80,7 +93,7 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
             $options[] = $scheme.'+ssc';
         }
 
-        if (!in_array(self::$uri->getScheme(), $options)) {
+        if (!in_array($this->uri->getScheme(), $options)) {
             /** @psalm-suppress MixedArgumentTypeCoercion */
             $this->markTestSkipped(sprintf(
                 'Connection only for types: "%s"',
@@ -96,6 +109,11 @@ abstract class EnvironmentAwareIntegrationTest extends TestCase
     {
         $this->skipUnsupportedScheme($forceScheme);
 
-        return self::$driver;
+        return $this->driver;
+    }
+
+    protected function getNeo4jLogger(): Neo4jLogger
+    {
+        return $this->logger;
     }
 }
