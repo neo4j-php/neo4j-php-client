@@ -34,7 +34,7 @@ final class Neo4jException extends RuntimeException
     /**
      * @param non-empty-list<Neo4jError> $errors
      */
-    public function __construct(array $errors, Throwable $previous = null)
+    public function __construct(array $errors, ?Throwable $previous = null)
     {
         $error = $errors[0];
         $message = sprintf(self::MESSAGE_TEMPLATE, $error->getCode(), $error->getMessage() ?? 'NULL');

@@ -248,7 +248,7 @@ abstract class AbstractCypherSequence implements Countable, JsonSerializable, Ar
      *
      * @psalm-mutation-free
      */
-    public function slice(int $offset, int $length = null): self
+    public function slice(int $offset, ?int $length = null): self
     {
         return $this->withOperation(function () use ($offset, $length) {
             if ($length !== 0) {

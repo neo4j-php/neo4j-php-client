@@ -45,7 +45,7 @@ final class DriverFactory
      *           : DriverInterface<OGMResults>
      *           )
      */
-    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): DriverInterface
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?FormatterInterface $formatter = null): DriverInterface
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
@@ -76,7 +76,7 @@ final class DriverFactory
      *           : DriverInterface<OGMResults>
      *           )
      */
-    private static function createBoltDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
+    private static function createBoltDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?FormatterInterface $formatter = null): DriverInterface
     {
         if ($formatter !== null) {
             return BoltDriver::create($uri, $configuration, $authenticate, $formatter);
@@ -96,7 +96,7 @@ final class DriverFactory
      *           : DriverInterface<OGMResults>
      *           )
      */
-    private static function createNeo4jDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
+    private static function createNeo4jDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?FormatterInterface $formatter = null): DriverInterface
     {
         if ($formatter !== null) {
             return Neo4jDriver::create($uri, $configuration, $authenticate, $formatter);
@@ -118,7 +118,7 @@ final class DriverFactory
      *
      * @pure
      */
-    private static function createHttpDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, FormatterInterface $formatter = null): DriverInterface
+    private static function createHttpDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?FormatterInterface $formatter = null): DriverInterface
     {
         if ($formatter !== null) {
             return HttpDriver::create($uri, $configuration, $authenticate, $formatter);

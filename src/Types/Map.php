@@ -186,7 +186,7 @@ class Map extends AbstractCypherSequence
      *
      * @return static<TValue>
      */
-    public function ksorted(callable $comparator = null): Map
+    public function ksorted(?callable $comparator = null): Map
     {
         return $this->withOperation(function () use ($comparator) {
             $pairs = $this->pairs()->sorted(static function (Pair $x, Pair $y) use ($comparator) {

@@ -45,7 +45,7 @@ final class RoutingTable
      *
      * @return list<string>
      */
-    public function getWithRole(RoutingRoles $role = null): array
+    public function getWithRole(?RoutingRoles $role = null): array
     {
         /** @psalm-var list<string> $tbr */
         $tbr = [];
