@@ -15,6 +15,7 @@ jobs:
       matrix:
         php: [8.1, 8.3]
     env:
+      PHP_VERSION: ${{ matrix.php }}
       CONNECTION: neo4j://neo4j:testtest@localhost:7687
     name: "Running on PHP ${{ matrix.php }} with a Neo4j 5.20-enterprise cluster"
 
