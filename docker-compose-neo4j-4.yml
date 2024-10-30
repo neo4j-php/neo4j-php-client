@@ -46,7 +46,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - WITH_XDEBUG=true
+        PHP_VERSION: ${PHP_VERSION}
+        WITH_XDEBUG: true
     working_dir: /opt/project
     volumes:
       - .:/opt/project
