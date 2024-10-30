@@ -22,10 +22,12 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Exception;
+use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LogLevel;
 
 /**
  * Authenticates connections using a basic username and password.
@@ -37,14 +39,13 @@ final class BasicAuth implements AuthenticateInterface
      */
     public function __construct(
         private readonly string $username,
-        private readonly string $password
+        private readonly string $password,
+        private readonly ?Neo4jLogger $logger,
     ) {}
 
-    /**
-     * @psalm-mutation-free
-     */
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
+        $this->logger?->log(LogLevel::DEBUG, 'Authenticating using BasicAuth');
         $combo = base64_encode($this->username.':'.$this->password);
 
         /**
@@ -64,8 +65,10 @@ final class BasicAuth implements AuthenticateInterface
     public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
         if (method_exists($protocol, 'logon')) {
+            $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent]);
             $protocol->hello(['user_agent' => $userAgent]);
             $response = ResponseHelper::getResponse($protocol);
+            $this->logger?->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'basic', 'principal' => $this->username]);
             $protocol->logon([
                 'scheme' => 'basic',
                 'principal' => $this->username,
@@ -76,6 +79,7 @@ final class BasicAuth implements AuthenticateInterface
             /** @var array{server: string, connection_id: string, hints: list} */
             return $response->content;
         } else {
+            $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent, 'scheme' => 'basic', 'principal' => $this->username]);
             $protocol->hello([
                 'user_agent' => $userAgent,
                 'scheme' => 'basic',

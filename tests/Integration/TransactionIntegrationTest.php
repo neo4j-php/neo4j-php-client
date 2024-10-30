@@ -226,10 +226,15 @@ CYPHER
         $exception = null;
         try {
             $tsx->commit();
-        } catch (ClientException $e) {
+        } catch (ClientException|Neo4jException $e) {
             $exception = $e;
         }
-        self::assertTrue($exception instanceof ClientException);
+
+        if (str_starts_with($_ENV['CONNECTION'] ?? '', 'http')) {
+            self::assertTrue($exception instanceof Neo4jException);
+        } else {
+            self::assertTrue($exception instanceof ClientException);
+        }
 
         self::assertTrue($tsx->isFinished());
         self::assertFalse($tsx->isRolledBack());
@@ -259,10 +264,15 @@ CYPHER
         $exception = null;
         try {
             $tsx->rollback();
-        } catch (ClientException $e) {
+        } catch (ClientException|Neo4jException $e) {
             $exception = $e;
         }
-        self::assertTrue($exception instanceof ClientException);
+
+        if (str_starts_with($_ENV['CONNECTION'] ?? '', 'http')) {
+            self::assertTrue($exception instanceof Neo4jException);
+        } else {
+            self::assertTrue($exception instanceof ClientException);
+        }
 
         self::assertTrue($tsx->isFinished());
         self::assertTrue($tsx->isRolledBack());

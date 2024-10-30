@@ -17,107 +17,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Cache Composer dependencies
-        uses: actions/cache@v2
+      - name: Populate .env
+        run: |
+          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" > .env
+      - uses: hoverkraft-tech/compose-action@v2.0.2
+        name: Start services
         with:
-          path: /tmp/composer-cache
-          key: ${{ runner.os }}-8.0-${{ hashFiles('**/composer.lock') }}
-      - uses: php-actions/composer@v6
-        with:
-          progress: yes
-          php_version: 8.3
-          version: 2
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: phpunit.xml.dist
-          php_version: 8.1
-          memory_limit: 1024M
-          version: 10
-          testsuite: Integration
-          bootstrap: vendor/autoload.php
-
-    services:
-      server1:
-        image: neo4j:5.20-enterprise
-        ports:
-          - 7687:7687
-          - 7473:7473
-          - 7474:7474
-        env:
-          NEO4J_initial_server_mode__constraint: PRIMARY
-          NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
-          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
-          NEO4j_server_bolt_advertised_address: localhost:7687
-          NEO4j_server_http_advertised_address: localhost:7474
-          NEO4J_PLUGINS: '["apoc"]'
-          NEO4J_AUTH: neo4j/testtest
-        options: >-
-          --hostname server1
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
-          --health-start-period "60s"
-          --health-interval "30s"
-          --health-timeout "15s"
-          --health-retries "5"
-      server2:
-        image: neo4j:5.20-enterprise
-        ports:
-          - 8687:7687
-          - 8473:7473
-          - 8474:7474
-        env:
-          NEO4J_initial_server_mode__constraint: PRIMARY
-          NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
-          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
-          NEO4j_server_bolt_advertised_address: localhost:8687
-          NEO4j_server_http_advertised_address: localhost:8474
-          NEO4J_PLUGINS: '["apoc"]'
-          NEO4J_AUTH: neo4j/testtest
-        options: >-
-          --hostname server2
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
-          --health-start-period "60s"
-          --health-interval "30s"
-          --health-timeout "15s"
-          --health-retries "5"
-      server3:
-        image: neo4j:5.20-enterprise
-        ports:
-          - 9474:7474
-          - 9473:7473
-          - 9687:7687
-        env:
-          NEO4J_initial_server_mode__constraint: PRIMARY
-          NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
-          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
-          NEO4j_server_bolt_advertised_address: localhost:9687
-          NEO4j_server_http_advertised_address: localhost:9474
-          NEO4J_PLUGINS: '["apoc"]'
-          NEO4J_AUTH: neo4j/testtest
-        options: >-
-          --hostname server3
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
-          --health-start-period "60s"
-          --health-interval "30s"
-          --health-timeout "15s"
-          --health-retries "5"
-      read-server4:
-        image: neo4j:5.20-enterprise
-        ports:
-          - 10474:7474
-          - 10473:7473
-          - 10687:7687
-        env:
-          NEO4J_initial_server_mode__constraint: SECONDARY
-          NEO4J_dbms_cluster_discovery_endpoints: server1:5000,server2:5000,server3:5000
-          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
-          NEO4j_server_bolt_advertised_address: localhost:10687
-          NEO4j_server_http_advertised_address: localhost:10474
-          NEO4J_PLUGINS: '["apoc"]'
-          NEO4J_AUTH: neo4j/testtest
-        options: >-
-          --hostname read-server4
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
-          --health-start-period "60s"
-          --health-interval "30s"
-          --health-timeout "15s"
-          --health-retries "5"
+          compose-file: './docker-compose.yml'
+          up-flags: '--build --remove-orphans'
+      - name: Test
+        run: |
+          docker compose run client composer install
+          docker compose run client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
