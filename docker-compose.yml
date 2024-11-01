@@ -24,6 +24,8 @@ x-definitions:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PHP_VERSION: ${PHP_VERSION}
     volumes:
       - .:/opt/project
   x-common-cluster:
