@@ -57,6 +57,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Populate .env
+        run: |
+          echo "PHP_VERSION=${{ matrix.php }}" > .env
+          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
       - uses: hoverkraft-tech/compose-action@v2.0.2
         name: Start services
         with:
