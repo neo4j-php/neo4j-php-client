@@ -11,13 +11,17 @@ on:
 jobs:
   tests-v4:
     runs-on: ubuntu-latest
-    name: "Running on PHP 8.1 with a Neo4j 4 instance connecting over all available protocols"
+    strategy:
+      matrix:
+        php: [8.1, 8.3]
+    name: "Running on PHP ${{ matrix.php }} with a Neo4j 4 instance connecting over all available protocols"
 
     steps:
       - uses: actions/checkout@v2
       - name: Populate .env
         run: |
-          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" > .env
+          echo "PHP_VERSION=${{ matrix.php }}" > .env
+          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
       - uses: hoverkraft-tech/compose-action@v2.0.2
         name: Start services
         with:
@@ -28,22 +32,35 @@ jobs:
           docker compose run client composer install
       - name: Test neo4j://
         run: |
-          docker compose run -e CONNECTION=neo4j://neo4j:testtest@neo4j client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run \
+            -e PHP_VERSION=${{ matrix.php }} \
+            -e CONNECTION=neo4j://neo4j:testtest@neo4j \
+            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
       - name: Test bolt://
         run: |
-          docker compose run -e CONNECTION=bolt://neo4j:testtest@neo4j client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run \
+            -e PHP_VERSION=${{ matrix.php }} \
+            -e CONNECTION=bolt://neo4j:testtest@neo4j \
+            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
       - name: Test http://
         run: |
-          docker compose run -e CONNECTION=http://neo4j:testtest@neo4j client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run \
+            -e PHP_VERSION=${{ matrix.php }} \
+            -e CONNECTION=http://neo4j:testtest@neo4j \
+            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
   tests-v5:
     runs-on: ubuntu-latest
-    name: "Running on PHP 8.1 with a Neo4j 5 instance connecting over all available protocols"
+    strategy:
+      matrix:
+        php: [8.1, 8.3]
+    name: "Running on PHP ${{ matrix.php }} with a Neo4j 5 instance connecting over all available protocols"
 
     steps:
       - uses: actions/checkout@v2
       - name: Populate .env
         run: |
-          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" > .env
+          echo "PHP_VERSION=${{ matrix.php }}" > .env
+          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
       - uses: hoverkraft-tech/compose-action@v2.0.2
         name: Start services
         with:
@@ -54,10 +71,19 @@ jobs:
           docker compose run client composer install
       - name: Test neo4j://
         run: |
-          docker compose run -e CONNECTION=neo4j://neo4j:testtest@neo4j client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run \
+            -e PHP_VERSION=${{ matrix.php }} \
+            -e CONNECTION=neo4j://neo4j:testtest@neo4j \
+            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
       - name: Test bolt://
         run: |
-          docker compose run -e CONNECTION=bolt://neo4j:testtest@neo4j client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run \
+            -e PHP_VERSION=${{ matrix.php }} \
+            -e CONNECTION=bolt://neo4j:testtest@neo4j \
+            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
       - name: Test http://
         run: |
-          docker compose run -e CONNECTION=http://neo4j:testtest@neo4j client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run \
+            -e PHP_VERSION=${{ matrix.php }} \
+            -e CONNECTION=http://neo4j:testtest@neo4j \
+            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration

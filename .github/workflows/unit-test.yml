@@ -11,7 +11,10 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: "Running on PHP 8.1"
+    name: "Running Unit Tests"
+    strategy:
+        matrix:
+            php: ['8.1', '8.2', '8.3']
 
     steps:
       - uses: actions/checkout@v2
@@ -23,12 +26,12 @@ jobs:
       - uses: php-actions/composer@v6
         with:
           progress: yes
-          php_version: 8.1
+          php_version: ${{ matrix.php }}
           version: 2
       - uses: php-actions/phpunit@v3
         with:
           configuration: phpunit.xml.dist
-          php_version: 8.1
+          php_version: ${{ matrix.php }}
           memory_limit: 1024M
           version: 10
           testsuite: Unit
