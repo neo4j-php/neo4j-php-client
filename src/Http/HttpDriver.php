@@ -70,7 +70,7 @@ final class HttpDriver implements DriverInterface
      *
      * @pure
      */
-    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, FormatterInterface $formatter = null): self
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?FormatterInterface $formatter = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);

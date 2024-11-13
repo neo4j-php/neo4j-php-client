@@ -30,7 +30,7 @@ final class GeneratorHelper
      *
      * @return T
      */
-    public static function getReturnFromGenerator(Generator $generator, float $timeout = null)
+    public static function getReturnFromGenerator(Generator $generator, ?float $timeout = null)
     {
         $start = microtime(true);
         while ($generator->valid()) {

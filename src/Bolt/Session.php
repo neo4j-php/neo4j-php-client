@@ -79,7 +79,7 @@ final class Session implements SessionInterface
     /**
      * @param iterable<Statement>|null $statements
      */
-    public function openTransaction(iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    public function openTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         return $this->beginTransaction($statements, $this->mergeTsxConfig($config));
     }

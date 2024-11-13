@@ -47,7 +47,7 @@ final class HttpPsrBindings
      * @param callable():StreamFactoryInterface|StreamFactoryInterface|null   $streamFactory
      * @param callable():RequestFactoryInterface|RequestFactoryInterface|null $requestFactory
      */
-    public function __construct(callable|ClientInterface|null $client = null, callable|StreamFactoryInterface $streamFactory = null, callable|RequestFactoryInterface $requestFactory = null)
+    public function __construct(callable|ClientInterface|null $client = null, callable|StreamFactoryInterface|null $streamFactory = null, callable|RequestFactoryInterface|null $requestFactory = null)
     {
         $this->client = $client ?? static fn (): ClientInterface => Psr18ClientDiscovery::find();
         $this->streamFactory = $streamFactory ?? static fn (): StreamFactoryInterface => Psr17FactoryDiscovery::findStreamFactory();
@@ -61,7 +61,7 @@ final class HttpPsrBindings
      * @param callable():StreamFactoryInterface|StreamFactoryInterface|null   $streamFactory
      * @param callable():RequestFactoryInterface|RequestFactoryInterface|null $requestFactory
      */
-    public static function create(callable|ClientInterface $client = null, callable|StreamFactoryInterface $streamFactory = null, callable|RequestFactoryInterface $requestFactory = null): self
+    public static function create(callable|ClientInterface|null $client = null, callable|StreamFactoryInterface|null $streamFactory = null, callable|RequestFactoryInterface|null $requestFactory = null): self
     {
         return new self($client, $streamFactory, $requestFactory);
     }
