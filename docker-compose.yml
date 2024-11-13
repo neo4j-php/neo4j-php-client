@@ -52,7 +52,7 @@ services:
       - .env
   neo4j:
     <<: *common
-    image: neo4j:5.10-community
+    image: neo4j:5.20-community
     hostname: neo4j
     networks:
       - neo4j

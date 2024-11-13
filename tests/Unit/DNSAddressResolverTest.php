@@ -28,11 +28,11 @@ class DNSAddressResolverTest extends TestCase
 
     public function testResolverGhlenDotCom(): void
     {
-        $records = iterator_to_array($this->resolver->getAddresses('test.ghlen.com'), false);
+        $records = iterator_to_array($this->resolver->getAddresses('www.cloudflare.com'), false);
 
-        $this->assertEqualsCanonicalizing(['test.ghlen.com', '123.123.123.123', '123.123.123.124'], $records);
+        $this->assertEqualsCanonicalizing(['www.cloudflare.com', '104.16.123.96', '104.16.124.96'], $records);
         $this->assertNotEmpty($records);
-        $this->assertEquals('test.ghlen.com', $records[0] ?? '');
+        $this->assertEquals('www.cloudflare.com', $records[0] ?? '');
     }
 
     public function testResolverGoogleDotComReverse(): void

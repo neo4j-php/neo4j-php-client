@@ -243,10 +243,6 @@ class BoltConnection implements ConnectionInterface
     {
         $this->consumeResults();
 
-        if ($this->protocol()->serverState !== ServerState::TX_READY) {
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Request.Invalid', 'Message \'COMMIT\' cannot be handled by a session which isn\'t in the TX_READY state.')]);
-        }
-
         $response = $this->protocol()
             ->commit()
             ->getResponse();
@@ -306,7 +302,7 @@ class BoltConnection implements ConnectionInterface
     public function __destruct()
     {
         try {
-            if ($this->boltProtocol->serverState === ServerState::FAILED && $this->isOpen()) {
+            if ($this->isOpen()) {
                 if ($this->protocol()->serverState === ServerState::STREAMING || $this->protocol()->serverState === ServerState::TX_STREAMING) {
                     $this->consumeResults();
                 }

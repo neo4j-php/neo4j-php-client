@@ -18,6 +18,7 @@ use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Throwable;
 
 final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest

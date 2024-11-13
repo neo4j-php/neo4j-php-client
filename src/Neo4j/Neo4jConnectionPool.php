@@ -117,16 +117,20 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $key = $this->createKey($this->data, $config);
 
         /** @var RoutingTable|null */
-        $table = $this->cache->get($key, null);
+        $table = $this->cache->get($key);
         $triedAddresses = [];
 
         $latestError = null;
 
         if ($table == null) {
-            $addresses = $this->resolver->getAddresses((string) $this->data->getUri());
+            $addresses = (function () {
+                yield gethostbyname($this->data->getUri()->getHost());
+                yield from $this->resolver->getAddresses($this->data->getUri()->getHost());
+            })();
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
-                $pool = $this->createOrGetPool(Uri::create($address));
+
+                $pool = $this->createOrGetPool($this->data->getUri()->withHost($address));
                 try {
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));

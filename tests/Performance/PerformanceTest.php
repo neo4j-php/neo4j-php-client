@@ -22,7 +22,7 @@ use function count;
 
 use Laudis\Neo4j\Basic\UnmanagedTransaction;
 use Laudis\Neo4j\Contracts\TransactionInterface as TSX;
-use Laudis\Neo4j\Tests\Integration\EnvironmentAwareIntegrationTest;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 
 use function random_bytes;
 
