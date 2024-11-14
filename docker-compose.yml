@@ -54,7 +54,7 @@ services:
         condition: service_healthy
   neo4j:
     <<: *common
-    image: neo4j:5.20-community
+    image: neo4j:5.23-community
     hostname: neo4j
     networks:
       - neo4j
