@@ -61,7 +61,7 @@ final class ClientBuilder
      *
      * @return ClientBuilder<SummarizedResult<CypherMap<OGMTypes>>>
      */
-    public static function create(?string $logLevel, ?LoggerInterface $logger): ClientBuilder
+    public static function create(?string $logLevel = null, ?LoggerInterface $logger = null): ClientBuilder
     {
         $configuration = DriverConfiguration::default();
         if ($logLevel !== null && $logger !== null) {
