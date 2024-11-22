@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use Bolt\error\ConnectException;
+use Psr\Log\LogLevel;
 use function array_key_exists;
 use function array_key_first;
 use function array_reduce;
@@ -144,7 +146,12 @@ class DriverSetupManager implements Countable
     {
         try {
             $this->getDriver($config, $alias);
-        } catch (RuntimeException) {
+        } catch (ConnectException $e) {
+            $this->getLogger()->log(
+                LogLevel::WARNING,
+                sprintf('Could not connect to server using alias (%s)', $alias ?? '<default>'),
+                ['exception' => $e]
+            );
             return false;
         }
 

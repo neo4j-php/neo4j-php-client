@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use Bolt\error\ConnectException;
 use Exception;
 
+use Psr\Log\LogLevel;
 use function is_string;
 
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -31,7 +33,6 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Psr\Http\Message\UriInterface;
-use Throwable;
 
 /**
  * Driver for auto client-side routing.
@@ -105,7 +106,9 @@ final class Neo4jDriver implements DriverInterface
         $config ??= SessionConfiguration::default();
         try {
             GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
-        } catch (Throwable) {
+        } catch (ConnectException $e) {
+            $this->pool->getLogger()->log(LogLevel::WARNING, 'Could not connect to server on URI ' . $this->parsedUrl->__toString(), ['error' => $e]);
+
             return false;
         }
 
