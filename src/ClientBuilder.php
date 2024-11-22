@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use Psr\Log\LoggerInterface;
 use function in_array;
 
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -31,6 +30,7 @@ use Laudis\Neo4j\Exception\UnsupportedScheme;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherMap;
+use Psr\Log\LoggerInterface;
 
 /**
  * Immutable factory for creating a client.
@@ -67,6 +67,7 @@ final class ClientBuilder
         if ($logLevel !== null && $logger !== null) {
             $configuration = $configuration->withLogger($logLevel, $logger);
         }
+
         return new self(
             SessionConfiguration::default(),
             TransactionConfiguration::default(),

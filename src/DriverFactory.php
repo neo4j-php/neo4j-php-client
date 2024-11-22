@@ -26,7 +26,6 @@ use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Http\HttpDriver;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Psr\Http\Message\UriInterface;
-use Psr\Log\LoggerInterface;
 
 /**
  * Factory for creating drivers directly.
