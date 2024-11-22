@@ -46,7 +46,7 @@ final class DriverFactory
      *           : DriverInterface<OGMResults>
      *           )
      */
-    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?FormatterInterface $formatter = null, ?string $logLevel = null, ?LoggerInterface $logger = null): DriverInterface
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?FormatterInterface $formatter = null): DriverInterface
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
