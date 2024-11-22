@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use Psr\Log\LoggerInterface;
 use function in_array;
 
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -58,16 +59,18 @@ final class ClientBuilder
     /**
      * Creates a client builder with default configurations and an OGMFormatter.
      *
-     * @pure
-     *
      * @return ClientBuilder<SummarizedResult<CypherMap<OGMTypes>>>
      */
-    public static function create(): ClientBuilder
+    public static function create(?string $logLevel, ?LoggerInterface $logger): ClientBuilder
     {
+        $configuration = DriverConfiguration::default();
+        if ($logLevel !== null && $logger !== null) {
+            $configuration = $configuration->withLogger($logLevel, $logger);
+        }
         return new self(
             SessionConfiguration::default(),
             TransactionConfiguration::default(),
-            new DriverSetupManager(SummarizedResultFormatter::create(), DriverConfiguration::default())
+            new DriverSetupManager(SummarizedResultFormatter::create(), $configuration)
         );
     }
 
