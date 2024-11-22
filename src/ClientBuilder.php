@@ -30,6 +30,7 @@ use Laudis\Neo4j\Exception\UnsupportedScheme;
 use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherMap;
+use Psr\Log\LoggerInterface;
 
 /**
  * Immutable factory for creating a client.
@@ -58,16 +59,19 @@ final class ClientBuilder
     /**
      * Creates a client builder with default configurations and an OGMFormatter.
      *
-     * @pure
-     *
      * @return ClientBuilder<SummarizedResult<CypherMap<OGMTypes>>>
      */
-    public static function create(): ClientBuilder
+    public static function create(?string $logLevel = null, ?LoggerInterface $logger = null): ClientBuilder
     {
+        $configuration = DriverConfiguration::default();
+        if ($logLevel !== null && $logger !== null) {
+            $configuration = $configuration->withLogger($logLevel, $logger);
+        }
+
         return new self(
             SessionConfiguration::default(),
             TransactionConfiguration::default(),
-            new DriverSetupManager(SummarizedResultFormatter::create(), DriverConfiguration::default())
+            new DriverSetupManager(SummarizedResultFormatter::create(), $configuration)
         );
     }
 
