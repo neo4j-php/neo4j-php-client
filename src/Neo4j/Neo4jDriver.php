@@ -107,7 +107,7 @@ final class Neo4jDriver implements DriverInterface
         try {
             GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
         } catch (ConnectException $e) {
-            $this->pool->getLogger()->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
+            $this->pool->getLogger()?->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
 
             return false;
         }

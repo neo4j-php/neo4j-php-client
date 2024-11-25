@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\error\ConnectException;
 use Exception;
 
 use function is_string;
@@ -104,7 +105,7 @@ final class BoltDriver implements DriverInterface
         try {
             GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
         } catch (ConnectException $e) {
-            $this->pool->getLogger()->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
+            $this->pool->getLogger()?->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
 
             return false;
         }

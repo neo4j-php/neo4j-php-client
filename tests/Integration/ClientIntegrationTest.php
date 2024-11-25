@@ -34,13 +34,14 @@ use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use ReflectionClass;
+use RuntimeException;
 
 final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 {
     public function testDriverAuthFailureVerifyConnectivity(): void
     {
         $connection = $_ENV['CONNECTION'] ?? false;
-        if (str_starts_with($connection, 'http')) {
+        if (str_starts_with((string) $connection, 'http')) {
             $this->markTestSkipped('HTTP does not support auth failure connectivity passing');
         }
 
@@ -61,14 +62,16 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
         $driver = Driver::create($uri, $conf);
 
         $this->expectException(Neo4jException::class);
-        $this->expectExceptionMessage('Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."');
+        $this->expectExceptionMessage(
+            'Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."'
+        );
         $driver->verifyConnectivity();
     }
 
     public function testClientAuthFailureVerifyConnectivity(): void
     {
         $connection = $_ENV['CONNECTION'] ?? false;
-        if (str_starts_with($connection, 'http')) {
+        if (str_starts_with((string) $connection, 'http')) {
             $this->markTestSkipped('HTTP does not support auth failure connectivity passing');
         }
 
@@ -100,7 +103,9 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
         $driver = $client->getDriver(null);
 
         $this->expectException(Neo4jException::class);
-        $this->expectExceptionMessage('Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."');
+        $this->expectExceptionMessage(
+            'Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."'
+        );
         $driver->verifyConnectivity();
     }
 
@@ -128,28 +133,37 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 
     public function testTransactionFunction(): void
     {
-        $result = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x'));
+        $result = $this->getSession()->transaction(
+            static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
+        );
 
         self::assertEquals(1, $result);
 
-        $result = $this->getSession()->readTransaction(static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x'));
+        $result = $this->getSession()->readTransaction(
+            static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
+        );
 
         self::assertEquals(1, $result);
 
-        $result = $this->getSession()->writeTransaction(static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x'));
+        $result = $this->getSession()->writeTransaction(
+            static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
+        );
 
         self::assertEquals(1, $result);
     }
 
     public function testValidRun(): void
     {
-        $response = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
+        $response = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(
+            <<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
 WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
-CYPHER, ['test' => 'a', 'otherTest' => 'b']));
+CYPHER,
+            ['test' => 'a', 'otherTest' => 'b']
+        ));
 
         self::assertEquals(1, $response->count());
         $map = $response->first();
@@ -164,7 +178,12 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
     public function testInvalidRun(): void
     {
         $this->expectException(Neo4jException::class);
-        $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']));
+        $this->getSession()->transaction(
+            static fn (TransactionInterface $tsx) => $tsx->run(
+                'MERGE (x:Tes0342hdm21.())',
+                ['test' => 'a', 'otherTest' => 'b']
+            )
+        );
     }
 
     public function testInvalidRunRetry(): void
@@ -183,13 +202,18 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
 
     public function testValidStatement(): void
     {
-        $response = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->runStatement(Statement::create(<<<'CYPHER'
+        $response = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->runStatement(
+            Statement::create(
+                <<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
 WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
-CYPHER, ['test' => 'a', 'otherTest' => 'b'])));
+CYPHER,
+                ['test' => 'a', 'otherTest' => 'b']
+            )
+        ));
 
         self::assertEquals(1, $response->count());
         $map = $response->first();

@@ -147,7 +147,7 @@ class DriverSetupManager implements Countable
         try {
             $this->getDriver($config, $alias);
         } catch (ConnectException $e) {
-            $this->getLogger()->log(
+            $this->getLogger()?->log(
                 LogLevel::WARNING,
                 sprintf('Could not connect to server using alias (%s)', $alias ?? '<default>'),
                 ['exception' => $e]
