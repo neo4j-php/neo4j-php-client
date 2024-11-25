@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Exception;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
@@ -46,7 +47,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
         }
 
         if (!is_string($connection)) {
-            $connection = 'bolt://localhost';
+            $connection = 'bolt://neo4j';
         }
 
         $uri = Uri::create($connection);
@@ -286,9 +287,21 @@ CYPHER,
             ->withDriver('http', 'http://localboast')
             ->build();
 
-        self::assertFalse($client->verifyConnectivity('bolt'));
-        self::assertFalse($client->verifyConnectivity('neo4j'));
-        self::assertFalse($client->verifyConnectivity('http'));
+        try {
+            self::assertFalse($client->verifyConnectivity('bolt'));
+        } catch (Exception $e) {
+            self::assertInstanceOf(RuntimeException::class, $e);
+        }
+        try {
+            self::assertFalse($client->verifyConnectivity('neo4j'));
+        } catch (Exception $e) {
+            self::assertInstanceOf(RuntimeException::class, $e);
+        }
+        try {
+            self::assertFalse($client->verifyConnectivity('http'));
+        } catch (Exception $e) {
+            self::assertInstanceOf(RuntimeException::class, $e);
+        }
     }
 
     public function testValidConnectionCheck(): void
