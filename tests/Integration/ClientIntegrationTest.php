@@ -19,13 +19,17 @@ use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Common\DriverSetupManager;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -55,6 +59,45 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
         }
 
         $driver = Driver::create($uri, $conf);
+
+        $this->expectException(Neo4jException::class);
+        $this->expectExceptionMessage('Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."');
+        $driver->verifyConnectivity();
+    }
+
+    public function testClientAuthFailureVerifyConnectivity(): void
+    {
+        $connection = $_ENV['CONNECTION'] ?? false;
+        if (str_starts_with($connection, 'http')) {
+            $this->markTestSkipped('HTTP does not support auth failure connectivity passing');
+        }
+
+        if (!is_string($connection)) {
+            $connection = 'bolt://localhost';
+        }
+
+        $uri = Uri::create($connection);
+        $uri = $uri->withUserInfo('neo4j', 'absolutelyonehundredpercentawrongpassword');
+
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $conf = DriverConfiguration::default()->withLogger(LogLevel::DEBUG, $this->createMock(LoggerInterface::class));
+        $logger = $conf->getLogger();
+        if ($logger === null) {
+            throw new RuntimeException('Logger not set');
+        }
+
+        $client = (new ClientBuilder(
+            SessionConfiguration::create(),
+            TransactionConfiguration::create(),
+            (new DriverSetupManager(
+                SummarizedResultFormatter::create(),
+                $conf,
+            ))->withSetup(
+                new DriverSetup($uri, Authenticate::fromUrl($uri, $logger))
+            )
+        ))->build();
+
+        $driver = $client->getDriver(null);
 
         $this->expectException(Neo4jException::class);
         $this->expectExceptionMessage('Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."');

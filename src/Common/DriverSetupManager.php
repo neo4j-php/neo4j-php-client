@@ -13,12 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use Bolt\error\ConnectException;
-use Psr\Log\LogLevel;
 use function array_key_exists;
 use function array_key_first;
 use function array_reduce;
 
+use Bolt\error\ConnectException;
 use Countable;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -31,6 +30,7 @@ use Laudis\Neo4j\DriverFactory;
 
 use const PHP_INT_MIN;
 
+use Psr\Log\LogLevel;
 use RuntimeException;
 use SplPriorityQueue;
 
@@ -152,6 +152,7 @@ class DriverSetupManager implements Countable
                 sprintf('Could not connect to server using alias (%s)', $alias ?? '<default>'),
                 ['exception' => $e]
             );
+
             return false;
         }
 
