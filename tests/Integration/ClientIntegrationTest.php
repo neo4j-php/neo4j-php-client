@@ -41,17 +41,11 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 {
     public function testDriverAuthFailureVerifyConnectivity(): void
     {
-        $connection = $_ENV['CONNECTION'] ?? false;
-        if (str_starts_with((string) $connection, 'http')) {
+        if (str_starts_with($this->uri->getScheme(), 'http')) {
             $this->markTestSkipped('HTTP does not support auth failure connectivity passing');
         }
 
-        if (!is_string($connection)) {
-            $connection = 'bolt://neo4j';
-        }
-
-        $uri = Uri::create($connection);
-        $uri = $uri->withUserInfo('neo4j', 'absolutelyonehundredpercentawrongpassword');
+        $uri = $this->uri->withUserInfo('neo4j', 'absolutelyonehundredpercentawrongpassword');
 
         /** @noinspection PhpUnhandledExceptionInspection */
         $conf = DriverConfiguration::default()->withLogger(LogLevel::DEBUG, $this->createMock(LoggerInterface::class));
@@ -71,17 +65,11 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 
     public function testClientAuthFailureVerifyConnectivity(): void
     {
-        $connection = $_ENV['CONNECTION'] ?? false;
-        if (str_starts_with((string) $connection, 'http')) {
+        if (str_starts_with($this->uri->getScheme(), 'http')) {
             $this->markTestSkipped('HTTP does not support auth failure connectivity passing');
         }
 
-        if (!is_string($connection)) {
-            $connection = 'bolt://localhost';
-        }
-
-        $uri = Uri::create($connection);
-        $uri = $uri->withUserInfo('neo4j', 'absolutelyonehundredpercentawrongpassword');
+        $uri = $this->uri->withUserInfo('neo4j', 'absolutelyonehundredpercentawrongpassword');
 
         /** @noinspection PhpUnhandledExceptionInspection */
         $conf = DriverConfiguration::default()->withLogger(LogLevel::DEBUG, $this->createMock(LoggerInterface::class));
