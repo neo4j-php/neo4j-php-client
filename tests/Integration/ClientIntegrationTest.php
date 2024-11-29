@@ -279,21 +279,27 @@ CYPHER,
             ->withDriver('http', 'http://localboast')
             ->build();
 
+        $exceptionThrownCount = 0;
         try {
-            self::assertFalse($client->verifyConnectivity('bolt'));
+            $client->verifyConnectivity('bolt');
         } catch (Exception $e) {
             self::assertInstanceOf(RuntimeException::class, $e);
+            ++$exceptionThrownCount;
         }
         try {
-            self::assertFalse($client->verifyConnectivity('neo4j'));
+            $client->verifyConnectivity('neo4j');
         } catch (Exception $e) {
             self::assertInstanceOf(RuntimeException::class, $e);
+            ++$exceptionThrownCount;
         }
         try {
-            self::assertFalse($client->verifyConnectivity('http'));
+            $client->verifyConnectivity('http');
         } catch (Exception $e) {
             self::assertInstanceOf(RuntimeException::class, $e);
+            ++$exceptionThrownCount;
         }
+
+        self::assertEquals(3, $exceptionThrownCount);
     }
 
     public function testValidConnectionCheck(): void
