@@ -21,7 +21,6 @@ use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Common\DriverSetupManager;
-use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
@@ -39,6 +38,12 @@ use RuntimeException;
 
 final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->driver->closeConnections();
+    }
+
     public function testDriverAuthFailureVerifyConnectivity(): void
     {
         if (str_starts_with($this->uri->getScheme(), 'http')) {
@@ -47,7 +52,6 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 
         $uri = $this->uri->withUserInfo('neo4j', 'absolutelyonehundredpercentawrongpassword');
 
-        /** @noinspection PhpUnhandledExceptionInspection */
         $conf = DriverConfiguration::default()->withLogger(LogLevel::DEBUG, $this->createMock(LoggerInterface::class));
         $logger = $conf->getLogger();
         if ($logger === null) {
@@ -60,6 +64,7 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
         $this->expectExceptionMessage(
             'Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."'
         );
+
         $driver->verifyConnectivity();
     }
 
@@ -89,13 +94,12 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
             )
         ))->build();
 
-        $driver = $client->getDriver(null);
-
         $this->expectException(Neo4jException::class);
         $this->expectExceptionMessage(
             'Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."'
         );
-        $driver->verifyConnectivity();
+
+        $client->getDriver(null);
     }
 
     public function testDifferentAuth(): void

@@ -2,6 +2,7 @@ x-definitions:
   x-shared-env:
     &common-env
     NEO4J_AUTH: neo4j/testtest
+    NEO4J_dbms_security_auth__lock__time: 0s
     NEO4J_PLUGINS: '["apoc"]'
   x-shared-cluster-env:
     &common-cluster-env
