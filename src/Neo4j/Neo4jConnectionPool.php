@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use function array_unique;
+
+use Bolt\error\ConnectException;
+
 use function count;
 
 use Exception;
@@ -50,9 +53,6 @@ use RuntimeException;
 
 use function sprintf;
 use function str_replace;
-
-use Throwable;
-
 use function time;
 
 /**
@@ -146,7 +146,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                     /** @var BoltConnection $connection */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
                     $table = $this->routingTable($connection, $config);
-                } catch (Throwable $e) {
+                } catch (ConnectException $e) {
                     // todo - once client side logging is implemented it must be conveyed here.
                     $latestError = $e;
                     continue; // We continue if something is wrong with the current server

@@ -17,6 +17,7 @@ use function array_key_exists;
 use function array_key_first;
 use function array_reduce;
 
+use Bolt\error\ConnectException;
 use Countable;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -29,6 +30,7 @@ use Laudis\Neo4j\DriverFactory;
 
 use const PHP_INT_MIN;
 
+use Psr\Log\LogLevel;
 use RuntimeException;
 use SplPriorityQueue;
 
@@ -144,7 +146,13 @@ class DriverSetupManager implements Countable
     {
         try {
             $this->getDriver($config, $alias);
-        } catch (RuntimeException) {
+        } catch (ConnectException $e) {
+            $this->getLogger()?->log(
+                LogLevel::WARNING,
+                sprintf('Could not connect to server using alias (%s)', $alias ?? '<default>'),
+                ['exception' => $e]
+            );
+
             return false;
         }
 

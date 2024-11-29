@@ -13,22 +13,95 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Exception;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Common\DriverSetupManager;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use ReflectionClass;
+use RuntimeException;
 
 final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->driver->closeConnections();
+    }
+
+    public function testDriverAuthFailureVerifyConnectivity(): void
+    {
+        if (str_starts_with($this->uri->getScheme(), 'http')) {
+            $this->markTestSkipped('HTTP does not support auth failure connectivity passing');
+        }
+
+        $uri = $this->uri->withUserInfo('neo4j', 'absolutelyonehundredpercentawrongpassword');
+
+        $conf = DriverConfiguration::default()->withLogger(LogLevel::DEBUG, $this->createMock(LoggerInterface::class));
+        $logger = $conf->getLogger();
+        if ($logger === null) {
+            throw new RuntimeException('Logger not set');
+        }
+
+        $driver = Driver::create($uri, $conf);
+
+        $this->expectException(Neo4jException::class);
+        $this->expectExceptionMessage(
+            'Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."'
+        );
+
+        $driver->verifyConnectivity();
+    }
+
+    public function testClientAuthFailureVerifyConnectivity(): void
+    {
+        if (str_starts_with($this->uri->getScheme(), 'http')) {
+            $this->markTestSkipped('HTTP does not support auth failure connectivity passing');
+        }
+
+        $uri = $this->uri->withUserInfo('neo4j', 'absolutelyonehundredpercentawrongpassword');
+
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $conf = DriverConfiguration::default()->withLogger(LogLevel::DEBUG, $this->createMock(LoggerInterface::class));
+        $logger = $conf->getLogger();
+        if ($logger === null) {
+            throw new RuntimeException('Logger not set');
+        }
+
+        $client = (new ClientBuilder(
+            SessionConfiguration::create(),
+            TransactionConfiguration::create(),
+            (new DriverSetupManager(
+                SummarizedResultFormatter::create(),
+                $conf,
+            ))->withSetup(
+                new DriverSetup($uri, Authenticate::fromUrl($uri, $logger))
+            )
+        ))->build();
+
+        $this->expectException(Neo4jException::class);
+        $this->expectExceptionMessage(
+            'Neo4j errors detected. First one with code "Neo.ClientError.Security.Unauthorized" and message "The client is unauthorized due to authentication failure."'
+        );
+
+        $client->getDriver(null);
+    }
+
     public function testDifferentAuth(): void
     {
         $auth = Authenticate::fromUrl($this->getUri());
@@ -53,28 +126,37 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
 
     public function testTransactionFunction(): void
     {
-        $result = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x'));
+        $result = $this->getSession()->transaction(
+            static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
+        );
 
         self::assertEquals(1, $result);
 
-        $result = $this->getSession()->readTransaction(static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x'));
+        $result = $this->getSession()->readTransaction(
+            static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
+        );
 
         self::assertEquals(1, $result);
 
-        $result = $this->getSession()->writeTransaction(static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x'));
+        $result = $this->getSession()->writeTransaction(
+            static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
+        );
 
         self::assertEquals(1, $result);
     }
 
     public function testValidRun(): void
     {
-        $response = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(<<<'CYPHER'
+        $response = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run(
+            <<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
 WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
-CYPHER, ['test' => 'a', 'otherTest' => 'b']));
+CYPHER,
+            ['test' => 'a', 'otherTest' => 'b']
+        ));
 
         self::assertEquals(1, $response->count());
         $map = $response->first();
@@ -89,7 +171,12 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
     public function testInvalidRun(): void
     {
         $this->expectException(Neo4jException::class);
-        $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->run('MERGE (x:Tes0342hdm21.())', ['test' => 'a', 'otherTest' => 'b']));
+        $this->getSession()->transaction(
+            static fn (TransactionInterface $tsx) => $tsx->run(
+                'MERGE (x:Tes0342hdm21.())',
+                ['test' => 'a', 'otherTest' => 'b']
+            )
+        );
     }
 
     public function testInvalidRunRetry(): void
@@ -108,13 +195,18 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b']));
 
     public function testValidStatement(): void
     {
-        $response = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->runStatement(Statement::create(<<<'CYPHER'
+        $response = $this->getSession()->transaction(static fn (TransactionInterface $tsx) => $tsx->runStatement(
+            Statement::create(
+                <<<'CYPHER'
 MERGE (x:TestNode {test: $test})
 WITH x
 MERGE (y:OtherTestNode {test: $otherTest})
 WITH x, y, {c: 'd'} AS map, [1, 2, 3] AS list
 RETURN x, y, x.test AS test, map, list
-CYPHER, ['test' => 'a', 'otherTest' => 'b'])));
+CYPHER,
+                ['test' => 'a', 'otherTest' => 'b']
+            )
+        ));
 
         self::assertEquals(1, $response->count());
         $map = $response->first();
@@ -187,9 +279,27 @@ CYPHER, ['test' => 'a', 'otherTest' => 'b'])));
             ->withDriver('http', 'http://localboast')
             ->build();
 
-        self::assertFalse($client->verifyConnectivity('bolt'));
-        self::assertFalse($client->verifyConnectivity('neo4j'));
-        self::assertFalse($client->verifyConnectivity('http'));
+        $exceptionThrownCount = 0;
+        try {
+            $client->verifyConnectivity('bolt');
+        } catch (Exception $e) {
+            self::assertInstanceOf(RuntimeException::class, $e);
+            ++$exceptionThrownCount;
+        }
+        try {
+            $client->verifyConnectivity('neo4j');
+        } catch (Exception $e) {
+            self::assertInstanceOf(RuntimeException::class, $e);
+            ++$exceptionThrownCount;
+        }
+        try {
+            $client->verifyConnectivity('http');
+        } catch (Exception $e) {
+            self::assertInstanceOf(RuntimeException::class, $e);
+            ++$exceptionThrownCount;
+        }
+
+        self::assertEquals(3, $exceptionThrownCount);
     }
 
     public function testValidConnectionCheck(): void
