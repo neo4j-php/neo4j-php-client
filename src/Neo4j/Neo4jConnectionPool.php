@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Bolt\error\ConnectException;
 use function array_unique;
+
+use Bolt\error\ConnectException;
+
 use function count;
 
 use Exception;
@@ -51,9 +53,6 @@ use RuntimeException;
 
 use function sprintf;
 use function str_replace;
-
-use Throwable;
-
 use function time;
 
 /**
