@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use function array_unique;
-
 use Bolt\error\ConnectException;
 
 use function count;
@@ -25,7 +23,6 @@ use Generator;
 use function implode;
 
 use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Cache;
@@ -127,7 +124,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         $key = $this->createKey($this->data, $config);
 
-        /** @var RoutingTable|null */
+        /** @var RoutingTable|null $table */
         $table = $this->cache->get($key);
         $triedAddresses = [];
 
@@ -164,7 +161,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $this->data->getUri()->getHost(), implode('", "', $triedAddresses)), previous: $latestError);
         }
 
-        $server = $this->getNextServer($table, $config->getAccessMode()) ?? $this->data->getUri();
+        $server = $this->getNextServer($table, $config->getAccessMode());
 
         if ($server->getScheme() === '') {
             $server = $server->withScheme($this->data->getUri()->getScheme());
@@ -181,13 +178,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    private function getNextServer(RoutingTable $table, AccessMode $mode): ?Uri
+    private function getNextServer(RoutingTable $table, AccessMode $mode): Uri
     {
-        $servers = array_unique($table->getWithRole());
-        if (count($servers) === 1) {
-            return null;
-        }
-
         if (AccessMode::WRITE() === $mode) {
             $servers = $table->getWithRole(RoutingRoles::LEADER());
         } else {
@@ -233,7 +225,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 [
                     $data->getUserAgent(),
                     $uri->getHost(),
-                    $config ? $config->getDatabase() : null,
+                    $config?->getDatabase(),
                     $uri->getPort() ?? '7687',
                 ]
             )
