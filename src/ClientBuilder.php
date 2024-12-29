@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  */
 final class ClientBuilder
 {
-    public const SUPPORTED_SCHEMES = ['', 'bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc', 'http', 'https'];
+    public const SUPPORTED_SCHEMES = ['', 'bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc'];
 
     /**
      * @psalm-mutation-free

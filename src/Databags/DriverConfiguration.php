@@ -39,8 +39,6 @@ final class DriverConfiguration
     public const DEFAULT_POOL_SIZE = 0x2F;
     public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
     public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
-    /** @var callable():(HttpPsrBindings|null)|HttpPsrBindings|null */
-    private $httpPsrBindings;
     /** @var callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
     /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
@@ -48,7 +46,6 @@ final class DriverConfiguration
     private ?Neo4jLogger $logger;
 
     /**
-     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
      * @param callable():(CacheInterface|null)|CacheInterface|null $cache
      * @param callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null $semaphore
      * @param string|null $logLevel The log level to use. If null, LogLevel::INFO is used.
@@ -57,7 +54,6 @@ final class DriverConfiguration
      */
     public function __construct(
         private string|null $userAgent,
-        callable|HttpPsrBindings|null $httpPsrBindings,
         private SslConfiguration $sslConfig,
         private int|null $maxPoolSize,
         CacheInterface|callable|null $cache,
@@ -66,7 +62,6 @@ final class DriverConfiguration
         ?string $logLevel,
         ?LoggerInterface $logger
     ) {
-        $this->httpPsrBindings = $httpPsrBindings;
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
         if ($logger !== null) {
@@ -77,13 +72,10 @@ final class DriverConfiguration
     }
 
     /**
-     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $httpPsrBindings
-     *
      * @pure
      */
     public static function create(
         ?string $userAgent,
-        callable|HttpPsrBindings|null $httpPsrBindings,
         SslConfiguration $sslConfig,
         int $maxPoolSize,
         CacheInterface $cache,
@@ -94,7 +86,6 @@ final class DriverConfiguration
     ): self {
         return new self(
             $userAgent,
-            $httpPsrBindings,
             $sslConfig,
             $maxPoolSize,
             $cache,
@@ -107,7 +98,7 @@ final class DriverConfiguration
 
     /**
      * Creates a default configuration with a user agent based on the driver version
-     * and HTTP PSR implementation auto-detected from the environment.
+     * auto-detected from the environment.
      *
      * @pure
      */
@@ -115,7 +106,6 @@ final class DriverConfiguration
     {
         return new self(
             null,
-            HttpPsrBindings::default(),
             SslConfiguration::default(),
             null,
             null,
@@ -161,21 +151,6 @@ final class DriverConfiguration
     }
 
     /**
-     * Creates a new configuration with the provided bindings.
-     *
-     * @param callable():(HttpPsrBindings|null)|HttpPsrBindings|null $bindings
-     *
-     * @psalm-immutable
-     */
-    public function withHttpPsrBindings($bindings): self
-    {
-        $tbr = clone $this;
-        $tbr->httpPsrBindings = $bindings;
-
-        return $tbr;
-    }
-
-    /**
      * @psalm-immutable
      */
     public function withSslConfiguration(SslConfiguration $config): self
@@ -192,15 +167,6 @@ final class DriverConfiguration
     public function getSslConfiguration(): SslConfiguration
     {
         return $this->sslConfig;
-    }
-
-    public function getHttpPsrBindings(): HttpPsrBindings
-    {
-        $this->httpPsrBindings = (is_callable($this->httpPsrBindings)) ? call_user_func(
-            $this->httpPsrBindings
-        ) : $this->httpPsrBindings;
-
-        return $this->httpPsrBindings ??= HttpPsrBindings::default();
     }
 
     public function getMaxPoolSize(): int

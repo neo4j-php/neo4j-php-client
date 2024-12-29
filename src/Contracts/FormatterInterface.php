@@ -14,16 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Bolt\Bolt;
-use JsonException;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Http\HttpConnection;
-use Laudis\Neo4j\Types\CypherList;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use stdClass;
 
 /**
  * A formatter (aka Hydrator) is reponsible for formatting the incoming results of the driver.
@@ -81,37 +75,4 @@ interface FormatterInterface
      * @return ResultFormat
      */
     public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder);
-
-    /**
-     * Formats the results of the HTTP protocol to the unified format.
-     *
-     * @param iterable<Statement> $statements
-     *
-     * @throws JsonException
-     *
-     * @return CypherList<ResultFormat>
-     *
-     * @psalm-mutation-free
-     */
-    public function formatHttpResult(ResponseInterface $response, stdClass $body, HttpConnection $connection, float $resultsAvailableAfter, float $resultsConsumedAfter, iterable $statements): CypherList;
-
-    /**
-     * Decorates a request to make make sure it requests the correct format.
-     *
-     * @see https://neo4j.com/docs/http-api/current/actions/result-format/
-     *
-     * @psalm-mutation-free
-     */
-    public function decorateRequest(RequestInterface $request, ConnectionInterface $connection): RequestInterface;
-
-    /**
-     * Overrides the statement config of the HTTP protocol.
-     *
-     * @see https://neo4j.com/docs/http-api/current/actions/result-format/
-     *
-     * @return array{resultDataContents?: list<'GRAPH'|'ROW'|'REST'>, includeStats?:bool}
-     *
-     * @psalm-mutation-free
-     */
-    public function statementConfigOverride(ConnectionInterface $connection): array;
 }

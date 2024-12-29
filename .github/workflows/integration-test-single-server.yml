@@ -42,12 +42,6 @@ jobs:
             -e PHP_VERSION=${{ matrix.php }} \
             -e CONNECTION=bolt://neo4j:testtest@neo4j \
             client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
-      - name: Test http://
-        run: |
-          docker compose run \
-            -e PHP_VERSION=${{ matrix.php }} \
-            -e CONNECTION=http://neo4j:testtest@neo4j \
-            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
   tests-v5:
     runs-on: ubuntu-latest
     strategy:
@@ -80,10 +74,4 @@ jobs:
           docker compose run \
             -e PHP_VERSION=${{ matrix.php }} \
             -e CONNECTION=bolt://neo4j:testtest@neo4j \
-            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
-      - name: Test http://
-        run: |
-          docker compose run \
-            -e PHP_VERSION=${{ matrix.php }} \
-            -e CONNECTION=http://neo4j:testtest@neo4j \
             client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration

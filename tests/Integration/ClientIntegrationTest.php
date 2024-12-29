@@ -276,7 +276,6 @@ CYPHER,
         $client = ClientBuilder::create()
             ->withDriver('bolt', 'bolt://localboast')
             ->withDriver('neo4j', 'neo4j://localboast')
-            ->withDriver('http', 'http://localboast')
             ->build();
 
         $exceptionThrownCount = 0;
@@ -292,14 +291,8 @@ CYPHER,
             self::assertInstanceOf(RuntimeException::class, $e);
             ++$exceptionThrownCount;
         }
-        try {
-            $client->verifyConnectivity('http');
-        } catch (Exception $e) {
-            self::assertInstanceOf(RuntimeException::class, $e);
-            ++$exceptionThrownCount;
-        }
 
-        self::assertEquals(3, $exceptionThrownCount);
+        self::assertEquals(2, $exceptionThrownCount);
     }
 
     public function testValidConnectionCheck(): void

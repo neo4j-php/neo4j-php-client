@@ -17,14 +17,11 @@ use function array_key_exists;
 
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
-use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
-use Laudis\Neo4j\Formatter\Specialised\JoltHttpOGMTranslator;
-use Laudis\Neo4j\Formatter\Specialised\LegacyHttpOGMTranslator;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
@@ -41,11 +38,6 @@ use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use stdClass;
-
-use function version_compare;
 
 /**
  * Formats the result in a basic OGM (Object Graph Mapping) format by mapping al cypher types to types found in the \Laudis\Neo4j\Types namespace.
@@ -68,8 +60,6 @@ final class OGMFormatter implements FormatterInterface
      */
     public function __construct(
         private readonly BoltOGMTranslator $boltTranslator,
-        private readonly JoltHttpOGMTranslator $joltTranslator,
-        private readonly LegacyHttpOGMTranslator $legacyHttpTranslator
     ) {}
 
     /**
@@ -79,7 +69,7 @@ final class OGMFormatter implements FormatterInterface
      */
     public static function create(): OGMFormatter
     {
-        return new self(new BoltOGMTranslator(), new JoltHttpOGMTranslator(), new LegacyHttpOGMTranslator());
+        return new self(new BoltOGMTranslator());
     }
 
     /**
@@ -106,39 +96,6 @@ final class OGMFormatter implements FormatterInterface
     }
 
     /**
-     * @psalm-mutation-free
-     */
-    public function formatHttpResult(
-        ResponseInterface $response,
-        stdClass $body,
-        ConnectionInterface $connection,
-        float $resultsAvailableAfter,
-        float $resultsConsumedAfter,
-        iterable $statements
-    ): CypherList {
-        return $this->decideTranslator($connection)->formatHttpResult(
-            $response,
-            $body,
-            $connection,
-            $resultsAvailableAfter,
-            $resultsConsumedAfter,
-            $statements
-        );
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    private function decideTranslator(ConnectionInterface $connection): LegacyHttpOGMTranslator|JoltHttpOGMTranslator
-    {
-        if (version_compare($connection->getServerAgent(), '4.2.5') <= 0) {
-            return $this->legacyHttpTranslator;
-        }
-
-        return $this->joltTranslator;
-    }
-
-    /**
      * @param BoltMeta    $meta
      * @param list<mixed> $result
      *
@@ -155,21 +112,5 @@ final class OGMFormatter implements FormatterInterface
         }
 
         return new CypherMap($map);
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function decorateRequest(RequestInterface $request, ConnectionInterface $connection): RequestInterface
-    {
-        return $this->decideTranslator($connection)->decorateRequest($request);
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function statementConfigOverride(ConnectionInterface $connection): array
-    {
-        return $this->decideTranslator($connection)->statementConfigOverride();
     }
 }
