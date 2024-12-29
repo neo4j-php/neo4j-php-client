@@ -19,16 +19,10 @@ use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
 interface AuthenticateInterface
 {
-    /**
-     * Authenticates a RequestInterface with the provided configuration Uri and userAgent.
-     */
-    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface;
-
     /**
      * Authenticates a Bolt connection with the provided configuration Uri and userAgent.
      *

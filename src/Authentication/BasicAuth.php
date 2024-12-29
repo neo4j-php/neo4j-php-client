@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use function base64_encode;
-
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
@@ -25,7 +23,6 @@ use Exception;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 
@@ -42,20 +39,6 @@ final class BasicAuth implements AuthenticateInterface
         private readonly string $password,
         private readonly ?Neo4jLogger $logger,
     ) {}
-
-    public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
-    {
-        $this->logger?->log(LogLevel::DEBUG, 'Authenticating using BasicAuth');
-        $combo = base64_encode($this->username.':'.$this->password);
-
-        /**
-         * @psalm-suppress ImpureMethodCall Request is a pure object:
-         *
-         * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
-         */
-        return $request->withHeader('Authorization', 'Basic '.$combo)
-            ->withHeader('User-Agent', $userAgent);
-    }
 
     /**
      * @throws Exception

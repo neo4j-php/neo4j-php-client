@@ -85,7 +85,7 @@ final class ParameterHelper
     ): iterable|int|float|bool|string|stdClass|IStructure|null {
         return self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
-            self::convertBoltConvertibles($value, $protocol) ??
+            self::convertBoltConvertibles($value) ??
             self::convertTemporalTypes($value, $protocol) ??
             self::filledIterableToArray($value, $protocol) ??
             self::stringAbleToString($value) ??
@@ -193,7 +193,9 @@ final class ParameterHelper
             if (is_int($key) || is_string($key)) {
                 $tbr[$key] = self::asParameter($val, $protocol);
             } else {
-                $msg = 'Iterable parameters must have an integer or string as key values, '.gettype($key).' received.';
+                $msg = 'Iterable parameters must have an integer or string as key values, '.gettype(
+                    $key
+                ).' received.';
                 throw new InvalidArgumentException($msg);
             }
         }
@@ -201,9 +203,9 @@ final class ParameterHelper
         return $tbr;
     }
 
-    private static function convertBoltConvertibles(mixed $value, ConnectionProtocol $protocol): ?IStructure
+    private static function convertBoltConvertibles(mixed $value): ?IStructure
     {
-        if ($protocol->isBolt() && $value instanceof BoltConvertibleInterface) {
+        if ($value instanceof BoltConvertibleInterface) {
             return $value->convertToBolt();
         }
 
@@ -212,31 +214,29 @@ final class ParameterHelper
 
     private static function convertTemporalTypes(mixed $value, ConnectionProtocol $protocol): ?IStructure
     {
-        if ($protocol->isBolt()) {
-            if ($value instanceof DateTimeInterface) {
-                if ($protocol->compare(ConnectionProtocol::BOLT_V44()) > 0) {
-                    return new \Bolt\protocol\v5\structures\DateTimeZoneId(
-                        $value->getTimestamp(),
-                        ((int) $value->format('u')) * 1000,
-                        $value->getTimezone()->getName()
-                    );
-                }
-
-                return new DateTimeZoneId(
+        if ($value instanceof DateTimeInterface) {
+            if ($protocol->compare(ConnectionProtocol::BOLT_V44()) > 0) {
+                return new \Bolt\protocol\v5\structures\DateTimeZoneId(
                     $value->getTimestamp(),
                     ((int) $value->format('u')) * 1000,
                     $value->getTimezone()->getName()
                 );
             }
 
-            if ($value instanceof DateInterval) {
-                return new Duration(
-                    $value->y * 12 + $value->m,
-                    $value->d,
-                    $value->h * 60 * 60 * $value->i * 60 + $value->s * 60,
-                    (int) ($value->f * 1000)
-                );
-            }
+            return new DateTimeZoneId(
+                $value->getTimestamp(),
+                ((int) $value->format('u')) * 1000,
+                $value->getTimezone()->getName()
+            );
+        }
+
+        if ($value instanceof DateInterval) {
+            return new Duration(
+                $value->y * 12 + $value->m,
+                $value->d,
+                $value->h * 60 * 60 * $value->i * 60 + $value->s * 60,
+                (int) ($value->f * 1000)
+            );
         }
 
         return null;

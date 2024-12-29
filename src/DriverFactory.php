@@ -22,8 +22,8 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Exception\UnsupportedScheme;
 use Laudis\Neo4j\Formatter\OGMFormatter;
-use Laudis\Neo4j\Http\HttpDriver;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Psr\Http\Message\UriInterface;
 
@@ -38,6 +38,8 @@ final class DriverFactory
      * @template U
      *
      * @param FormatterInterface<U> $formatter
+     *
+     * @throws UnsupportedScheme
      *
      * @return (
      *           func_num_args() is 4
@@ -62,7 +64,7 @@ final class DriverFactory
             return self::createNeo4jDriver($uri, $configuration, $authenticate, $formatter);
         }
 
-        return self::createHttpDriver($uri, $configuration, $authenticate, $formatter);
+        throw UnsupportedScheme::make($scheme, ['bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc']);
     }
 
     /**
@@ -103,27 +105,5 @@ final class DriverFactory
         }
 
         return Neo4jDriver::create($uri, $configuration, $authenticate);
-    }
-
-    /**
-     * @template U
-     *
-     * @param FormatterInterface<U> $formatter
-     *
-     * @return (
-     *           func_num_args() is 4
-     *           ? DriverInterface<U>
-     *           : DriverInterface<OGMResults>
-     *           )
-     *
-     * @pure
-     */
-    private static function createHttpDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?FormatterInterface $formatter = null): DriverInterface
-    {
-        if ($formatter !== null) {
-            return HttpDriver::create($uri, $configuration, $authenticate, $formatter);
-        }
-
-        return HttpDriver::create($uri, $configuration, $authenticate);
     }
 }
