@@ -41,7 +41,6 @@ use Laudis\TypedEnum\TypedEnum;
  * @method static ConnectionProtocol BOLT_V5_2()
  * @method static ConnectionProtocol BOLT_V5_3()
  * @method static ConnectionProtocol BOLT_V5_4()
- * @method static ConnectionProtocol HTTP()
  *
  * @extends TypedEnum<string>
  *
@@ -62,13 +61,6 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
     private const BOLT_V5_2 = '5.2';
     private const BOLT_V5_3 = '5.3';
     private const BOLT_V5_4 = '5.4';
-    private const HTTP = 'http';
-
-    public function isBolt(): bool
-    {
-        /** @psalm-suppress ImpureMethodCall */
-        return $this !== self::HTTP();
-    }
 
     /**
      * @pure
