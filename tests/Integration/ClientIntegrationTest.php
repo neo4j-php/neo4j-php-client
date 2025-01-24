@@ -127,19 +127,19 @@ final class ClientIntegrationTest extends EnvironmentAwareIntegrationTest
     public function testTransactionFunction(): void
     {
         $result = $this->getSession()->transaction(
-            static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
+            static fn (TransactionInterface $tsx): int => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
         );
 
         self::assertEquals(1, $result);
 
         $result = $this->getSession()->readTransaction(
-            static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
+            static fn (TransactionInterface $tsx): int => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
         );
 
         self::assertEquals(1, $result);
 
         $result = $this->getSession()->writeTransaction(
-            static fn (TransactionInterface $tsx) => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
+            static fn (TransactionInterface $tsx): int => $tsx->run('UNWIND [1] AS x RETURN x')->first()->getAsInt('x')
         );
 
         self::assertEquals(1, $result);
@@ -339,7 +339,6 @@ CYPHER,
         $driver = $this->getDriver('bolt');
         $reflection = new ReflectionClass($driver);
         $property = $reflection->getProperty('driver');
-        $property->setAccessible(true);
         /** @var DriverInterface $driver */
         $driver = $property->getValue($driver);
 
@@ -349,13 +348,11 @@ CYPHER,
             $reflection = new ReflectionClass($driver);
 
             $poolProp = $reflection->getProperty('pool');
-            $poolProp->setAccessible(true);
             /** @var ConnectionPool $pool */
             $pool = $poolProp->getValue($driver);
 
             $reflection = new ReflectionClass($pool);
             $connectionProp = $reflection->getProperty('activeConnections');
-            $connectionProp->setAccessible(true);
             /** @var array $activeConnections */
             $activeConnections = $connectionProp->getValue($pool);
 

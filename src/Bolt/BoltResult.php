@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use function array_splice;
 use function count;
 
@@ -21,10 +22,9 @@ use Generator;
 use function in_array;
 
 use Iterator;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 
 /**
- * @psalm-import-type BoltCypherStats from FormatterInterface
+ * @psalm-import-type BoltCypherStats from SummarizedResultFormatter
  *
  * @implements Iterator<int, list>
  */

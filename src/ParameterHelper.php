@@ -78,6 +78,8 @@ final class ParameterHelper
 
     /**
      * @return iterable|scalar|stdClass|IStructure|null
+     *
+     * @param \DateTime|array|object|stdClass $value
      */
     public static function asParameter(
         mixed $value,

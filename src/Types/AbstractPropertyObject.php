@@ -15,11 +15,12 @@ namespace Laudis\Neo4j\Types;
 
 use BadMethodCallException;
 use Laudis\Neo4j\Contracts\HasPropertiesInterface;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 
 use function sprintf;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  *
  * @template PropertyTypes
  * @template ObjectTypes

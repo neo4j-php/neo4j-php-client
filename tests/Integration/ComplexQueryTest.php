@@ -48,8 +48,7 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
     public function testMergeTransactionFunction(): void
     {
         $this->expectException(Neo4jException::class);
-        $this->getSession()->writeTransaction(static fn (TSX $tsx) => /** @psalm-suppress ALL */
-$tsx->run('MERGE (x {y: "z"}:X) return x')->first()
+        $this->getSession()->writeTransaction(static fn (TSX $tsx): string => $tsx->run('MERGE (x {y: "z"}:X) return x')->first()
             ->getAsMap('x')
             ->getAsString('y'));
     }
@@ -126,7 +125,7 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
         self::assertEquals(
             [['attribute' => 'xy'], ['attribute' => 'yz']],
             /** @psalm-suppress MissingClosureReturnType */
-            $result->getAsCypherList('y')->map(static fn ($r) => /**
+            $result->getAsCypherList('y')->map(static fn (mixed $r): array => /**
                  * @psalm-suppress MixedMethodCall
                  *
                  * @var array <string, string>

@@ -16,7 +16,6 @@ namespace Laudis\Neo4j\Tests\Integration;
 use Bolt\error\ConnectException;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltDriver;
-use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Throwable;
@@ -84,7 +83,6 @@ final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
         $this->assertTrue($bookmark->isEmpty());
         $previousBookmark = $bookmark;
 
-        /** @var SummarizedResult $result */
         $result = $session->run('MATCH (x) RETURN x');
         $result->preload();
 
@@ -93,7 +91,6 @@ final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
         $this->assertNotEquals($previousBookmark->values(), $bookmark->values());
         $previousBookmark = $bookmark;
 
-        /** @var SummarizedResult $result */
         $result = $session->run('CREATE (x:Node)');
         $result->preload();
 
