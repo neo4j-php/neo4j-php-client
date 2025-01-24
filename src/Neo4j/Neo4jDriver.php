@@ -26,11 +26,10 @@ use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AddressResolverInterface;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 
@@ -41,25 +40,21 @@ use Psr\Log\LogLevel;
  *
  * @implements DriverInterface<T>
  *
- * @psalm-import-type OGMResults from OGMFormatter
+ * @psalm-import-type OGMResults from SummarizedResultFormatter
  */
 final class Neo4jDriver implements DriverInterface
 {
     /**
-     * @param FormatterInterface<T> $formatter
-     *
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly UriInterface $parsedUrl,
         private readonly Neo4jConnectionPool $pool,
-        private readonly FormatterInterface $formatter
+        private readonly SummarizedResultFormatter $formatter
     ) {}
 
     /**
      * @template U
-     *
-     * @param FormatterInterface<U> $formatter
      *
      * @return (
      *           func_num_args() is 5
@@ -69,7 +64,7 @@ final class Neo4jDriver implements DriverInterface
      *
      * @psalm-suppress MixedReturnTypeCoercion
      */
-    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?FormatterInterface $formatter = null, ?AddressResolverInterface $resolver = null): self
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?SummarizedResultFormatter $formatter = null, ?AddressResolverInterface $resolver = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
@@ -84,7 +79,7 @@ final class Neo4jDriver implements DriverInterface
         return new self(
             $uri,
             Neo4jConnectionPool::create($uri, $authenticate, $configuration, $resolver, $semaphore),
-            $formatter ?? OGMFormatter::create(),
+            $formatter ?? SummarizedResultFormatter::create(),
         );
     }
 

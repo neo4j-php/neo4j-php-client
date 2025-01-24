@@ -20,20 +20,18 @@ use Laudis\Neo4j\Types\CypherList;
 /**
  * A result containing the values and the summary.
  *
- * @template TValue
- *
- * @extends CypherList<TValue>
+ * @extends CypherList<mixed>
  */
 final class SummarizedResult extends CypherList
 {
     private ?ResultSummary $summary = null;
 
     /**
-     * @param iterable<mixed, TValue>|callable():Generator<mixed, TValue> $iterable
+     * @param iterable<mixed, mixed>|callable():Generator<mixed, mixed> $iterable
      *
      * @psalm-mutation-free
      */
-    public function __construct(?ResultSummary &$summary, $iterable = [])
+    public function __construct(?ResultSummary &$summary, iterable|callable $iterable = [])
     {
         parent::__construct($iterable);
         $this->summary = &$summary;
@@ -42,9 +40,9 @@ final class SummarizedResult extends CypherList
     /**
      * @template Value
      *
-     * @param callable():(\Generator<mixed, Value>) $operation
+     * @param callable():(Generator<mixed, Value>) $operation
      *
-     * @return static<Value>
+     * @return static
      *
      * @psalm-mutation-free
      */

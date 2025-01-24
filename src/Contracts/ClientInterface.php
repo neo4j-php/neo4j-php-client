@@ -14,15 +14,11 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 
-/**
- * @template ResultFormat
- *
- * @extends TransactionInterface<ResultFormat>
- */
 interface ClientInterface extends TransactionInterface
 {
     /**
@@ -31,19 +27,15 @@ interface ClientInterface extends TransactionInterface
      * @param iterable<string, mixed> $parameters
      *
      * @throws Neo4jException
-     *
-     * @return ResultFormat
      */
-    public function run(string $statement, iterable $parameters = [], ?string $alias = null);
+    public function run(string $statement, iterable $parameters = [], ?string $alias = null): SummarizedResult;
 
     /**
      * Runs a one off transaction with the provided statement over the connection with the provided alias or the master alias otherwise.
      *
      * @throws Neo4jException
-     *
-     * @return ResultFormat
      */
-    public function runStatement(Statement $statement, ?string $alias = null);
+    public function runStatement(Statement $statement, ?string $alias = null): SummarizedResult;
 
     /**
      * Runs a one off transaction with the provided statements over the connection with the provided alias or the master alias otherwise.
@@ -52,7 +44,7 @@ interface ClientInterface extends TransactionInterface
      *
      * @throws Neo4jException
      *
-     * @return CypherList<ResultFormat>
+     * @return CypherList<mixed>
      */
     public function runStatements(iterable $statements, ?string $alias = null): CypherList;
 
@@ -62,8 +54,6 @@ interface ClientInterface extends TransactionInterface
      * @param iterable<Statement>|null $statements
      *
      * @throws Neo4jException
-     *
-     * @return UnmanagedTransactionInterface<ResultFormat>
      */
     public function beginTransaction(?iterable $statements = null, ?string $alias = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
 
@@ -71,8 +61,6 @@ interface ClientInterface extends TransactionInterface
      * Gets the driver with the provided alias. Gets the default driver if no alias is provided.
      *
      * The driver is guaranteed to have its connectivity verified at least once during its lifetime.
-     *
-     * @return DriverInterface<ResultFormat>
      */
     public function getDriver(?string $alias): DriverInterface;
 
@@ -84,7 +72,7 @@ interface ClientInterface extends TransactionInterface
     /**
      * @template U
      *
-     * @param callable(TransactionInterface<ResultFormat>):U $tsxHandler
+     * @param callable(TransactionInterface):U $tsxHandler
      *
      * @return U
      */
@@ -93,7 +81,7 @@ interface ClientInterface extends TransactionInterface
     /**
      * @template U
      *
-     * @param callable(TransactionInterface<ResultFormat>):U $tsxHandler
+     * @param callable(TransactionInterface):U $tsxHandler
      *
      * @return U
      */
@@ -104,7 +92,7 @@ interface ClientInterface extends TransactionInterface
      *
      * @template U
      *
-     * @param callable(TransactionInterface<ResultFormat>):U $tsxHandler
+     * @param callable(TransactionInterface):U $tsxHandler
      *
      * @return U
      */

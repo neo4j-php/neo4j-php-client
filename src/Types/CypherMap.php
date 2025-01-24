@@ -35,7 +35,7 @@ final class CypherMap extends Map
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
-            /** @var mixed */
+            /** @var mixed $value */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toCypherMap($value);
@@ -54,7 +54,7 @@ final class CypherMap extends Map
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
-            /** @var mixed */
+            /** @var mixed $value */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toCypherList($value);

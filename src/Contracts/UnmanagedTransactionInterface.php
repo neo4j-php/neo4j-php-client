@@ -19,10 +19,6 @@ use Laudis\Neo4j\Types\CypherList;
 /**
  * An unmanaged transaction needs to be committed or rolled back manually.
  *
- * @template T
- *
- * @extends TransactionInterface<T>
- *
  * @see https://neo4j.com/docs/cypher-manual/current/introduction/transactions/
  */
 interface UnmanagedTransactionInterface extends TransactionInterface
@@ -32,7 +28,7 @@ interface UnmanagedTransactionInterface extends TransactionInterface
      *
      * @param iterable<Statement> $statements
      *
-     * @return CypherList<T>
+     * @return CypherList<mixed>
      */
     public function commit(iterable $statements = []): CypherList;
 

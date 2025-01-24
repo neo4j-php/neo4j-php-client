@@ -13,11 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use function array_intersect;
 use function array_unique;
 
 use Laudis\Neo4j\Common\TransactionHelper;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
@@ -44,8 +45,6 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
 
     /**
      * @psalm-mutation-free
-     *
-     * @param FormatterInterface<T> $formatter
      */
     public function __construct(
         /** @psalm-readonly */
@@ -57,15 +56,15 @@ final class HttpUnmanagedTransaction implements UnmanagedTransactionInterface
         /**
          * @psalm-readonly
          */
-        private readonly FormatterInterface $formatter
+        private readonly SummarizedResultFormatter $formatter
     ) {}
 
-    public function run(string $statement, iterable $parameters = [])
+    public function run(string $statement, iterable $parameters = []): SummarizedResult
     {
         return $this->runStatement(new Statement($statement, $parameters));
     }
 
-    public function runStatement(Statement $statement)
+    public function runStatement(Statement $statement): SummarizedResult
     {
         return $this->runStatements([$statement])->first();
     }

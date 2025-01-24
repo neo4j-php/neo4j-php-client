@@ -22,11 +22,11 @@ use Countable;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\DriverFactory;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 
 use const PHP_INT_MIN;
 
@@ -51,11 +51,9 @@ class DriverSetupManager implements Countable
 
     /**
      * @psalm-mutation-free
-     *
-     * @param FormatterInterface<ResultFormat> $formatter
      */
     public function __construct(
-        private FormatterInterface $formatter,
+        private SummarizedResultFormatter $formatter,
         private DriverConfiguration $configuration
     ) {}
 
@@ -193,7 +191,7 @@ class DriverSetupManager implements Countable
      *
      * @psalm-mutation-free
      */
-    public function withFormatter(FormatterInterface $formatter): self
+    public function withFormatter(SummarizedResultFormatter $formatter): self
     {
         $tbr = clone $this;
         $tbr->formatter = $formatter;

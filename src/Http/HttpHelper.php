@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Http;
 
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use function array_key_first;
 use function array_merge;
 use function count;
@@ -23,7 +24,6 @@ use const JSON_THROW_ON_ERROR;
 
 use JsonException;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -36,7 +36,7 @@ use UnexpectedValueException;
 /**
  * Helper functions for the http protocol.
  *
- * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
+ * @psalm-import-type CypherResponseSet from SummarizedResultFormatter
  */
 final class HttpHelper
 {
@@ -198,7 +198,7 @@ final class HttpHelper
      *
      * @throws JsonException
      */
-    public static function statementsToJson(ConnectionInterface $connection, FormatterInterface $formatter, iterable $statements): string
+    public static function statementsToJson(ConnectionInterface $connection, SummarizedResultFormatter $formatter, iterable $statements): string
     {
         $tbr = [];
         foreach ($statements as $statement) {
@@ -207,7 +207,11 @@ final class HttpHelper
                 'resultDataContents' => [],
                 'includeStats' => false,
             ];
-            $st = array_merge($st, $formatter->statementConfigOverride($connection));
+            /** @noinspection PhpUndefinedMethodInspection */
+            $st = array_merge(
+                $st,
+                $formatter->statementConfigOverride($connection)
+            );
             $parameters = ParameterHelper::formatParameters($statement->getParameters(), $connection->getProtocol());
             $st['parameters'] = $parameters->count() === 0 ? new stdClass() : $parameters->toArray();
             $tbr[] = $st;

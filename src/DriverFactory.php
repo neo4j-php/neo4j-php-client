@@ -22,7 +22,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
-use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Http\HttpDriver;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Psr\Http\Message\UriInterface;
@@ -30,7 +30,7 @@ use Psr\Http\Message\UriInterface;
 /**
  * Factory for creating drivers directly.
  *
- * @psalm-import-type OGMResults from OGMFormatter
+ * @psalm-import-type OGMResults from SummarizedResultFormatter
  */
 final class DriverFactory
 {

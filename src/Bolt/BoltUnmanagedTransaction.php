@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\enum\ServerState;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
@@ -22,6 +21,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\TransactionState;
 use Laudis\Neo4j\Exception\ClientException;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
@@ -37,22 +37,19 @@ use Throwable;
  *
  * @implements UnmanagedTransactionInterface<T>
  *
- * @psalm-import-type BoltMeta from FormatterInterface
+ * @psalm-import-type BoltMeta from SummarizedResultFormatter
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
     private TransactionState $state = TransactionState::ACTIVE;
 
-    /**
-     * @param FormatterInterface<T> $formatter
-     */
     public function __construct(
         /** @psalm-readonly */
         private readonly ?string $database,
         /**
          * @psalm-readonly
          */
-        private readonly FormatterInterface $formatter,
+        private readonly SummarizedResultFormatter $formatter,
         /** @psalm-readonly */
         private readonly BoltConnection $connection,
         private readonly SessionConfiguration $config,
