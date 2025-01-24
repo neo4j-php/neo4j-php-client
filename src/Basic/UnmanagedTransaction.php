@@ -17,16 +17,9 @@ use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
-use Laudis\Neo4j\Types\CypherMap;
 
-/**
- * @implements UnmanagedTransactionInterface<SummarizedResult<CypherMap>>
- */
 final class UnmanagedTransaction implements UnmanagedTransactionInterface
 {
-    /**
-     * @param UnmanagedTransactionInterface<SummarizedResult<CypherMap>> $tsx
-     */
     public function __construct(
         private readonly UnmanagedTransactionInterface $tsx
     ) {}

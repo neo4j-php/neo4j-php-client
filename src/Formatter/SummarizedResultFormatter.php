@@ -149,27 +149,29 @@ final class SummarizedResultFormatter
     {
         /** @var ResultSummary|null $summary */
         $summary = null;
-        $result->addFinishedCallback(function (array $response) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
-            $stats = $this->formatBoltStats($response);
-            $resultConsumedAfter = microtime(true) - $runStart;
-            $db = $response['db'] ?? '';
-            $summary = new ResultSummary(
-                $stats,
-                new DatabaseInfo($db),
-                new CypherList(),
-                null,
-                null,
-                $statement,
-                QueryTypeEnum::fromCounters($stats),
-                $resultAvailableAfter,
-                $resultConsumedAfter,
-                new ServerInfo(
-                    $connection->getServerAddress(),
-                    $connection->getProtocol(),
-                    $connection->getServerAgent()
-                )
-            );
-        });
+        $result->addFinishedCallback(
+            /** @param {array{stats?: BoltCypherStats}&array} $response */
+            function (mixed $response) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
+                $stats = $this->formatBoltStats($response);
+                $resultConsumedAfter = microtime(true) - $runStart;
+                $db = $response['db'] ?? '';
+                $summary = new ResultSummary(
+                    $stats,
+                    new DatabaseInfo($db),
+                    new CypherList(),
+                    null,
+                    null,
+                    $statement,
+                    QueryTypeEnum::fromCounters($stats),
+                    $resultAvailableAfter,
+                    $resultConsumedAfter,
+                    new ServerInfo(
+                        $connection->getServerAddress(),
+                        $connection->getProtocol(),
+                        $connection->getServerAgent()
+                    )
+                );
+            });
 
         $formattedResult = $this->processBoltResult($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement, $holder);
 

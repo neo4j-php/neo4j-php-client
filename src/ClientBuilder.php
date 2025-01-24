@@ -20,14 +20,12 @@ use Laudis\Neo4j\Common\DriverSetupManager;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
-use Laudis\Neo4j\Formatter\OGMFormatter;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
@@ -35,9 +33,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Immutable factory for creating a client.
  *
- * @template T
- *
- * @psalm-import-type OGMTypes from OGMFormatter
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  */
 final class ClientBuilder
 {
@@ -46,7 +42,7 @@ final class ClientBuilder
     /**
      * @psalm-mutation-free
      *
-     * @param DriverSetupManager<T> $driverSetups
+     * @param DriverSetupManager $driverSetups
      */
     public function __construct(
         /** @psalm-readonly */
@@ -58,8 +54,6 @@ final class ClientBuilder
 
     /**
      * Creates a client builder with default configurations and an OGMFormatter.
-     *
-     * @return ClientBuilder<SummarizedResult<CypherMap<OGMTypes>>>
      */
     public static function create(?string $logLevel = null, ?LoggerInterface $logger = null): ClientBuilder
     {
@@ -77,8 +71,6 @@ final class ClientBuilder
 
     /**
      * @psalm-mutation-free
-     *
-     * @return self<T>
      */
     public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?int $priority = 0): self
     {
@@ -91,8 +83,6 @@ final class ClientBuilder
 
     /**
      * @psalm-external-mutation-free
-     *
-     * @return self<T>
      */
     private function withParsedUrl(string $alias, Uri $uri, AuthenticateInterface $authentication, int $priority): self
     {
@@ -111,8 +101,6 @@ final class ClientBuilder
     /**
      * Sets the default connection to the given alias.
      *
-     * @return self<T>
-     *
      * @psalm-mutation-free
      */
     public function withDefaultDriver(string $alias): self
@@ -124,15 +112,9 @@ final class ClientBuilder
     }
 
     /**
-     * @template U
-     *
-     * @param FormatterInterface<U> $formatter
-     *
-     * @return self<U>
-     *
      * @psalm-mutation-free
      */
-    public function withFormatter(FormatterInterface $formatter): self
+    public function withFormatter(SummarizedResultFormatter $formatter): self
     {
         return new self(
             $this->defaultSessionConfig,
@@ -142,8 +124,6 @@ final class ClientBuilder
     }
 
     /**
-     * @return ClientInterface<T>
-     *
      * @psalm-mutation-free
      */
     public function build(): ClientInterface
@@ -156,8 +136,6 @@ final class ClientBuilder
     }
 
     /**
-     * @return self<T>
-     *
      * @psalm-mutation-free
      */
     public function withDefaultDriverConfiguration(DriverConfiguration $config): self
@@ -170,8 +148,6 @@ final class ClientBuilder
     }
 
     /**
-     * @return self<T>
-     *
      * @psalm-mutation-free
      */
     public function withDefaultSessionConfiguration(SessionConfiguration $config): self
@@ -183,8 +159,6 @@ final class ClientBuilder
     }
 
     /**
-     * @return self<T>
-     *
      * @psalm-mutation-free
      */
     public function withDefaultTransactionConfiguration(TransactionConfiguration $config): self

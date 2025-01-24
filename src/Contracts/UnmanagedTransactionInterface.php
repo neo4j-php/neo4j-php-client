@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Contracts;
 
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
@@ -28,7 +29,7 @@ interface UnmanagedTransactionInterface extends TransactionInterface
      *
      * @param iterable<Statement> $statements
      *
-     * @return CypherList<mixed>
+     * @return CypherList<SummarizedResult>
      */
     public function commit(iterable $statements = []): CypherList;
 

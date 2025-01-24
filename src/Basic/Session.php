@@ -21,14 +21,8 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 
-/**
- * @implements SessionInterface<SummarizedResult<CypherMap>>
- */
 final class Session implements SessionInterface
 {
-    /**
-     * @param SessionInterface<SummarizedResult<CypherMap>> $session
-     */
     public function __construct(
         private readonly SessionInterface $session
     ) {}
@@ -36,16 +30,13 @@ final class Session implements SessionInterface
     /**
      * @param iterable<Statement> $statements
      *
-     * @return CypherList<SummarizedResult<CypherMap>>
+     * @return CypherList<SummarizedResult>
      */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
         return $this->session->runStatements($statements, $config);
     }
 
-    /**
-     * @return SummarizedResult<CypherMap>
-     */
     public function runStatement(Statement $statement, ?TransactionConfiguration $config = null): SummarizedResult
     {
         return $this->session->runStatement($statement, $config);
@@ -53,8 +44,6 @@ final class Session implements SessionInterface
 
     /**
      * @param iterable<string, mixed> $parameters
-     *
-     * @return SummarizedResult<CypherMap>
      */
     public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null): SummarizedResult
     {

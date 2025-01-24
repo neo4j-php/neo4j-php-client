@@ -33,6 +33,7 @@ final class CypherMap extends Map
     public function getAsCypherMap(string $key, mixed $default = null): CypherMap
     {
         if (func_num_args() === 1) {
+            /** @var mixed $value */
             $value = $this->get($key);
         } else {
             /** @var mixed $value */
@@ -52,6 +53,7 @@ final class CypherMap extends Map
     public function getAsCypherList(string $key, mixed $default = null): CypherList
     {
         if (func_num_args() === 1) {
+            /** @var mixed $value */
             $value = $this->get($key);
         } else {
             /** @var mixed $value */

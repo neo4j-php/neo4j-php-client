@@ -24,10 +24,9 @@ final class TransactionHelper
 
     /**
      * @template U
-     * @template T
      *
-     * @param callable():UnmanagedTransactionInterface<T> $tsxFactory
-     * @param callable(TransactionInterface<T>):U         $tsxHandler
+     * @param callable():UnmanagedTransactionInterface $tsxFactory
+     * @param callable(TransactionInterface):U         $tsxHandler
      *
      * @return U
      */

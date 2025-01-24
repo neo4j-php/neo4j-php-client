@@ -36,10 +36,6 @@ use Psr\Log\LogLevel;
 /**
  * Driver for auto client-side routing.
  *
- * @template T
- *
- * @implements DriverInterface<T>
- *
  * @psalm-import-type OGMResults from SummarizedResultFormatter
  */
 final class Neo4jDriver implements DriverInterface
@@ -54,14 +50,6 @@ final class Neo4jDriver implements DriverInterface
     ) {}
 
     /**
-     * @template U
-     *
-     * @return (
-     *           func_num_args() is 5
-     *           ? self<U>
-     *           : self<OGMResults>
-     *           )
-     *
      * @psalm-suppress MixedReturnTypeCoercion
      */
     public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?SummarizedResultFormatter $formatter = null, ?AddressResolverInterface $resolver = null): self

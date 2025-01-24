@@ -36,16 +36,13 @@ use SplPriorityQueue;
 
 use function sprintf;
 
-/**
- * @template ResultFormat
- */
 class DriverSetupManager implements Countable
 {
     private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
 
     /** @var array<string, SplPriorityQueue<int, DriverSetup>> */
     private array $driverSetups = [];
-    /** @var array<string, DriverInterface<ResultFormat>> */
+    /** @var array<string, DriverInterface> */
     private array $drivers = [];
     private ?string $default = null;
 
@@ -99,9 +96,6 @@ class DriverSetupManager implements Countable
         return array_key_exists($alias, $this->driverSetups);
     }
 
-    /**
-     * @return DriverInterface<ResultFormat>
-     */
     public function getDriver(SessionConfiguration $config, ?string $alias = null): DriverInterface
     {
         $alias ??= $this->decideAlias($alias);

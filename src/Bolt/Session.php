@@ -59,6 +59,9 @@ final class Session implements SessionInterface
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
 
+    /**
+     * @return CypherList<SummarizedResult>
+     */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
         $tbr = [];

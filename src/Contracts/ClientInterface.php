@@ -44,7 +44,7 @@ interface ClientInterface extends TransactionInterface
      *
      * @throws Neo4jException
      *
-     * @return CypherList<mixed>
+     * @return CypherList<SummarizedResult>
      */
     public function runStatements(iterable $statements, ?string $alias = null): CypherList;
 
