@@ -39,6 +39,8 @@ final class DriverFactory
      *
      * @param FormatterInterface<U> $formatter
      *
+     * @throws UnsupportedScheme
+     *
      * @return (
      *           func_num_args() is 4
      *           ? DriverInterface<U>
@@ -62,7 +64,7 @@ final class DriverFactory
             return self::createNeo4jDriver($uri, $configuration, $authenticate, $formatter);
         }
 
-        return self::createHttpDriver($uri, $configuration, $authenticate, $formatter);
+        throw UnsupportedScheme::make($scheme, ['bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc']);
     }
 
     /**
@@ -103,27 +105,5 @@ final class DriverFactory
         }
 
         return Neo4jDriver::create($uri, $configuration, $authenticate);
-    }
-
-    /**
-     * @template U
-     *
-     * @param FormatterInterface<U> $formatter
-     *
-     * @return (
-     *           func_num_args() is 4
-     *           ? DriverInterface<U>
-     *           : DriverInterface<OGMResults>
-     *           )
-     *
-     * @pure
-     */
-    private static function createHttpDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?FormatterInterface $formatter = null): DriverInterface
-    {
-        if ($formatter !== null) {
-            return HttpDriver::create($uri, $configuration, $authenticate, $formatter);
-        }
-
-        return HttpDriver::create($uri, $configuration, $authenticate);
     }
 }
