@@ -19,16 +19,16 @@
 
 ## See the driver in action
 
- - [An implementation of the class movie database](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
- - [An complete implementation of the realworld example](https://github.com/neo4j-examples/php-laravel-neo4j-realworld-example). It uses Laravel to implement the [real world example](https://github.com/gothinkster/realworld) project, _the mother of all demo apps_.
- - [The friends api](https://github.com/neo4j-examples/friends-php-client) for the world's most corny example project leveraging the power of Neo4j.
+- [An implementation of the class movie database](https://github.com/neo4j-examples/movies-neo4j-php-client). It uses Slim and neo4j-php-client to build an API for the classic movie's example of neo4j.
+- [An complete implementation of the realworld example](https://github.com/neo4j-examples/php-laravel-neo4j-realworld-example). It uses Laravel to implement the [real world example](https://github.com/gothinkster/realworld) project, _the mother of all demo apps_.
+- [The friends api](https://github.com/neo4j-examples/friends-php-client) for the world's most corny example project leveraging the power of Neo4j.
 
 For some more detailed write-ups you can refer to these blogposts:
 
- - [How to build a JSON RESTful API with Neo4j, PHP and Open API](https://medium.com/neo4j/how-to-build-a-json-restful-api-with-neo4j-php-and-openapi-e45bf0a8956)
- - [Building a Web App with Neo4j, AuraDB and PHP](https://medium.com/neo4j/building-a-web-app-with-neo4j-auradb-and-php-990deca0d213)
- - [Connect to Neo4j with PHP](https://medium.com/neo4j/connect-to-neo4j-with-php-e10e24afedff)
- - [Enterprise level PHP and Neo4j](https://medium.com/neo4j/enterprise-level-php-and-neo4j-e467a789e6b4)
+- [How to build a JSON RESTful API with Neo4j, PHP and Open API](https://medium.com/neo4j/how-to-build-a-json-restful-api-with-neo4j-php-and-openapi-e45bf0a8956)
+- [Building a Web App with Neo4j, AuraDB and PHP](https://medium.com/neo4j/building-a-web-app-with-neo4j-auradb-and-php-990deca0d213)
+- [Connect to Neo4j with PHP](https://medium.com/neo4j/connect-to-neo4j-with-php-e10e24afedff)
+- [Enterprise level PHP and Neo4j](https://medium.com/neo4j/enterprise-level-php-and-neo4j-e467a789e6b4)
 
 Or watch any of these [videos](https://www.youtube.com/watch?v=qwz5XVtbfSY&list=PL9Hl4pk2FsvViI9wmdDpRS7tZ8V6j4uJs).
 
@@ -308,21 +308,16 @@ composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 
 ## Result formats/hydration
 
-In order to make the results of the bolt protocol and the http uniform, the driver provides result formatters (aka hydrators). The client is configurable with these formatters. You can even implement your own.
+In order to make the results of the bolt protocol and the http uniform, the driver provides and summarizes the results.
 
-The default formatter is the `\Laudis\Neo4j\Formatters\OGMFormatter`, which is explained extensively in [the result format section](#accessing-the-results).
+The default formatter is the `\Laudis\Neo4j\Formatters\SummarizedResultFormatter`, which is explained extensively in [the result format section](#accessing-the-results).
 
-The driver provides three formatters by default, which are all found in the Formatter namespace:
- - `\Laudis\Neo4j\Formatter\BasicFormatter` which erases all the Cypher types and simply returns every value in the resulting map as a [scalar](https://www.php.net/manual/en/function.is-scalar.php), null or array value.
- - `\Laudis\Neo4j\Formatter\OGMFormatter` which maps the cypher types to php types as explained [here](#accessing-the-results).
- - `\Laudis\Neo4j\Formatter\SummarizedResultFormatter` which decorates any formatter and adds an extensive result summary.
+`\Laudis\Neo4j\Formatter\SummarizedResultFormatter` adds an extensive result summary.
 
 The client builder provides an easy way to change the formatter:
 
 ```php
-$client = \Laudis\Neo4j\ClientBuilder::create()
-    ->withFormatter(\Laudis\Neo4j\Formatter\SummarizedResultFormatter::create())
-    ->build();
+$client = \Laudis\Neo4j\ClientBuilder::create()->build();
 
 /**
  * The client will now return a result, decorated with a summary.
@@ -338,8 +333,6 @@ $summary = $summarisedResult->getSummary();
 // The result is exactly the same as the default.
 $result = $summarisedResult->getResult();
 ```
-
-In order to use a custom formatter, implement the `Laudis\Neo4j\Contracts\FormatterInterface` and provide it when using the client builder.
 
 ## Concepts
 
