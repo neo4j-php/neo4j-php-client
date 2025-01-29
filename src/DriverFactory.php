@@ -73,26 +73,4 @@ final class DriverFactory
 
         return Neo4jDriver::create($uri, $configuration, $authenticate);
     }
-
-    /**
-     * @template U
-     *
-     * @param FormatterInterface<U> $formatter
-     *
-     * @return (
-     *           func_num_args() is 4
-     *           ? DriverInterface<U>
-     *           : DriverInterface<OGMResults>
-     *           )
-     *
-     * @pure
-     */
-    private static function createHttpDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?FormatterInterface $formatter = null): DriverInterface
-    {
-        if ($formatter !== null) {
-            return HttpDriver::create($uri, $configuration, $authenticate, $formatter);
-        }
-
-        return HttpDriver::create($uri, $configuration, $authenticate);
-    }
 }
