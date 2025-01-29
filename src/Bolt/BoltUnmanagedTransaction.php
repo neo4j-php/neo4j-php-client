@@ -24,7 +24,6 @@ use Laudis\Neo4j\Enum\TransactionState;
 use Laudis\Neo4j\Exception\ClientException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
-use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
 
 use function microtime;

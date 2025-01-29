@@ -23,11 +23,9 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -41,8 +39,6 @@ final class ClientBuilder
 
     /**
      * @psalm-mutation-free
-     *
-     * @param DriverSetupManager $driverSetups
      */
     public function __construct(
         /** @psalm-readonly */

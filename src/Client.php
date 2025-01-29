@@ -43,8 +43,6 @@ final class Client implements ClientInterface
 
     /**
      * @psalm-mutation-free
-     *
-     * @param DriverSetupManager $driverSetups
      */
     public function __construct(
         private readonly DriverSetupManager $driverSetups,

@@ -17,10 +17,8 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\DriverFactory;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\UriInterface;
 
 final class Driver implements DriverInterface

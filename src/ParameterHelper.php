@@ -20,6 +20,7 @@ use Bolt\protocol\v1\structures\Duration;
 use function count;
 
 use DateInterval;
+use DateTime;
 use DateTimeInterface;
 
 use function get_debug_type;
@@ -77,9 +78,9 @@ final class ParameterHelper
     }
 
     /**
-     * @return iterable|scalar|stdClass|IStructure|null
+     * @param DateTime|array|object|stdClass $value
      *
-     * @param \DateTime|array|object|stdClass $value
+     * @return iterable|scalar|stdClass|IStructure|null
      */
     public static function asParameter(
         mixed $value,

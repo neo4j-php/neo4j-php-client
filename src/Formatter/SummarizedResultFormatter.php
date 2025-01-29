@@ -47,11 +47,6 @@ use Laudis\Neo4j\Types\WGS84Point;
 
 use function microtime;
 
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use stdClass;
-use UnexpectedValueException;
-
 /**
  * Decorates the result of the provided format with an extensive summary.
  *
