@@ -308,7 +308,7 @@ composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 
 ## Result formats/hydration
 
-In order to make the results of the bolt protocol and the http uniform, the driver provides a summarizes the results.
+In order to make the results of the bolt protocol and the http uniform, the driver provides and summarizes the results.
 
 The default formatter is the `\Laudis\Neo4j\Formatters\SummarizedResultFormatter`, which is explained extensively in [the result format section](#accessing-the-results).
 
