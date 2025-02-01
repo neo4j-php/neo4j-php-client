@@ -23,7 +23,6 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Exception;
-use Laudis\Neo4j\Bolt\Messages\BoltGoodbyeMessage;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -334,10 +333,7 @@ class BoltConnection implements ConnectionInterface
                     $this->consumeResults();
                 }
 
-                $message = new BoltGoodbyeMessage(
-                    $this->protocol(),
-                    $this->logger
-                );
+                $message = $this->messageFactory->createGoodbyeMessage();
                 $message->send();
 
                 unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
