@@ -310,7 +310,6 @@ class BoltConnection implements ConnectionInterface
         $tbr = [];
         $message = $this->messageFactory->createPullMessage($extra);
 
-        /** @var Response $response */
         foreach ($message->send()->getResponses() as $response) {
             $this->assertNoFailure($response);
             $tbr[] = $response->content;
