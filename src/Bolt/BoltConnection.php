@@ -23,6 +23,7 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Exception;
+use Laudis\Neo4j\Bolt\Messages\BoltGoodbyeMessage;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -37,6 +38,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
+use Throwable;
 use WeakReference;
 
 /**
@@ -46,6 +48,8 @@ use WeakReference;
  */
 class BoltConnection implements ConnectionInterface
 {
+    private BoltMessageFactory $messageFactory;
+
     /**
      * @note We are using references to "subscribed results" to maintain backwards compatibility and try and strike
      *       a balance between performance and ease of use.
@@ -80,7 +84,9 @@ class BoltConnection implements ConnectionInterface
         /** @psalm-readonly */
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
-    ) {}
+    ) {
+        $this->messageFactory = new BoltMessageFactory($this->protocol(), $this->logger);
+    }
 
     public function getEncryptionLevel(): string
     {
@@ -194,10 +200,8 @@ class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
-        $this->logger?->log(LogLevel::DEBUG, 'RESET');
-        $response = $this->protocol()
-            ->reset()
-            ->getResponse();
+        $message = $this->messageFactory->createResetMessage();
+        $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
         $this->subscribedResults = [];
     }
@@ -212,10 +216,8 @@ class BoltConnection implements ConnectionInterface
         $this->consumeResults();
 
         $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE());
-        $this->logger?->log(LogLevel::DEBUG, 'BEGIN', $extra);
-        $response = $this->protocol()
-            ->begin($extra)
-            ->getResponse();
+        $message = $this->messageFactory->createBeginMessage($extra);
+        $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
     }
 
@@ -227,10 +229,9 @@ class BoltConnection implements ConnectionInterface
     public function discard(?int $qid): void
     {
         $extra = $this->buildResultExtra(null, $qid);
-        $this->logger?->log(LogLevel::DEBUG, 'DISCARD', $extra);
-        $response = $this->protocol()
-            ->discard($extra)
-            ->getResponse();
+
+        $message = $this->messageFactory->createDiscardMessage($extra);
+        $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
     }
 
@@ -247,14 +248,13 @@ class BoltConnection implements ConnectionInterface
         ?string $database,
         ?float $timeout,
         BookmarkHolder $holder,
-        ?AccessMode $mode
+        ?AccessMode $mode,
     ): array {
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode);
-        $this->logger?->log(LogLevel::DEBUG, 'RUN', $extra);
-        $response = $this->protocol()
-            ->run($text, $parameters, $extra)
-            ->getResponse();
+        $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
+        $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
+
         /** @var BoltMeta */
         return $response->content;
     }
@@ -266,12 +266,10 @@ class BoltConnection implements ConnectionInterface
      */
     public function commit(): void
     {
-        $this->logger?->log(LogLevel::DEBUG, 'COMMIT');
         $this->consumeResults();
 
-        $response = $this->protocol()
-            ->commit()
-            ->getResponse();
+        $message = $this->messageFactory->createCommitMessage();
+        $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
     }
 
@@ -282,12 +280,10 @@ class BoltConnection implements ConnectionInterface
      */
     public function rollback(): void
     {
-        $this->logger?->log(LogLevel::DEBUG, 'ROLLBACK');
         $this->consumeResults();
 
-        $response = $this->protocol()
-            ->rollback()
-            ->getResponse();
+        $message = $this->messageFactory->createRollbackMessage();
+        $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
     }
 
@@ -313,8 +309,10 @@ class BoltConnection implements ConnectionInterface
         $this->logger?->log(LogLevel::DEBUG, 'PULL', $extra);
 
         $tbr = [];
+        $message = $this->messageFactory->createPullMessage($extra);
+
         /** @var Response $response */
-        foreach ($this->protocol()->pull($extra)->getResponses() as $response) {
+        foreach ($message->send()->getResponses() as $response) {
             $this->assertNoFailure($response);
             $tbr[] = $response->content;
         }
@@ -336,12 +334,15 @@ class BoltConnection implements ConnectionInterface
                     $this->consumeResults();
                 }
 
-                $this->logger?->log(LogLevel::DEBUG, 'GOODBYE');
-                $this->protocol()->goodbye();
+                $message = new BoltGoodbyeMessage(
+                    $this->protocol(),
+                    $this->logger
+                );
+                $message->send();
 
                 unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
     }
 
@@ -403,7 +404,8 @@ class BoltConnection implements ConnectionInterface
     {
         if ($response->signature === Signature::FAILURE) {
             $this->logger?->log(LogLevel::ERROR, 'FAILURE');
-            $resetResponse = $this->protocol()->reset()->getResponse();
+            $message = $this->messageFactory->createResetMessage();
+            $resetResponse = $message->send()->getResponse();
             $this->subscribedResults = [];
             if ($resetResponse->signature === Signature::FAILURE) {
                 throw new Neo4jException([Neo4jError::fromBoltResponse($resetResponse), Neo4jError::fromBoltResponse($response)]);
