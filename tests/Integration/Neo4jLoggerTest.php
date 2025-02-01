@@ -83,7 +83,11 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
             [
                 'RUN',
                 [
-                    'mode' => 'w',
+                    'text' => 'RETURN 1 as test',
+                    'parameters' => [],
+                    'extra' => [
+                        'mode' => 'w',
+                    ],
                 ],
             ],
             [
