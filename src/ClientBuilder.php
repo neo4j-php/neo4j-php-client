@@ -54,7 +54,8 @@ final class ClientBuilder
         /** @psalm-readonly */
         private TransactionConfiguration $defaultTransactionConfig,
         private DriverSetupManager $driverSetups,
-    ) {}
+    ) {
+    }
 
     /**
      * Creates a client builder with default configurations and an OGMFormatter.

@@ -57,8 +57,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly BoltConnection $connection,
         private readonly SessionConfiguration $config,
         private readonly TransactionConfiguration $tsxConfig,
-        private readonly BookmarkHolder $bookmarkHolder
-    ) {}
+        private readonly BookmarkHolder $bookmarkHolder,
+    ) {
+    }
 
     /**
      * @throws ClientException|Throwable

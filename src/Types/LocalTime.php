@@ -26,8 +26,9 @@ use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 final class LocalTime extends AbstractPropertyObject implements BoltConvertibleInterface
 {
     public function __construct(
-        private readonly int $nanoseconds
-    ) {}
+        private readonly int $nanoseconds,
+    ) {
+    }
 
     /**
      * The nanoseconds that have passed since midnight.

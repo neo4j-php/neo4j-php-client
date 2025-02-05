@@ -20,8 +20,9 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 final class SocketConnectionFactory implements BasicConnectionFactoryInterface
 {
     public function __construct(
-        private readonly StreamConnectionFactory $factory
-    ) {}
+        private readonly StreamConnectionFactory $factory,
+    ) {
+    }
 
     public function create(UriConfiguration $config): Connection
     {

@@ -35,8 +35,9 @@ class UnboundRelationship extends AbstractPropertyObject
         private readonly int $id,
         private readonly string $type,
         private readonly CypherMap $properties,
-        private readonly ?string $elementId
-    ) {}
+        private readonly ?string $elementId,
+    ) {
+    }
 
     public function getElementId(): ?string
     {

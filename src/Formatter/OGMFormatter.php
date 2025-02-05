@@ -60,7 +60,8 @@ final class OGMFormatter implements FormatterInterface
      */
     public function __construct(
         private readonly BoltOGMTranslator $boltTranslator,
-    ) {}
+    ) {
+    }
 
     /**
      * Creates a new instance of itself.

@@ -38,8 +38,9 @@ final class Node extends AbstractPropertyObject
         private readonly int $id,
         private readonly CypherList $labels,
         private readonly CypherMap $properties,
-        private readonly ?string $elementId
-    ) {}
+        private readonly ?string $elementId,
+    ) {
+    }
 
     /**
      * The labels on the node.

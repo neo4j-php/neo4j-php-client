@@ -117,7 +117,6 @@ final class TypeCaster
             $tbr = [];
             /** @var mixed $x */
             foreach ($value as $x) {
-                /** @var mixed */
                 $tbr[] = $x;
             }
 

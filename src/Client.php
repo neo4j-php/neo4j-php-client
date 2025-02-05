@@ -52,8 +52,9 @@ final class Client implements ClientInterface
     public function __construct(
         private readonly DriverSetupManager $driverSetups,
         private readonly SessionConfiguration $defaultSessionConfiguration,
-        private readonly TransactionConfiguration $defaultTransactionConfiguration
-    ) {}
+        private readonly TransactionConfiguration $defaultTransactionConfiguration,
+    ) {
+    }
 
     public function getDriverSetups(): DriverSetupManager
     {
@@ -84,8 +85,8 @@ final class Client implements ClientInterface
     {
         $alias ??= $this->driverSetups->getDefaultAlias();
 
-        if (array_key_exists($alias, $this->boundTransactions) &&
-            count($this->boundTransactions[$alias]) > 0) {
+        if (array_key_exists($alias, $this->boundTransactions)
+            && count($this->boundTransactions[$alias]) > 0) {
             return $this->boundTransactions[$alias][array_key_last($this->boundTransactions[$alias])];
         }
 

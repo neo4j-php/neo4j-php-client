@@ -58,7 +58,7 @@ final class Session implements SessionInterface
         /**
          * @psalm-readonly
          */
-        private readonly FormatterInterface $formatter
+        private readonly FormatterInterface $formatter,
     ) {
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
@@ -137,7 +137,7 @@ final class Session implements SessionInterface
      */
     private function beginInstantTransaction(
         SessionConfiguration $config,
-        TransactionConfiguration $tsxConfig
+        TransactionConfiguration $tsxConfig,
     ): TransactionInterface {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);

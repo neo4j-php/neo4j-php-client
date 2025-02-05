@@ -89,7 +89,7 @@ class Map extends AbstractCypherSequence
     /**
      * @template Value
      *
-     * @param callable():(\Generator<mixed, Value>) $operation
+     * @param callable():(Generator<mixed, Value>) $operation
      *
      * @return static<Value>
      *
@@ -364,7 +364,6 @@ class Map extends AbstractCypherSequence
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
-            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toString($value);
@@ -380,7 +379,6 @@ class Map extends AbstractCypherSequence
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
-            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toInt($value);
@@ -396,7 +394,6 @@ class Map extends AbstractCypherSequence
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
-            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toFloat($value);
@@ -412,7 +409,6 @@ class Map extends AbstractCypherSequence
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
-            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toBool($value);
@@ -448,7 +444,6 @@ class Map extends AbstractCypherSequence
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
-            /** @var mixed */
             $value = $this->get($key, $default);
         }
         $tbr = TypeCaster::toClass($value, $class);
@@ -467,7 +462,6 @@ class Map extends AbstractCypherSequence
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
-            /** @var mixed */
             $value = $this->get($key, $default);
         }
 
@@ -486,7 +480,6 @@ class Map extends AbstractCypherSequence
         if (func_num_args() === 1) {
             $value = $this->get($key);
         } else {
-            /** @var mixed */
             $value = $this->get($key, $default);
         }
         if (!is_iterable($value)) {

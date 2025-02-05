@@ -30,8 +30,9 @@ use function sem_release;
 class SysVSemaphore implements SemaphoreInterface
 {
     private function __construct(
-        private readonly \SysvSemaphore $semaphore
-    ) {}
+        private readonly \SysvSemaphore $semaphore,
+    ) {
+    }
 
     public static function create(string $key, int $max): self
     {

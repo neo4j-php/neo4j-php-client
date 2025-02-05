@@ -151,10 +151,8 @@ final class BasicFormatter implements FormatterInterface
          * @var mixed $node
          */
         foreach ($nodes as $i => $node) {
-            /** @var mixed */
             $tbr[] = $node;
             if (array_key_exists($i, $relationships)) {
-                /** @var mixed */
                 $tbr[] = $relationships[$i];
             }
         }

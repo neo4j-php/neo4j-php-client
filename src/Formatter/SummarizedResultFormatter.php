@@ -57,8 +57,9 @@ final class SummarizedResultFormatter implements FormatterInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly OGMFormatter $formatter
-    ) {}
+        private readonly OGMFormatter $formatter,
+    ) {
+    }
 
     /**
      * @param array{stats?: BoltCypherStats}&array $response

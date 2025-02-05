@@ -47,7 +47,9 @@ class Cache implements CacheInterface
     private array $items = [];
     private static ?self $instance = null;
 
-    private function __construct() {}
+    private function __construct()
+    {
+    }
 
     public static function getInstance(): self
     {
@@ -158,12 +160,11 @@ class Cache implements CacheInterface
     }
 
     /**
-     * @param iterable<mixed, T>    $values
-     * @param int|DateInterval|null $ttl
+     * @param iterable<mixed, T> $values
      *
      * @throws InvalidCacheArgumentException
      */
-    public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
+    public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
     {
         /**
          * @var mixed $key
@@ -185,15 +186,15 @@ class Cache implements CacheInterface
      */
     private function assertValidKey(string $key): void
     {
-        if ($key === '' ||
-            str_contains($key, '{') ||
-            str_contains($key, '}') ||
-            str_contains($key, '(') ||
-            str_contains($key, ')') ||
-            str_contains($key, '/') ||
-            str_contains($key, '\\') ||
-            str_contains($key, '@') ||
-            str_contains($key, ':')
+        if ($key === ''
+            || str_contains($key, '{')
+            || str_contains($key, '}')
+            || str_contains($key, '(')
+            || str_contains($key, ')')
+            || str_contains($key, '/')
+            || str_contains($key, '\\')
+            || str_contains($key, '@')
+            || str_contains($key, ':')
         ) {
             throw new InvalidCacheArgumentException();
         }

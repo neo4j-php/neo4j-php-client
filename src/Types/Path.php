@@ -30,8 +30,9 @@ final class Path extends AbstractPropertyObject
     public function __construct(
         private readonly CypherList $nodes,
         private readonly CypherList $relationships,
-        private readonly CypherList $ids
-    ) {}
+        private readonly CypherList $ids,
+    ) {
+    }
 
     /**
      * Returns the node in the path.

@@ -26,8 +26,9 @@ final class ConnectionRequestData
         private readonly UriInterface $uri,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
-        private readonly SslConfiguration $config
-    ) {}
+        private readonly SslConfiguration $config,
+    ) {
+    }
 
     public function getHostname(): string
     {

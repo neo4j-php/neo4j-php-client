@@ -28,8 +28,9 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
      * @param UnmanagedTransactionInterface<SummarizedResult<CypherMap>> $tsx
      */
     public function __construct(
-        private readonly UnmanagedTransactionInterface $tsx
-    ) {}
+        private readonly UnmanagedTransactionInterface $tsx,
+    ) {
+    }
 
     /**
      * @param iterable<string, mixed> $parameters

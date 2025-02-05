@@ -49,7 +49,7 @@
         "nyholm/psr7-server": "^1.0",
         "kriswallsmith/buzz": "^1.2",
         "vimeo/psalm": "^5.0",
-        "friendsofphp/php-cs-fixer": "3.15.0",
+        "friendsofphp/php-cs-fixer": "3.68.5",
         "psalm/plugin-phpunit": "^0.18",
         "monolog/monolog": "^2.2",
         "symfony/uid": "^5.0",

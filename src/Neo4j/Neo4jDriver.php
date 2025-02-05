@@ -53,8 +53,9 @@ final class Neo4jDriver implements DriverInterface
     public function __construct(
         private readonly UriInterface $parsedUrl,
         private readonly Neo4jConnectionPool $pool,
-        private readonly FormatterInterface $formatter
-    ) {}
+        private readonly FormatterInterface $formatter,
+    ) {
+    }
 
     /**
      * @template U

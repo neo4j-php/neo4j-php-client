@@ -37,18 +37,19 @@ final class SessionConfiguration
      */
     public function __construct(
         private readonly ?string $database = null,
-        private readonly int|null $fetchSize = null,
-        private readonly AccessMode|null $accessMode = null,
-        private readonly array|null $bookmarks = null,
+        private readonly ?int $fetchSize = null,
+        private readonly ?AccessMode $accessMode = null,
+        private readonly ?array $bookmarks = null,
         private readonly ?Neo4jLogger $logger = null,
-    ) {}
+    ) {
+    }
 
     /**
      * @pure
      *
      * @param list<Bookmark>|null $bookmarks
      */
-    public static function create(string|null $database = null, int|null $fetchSize = null, AccessMode|null $defaultAccessMode = null, array|null $bookmarks = null, ?Neo4jLogger $logger = null): self
+    public static function create(?string $database = null, ?int $fetchSize = null, ?AccessMode $defaultAccessMode = null, ?array $bookmarks = null, ?Neo4jLogger $logger = null): self
     {
         return new self($database, $fetchSize, $defaultAccessMode, $bookmarks, $logger);
     }

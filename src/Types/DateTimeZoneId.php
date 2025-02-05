@@ -40,8 +40,9 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
     public function __construct(
         private readonly int $seconds,
         private readonly int $nanoseconds,
-        private readonly string $tzId
-    ) {}
+        private readonly string $tzId,
+    ) {
+    }
 
     /**
      * Returns the amount of seconds since unix epoch.

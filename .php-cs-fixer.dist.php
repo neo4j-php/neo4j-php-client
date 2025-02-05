@@ -63,7 +63,6 @@ return (new Config())
         MultilineCommentOpeningClosingAloneFixer::name() => true,
         MultilinePromotedPropertiesFixer::name() => true,
         PhpUnitAssertArgumentsOrderFixer::name() => true,
-        PhpdocNoSuperfluousParamFixer::name() => true,
         PhpdocParamOrderFixer::name() => true,
         StringableInterfaceFixer::name() => true,
     ])

@@ -29,8 +29,9 @@ final class RoutingTable
      */
     public function __construct(
         private readonly iterable $servers,
-        private readonly int $ttl
-    ) {}
+        private readonly int $ttl,
+    ) {
+    }
 
     /**
      * Returns the time to live in seconds.

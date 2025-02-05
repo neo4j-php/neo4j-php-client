@@ -31,8 +31,9 @@ final class Duration extends AbstractPropertyObject implements BoltConvertibleIn
         private readonly int $months,
         private readonly int $days,
         private readonly int $seconds,
-        private readonly int $nanoseconds
-    ) {}
+        private readonly int $nanoseconds,
+    ) {
+    }
 
     /**
      * The amount of months in the duration.

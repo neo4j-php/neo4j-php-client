@@ -38,8 +38,9 @@ final class Uri implements UriInterface, Stringable
         private readonly ?int $port,
         private string $path,
         private readonly string $query,
-        private readonly string $fragment
-    ) {}
+        private readonly string $fragment,
+    ) {
+    }
 
     /**
      * @pure

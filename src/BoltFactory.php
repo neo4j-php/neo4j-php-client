@@ -42,8 +42,9 @@ class BoltFactory
         private readonly BasicConnectionFactoryInterface $connectionFactory,
         private readonly ProtocolFactory $protocolFactory,
         private readonly SslConfigurationFactory $sslConfigurationFactory,
-        private readonly ?Neo4jLogger $logger = null
-    ) {}
+        private readonly ?Neo4jLogger $logger = null,
+    ) {
+    }
 
     public static function create(?Neo4jLogger $logger): self
     {
@@ -87,13 +88,13 @@ class BoltFactory
         $databaseInfo = $connection->getDatabaseInfo();
         $database = $databaseInfo?->getName();
 
-        return $connection->getServerAddress()->getHost() === $data->getUri()->getHost() &&
-               $connection->getServerAddress()->getPort() === $data->getUri()->getPort() &&
-               $connection->getAuthentication()->toString($data->getUri()) === $data->getAuth()->toString($data->getUri()) &&
-               $connection->getEncryptionLevel() === $this->sslConfigurationFactory->create($data->getUri(), $data->getSslConfig())[0] &&
-               $connection->getUserAgent() === $data->getUserAgent() &&
-            $connection->getAccessMode() === $config->getAccessMode() &&
-               $database === $config->getDatabase();
+        return $connection->getServerAddress()->getHost() === $data->getUri()->getHost()
+               && $connection->getServerAddress()->getPort() === $data->getUri()->getPort()
+               && $connection->getAuthentication()->toString($data->getUri()) === $data->getAuth()->toString($data->getUri())
+               && $connection->getEncryptionLevel() === $this->sslConfigurationFactory->create($data->getUri(), $data->getSslConfig())[0]
+               && $connection->getUserAgent() === $data->getUserAgent()
+            && $connection->getAccessMode() === $config->getAccessMode()
+               && $database === $config->getDatabase();
     }
 
     public function reuseConnection(BoltConnection $connection, SessionConfiguration $sessionConfig): BoltConnection

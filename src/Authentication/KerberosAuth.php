@@ -40,11 +40,13 @@ final class KerberosAuth implements AuthenticateInterface
     public function __construct(
         private readonly string $token,
         private readonly ?Neo4jLogger $logger,
-    ) {}
+    ) {
+    }
 
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
         $this->logger?->log(LogLevel::DEBUG, 'Authenticating using KerberosAuth');
+
         /**
          * @psalm-suppress ImpureMethodCall Request is a pure object:
          *

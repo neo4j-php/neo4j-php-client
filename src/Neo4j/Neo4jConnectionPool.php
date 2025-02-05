@@ -74,14 +74,15 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         private readonly CacheInterface $cache,
         private readonly AddressResolverInterface $resolver,
         private readonly ?Neo4jLogger $logger,
-    ) {}
+    ) {
+    }
 
     public static function create(
         UriInterface $uri,
         AuthenticateInterface $auth,
         DriverConfiguration $conf,
         AddressResolverInterface $resolver,
-        SemaphoreInterface $semaphore
+        SemaphoreInterface $semaphore,
     ): self {
         return new self(
             $semaphore,
