@@ -13,11 +13,24 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use function bin2hex;
+
 use DateInterval;
+use DateTimeImmutable;
+
+use function dump;
+
 use Laudis\Neo4j\Contracts\PointInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Databags\SummaryCounters;
+use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Laudis\Neo4j\Types\CartesianPoint;
+use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Date;
 use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId;
 use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
@@ -25,19 +38,6 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
-use function bin2hex;
-
-use DateTimeImmutable;
-
-use function dump;
-
-use Laudis\Neo4j\Contracts\TransactionInterface;
-use Laudis\Neo4j\Databags\SummarizedResult;
-use Laudis\Neo4j\Databags\SummaryCounters;
-use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
-use Laudis\Neo4j\Types\CypherList;
-use Laudis\Neo4j\Types\CypherMap;
-use Laudis\Neo4j\Types\DateTimeZoneId;
 
 use function random_bytes;
 use function serialize;

@@ -28,9 +28,10 @@ final class TransactionConfiguration
      * @param iterable<string, scalar|array|null>|null $metaData
      */
     public function __construct(
-        private float|null $timeout = null,
-        private iterable|null $metaData = null
-    ) {}
+        private ?float $timeout = null,
+        private ?iterable $metaData = null,
+    ) {
+    }
 
     /**
      * @pure
@@ -38,7 +39,7 @@ final class TransactionConfiguration
      * @param float|null                               $timeout  timeout in seconds
      * @param iterable<string, scalar|array|null>|null $metaData
      */
-    public static function create(float|null $timeout = null, iterable|null $metaData = null): self
+    public static function create(?float $timeout = null, ?iterable $metaData = null): self
     {
         return new self($timeout, $metaData);
     }
@@ -74,7 +75,7 @@ final class TransactionConfiguration
      *
      * @param float|null $timeout timeout in seconds
      */
-    public function withTimeout(float|null $timeout): self
+    public function withTimeout(?float $timeout): self
     {
         return new self($timeout, $this->metaData);
     }
@@ -84,7 +85,7 @@ final class TransactionConfiguration
      *
      * @param iterable<string, scalar|array|null>|null $metaData
      */
-    public function withMetaData(iterable|null $metaData): self
+    public function withMetaData(?iterable $metaData): self
     {
         return new self($this->timeout, $metaData);
     }

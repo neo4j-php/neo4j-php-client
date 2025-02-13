@@ -25,8 +25,9 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
 final class DatabaseInfo extends AbstractCypherObject
 {
     public function __construct(
-        private readonly string $name
-    ) {}
+        private readonly string $name,
+    ) {
+    }
 
     /**
      * Returns the name of the database.

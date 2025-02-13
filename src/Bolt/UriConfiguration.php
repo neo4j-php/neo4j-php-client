@@ -23,8 +23,9 @@ final class UriConfiguration
         private readonly ?int $port,
         private readonly string $sslLevel,
         private readonly array $sslConfiguration,
-        private readonly ?float $timeout
-    ) {}
+        private readonly ?float $timeout,
+    ) {
+    }
 
     public function getHost(): string
     {

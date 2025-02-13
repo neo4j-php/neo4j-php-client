@@ -105,8 +105,9 @@ final class SummarizedResultFormatter
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly BoltOGMTranslator $translator
-    ) {}
+        private readonly BoltOGMTranslator $translator,
+    ) {
+    }
 
     /**
      * @param array{stats?: BoltCypherStats}&array $response

@@ -107,6 +107,7 @@ final class BoltOGMTranslator
         if ($node instanceof \Bolt\protocol\v5\structures\Node) {
             $elementId = $node->element_id;
         }
+
         /**
          * @psalm-suppress MixedArgumentTypeCoercion
          */
@@ -219,7 +220,7 @@ final class BoltOGMTranslator
         );
     }
 
-    private function makeFromBoltPoint2D(BoltPoint2d $x): AbstractPoint
+    private function makeFromBoltPoint2D(BoltPoint2D $x): AbstractPoint
     {
         if ($x->srid === CartesianPoint::SRID) {
             return new CartesianPoint($x->x, $x->y);

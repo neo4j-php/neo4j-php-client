@@ -36,7 +36,7 @@ final class ParameterHelperTest extends TestCase
          * @psalm-suppress MixedPropertyTypeCoercion
          * @psalm-suppress MissingTemplateParam
          */
-        self::$invalidIterable = new class() implements Iterator {
+        self::$invalidIterable = new class implements Iterator {
             private bool $initial = true;
 
             public function current(): int
@@ -144,7 +144,7 @@ final class ParameterHelperTest extends TestCase
 
     public function testStringable(): void
     {
-        $result = ParameterHelper::asParameter(new class() implements Stringable {
+        $result = ParameterHelper::asParameter(new class implements Stringable {
             public function __toString(): string
             {
                 return 'abc';

@@ -51,8 +51,9 @@ class DriverSetupManager implements Countable
      */
     public function __construct(
         private SummarizedResultFormatter $formatter,
-        private DriverConfiguration $configuration
-    ) {}
+        private DriverConfiguration $configuration,
+    ) {
+    }
 
     public function getDriverConfiguration(): DriverConfiguration
     {

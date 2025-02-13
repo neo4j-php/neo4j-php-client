@@ -29,8 +29,9 @@ final class Pair
      */
     public function __construct(
         private $key,
-        private $value
-    ) {}
+        private $value,
+    ) {
+    }
 
     /**
      * @return TKey

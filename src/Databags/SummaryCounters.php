@@ -38,8 +38,9 @@ final class SummaryCounters extends AbstractCypherObject
         private readonly int $constraintsRemoved = 0,
         private readonly bool $containsUpdates = false,
         private readonly bool $containsSystemUpdates = false,
-        private readonly int $systemUpdates = 0
-    ) {}
+        private readonly int $systemUpdates = 0,
+    ) {
+    }
 
     /**
      * Whether the query contained any updates.

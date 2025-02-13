@@ -33,7 +33,8 @@ class Neo4jLogger
     public function __construct(
         private readonly string $level,
         private readonly ?LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function log(string $level, string $message, array $context = []): void
     {

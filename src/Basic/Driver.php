@@ -27,8 +27,9 @@ final class Driver implements DriverInterface
      * @psalm-external-mutation-free
      */
     public function __construct(
-        private readonly DriverInterface $driver
-    ) {}
+        private readonly DriverInterface $driver,
+    ) {
+    }
 
     /**
      * @psalm-mutation-free

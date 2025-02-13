@@ -33,8 +33,9 @@ final class ConnectionConfiguration
         private readonly ConnectionProtocol $protocol,
         private readonly AccessMode $accessMode,
         private readonly ?DatabaseInfo $databaseInfo,
-        private readonly string $encryptionLevel
-    ) {}
+        private readonly string $encryptionLevel,
+    ) {
+    }
 
     public function getServerAgent(): string
     {

@@ -37,6 +37,7 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
+use Throwable;
 use WeakReference;
 
 /**
@@ -80,7 +81,8 @@ class BoltConnection implements ConnectionInterface
         /** @psalm-readonly */
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
-    ) {}
+    ) {
+    }
 
     public function getEncryptionLevel(): string
     {
@@ -247,7 +249,7 @@ class BoltConnection implements ConnectionInterface
         ?string $database,
         ?float $timeout,
         BookmarkHolder $holder,
-        ?AccessMode $mode
+        ?AccessMode $mode,
     ): array {
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode);
         $this->logger?->log(LogLevel::DEBUG, 'RUN', $extra);
@@ -255,6 +257,7 @@ class BoltConnection implements ConnectionInterface
             ->run($text, $parameters, $extra)
             ->getResponse();
         $this->assertNoFailure($response);
+
         /** @var BoltMeta */
         return $response->content;
     }
@@ -341,7 +344,7 @@ class BoltConnection implements ConnectionInterface
 
                 unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
     }
 

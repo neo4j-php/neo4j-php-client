@@ -43,8 +43,9 @@ final class BoltDriver implements DriverInterface
     public function __construct(
         private readonly UriInterface $parsedUrl,
         private readonly ConnectionPool $pool,
-        private readonly SummarizedResultFormatter $formatter
-    ) {}
+        private readonly SummarizedResultFormatter $formatter,
+    ) {
+    }
 
     /**
      * @psalm-suppress MixedReturnTypeCoercion

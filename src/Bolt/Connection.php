@@ -22,8 +22,9 @@ class Connection
      */
     public function __construct(
         private readonly IConnection $connection,
-        private readonly string $ssl
-    ) {}
+        private readonly string $ssl,
+    ) {
+    }
 
     public function getIConnection(): IConnection
     {

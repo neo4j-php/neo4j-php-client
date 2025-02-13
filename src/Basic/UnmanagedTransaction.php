@@ -21,8 +21,9 @@ use Laudis\Neo4j\Types\CypherList;
 final class UnmanagedTransaction implements UnmanagedTransactionInterface
 {
     public function __construct(
-        private readonly UnmanagedTransactionInterface $tsx
-    ) {}
+        private readonly UnmanagedTransactionInterface $tsx,
+    ) {
+    }
 
     /**
      * @param iterable<string, mixed> $parameters

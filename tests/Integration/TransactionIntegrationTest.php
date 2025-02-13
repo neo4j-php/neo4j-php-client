@@ -279,40 +279,40 @@ CYPHER
         self::assertFalse($tsx->isCommitted());
     }
 
-//    /**
-//     * TODO - rework this test
-//     * @dataProvider connectionAliases
-//     * @noinspection PhpUnusedLocalVariableInspection
-//     * @psalm-suppress UnusedVariable
-//     */
-//    public function testCorrectConnectionReuse(): void
-//    {
-//        $driver = $this->getSession()->getDriver($alias);
-//        if (!$driver instanceof BoltDriver) {
-//            self::markTestSkipped('Can only white box test bolt driver');
-//        }
-//
-//        $poolReflection = new ReflectionClass(Connection::class);
-//        $poolReflection->setStaticPropertyValue('connectionCache', []);
-//
-//        $this->getSession()->run('MATCH (x) RETURN x', []);
-//        $this->getSession()->run('MATCH (x) RETURN x', []);
-//        $this->getSession()->run('MATCH (x) RETURN x', []);
-//        $this->getSession()->run('MATCH (x) RETURN x', []);
-//        $a = $this->getSession()->beginTransaction([]);
-//        $b = $this->getSession()->beginTransaction([]);
-//        $this->getSession()->run('MATCH (x) RETURN x', []);
-//
-//        $poolReflection = new ReflectionClass(ConnectionPool::class);
-//        /** @var array $cache */
-//        $cache = $poolReflection->getStaticPropertyValue('connectionCache');
-//
-//        $key = array_key_first($cache);
-//        self::assertIsString($key);
-//        self::assertArrayHasKey($key, $cache);
-//        /** @psalm-suppress MixedArgument */
-//        self::assertCount(3, $cache[$key]);
-//    }
+    //    /**
+    //     * TODO - rework this test
+    //     * @dataProvider connectionAliases
+    //     * @noinspection PhpUnusedLocalVariableInspection
+    //     * @psalm-suppress UnusedVariable
+    //     */
+    //    public function testCorrectConnectionReuse(): void
+    //    {
+    //        $driver = $this->getSession()->getDriver($alias);
+    //        if (!$driver instanceof BoltDriver) {
+    //            self::markTestSkipped('Can only white box test bolt driver');
+    //        }
+    //
+    //        $poolReflection = new ReflectionClass(Connection::class);
+    //        $poolReflection->setStaticPropertyValue('connectionCache', []);
+    //
+    //        $this->getSession()->run('MATCH (x) RETURN x', []);
+    //        $this->getSession()->run('MATCH (x) RETURN x', []);
+    //        $this->getSession()->run('MATCH (x) RETURN x', []);
+    //        $this->getSession()->run('MATCH (x) RETURN x', []);
+    //        $a = $this->getSession()->beginTransaction([]);
+    //        $b = $this->getSession()->beginTransaction([]);
+    //        $this->getSession()->run('MATCH (x) RETURN x', []);
+    //
+    //        $poolReflection = new ReflectionClass(ConnectionPool::class);
+    //        /** @var array $cache */
+    //        $cache = $poolReflection->getStaticPropertyValue('connectionCache');
+    //
+    //        $key = array_key_first($cache);
+    //        self::assertIsString($key);
+    //        self::assertArrayHasKey($key, $cache);
+    //        /** @psalm-suppress MixedArgument */
+    //        self::assertCount(3, $cache[$key]);
+    //    }
 
     #[DoesNotPerformAssertions]
     public function testTransactionRunNoConsumeResult(): void

@@ -426,7 +426,7 @@ final class CypherMapTest extends TestCase
     public function testInvalidConstruct(): void
     {
         /** @psalm-suppress MissingTemplateParam */
-        $map = new CypherMap(new class() implements IteratorAggregate {
+        $map = new CypherMap(new class implements IteratorAggregate {
             public function getIterator(): Generator
             {
                 yield new stdClass() => 'x';

@@ -22,8 +22,9 @@ use Laudis\Neo4j\Types\CypherList;
 final class Client implements ClientInterface
 {
     public function __construct(
-        private readonly ClientInterface $client
-    ) {}
+        private readonly ClientInterface $client,
+    ) {
+    }
 
     public function run(string $statement, iterable $parameters = [], ?string $alias = null): SummarizedResult
     {

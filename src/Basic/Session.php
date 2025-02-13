@@ -23,8 +23,9 @@ use Laudis\Neo4j\Types\CypherList;
 final class Session implements SessionInterface
 {
     public function __construct(
-        private readonly SessionInterface $session
-    ) {}
+        private readonly SessionInterface $session,
+    ) {
+    }
 
     /**
      * @param iterable<Statement> $statements

@@ -37,8 +37,9 @@ final class Plan extends AbstractCypherObject
         private readonly CypherMap $arguments,
         private readonly CypherList $list,
         private readonly CypherList $identifiers,
-        private readonly string $operator
-    ) {}
+        private readonly string $operator,
+    ) {
+    }
 
     /**
      * Returns the arguments for the operator.
