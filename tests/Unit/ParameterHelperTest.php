@@ -110,6 +110,7 @@ final class ParameterHelperTest extends TestCase
     public function testFormatParameterInvalidIterable(): void
     {
         $this->expectException(InvalidArgumentException::class);
+        /** @psalm-suppress MixedArgumentTypeCoercion */
         ParameterHelper::formatParameters(self::$invalidIterable, ConnectionProtocol::BOLT_V44());
     }
 

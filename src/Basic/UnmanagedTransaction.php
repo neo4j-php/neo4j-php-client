@@ -17,16 +17,9 @@ use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Types\CypherList;
-use Laudis\Neo4j\Types\CypherMap;
 
-/**
- * @implements UnmanagedTransactionInterface<SummarizedResult<CypherMap>>
- */
 final class UnmanagedTransaction implements UnmanagedTransactionInterface
 {
-    /**
-     * @param UnmanagedTransactionInterface<SummarizedResult<CypherMap>> $tsx
-     */
     public function __construct(
         private readonly UnmanagedTransactionInterface $tsx,
     ) {
@@ -34,17 +27,12 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
 
     /**
      * @param iterable<string, mixed> $parameters
-     *
-     * @return SummarizedResult<CypherMap>
      */
     public function run(string $statement, iterable $parameters = []): SummarizedResult
     {
         return $this->tsx->run($statement, $parameters);
     }
 
-    /**
-     * @return SummarizedResult<CypherMap>
-     */
     public function runStatement(Statement $statement): SummarizedResult
     {
         return $this->tsx->runStatement($statement);
@@ -53,7 +41,7 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @param iterable<Statement> $statements
      *
-     * @return CypherList<SummarizedResult<CypherMap>>
+     * @return CypherList<SummarizedResult>
      */
     public function runStatements(iterable $statements): CypherList
     {
@@ -63,7 +51,7 @@ final class UnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @param iterable<Statement> $statements
      *
-     * @return CypherList<SummarizedResult<CypherMap>>
+     * @return CypherList<SummarizedResult>
      */
     public function commit(iterable $statements = []): CypherList
     {

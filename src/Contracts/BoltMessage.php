@@ -39,9 +39,14 @@ abstract class BoltMessage
         return $this->protocol->getResponse();
     }
 
-    /** @return Iterator<Response> */
+    /**
+     * @return Iterator<Response>
+     */
     public function getResponses(): Iterator
     {
+        /**
+         * @var Iterator<Response>
+         */
         return $this->protocol->getResponses();
     }
 }

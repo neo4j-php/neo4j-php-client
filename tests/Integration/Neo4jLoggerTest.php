@@ -139,9 +139,14 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
 
         self::assertCount(3, $infoLogs);
         self::assertEquals(array_slice($expectedInfoLogs, 0, 2), array_slice($infoLogs, 0, 2));
-        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+        /**
+         * @psalm-suppress PossiblyUndefinedIntArrayOffset
+         */
         self::assertEquals($expectedInfoLogs[2][0], $infoLogs[2][0]);
-        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+        /**
+         * @psalm-suppress PossiblyUndefinedIntArrayOffset
+         * @psalm-suppress MixedArrayAccess
+         */
         self::assertInstanceOf(SessionConfiguration::class, $infoLogs[2][1]['sessionConfig']);
 
         self::assertEquals($expectedDebugLogs, $debugLogs);

@@ -18,16 +18,9 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Types\CypherList;
-use Laudis\Neo4j\Types\CypherMap;
 
-/**
- * @implements ClientInterface<SummarizedResult<CypherMap>>
- */
 final class Client implements ClientInterface
 {
-    /**
-     * @param ClientInterface<SummarizedResult<CypherMap>> $client
-     */
     public function __construct(
         private readonly ClientInterface $client,
     ) {

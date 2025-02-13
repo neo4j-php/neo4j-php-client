@@ -14,16 +14,16 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\enum\ServerState;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\TransactionState;
 use Laudis\Neo4j\Exception\ClientException;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
-use Laudis\Neo4j\Types\AbstractCypherSequence;
 use Laudis\Neo4j\Types\CypherList;
 
 use function microtime;
@@ -33,26 +33,19 @@ use Throwable;
 /**
  * Manages a transaction over the bolt protocol.
  *
- * @template T
- *
- * @implements UnmanagedTransactionInterface<T>
- *
- * @psalm-import-type BoltMeta from FormatterInterface
+ * @psalm-import-type BoltMeta from SummarizedResultFormatter
  */
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
     private TransactionState $state = TransactionState::ACTIVE;
 
-    /**
-     * @param FormatterInterface<T> $formatter
-     */
     public function __construct(
         /** @psalm-readonly */
         private readonly ?string $database,
         /**
          * @psalm-readonly
          */
-        private readonly FormatterInterface $formatter,
+        private readonly SummarizedResultFormatter $formatter,
         /** @psalm-readonly */
         private readonly BoltConnection $connection,
         private readonly SessionConfiguration $config,
@@ -62,7 +55,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
+     * @param iterable<Statement> $statements
+     *
      * @throws ClientException|Throwable
+     *
+     * @return CypherList<SummarizedResult>
      */
     public function commit(iterable $statements = []): CypherList
     {
@@ -82,10 +79,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
-        $tbr = $this->runStatements($statements)->each(static function ($list) {
-            if ($list instanceof AbstractCypherSequence) {
-                $list->preload();
-            }
+        $tbr = $this->runStatements($statements)->each(static function (CypherList $list) {
+            $list->preload();
         });
 
         $this->connection->commit();
@@ -117,7 +112,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @throws Throwable
      */
-    public function run(string $statement, iterable $parameters = [])
+    public function run(string $statement, iterable $parameters = []): SummarizedResult
     {
         return $this->runStatement(new Statement($statement, $parameters));
     }
@@ -125,7 +120,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @throws Throwable
      */
-    public function runStatement(Statement $statement)
+    public function runStatement(Statement $statement): SummarizedResult
     {
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
         $start = microtime(true);
@@ -162,11 +157,14 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
+     * @param iterable<Statement> $statements
+     *
      * @throws Throwable
+     *
+     * @return CypherList<SummarizedResult>
      */
     public function runStatements(iterable $statements): CypherList
     {
-        /** @var list<T> $tbr */
         $tbr = [];
         foreach ($statements as $statement) {
             $tbr[] = $this->runStatement($statement);

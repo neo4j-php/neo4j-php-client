@@ -30,18 +30,6 @@
                 <directory name="src"/>
             </errorLevel>
         </UnusedForeachValue>
-        <DeprecatedClass>
-            <errorLevel type="suppress">
-                <directory name="tests"/>
-                <directory name="src"/>
-            </errorLevel>
-        </DeprecatedClass>
-        <DeprecatedInterface>
-            <errorLevel type="suppress">
-                <directory name="tests"/>
-                <directory name="src"/>
-            </errorLevel>
-        </DeprecatedInterface>
         <MissingConstructor>
             <errorLevel type="suppress">
                 <directory name="tests"/>

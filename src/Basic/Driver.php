@@ -17,20 +17,13 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\DriverFactory;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use Laudis\Neo4j\Types\CypherMap;
 use Psr\Http\Message\UriInterface;
 
-/**
- * @implements DriverInterface<SummarizedResult<CypherMap>>
- */
 final class Driver implements DriverInterface
 {
     /**
-     * @param DriverInterface<SummarizedResult<CypherMap>> $driver
-     *
      * @psalm-external-mutation-free
      */
     public function __construct(
@@ -53,7 +46,6 @@ final class Driver implements DriverInterface
 
     public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self
     {
-        /** @var DriverInterface<SummarizedResult<CypherMap>> */
         $driver = DriverFactory::create($uri, $configuration, $authenticate, SummarizedResultFormatter::create());
 
         return new self($driver);

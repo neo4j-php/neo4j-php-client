@@ -28,6 +28,15 @@ use Laudis\Neo4j\Types\Node;
 
 final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        // testPathReturnType will sometimes run after TransactionIntegrationTest::testTransactionRunNoConsumeButSaveResult
+        // in CI, which will leave a node in the database. This will cause the test to fail.
+        // This is a workaround to make sure the database is empty before running the test.
+        $this->getSession()->run('MATCH (n) DETACH DELETE n');
+    }
+
     public function testListParameterHelper(): void
     {
         $result = $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run('MATCH (x) WHERE x.slug IN $listOrMap RETURN x', [
@@ -48,8 +57,7 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
     public function testMergeTransactionFunction(): void
     {
         $this->expectException(Neo4jException::class);
-        $this->getSession()->writeTransaction(static fn (TSX $tsx) => /** @psalm-suppress ALL */
-$tsx->run('MERGE (x {y: "z"}:X) return x')->first()
+        $this->getSession()->writeTransaction(static fn (TSX $tsx): string => $tsx->run('MERGE (x {y: "z"}:X) return x')->first()
             ->getAsMap('x')
             ->getAsString('y'));
     }
@@ -126,7 +134,7 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
         self::assertEquals(
             [['attribute' => 'xy'], ['attribute' => 'yz']],
             /** @psalm-suppress MissingClosureReturnType */
-            $result->getAsCypherList('y')->map(static fn ($r) => /**
+            $result->getAsCypherList('y')->map(static fn (mixed $r): array => /**
                  * @psalm-suppress MixedMethodCall
                  *
                  * @var array <string, string>

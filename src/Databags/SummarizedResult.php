@@ -14,47 +14,30 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Generator;
-use Laudis\Neo4j\Types\AbstractCypherSequence;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
+use Laudis\Neo4j\Types\CypherMap;
 
 /**
  * A result containing the values and the summary.
  *
- * @template TValue
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  *
- * @extends CypherList<TValue>
+ * @extends CypherList<CypherMap<OGMTypes>>
  */
 final class SummarizedResult extends CypherList
 {
     private ?ResultSummary $summary = null;
 
     /**
-     * @param iterable<mixed, TValue>|callable():Generator<mixed, TValue> $iterable
+     * @param iterable<mixed, CypherMap<OGMTypes>>|callable():Generator<mixed, CypherMap<OGMTypes>> $iterable
      *
      * @psalm-mutation-free
      */
-    public function __construct(?ResultSummary &$summary, $iterable = [])
+    public function __construct(?ResultSummary &$summary, iterable|callable $iterable = [])
     {
         parent::__construct($iterable);
         $this->summary = &$summary;
-    }
-
-    /**
-     * @template Value
-     *
-     * @param callable():(Generator<mixed, Value>) $operation
-     *
-     * @return static<Value>
-     *
-     * @psalm-mutation-free
-     */
-    protected function withOperation($operation): AbstractCypherSequence
-    {
-        /**
-         * @psalm-suppress UnsafeInstantiation
-         * @psalm-suppress ImpurePropertyAssignment
-         */
-        return new self($this->summary, $operation);
     }
 
     /**
@@ -70,6 +53,9 @@ final class SummarizedResult extends CypherList
         return $this->summary;
     }
 
+    /**
+     * @return CypherList<CypherMap<OGMTypes>>
+     */
     public function getResults(): CypherList
     {
         return new CypherList($this);

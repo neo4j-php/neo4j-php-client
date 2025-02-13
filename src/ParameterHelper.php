@@ -159,7 +159,7 @@ final class ParameterHelper
     }
 
     /**
-     * @param iterable<mixed> $parameters
+     * @param iterable<array-key, mixed> $parameters
      *
      * @return CypherMap<iterable|scalar|stdClass|null>
      */

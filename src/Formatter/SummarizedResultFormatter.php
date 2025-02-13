@@ -18,7 +18,7 @@ use function is_int;
 
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
-use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\ResultSummary;
@@ -27,37 +27,85 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Enum\QueryTypeEnum;
+use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
+use Laudis\Neo4j\Types\Cartesian3DPoint;
+use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId;
+use Laudis\Neo4j\Types\Duration;
+use Laudis\Neo4j\Types\LocalDateTime;
+use Laudis\Neo4j\Types\LocalTime;
+use Laudis\Neo4j\Types\Node;
+use Laudis\Neo4j\Types\Path;
+use Laudis\Neo4j\Types\Relationship;
+use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\WGS843DPoint;
+use Laudis\Neo4j\Types\WGS84Point;
 
 use function microtime;
 
 /**
  * Decorates the result of the provided format with an extensive summary.
  *
- * @psalm-import-type CypherResponseSet from \Laudis\Neo4j\Contracts\FormatterInterface
- * @psalm-import-type CypherResponse from \Laudis\Neo4j\Contracts\FormatterInterface
- * @psalm-import-type BoltCypherStats from \Laudis\Neo4j\Contracts\FormatterInterface
- * @psalm-import-type OGMResults from \Laudis\Neo4j\Formatter\OGMFormatter
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
- *
- * @implements FormatterInterface<SummarizedResult<CypherMap<OGMTypes>>>
+ * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|DateTimeZoneId|CypherList<mixed>|CypherMap<mixed>
+ * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
+ * @psalm-type CypherStats = array{
+ *     nodes_created: int,
+ *     nodes_deleted: int,
+ *     relationships_created: int,
+ *     relationships_deleted: int,
+ *     properties_set: int,
+ *     labels_added: int,
+ *     labels_removed: int,
+ *     indexes_added: int,
+ *     indexes_removed: int,
+ *     constraints_added: int,
+ *     constraints_removed: int,
+ *     contains_updates: bool,
+ *     contains_system_updates?: bool,
+ *     system_updates?: int
+ * }
+ * @psalm-type BoltCypherStats = array{
+ *     nodes-created?: int,
+ *     nodes-deleted?: int,
+ *     relationships-created?: int,
+ *     relationships-deleted?: int,
+ *     properties-set?: int,
+ *     labels-added?: int,
+ *     labels-removed?: int,
+ *     indexes-added?: int,
+ *     indexes-removed?: int,
+ *     constraints-added?: int,
+ *     constraints-removed?: int,
+ *     contains-updates?: bool,
+ *     contains-system-updates?: bool,
+ *     system-updates?: int,
+ *     db?: string
+ * }
+ * @psalm-type CypherError = array{code: string, message: string}
+ * @psalm-type CypherRowResponse = array{row: list<scalar|null|array<array-key,scalar|null|array>>}
+ * @psalm-type CypherResponse = array{columns:list<string>, data:list<CypherRowResponse>, stats?:CypherStats}
+ * @psalm-type CypherResponseSet = array{results: list<CypherResponse>, errors: list<CypherError>}
+ * @psalm-type BoltMeta = array{t_first: int, fields: list<string>, qid ?: int}
  */
-final class SummarizedResultFormatter implements FormatterInterface
+final class SummarizedResultFormatter
 {
     /**
      * @pure
      */
     public static function create(): self
     {
-        return new self(OGMFormatter::create());
+        return new self(new BoltOGMTranslator());
     }
 
     /**
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly OGMFormatter $formatter,
+        private readonly BoltOGMTranslator $translator,
     ) {
     }
 
@@ -98,40 +146,87 @@ final class SummarizedResultFormatter implements FormatterInterface
         );
     }
 
+    /**
+     * @param BoltMeta $meta
+     */
     public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder): SummarizedResult
     {
         /** @var ResultSummary|null $summary */
         $summary = null;
-        $result->addFinishedCallback(function (array $response) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
-            /** @var BoltCypherStats $response */
-            $stats = $this->formatBoltStats($response);
-            $resultConsumedAfter = microtime(true) - $runStart;
-            $db = $response['db'] ?? '';
-            $summary = new ResultSummary(
-                $stats,
-                new DatabaseInfo($db),
-                new CypherList(),
-                null,
-                null,
-                $statement,
-                QueryTypeEnum::fromCounters($stats),
-                $resultAvailableAfter,
-                $resultConsumedAfter,
-                new ServerInfo(
-                    $connection->getServerAddress(),
-                    $connection->getProtocol(),
-                    $connection->getServerAgent()
-                )
-            );
-        });
+        $result->addFinishedCallback(
+            function (mixed $response) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
+                /** @var array{stats?: BoltCypherStats}&array $response */
+                $stats = $this->formatBoltStats($response);
+                $resultConsumedAfter = microtime(true) - $runStart;
+                $db = $response['stats']['db'] ?? '';
+                $summary = new ResultSummary(
+                    $stats,
+                    new DatabaseInfo($db),
+                    new CypherList(),
+                    null,
+                    null,
+                    $statement,
+                    QueryTypeEnum::fromCounters($stats),
+                    $resultAvailableAfter,
+                    $resultConsumedAfter,
+                    new ServerInfo(
+                        $connection->getServerAddress(),
+                        $connection->getProtocol(),
+                        $connection->getServerAgent()
+                    )
+                );
+            });
 
-        $formattedResult = $this->formatter->formatBoltResult($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement, $holder);
+        $formattedResult = $this->processBoltResult($meta, $result, $connection, $holder);
 
         /**
-         * @psalm-suppress MixedArgument
-         *
          * @var SummarizedResult<CypherMap<OGMTypes>>
          */
-        return (new SummarizedResult($summary, $formattedResult))->withCacheLimit($result->getFetchSize());
+        return new SummarizedResult($summary, (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize()));
+    }
+
+    /**
+     * @param BoltMeta $meta
+     *
+     * @return CypherList<CypherMap<OGMTypes>>
+     */
+    private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, BookmarkHolder $holder): CypherList
+    {
+        $tbr = (new CypherList(function () use ($result, $meta) {
+            foreach ($result as $row) {
+                yield $this->formatRow($meta, $row);
+            }
+        }))->withCacheLimit($result->getFetchSize());
+
+        $connection->subscribeResult($tbr);
+        $result->addFinishedCallback(function (array $response) use ($holder) {
+            if (array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
+                $holder->setBookmark(new Bookmark([$response['bookmark']]));
+            }
+        });
+
+        return $tbr;
+    }
+
+    /**
+     * @psalm-mutation-free
+     *
+     * @param BoltMeta $meta
+     *
+     * @return CypherMap<OGMTypes>
+     */
+    private function formatRow(array $meta, array $result): CypherMap
+    {
+        /** @var array<string, OGMTypes> $map */
+        $map = [];
+        if (!array_key_exists('fields', $meta)) {
+            return new CypherMap($map);
+        }
+
+        foreach ($meta['fields'] as $i => $column) {
+            $map[$column] = $this->translator->mapValueToType($result[$i]);
+        }
+
+        return new CypherMap($map);
     }
 }

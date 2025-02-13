@@ -18,7 +18,6 @@ use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -26,19 +25,17 @@ use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Log\LogLevel;
 
 /**
  * A session using bolt connections.
- *
- * @template ResultFormat
- *
- * @implements SessionInterface<ResultFormat>
  */
 final class Session implements SessionInterface
 {
@@ -47,7 +44,6 @@ final class Session implements SessionInterface
 
     /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
-     * @param FormatterInterface<ResultFormat>   $formatter
      *
      * @psalm-mutation-free
      */
@@ -58,11 +54,16 @@ final class Session implements SessionInterface
         /**
          * @psalm-readonly
          */
-        private readonly FormatterInterface $formatter,
+        private readonly SummarizedResultFormatter $formatter,
     ) {
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
 
+    /**
+     * @param iterable<Statement> $statements
+     *
+     * @return CypherList<SummarizedResult>
+     */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
         $tbr = [];
@@ -84,12 +85,12 @@ final class Session implements SessionInterface
         return $this->beginTransaction($statements, $this->mergeTsxConfig($config));
     }
 
-    public function runStatement(Statement $statement, ?TransactionConfiguration $config = null)
+    public function runStatement(Statement $statement, ?TransactionConfiguration $config = null): SummarizedResult
     {
         return $this->runStatements([$statement], $config)->first();
     }
 
-    public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null)
+    public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null): SummarizedResult
     {
         return $this->runStatement(new Statement($statement, $parameters), $config);
     }
@@ -121,6 +122,9 @@ final class Session implements SessionInterface
         return $this->writeTransaction($tsxHandler, $config);
     }
 
+    /**
+     * @param iterable<Statement> $statements
+     */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
@@ -133,7 +137,7 @@ final class Session implements SessionInterface
     }
 
     /**
-     * @return UnmanagedTransactionInterface<ResultFormat>
+     * @return UnmanagedTransactionInterface
      */
     private function beginInstantTransaction(
         SessionConfiguration $config,

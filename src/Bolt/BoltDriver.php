@@ -23,51 +23,34 @@ use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 
 /**
  * Drives a singular bolt connections.
  *
- * @template T
- *
- * @implements DriverInterface<T>
- *
- * @psalm-import-type OGMResults from OGMFormatter
+ * @psalm-import-type OGMResults from SummarizedResultFormatter
  */
 final class BoltDriver implements DriverInterface
 {
     /**
-     * @param FormatterInterface<T> $formatter
-     *
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly UriInterface $parsedUrl,
         private readonly ConnectionPool $pool,
-        private readonly FormatterInterface $formatter,
+        private readonly SummarizedResultFormatter $formatter,
     ) {
     }
 
     /**
-     * @template U
-     *
-     * @param FormatterInterface<U> $formatter
-     *
-     * @return (
-     *           func_num_args() is 5
-     *           ? self<U>
-     *           : self<OGMResults>
-     *           )
-     *
      * @psalm-suppress MixedReturnTypeCoercion
      */
-    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?FormatterInterface $formatter = null): self
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?SummarizedResultFormatter $formatter = null): self
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
@@ -81,7 +64,7 @@ final class BoltDriver implements DriverInterface
         return new self(
             $uri,
             ConnectionPool::create($uri, $authenticate, $configuration, $semaphore),
-            $formatter ?? OGMFormatter::create(),
+            $formatter ?? SummarizedResultFormatter::create(),
         );
     }
 

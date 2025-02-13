@@ -20,34 +20,23 @@ use Laudis\Neo4j\Bolt\BoltDriver;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Exception\UnsupportedScheme;
-use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Psr\Http\Message\UriInterface;
 
 /**
  * Factory for creating drivers directly.
  *
- * @psalm-import-type OGMResults from OGMFormatter
+ * @psalm-import-type OGMResults from SummarizedResultFormatter
  */
 final class DriverFactory
 {
     /**
-     * @template U
-     *
-     * @param FormatterInterface<U> $formatter
-     *
      * @throws UnsupportedScheme
-     *
-     * @return (
-     *           func_num_args() is 4
-     *           ? DriverInterface<U>
-     *           : DriverInterface<OGMResults>
-     *           )
      */
-    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?FormatterInterface $formatter = null): DriverInterface
+    public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null, ?SummarizedResultFormatter $formatter = null): DriverInterface
     {
         if (is_string($uri)) {
             $uri = Uri::create($uri);
@@ -67,18 +56,7 @@ final class DriverFactory
         throw UnsupportedScheme::make($scheme, ['bolt', 'bolt+s', 'bolt+ssc', 'neo4j', 'neo4j+s', 'neo4j+ssc']);
     }
 
-    /**
-     * @template U
-     *
-     * @param FormatterInterface<U> $formatter
-     *
-     * @return (
-     *           func_num_args() is 4
-     *           ? DriverInterface<U>
-     *           : DriverInterface<OGMResults>
-     *           )
-     */
-    private static function createBoltDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?FormatterInterface $formatter = null): DriverInterface
+    private static function createBoltDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?SummarizedResultFormatter $formatter = null): DriverInterface
     {
         if ($formatter !== null) {
             return BoltDriver::create($uri, $configuration, $authenticate, $formatter);
@@ -87,18 +65,7 @@ final class DriverFactory
         return BoltDriver::create($uri, $configuration, $authenticate);
     }
 
-    /**
-     * @template U
-     *
-     * @param FormatterInterface<U> $formatter
-     *
-     * @return (
-     *           func_num_args() is 4
-     *           ? DriverInterface<U>
-     *           : DriverInterface<OGMResults>
-     *           )
-     */
-    private static function createNeo4jDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?FormatterInterface $formatter = null): DriverInterface
+    private static function createNeo4jDriver(string|UriInterface $uri, ?DriverConfiguration $configuration, ?AuthenticateInterface $authenticate, ?SummarizedResultFormatter $formatter = null): DriverInterface
     {
         if ($formatter !== null) {
             return Neo4jDriver::create($uri, $configuration, $authenticate, $formatter);

@@ -22,11 +22,11 @@ use Countable;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Contracts\FormatterInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\DriverFactory;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 
 use const PHP_INT_MIN;
 
@@ -36,26 +36,21 @@ use SplPriorityQueue;
 
 use function sprintf;
 
-/**
- * @template ResultFormat
- */
 class DriverSetupManager implements Countable
 {
     private const DEFAULT_DRIVER_CONFIG = 'bolt://localhost:7687';
 
     /** @var array<string, SplPriorityQueue<int, DriverSetup>> */
     private array $driverSetups = [];
-    /** @var array<string, DriverInterface<ResultFormat>> */
+    /** @var array<string, DriverInterface> */
     private array $drivers = [];
     private ?string $default = null;
 
     /**
      * @psalm-mutation-free
-     *
-     * @param FormatterInterface<ResultFormat> $formatter
      */
     public function __construct(
-        private FormatterInterface $formatter,
+        private SummarizedResultFormatter $formatter,
         private DriverConfiguration $configuration,
     ) {
     }
@@ -86,8 +81,9 @@ class DriverSetupManager implements Countable
 
         $setups = $this->driverSetups;
 
-        /** @var SplPriorityQueue<int, DriverSetup> */
-        $setups[$alias] ??= new SplPriorityQueue();
+        /** @var SplPriorityQueue<int, DriverSetup> $splPriorityQueue */
+        $splPriorityQueue = new SplPriorityQueue();
+        $setups[$alias] ??= $splPriorityQueue;
         /** @psalm-suppress ImpureMethodCall */
         $setups[$alias]->insert($setup, $priority ?? 0);
 
@@ -102,9 +98,6 @@ class DriverSetupManager implements Countable
         return array_key_exists($alias, $this->driverSetups);
     }
 
-    /**
-     * @return DriverInterface<ResultFormat>
-     */
     public function getDriver(SessionConfiguration $config, ?string $alias = null): DriverInterface
     {
         $alias ??= $this->decideAlias($alias);
@@ -194,7 +187,7 @@ class DriverSetupManager implements Countable
      *
      * @psalm-mutation-free
      */
-    public function withFormatter(FormatterInterface $formatter): self
+    public function withFormatter(SummarizedResultFormatter $formatter): self
     {
         $tbr = clone $this;
         $tbr->formatter = $formatter;

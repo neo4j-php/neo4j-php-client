@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
 
 use function sleep;
 
+use UnexpectedValueException;
+
 class BoltConnectionPoolTest extends TestCase
 {
     private ConnectionPool $pool;
@@ -131,6 +133,9 @@ class BoltConnectionPoolTest extends TestCase
         ob_start();
         debug_zval_dump($var);
         $dump = ob_get_clean();
+        if ($dump === false) {
+            throw new UnexpectedValueException();
+        }
 
         $matches = [];
         preg_match('/refcount\(([0-9]+)/', $dump, $matches);
