@@ -26,7 +26,7 @@ use Bolt\protocol\v1\structures\Point3D as BoltPoint3D;
 use Bolt\protocol\v1\structures\Relationship as BoltRelationship;
 use Bolt\protocol\v1\structures\Time as BoltTime;
 use Bolt\protocol\v1\structures\UnboundRelationship as BoltUnboundRelationship;
-use Laudis\Neo4j\Formatter\OGMFormatter;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
@@ -51,7 +51,7 @@ use UnexpectedValueException;
 /**
  * Translates Bolt objects to Driver Types.
  *
- * @psalm-import-type OGMTypes from OGMFormatter
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  *
  * @psalm-immutable
  *
@@ -107,6 +107,7 @@ final class BoltOGMTranslator
         if ($node instanceof \Bolt\protocol\v5\structures\Node) {
             $elementId = $node->element_id;
         }
+
         /**
          * @psalm-suppress MixedArgumentTypeCoercion
          */
@@ -219,7 +220,7 @@ final class BoltOGMTranslator
         );
     }
 
-    private function makeFromBoltPoint2D(BoltPoint2d $x): AbstractPoint
+    private function makeFromBoltPoint2D(BoltPoint2D $x): AbstractPoint
     {
         if ($x->srid === CartesianPoint::SRID) {
             return new CartesianPoint($x->x, $x->y);

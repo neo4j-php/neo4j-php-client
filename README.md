@@ -308,21 +308,16 @@ composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
 
 ## Result formats/hydration
 
-In order to make the results of the bolt protocol and the http uniform, the driver provides result formatters (aka hydrators). The client is configurable with these formatters. You can even implement your own.
+In order to make the results of the bolt protocol and the http uniform, the driver provides and summarizes the results.
 
-The default formatter is the `\Laudis\Neo4j\Formatters\OGMFormatter`, which is explained extensively in [the result format section](#accessing-the-results).
+The default formatter is the `\Laudis\Neo4j\Formatters\SummarizedResultFormatter`, which is explained extensively in [the result format section](#accessing-the-results).
 
-The driver provides three formatters by default, which are all found in the Formatter namespace:
- - `\Laudis\Neo4j\Formatter\BasicFormatter` which erases all the Cypher types and simply returns every value in the resulting map as a [scalar](https://www.php.net/manual/en/function.is-scalar.php), null or array value.
- - `\Laudis\Neo4j\Formatter\OGMFormatter` which maps the cypher types to php types as explained [here](#accessing-the-results).
- - `\Laudis\Neo4j\Formatter\SummarizedResultFormatter` which decorates any formatter and adds an extensive result summary.
+`\Laudis\Neo4j\Formatter\SummarizedResultFormatter` adds an extensive result summary.
 
 The client builder provides an easy way to change the formatter:
 
 ```php
-$client = \Laudis\Neo4j\ClientBuilder::create()
-    ->withFormatter(\Laudis\Neo4j\Formatter\SummarizedResultFormatter::create())
-    ->build();
+$client = \Laudis\Neo4j\ClientBuilder::create()->build();
 
 /**
  * The client will now return a result, decorated with a summary.
@@ -338,8 +333,6 @@ $summary = $summarisedResult->getSummary();
 // The result is exactly the same as the default.
 $result = $summarisedResult->getResult();
 ```
-
-In order to use a custom formatter, implement the `Laudis\Neo4j\Contracts\FormatterInterface` and provide it when using the client builder.
 
 ## Concepts
 

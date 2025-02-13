@@ -27,8 +27,9 @@ final class Time extends AbstractPropertyObject implements BoltConvertibleInterf
 {
     public function __construct(
         private readonly int $nanoSeconds,
-        private readonly int $tzOffsetSeconds
-    ) {}
+        private readonly int $tzOffsetSeconds,
+    ) {
+    }
 
     /**
      * @return array{nanoSeconds: int, tzOffsetSeconds: int}

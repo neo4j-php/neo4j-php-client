@@ -13,10 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
+use Laudis\Neo4j\Contracts\CypherSequence;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Types\AbstractCypherSequence;
 
 final class TransactionHelper
 {
@@ -24,10 +24,9 @@ final class TransactionHelper
 
     /**
      * @template U
-     * @template T
      *
-     * @param callable():UnmanagedTransactionInterface<T> $tsxFactory
-     * @param callable(TransactionInterface<T>):U         $tsxHandler
+     * @param callable():UnmanagedTransactionInterface $tsxFactory
+     * @param callable(TransactionInterface):U         $tsxHandler
      *
      * @return U
      */
@@ -56,7 +55,7 @@ final class TransactionHelper
 
     private static function triggerLazyResult(mixed $tbr): void
     {
-        if ($tbr instanceof AbstractCypherSequence) {
+        if ($tbr instanceof CypherSequence) {
             $tbr->preload();
         }
     }

@@ -35,8 +35,9 @@ final class LocalDateTime extends AbstractPropertyObject implements BoltConverti
 {
     public function __construct(
         private readonly int $seconds,
-        private readonly int $nanoseconds
-    ) {}
+        private readonly int $nanoseconds,
+    ) {
+    }
 
     /**
      * The amount of seconds since the unix epoch.

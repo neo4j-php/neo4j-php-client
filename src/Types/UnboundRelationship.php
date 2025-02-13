@@ -14,13 +14,14 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 
 use function sprintf;
 
 /**
  * A relationship without any nodes attached to it.
  *
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  *
  * @psalm-immutable
  *
@@ -35,8 +36,9 @@ class UnboundRelationship extends AbstractPropertyObject
         private readonly int $id,
         private readonly string $type,
         private readonly CypherMap $properties,
-        private readonly ?string $elementId
-    ) {}
+        private readonly ?string $elementId,
+    ) {
+    }
 
     public function getElementId(): ?string
     {

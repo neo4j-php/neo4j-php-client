@@ -21,39 +21,35 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
  * A collection of drivers with methods to run queries though them.
- *
- * @template ResultFormat
- *
- * @implements ClientInterface<ResultFormat>
  */
 final class Client implements ClientInterface
 {
     /**
-     * @var array<string, list<UnmanagedTransactionInterface<ResultFormat>>>
+     * @var array<string, list<UnmanagedTransactionInterface>>
      */
     private array $boundTransactions = [];
 
     /**
-     * @var array<string, SessionInterface<ResultFormat>>
+     * @var array<string, SessionInterface>
      */
     private array $boundSessions = [];
 
     /**
      * @psalm-mutation-free
-     *
-     * @param DriverSetupManager<ResultFormat> $driverSetups
      */
     public function __construct(
         private readonly DriverSetupManager $driverSetups,
         private readonly SessionConfiguration $defaultSessionConfiguration,
-        private readonly TransactionConfiguration $defaultTransactionConfiguration
-    ) {}
+        private readonly TransactionConfiguration $defaultTransactionConfiguration,
+    ) {
+    }
 
     public function getDriverSetups(): DriverSetupManager
     {
@@ -70,12 +66,12 @@ final class Client implements ClientInterface
         return $this->defaultTransactionConfiguration;
     }
 
-    public function run(string $statement, iterable $parameters = [], ?string $alias = null)
+    public function run(string $statement, iterable $parameters = [], ?string $alias = null): SummarizedResult
     {
         return $this->runStatement(Statement::create($statement, $parameters), $alias);
     }
 
-    public function runStatement(Statement $statement, ?string $alias = null)
+    public function runStatement(Statement $statement, ?string $alias = null): SummarizedResult
     {
         return $this->runStatements([$statement], $alias)->first();
     }
@@ -84,8 +80,9 @@ final class Client implements ClientInterface
     {
         $alias ??= $this->driverSetups->getDefaultAlias();
 
-        if (array_key_exists($alias, $this->boundTransactions) &&
-            count($this->boundTransactions[$alias]) > 0) {
+        if (array_key_exists($alias, $this->boundTransactions)
+            && count($this->boundTransactions[$alias]) > 0) {
+            /** @psalm-suppress PossiblyNullArrayOffset */
             return $this->boundTransactions[$alias][array_key_last($this->boundTransactions[$alias])];
         }
 
@@ -126,9 +123,6 @@ final class Client implements ClientInterface
         return $this->driverSetups->getDriver($this->defaultSessionConfiguration, $alias);
     }
 
-    /**
-     * @return SessionInterface<ResultFormat>
-     */
     private function startSession(?string $alias, SessionConfiguration $configuration): SessionInterface
     {
         return $this->getDriver($alias)->createSession($configuration);
@@ -187,7 +181,7 @@ final class Client implements ClientInterface
     }
 
     /**
-     * @param callable(UnmanagedTransactionInterface<ResultFormat>): void $handler
+     * @param callable(UnmanagedTransactionInterface): void $handler
      */
     private function popTransactions(callable $handler, ?string $alias = null, int $depth = 1): void
     {

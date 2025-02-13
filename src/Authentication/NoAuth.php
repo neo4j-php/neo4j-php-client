@@ -38,12 +38,14 @@ final class NoAuth implements AuthenticateInterface
      * @pure
      */
     public function __construct(
-        private readonly ?Neo4jLogger $logger
-    ) {}
+        private readonly ?Neo4jLogger $logger,
+    ) {
+    }
 
     public function authenticateHttp(RequestInterface $request, UriInterface $uri, string $userAgent): RequestInterface
     {
         $this->logger?->log(LogLevel::DEBUG, 'Authentication disabled');
+
         /**
          * @psalm-suppress ImpureMethodCall Request is a pure object:
          *

@@ -160,7 +160,7 @@ final class CypherListTest extends TestCase
 
     public function testFilterSelective(): void
     {
-        $filter = $this->list->filter(static fn (string $x, int $i) => $x === 'B' || $i === 2)->toArray();
+        $filter = $this->list->filter(static fn (string $x, $i) => $x === 'B' || $i === 2)->toArray();
 
         self::assertEquals(['B', 'C'], $filter);
     }
@@ -386,7 +386,6 @@ final class CypherListTest extends TestCase
     public function testEach(): void
     {
         $cntr = -1;
-        /** @psalm-suppress UnusedClosureParam */
         $this->list->each(static function (string $x, int $key) use (&$cntr) { $cntr = $key; });
 
         self::assertEquals($this->list->count() - 1, $cntr);

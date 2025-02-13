@@ -33,8 +33,9 @@ abstract class AbstractPoint extends AbstractPropertyObject implements PointInte
 {
     public function __construct(
         private readonly float $x,
-        private readonly float $y
-    ) {}
+        private readonly float $y,
+    ) {
+    }
 
     abstract public function getCrs(): string;
 

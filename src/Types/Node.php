@@ -14,13 +14,14 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 
 use function sprintf;
 
 /**
  * A Node class representing a Node in cypher.
  *
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  *
  * @psalm-immutable
  * @psalm-immutable
@@ -38,8 +39,9 @@ final class Node extends AbstractPropertyObject
         private readonly int $id,
         private readonly CypherList $labels,
         private readonly CypherMap $properties,
-        private readonly ?string $elementId
-    ) {}
+        private readonly ?string $elementId,
+    ) {
+    }
 
     /**
      * The labels on the node.

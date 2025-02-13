@@ -22,8 +22,9 @@ final class SslConfiguration
 {
     public function __construct(
         private SslMode $mode,
-        private bool $verifyPeer
-    ) {}
+        private bool $verifyPeer,
+    ) {
+    }
 
     public function getMode(): SslMode
     {

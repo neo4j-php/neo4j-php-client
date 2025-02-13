@@ -43,14 +43,15 @@ final class ConnectionPool implements ConnectionPoolInterface
         private readonly SemaphoreInterface $semaphore,
         private readonly BoltFactory $factory,
         private readonly ConnectionRequestData $data,
-        private readonly ?Neo4jLogger $logger
-    ) {}
+        private readonly ?Neo4jLogger $logger,
+    ) {
+    }
 
     public static function create(
         UriInterface $uri,
         AuthenticateInterface $auth,
         DriverConfiguration $conf,
-        SemaphoreInterface $semaphore
+        SemaphoreInterface $semaphore,
     ): self {
         return new self(
             $semaphore,

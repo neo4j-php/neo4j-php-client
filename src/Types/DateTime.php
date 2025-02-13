@@ -34,8 +34,9 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
         private readonly int $seconds,
         private readonly int $nanoseconds,
         private readonly int $tzOffsetSeconds,
-        private readonly bool $legacy
-    ) {}
+        private readonly bool $legacy,
+    ) {
+    }
 
     /**
      * Returns whether this DateTime Type follows conventions up until Neo4j version 4.

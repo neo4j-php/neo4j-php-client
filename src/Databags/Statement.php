@@ -31,8 +31,9 @@ final class Statement extends AbstractCypherObject
      */
     public function __construct(
         private readonly string $text,
-        private readonly iterable $parameters
-    ) {}
+        private readonly iterable $parameters,
+    ) {
+    }
 
     /**
      * @pure

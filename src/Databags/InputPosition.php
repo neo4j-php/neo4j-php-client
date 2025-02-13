@@ -23,8 +23,9 @@ final class InputPosition
     public function __construct(
         private readonly int $column,
         private readonly int $line,
-        private readonly int $offset
-    ) {}
+        private readonly int $offset,
+    ) {
+    }
 
     /**
      * The column number referred to by the position; column numbers start at 1.

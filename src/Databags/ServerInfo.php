@@ -29,8 +29,9 @@ final class ServerInfo extends AbstractCypherObject
     public function __construct(
         private readonly UriInterface $address,
         private readonly ConnectionProtocol $protocol,
-        private readonly string $agent
-    ) {}
+        private readonly string $agent,
+    ) {
+    }
 
     /**
      * Returns the uri of the server the query was executed.

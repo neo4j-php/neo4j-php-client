@@ -30,8 +30,9 @@ final class Neo4jError
         private readonly ?string $message,
         private readonly string $classification,
         private readonly string $category,
-        private readonly string $title
-    ) {}
+        private readonly string $title,
+    ) {
+    }
 
     /**
      * @pure

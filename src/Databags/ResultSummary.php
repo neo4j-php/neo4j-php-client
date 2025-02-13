@@ -46,8 +46,9 @@ final class ResultSummary extends AbstractCypherObject
         private readonly QueryTypeEnum $queryType,
         private readonly float $resultAvailableAfter,
         private readonly float $resultConsumedAfter,
-        private readonly ServerInfo $serverInfo
-    ) {}
+        private readonly ServerInfo $serverInfo,
+    ) {
+    }
 
     /**
      * The counters for amount of operations the query triggered.

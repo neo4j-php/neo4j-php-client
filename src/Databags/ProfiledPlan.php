@@ -38,8 +38,9 @@ final class ProfiledPlan extends AbstractCypherObject
         private readonly int $pageCacheHits,
         private readonly int $pageCacheMisses,
         private readonly int $records,
-        private readonly int $time
-    ) {}
+        private readonly int $time,
+    ) {
+    }
 
     /**
      * @return CypherList<ProfiledPlan>

@@ -21,12 +21,12 @@ use Generator;
 use function in_array;
 
 use Iterator;
-use Laudis\Neo4j\Contracts\FormatterInterface;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 
 /**
- * @psalm-import-type BoltCypherStats from FormatterInterface
+ * @psalm-import-type BoltCypherStats from SummarizedResultFormatter
  *
- * @implements Iterator<int, list>
+ * @implements Iterator<int, list<mixed>>
  */
 final class BoltResult implements Iterator
 {
@@ -39,8 +39,9 @@ final class BoltResult implements Iterator
     public function __construct(
         private readonly BoltConnection $connection,
         private readonly int $fetchSize,
-        private readonly int $qid
-    ) {}
+        private readonly int $qid,
+    ) {
+    }
 
     public function getFetchSize(): int
     {
@@ -70,7 +71,7 @@ final class BoltResult implements Iterator
     }
 
     /**
-     * @return Generator<int, list>
+     * @return Generator<int, list<mixed>>
      */
     public function iterator(): Generator
     {
@@ -112,10 +113,15 @@ final class BoltResult implements Iterator
     }
 
     /**
-     * @return list
+     * @psalm-suppress InvalidNullableReturnType
+     *
+     * @return list<mixed>
      */
     public function current(): array
     {
+        /**
+         * @psalm-suppress NullableReturnStatement
+         */
         return $this->getIt()->current();
     }
 

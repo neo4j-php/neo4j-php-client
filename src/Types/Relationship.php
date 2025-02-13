@@ -13,10 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+
 /**
  * A Relationship class representing a Relationship in cypher.
  *
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  *
  * @psalm-immutable
  */
@@ -31,7 +33,7 @@ final class Relationship extends UnboundRelationship
         private readonly int $endNodeId,
         string $type,
         CypherMap $properties,
-        ?string $elementId
+        ?string $elementId,
     ) {
         parent::__construct($id, $type, $properties, $elementId);
     }

@@ -25,8 +25,9 @@ final class Notification
         private readonly string $description,
         private readonly ?InputPosition $inputPosition,
         private readonly string $severity,
-        private readonly string $title
-    ) {}
+        private readonly string $title,
+    ) {
+    }
 
     /**
      * Returns a notification code for the discovered issue.

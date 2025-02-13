@@ -38,7 +38,8 @@ final class BasicAuth implements AuthenticateInterface
         private readonly string $username,
         private readonly string $password,
         private readonly ?Neo4jLogger $logger,
-    ) {}
+    ) {
+    }
 
     /**
      * @throws Exception

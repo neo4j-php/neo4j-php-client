@@ -81,7 +81,7 @@ final class ParameterHelper
      */
     public static function asParameter(
         mixed $value,
-        ConnectionProtocol $protocol
+        ConnectionProtocol $protocol,
     ): iterable|int|float|bool|string|stdClass|IStructure|null {
         return self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
@@ -121,8 +121,8 @@ final class ParameterHelper
 
     private static function emptySequenceToArray(mixed $value): ?array
     {
-        if ((($value instanceof CypherList || $value instanceof CypherMap) && $value->count() === 0) ||
-            (is_array($value) && count($value) === 0)) {
+        if ((($value instanceof CypherList || $value instanceof CypherMap) && $value->count() === 0)
+            || (is_array($value) && count($value) === 0)) {
             return [];
         }
 
@@ -159,7 +159,7 @@ final class ParameterHelper
     }
 
     /**
-     * @param iterable<mixed> $parameters
+     * @param iterable<array-key, mixed> $parameters
      *
      * @return CypherMap<iterable|scalar|stdClass|null>
      */

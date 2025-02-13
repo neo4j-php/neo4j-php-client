@@ -46,21 +46,21 @@ final class DriverConfiguration
     private ?Neo4jLogger $logger;
 
     /**
-     * @param callable():(CacheInterface|null)|CacheInterface|null $cache
+     * @param callable():(CacheInterface|null)|CacheInterface|null                       $cache
      * @param callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null $semaphore
-     * @param string|null $logLevel The log level to use. If null, LogLevel::INFO is used.
+     * @param string|null                                                                $logLevel  The log level to use. If null, LogLevel::INFO is used.
      *
      * @psalm-external-mutation-free
      */
     public function __construct(
-        private string|null $userAgent,
+        private ?string $userAgent,
         private SslConfiguration $sslConfig,
-        private int|null $maxPoolSize,
+        private ?int $maxPoolSize,
         CacheInterface|callable|null $cache,
-        private float|null $acquireConnectionTimeout,
+        private ?float $acquireConnectionTimeout,
         callable|SemaphoreFactoryInterface|null $semaphore,
         ?string $logLevel,
-        ?LoggerInterface $logger
+        ?LoggerInterface $logger,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
