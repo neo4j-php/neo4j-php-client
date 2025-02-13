@@ -146,16 +146,19 @@ final class SummarizedResultFormatter
         );
     }
 
+    /**
+     * @param BoltMeta $meta
+     */
     public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder): SummarizedResult
     {
         /** @var ResultSummary|null $summary */
         $summary = null;
         $result->addFinishedCallback(
-            /** @param {array{stats?: BoltCypherStats}&array} $response */
             function (mixed $response) use ($connection, $statement, $runStart, $resultAvailableAfter, &$summary) {
+                /** @var array{stats?: BoltCypherStats}&array $response */
                 $stats = $this->formatBoltStats($response);
                 $resultConsumedAfter = microtime(true) - $runStart;
-                $db = $response['db'] ?? '';
+                $db = $response['stats']['db'] ?? '';
                 $summary = new ResultSummary(
                     $stats,
                     new DatabaseInfo($db),
@@ -174,14 +177,12 @@ final class SummarizedResultFormatter
                 );
             });
 
-        $formattedResult = $this->processBoltResult($meta, $result, $connection, $runStart, $resultAvailableAfter, $statement, $holder);
+        $formattedResult = $this->processBoltResult($meta, $result, $connection, $holder);
 
         /**
-         * @psalm-suppress MixedArgument
-         *
          * @var SummarizedResult<CypherMap<OGMTypes>>
          */
-        return (new SummarizedResult($summary, $formattedResult))->withCacheLimit($result->getFetchSize());
+        return new SummarizedResult($summary, (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize()));
     }
 
     /**
@@ -189,7 +190,7 @@ final class SummarizedResultFormatter
      *
      * @return CypherList<CypherMap<OGMTypes>>
      */
-    private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder): CypherList
+    private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, BookmarkHolder $holder): CypherList
     {
         $tbr = (new CypherList(function () use ($result, $meta) {
             foreach ($result as $row) {
@@ -209,6 +210,10 @@ final class SummarizedResultFormatter
 
     /**
      * @psalm-mutation-free
+     *
+     * @param BoltMeta $meta
+     *
+     * @return CypherMap<OGMTypes>
      */
     private function formatRow(array $meta, array $result): CypherMap
     {

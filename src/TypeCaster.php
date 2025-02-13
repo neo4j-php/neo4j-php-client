@@ -117,6 +117,7 @@ final class TypeCaster
             $tbr = [];
             /** @var mixed $x */
             foreach ($value as $x) {
+                /** @psalm-suppress MixedAssignment */
                 $tbr[] = $x;
             }
 

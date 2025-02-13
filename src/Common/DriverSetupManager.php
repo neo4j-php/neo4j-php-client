@@ -81,8 +81,9 @@ class DriverSetupManager implements Countable
 
         $setups = $this->driverSetups;
 
-        /** @var SplPriorityQueue<int, DriverSetup> */
-        $setups[$alias] ??= new SplPriorityQueue();
+        /** @var SplPriorityQueue<int, DriverSetup> $splPriorityQueue */
+        $splPriorityQueue = new SplPriorityQueue();
+        $setups[$alias] ??= $splPriorityQueue;
         /** @psalm-suppress ImpureMethodCall */
         $setups[$alias]->insert($setup, $priority ?? 0);
 

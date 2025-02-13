@@ -17,7 +17,7 @@ use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Laudis\Neo4j\Tests\Fixtures\MoviesFixture;
-use Laudis\Neo4j\Types\ArrayList;
+use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
@@ -63,7 +63,7 @@ final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
             self::assertTrue($actorInfo->hasKey('roles'));
             self::assertTrue($actorInfo->hasKey('movie'));
 
-            self::assertInstanceOf(ArrayList::class, $actorInfo->get('roles'));
+            self::assertInstanceOf(CypherList::class, $actorInfo->get('roles'));
             self::assertInstanceOf(Node::class, $actorInfo->get('movie'));
             // this can be a cyphermap in HTTP protocol
             $point = $actorInfo->getAsNode('movie')->getProperty('point');

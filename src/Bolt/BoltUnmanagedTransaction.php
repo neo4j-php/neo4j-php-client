@@ -55,6 +55,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
+     * @param iterable<Statement> $statements
+     *
      * @throws ClientException|Throwable
      *
      * @return CypherList<SummarizedResult>
@@ -155,6 +157,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     }
 
     /**
+     * @param iterable<Statement> $statements
+     *
      * @throws Throwable
      *
      * @return CypherList<SummarizedResult>

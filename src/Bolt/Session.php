@@ -60,6 +60,8 @@ final class Session implements SessionInterface
     }
 
     /**
+     * @param iterable<Statement> $statements
+     *
      * @return CypherList<SummarizedResult>
      */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
@@ -120,6 +122,9 @@ final class Session implements SessionInterface
         return $this->writeTransaction($tsxHandler, $config);
     }
 
+    /**
+     * @param iterable<Statement> $statements
+     */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);

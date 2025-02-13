@@ -24,7 +24,7 @@ use const JSON_THROW_ON_ERROR;
 
 use Laudis\Neo4j\Databags\Pair;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
-use Laudis\Neo4j\Types\ArrayList;
+use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
@@ -405,7 +405,7 @@ final class CypherMapTest extends TestCase
 
     public function testPairs(): void
     {
-        $list = new ArrayList([new Pair('A', 'x'), new Pair('B', 'y'), new Pair('C', 'z')]);
+        $list = new CypherList([new Pair('A', 'x'), new Pair('B', 'y'), new Pair('C', 'z')]);
         self::assertEquals($list->toArray(), $this->map->pairs()->toArray());
     }
 

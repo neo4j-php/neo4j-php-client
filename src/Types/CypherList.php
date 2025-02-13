@@ -13,18 +13,238 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
+use AppendIterator;
+use ArrayAccess;
+use ArrayIterator;
+use Generator;
+
+use function is_array;
+use function is_callable;
+
+use Iterator;
+use Laudis\Neo4j\Contracts\CypherSequence;
 use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
+use OutOfBoundsException;
 
 /**
  * An immutable ordered sequence of items.
  *
  * @template TValue
  *
- * @extends ArrayList<TValue>
+ * @implements CypherSequence<TValue>
+ * @implements Iterator<int, TValue>
+ * @implements ArrayAccess<int, TValue>
  */
-class CypherList extends ArrayList
+class CypherList implements CypherSequence, Iterator, ArrayAccess
 {
+    /**
+     * @use CypherSequenceTrait<TValue>
+     */
+    use CypherSequenceTrait;
+
+    /**
+     * @param iterable<mixed, TValue>|callable():Generator<mixed, TValue> $iterable
+     *
+     * @psalm-mutation-free
+     */
+    public function __construct(iterable|callable $iterable = [])
+    {
+        if (is_array($iterable)) {
+            $iterable = new ArrayIterator($iterable);
+        }
+
+        $this->generator = static function () use ($iterable): Generator {
+            $i = 0;
+            /** @var Generator<mixed, TValue> $it */
+            $it = is_callable($iterable) ? $iterable() : $iterable;
+            foreach ($it as $value) {
+                yield $i => $value;
+                ++$i;
+            }
+        };
+    }
+
+    /**
+     * @template Value
+     *
+     * @param callable():(Generator<Value>) $operation
+     *
+     * @return self<Value>
+     *
+     * @psalm-mutation-free
+     */
+    protected function withOperation(callable $operation): self
+    {
+        return new self($operation);
+    }
+
+    /**
+     * Returns the first element in the sequence.
+     *
+     * @return TValue
+     */
+    public function first()
+    {
+        foreach ($this as $value) {
+            return $value;
+        }
+
+        throw new OutOfBoundsException('Cannot grab first element of an empty list');
+    }
+
+    /**
+     * Returns the last element in the sequence.
+     *
+     * @return TValue
+     */
+    public function last()
+    {
+        if ($this->isEmpty()) {
+            throw new OutOfBoundsException('Cannot grab last element of an empty list');
+        }
+
+        $array = $this->toArray();
+
+        return $array[count($array) - 1];
+    }
+
+    /**
+     * @template NewValue
+     *
+     * @param iterable<mixed, NewValue> $values
+     *
+     * @return self<TValue|NewValue>
+     *
+     * @psalm-mutation-free
+     */
+    public function merge(iterable $values): self
+    {
+        return $this->withOperation(function () use ($values): Generator {
+            $iterator = new AppendIterator();
+
+            $iterator->append($this);
+            $iterator->append(new self($values));
+
+            yield from $iterator;
+        });
+    }
+
+    /**
+     * Gets the nth element in the list.
+     *
+     * @throws OutOfBoundsException
+     *
+     * @return TValue
+     */
+    public function get(int $key)
+    {
+        return $this->offsetGet($key);
+    }
+
+    public function getAsString(int $key): string
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toString($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'string');
+        }
+
+        return $tbr;
+    }
+
+    public function getAsInt(int $key): int
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toInt($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'int');
+        }
+
+        return $tbr;
+    }
+
+    public function getAsFloat(int $key): float
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toFloat($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'float');
+        }
+
+        return $tbr;
+    }
+
+    public function getAsBool(int $key): bool
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toBool($value);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, 'bool');
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @return null
+     */
+    public function getAsNull(int $key)
+    {
+        /** @psalm-suppress UnusedMethodCall */
+        $this->get($key);
+
+        return TypeCaster::toNull();
+    }
+
+    /**
+     * @template U
+     *
+     * @param class-string<U> $class
+     *
+     * @return U
+     */
+    public function getAsObject(int $key, string $class): object
+    {
+        $value = $this->get($key);
+        $tbr = TypeCaster::toClass($value, $class);
+        if ($tbr === null) {
+            throw new RuntimeTypeException($value, $class);
+        }
+
+        return $tbr;
+    }
+
+    /**
+     * @return CypherMap<mixed>
+     */
+    public function getAsMap(int $key): CypherMap
+    {
+        return $this->getAsCypherMap($key);
+    }
+
+    /**
+     * @return CypherList<mixed>
+     */
+    public function getAsList(int $key): CypherList
+    {
+        return $this->getAsCypherList($key);
+    }
+
+    /**
+     * @template Value
+     *
+     * @param iterable<mixed, Value> $iterable
+     *
+     * @return self<Value>
+     *
+     * @pure
+     */
+    public static function fromIterable(iterable $iterable): self
+    {
+        return new self($iterable);
+    }
+
     /**
      * @return CypherMap<mixed>
      */
@@ -116,5 +336,93 @@ class CypherList extends ArrayList
     public function getAsWGS843DPoint(int $key): WGS843DPoint
     {
         return $this->getAsObject($key, WGS843DPoint::class);
+    }
+
+    public function key(): int
+    {
+        /** @var int */
+        return $this->cacheKey();
+    }
+
+    /**
+     * @return array<int, TValue>
+     */
+    public function toArray(): array
+    {
+        $this->preload();
+
+        /** @var array<int, TValue> */
+        return $this->cache;
+    }
+
+    /**
+     * @param callable(TValue, int):bool $callback
+     *
+     * @return self<TValue>
+     *
+     * @psalm-mutation-free
+     */
+    final public function filter(callable $callback): self
+    {
+        return $this->withOperation(function () use ($callback) {
+            foreach ($this as $key => $value) {
+                if ($callback($value, $key)) {
+                    yield $key => $value;
+                }
+            }
+        });
+    }
+
+    /**
+     * @template ReturnType
+     *
+     * @param callable(TValue, int):ReturnType $callback
+     *
+     * @return self<ReturnType>
+     *
+     * @psalm-suppress ImplementedReturnTypeMismatch
+     *
+     * @psalm-mutation-free
+     */
+    final public function map(callable $callback): self
+    {
+        return $this->withOperation(function () use ($callback) {
+            foreach ($this as $key => $value) {
+                yield $key => $callback($value, $key);
+            }
+        });
+    }
+
+    /**
+     * @template TInitial
+     *
+     * @param TInitial|null                                 $initial
+     * @param callable(TInitial|null, TValue, int):TInitial $callback
+     *
+     * @return TInitial
+     */
+    final public function reduce(callable $callback, mixed $initial = null): mixed
+    {
+        foreach ($this as $key => $value) {
+            $initial = $callback($initial, $value, $key);
+        }
+
+        return $initial;
+    }
+
+    /**
+     * Iterates over the sequence and applies the callable.
+     *
+     * @param callable(TValue, int):void $callable
+     *
+     * @return self<TValue>
+     */
+    public function each(callable $callable): self
+    {
+        foreach ($this as $key => $value) {
+            $callable($value, $key);
+        }
+
+        return $this;
     }
 }

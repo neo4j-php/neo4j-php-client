@@ -31,6 +31,7 @@ use RuntimeException;
 use function sleep;
 
 use Symfony\Component\Uid\Uuid;
+use UnexpectedValueException;
 
 final class PerformanceTest extends EnvironmentAwareIntegrationTest
 {
@@ -136,6 +137,10 @@ final class PerformanceTest extends EnvironmentAwareIntegrationTest
     private function testAndDestructTransaction(array $tsxs, int $j, int $retriesLeft = 10): array
     {
         $tsx = array_pop($tsxs);
+        if ($tsx === null) {
+            throw new UnexpectedValueException();
+        }
+
         try {
             $x = $tsx->run('RETURN 1 AS x')->first()->get('x');
 

@@ -20,7 +20,6 @@ use Bolt\protocol\v1\structures\Duration;
 use function count;
 
 use DateInterval;
-use DateTime;
 use DateTimeInterface;
 
 use function get_debug_type;
@@ -78,8 +77,6 @@ final class ParameterHelper
     }
 
     /**
-     * @param DateTime|array|object|stdClass $value
-     *
      * @return iterable|scalar|stdClass|IStructure|null
      */
     public static function asParameter(
@@ -162,7 +159,7 @@ final class ParameterHelper
     }
 
     /**
-     * @param iterable<mixed> $parameters
+     * @param iterable<array-key, mixed> $parameters
      *
      * @return CypherMap<iterable|scalar|stdClass|null>
      */
