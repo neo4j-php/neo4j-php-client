@@ -32,6 +32,11 @@ class ProtocolFactory
      */
     public function createProtocol(IConnection $connection, AuthenticateInterface $auth, string $userAgent): array
     {
+        $boltOptoutEnv = getenv('BOLT_ANALYTICS_OPTOUT');
+        if ($boltOptoutEnv === false) {
+            putenv('BOLT_ANALYTICS_OPTOUT=1');
+        }
+
         $bolt = new Bolt($connection);
         $bolt->setProtocolVersions(5.4, 5.3, 5, 4.4);
 
