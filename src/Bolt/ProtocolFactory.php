@@ -34,7 +34,7 @@ class ProtocolFactory
     {
         $boltOptoutEnv = getenv('BOLT_ANALYTICS_OPTOUT');
         /** @psalm-suppress RiskyTruthyFalsyComparison */
-        if (empty($boltOptoutEnv)) {
+        if ($boltOptoutEnv === false) {
             putenv('BOLT_ANALYTICS_OPTOUT=1');
         }
 
