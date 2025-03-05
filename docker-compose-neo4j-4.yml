@@ -32,7 +32,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        PHP_VERSION: "${PHP_VERSION-8.1}"
+        PHP_VERSION: "${PHP_VERSION}"
     networks:
       - neo4j
     volumes:
@@ -47,7 +47,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        PHP_VERSION: "${PHP_VERSION-8.1}"
+        PHP_VERSION: "${PHP_VERSION}"
         WITH_XDEBUG: true
     working_dir: /opt/project
     volumes:

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1', '8.3']
+        php: ['8.1.31', '8.3.17']
     name: "Running on PHP ${{ matrix.php }} with a Neo4j 4 instance connecting over all available protocols"
 
     steps:
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1', '8.3']
+        php: ['8.1.31', '8.3.17']
     name: "Running on PHP ${{ matrix.php }} with a Neo4j 5 instance connecting over all available protocols"
 
     steps:
