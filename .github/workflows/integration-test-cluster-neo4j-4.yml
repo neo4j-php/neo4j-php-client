@@ -13,14 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: [8.1, 8.3]
+        php: ['8.1', '8.3']
     env:
       PHP_VERSION: ${{ matrix.php }}
       CONNECTION: neo4j://neo4j:testtest@localhost:7688
     name: "Running on PHP ${{ matrix.php }} in a Neo4j 4.4 cluster"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Populate .env
         run: |
           echo "PHP_VERSION=${{ matrix.php }}" > .env

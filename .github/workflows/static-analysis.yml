@@ -12,13 +12,13 @@ jobs:
     name: "Lint & Analyse"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       # Setup the correct PHP version globally
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3.16'
+          php-version: '8.3'
 
       - name: Cache Composer dependencies
         uses: actions/cache@v2
@@ -29,7 +29,7 @@ jobs:
       - uses: php-actions/composer@v6
         with:
           progress: yes
-          php_version: 8.3.16
+          php_version: '8.3'
           version: 2
 
       - name: "PHP-CS-Fixer"
