@@ -23,11 +23,8 @@ jobs:
         with:
           path: /tmp/composer-cache
           key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-      - uses: php-actions/composer@v6
-        with:
-          progress: yes
-          php_version: ${{ matrix.php }}
-          version: 2
+      - name: Install dependencies
+        run: composer install
       - uses: php-actions/phpunit@v4
         with:
           configuration: phpunit.xml.dist
