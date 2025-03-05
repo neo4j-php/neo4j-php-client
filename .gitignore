@@ -9,6 +9,7 @@ phpunit.xml
 clover.xml
 cc-test-reporter
 /run-pipeline.sh
+composer.lock
 .env
 /docs/_build
 cachegrind.out.*
