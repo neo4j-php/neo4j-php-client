@@ -29,7 +29,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/composer-cache
-          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
 
       - name: Install dependencies
         run: composer install
