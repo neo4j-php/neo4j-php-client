@@ -26,7 +26,7 @@ x-definitions:
       context: .
       dockerfile: Dockerfile
       args:
-        PHP_VERSION: "${PHP_VERSION}"
+        PHP_VERSION: "${PHP_VERSION-8.1}"
     volumes:
       - .:/opt/project
   x-common-cluster:
