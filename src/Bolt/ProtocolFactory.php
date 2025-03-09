@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\connection\IConnection;
-use Bolt\error\ConnectException;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
@@ -33,18 +32,11 @@ class ProtocolFactory
     public function createProtocol(IConnection $connection, AuthenticateInterface $auth, string $userAgent): array
     {
         $bolt = new Bolt($connection);
-        $bolt->setProtocolVersions(5.4, 5.3, 5, 4.4);
-
-        try {
-            $protocol = $bolt->build();
-        } catch (ConnectException $e) {
-            // Assume incorrect protocol version
-            $bolt->setProtocolVersions(5.2, 5.1);
-            $protocol = $bolt->build();
-        }
+        $bolt->setProtocolVersions('5.4.4', 4.4);
+        $protocol = $bolt->build();
 
         if (!($protocol instanceof V4_4 || $protocol instanceof V5 || $protocol instanceof V5_1 || $protocol instanceof V5_2 || $protocol instanceof V5_3 || $protocol instanceof V5_4)) {
-            throw new RuntimeException('Client only supports bolt version 4.4 and ^5.0');
+            throw new RuntimeException('Client only supports bolt version 4.4 to 5.4');
         }
 
         $response = $auth->authenticateBolt($protocol, $userAgent);
