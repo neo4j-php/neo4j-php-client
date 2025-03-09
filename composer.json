@@ -74,6 +74,9 @@
         "allow-plugins": {
             "composer/package-versions-deprecated": true,
             "php-http/discovery": true
+        },
+        "platform": {
+            "php": "8.1.17"
         }
     }
 }

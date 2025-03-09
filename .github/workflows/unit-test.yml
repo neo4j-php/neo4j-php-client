@@ -14,21 +14,27 @@ jobs:
     name: "Running Unit Tests"
     strategy:
         matrix:
-            php: ['8.1.31', '8.2.27', '8.3.16']
+            php: ['8.1.31', '8.2.27', '8.3.17']
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      # Setup the correct PHP version globally
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+
       - name: Cache Composer dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: /tmp/composer-cache
-          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-      - uses: php-actions/composer@v6
-        with:
-          progress: yes
-          php_version: ${{ matrix.php }}
-          version: 2
-      - uses: php-actions/phpunit@v3
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+
+      - name: Install dependencies
+        run: composer install
+        
+      - uses: php-actions/phpunit@v4
         with:
           configuration: phpunit.xml.dist
           php_version: ${{ matrix.php }}
