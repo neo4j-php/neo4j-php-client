@@ -26,5 +26,7 @@ COPY src/ src/
 COPY tests/ tests/
 COPY .git/ .git/
 
+RUN git config --global --add safe.directory /opt/project
+
 
 
