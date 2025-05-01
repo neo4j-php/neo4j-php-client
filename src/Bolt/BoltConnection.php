@@ -408,4 +408,6 @@ class BoltConnection implements ConnectionInterface
             throw Neo4jException::fromBoltResponse($response);
         }
     }
+
+
 }
