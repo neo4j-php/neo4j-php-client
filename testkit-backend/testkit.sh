@@ -10,8 +10,6 @@ export TEST_DRIVER_NAME=php
 TEST_DRIVER_REPO=$(realpath ..)
 export TEST_DRIVER_REPO
 
-echo "TEST_DRIVER_REPO: $TEST_DRIVER_REPO"
-
 if [ "$1" == "--clean" ]; then
     if [ -d testkit ]; then
         rm -rf testkit
@@ -28,4 +26,9 @@ else
 fi
 
 cd testkit || (echo 'cannot cd into testkit' && exit 1)
-exec python3 main.py --tests UNIT_TESTS
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# exec python3 main.py --tests UNIT_TESTS
+exec python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic.test_success_on_basic_token
