@@ -40,20 +40,20 @@ final class NewDriver implements RequestHandlerInterface
      */
     public function handle($request): DriverResponse
     {
-        $user = $request->getAuthToken()->getPrincipal();
-        $pass = $request->getAuthToken()->getCredentials();
+        $user = $request->authToken->principal;
+        $pass = $request->authToken->credentials;
 
-        $ua = $request->getUserAgent();
-        $timeout = $request->getConnectionTimeoutMs();
-        $config = DriverConfiguration::default();
+        $ua = $request->userAgent;
+        $timeout = $request->connectionTimeoutMs;
+        $config = DriverConfiguration::default()
+            ->withAcquireConnectionTimeout($timeout);
 
         if ($ua) {
             $config = $config->withUserAgent($ua);
         }
 
-        $formatter = SummarizedResultFormatter::create();
         $authenticate = Authenticate::basic($user, $pass);
-        $driver = DriverFactory::create($request->getUri(), $config, $authenticate, $timeout, $formatter);
+        $driver = DriverFactory::create($request->uri, $config, $authenticate);
 
         $id = Uuid::v4();
         $this->repository->addDriver($id, $driver);

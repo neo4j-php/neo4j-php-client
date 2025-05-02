@@ -67,6 +67,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
                     $this->getId($request),
                     $exception instanceof Neo4jException ? $exception->getNeo4jCode() : 'n/a',
                     $exception->getMessage(),
+                    $exception->getCode()
                 ));
             } else {
                 $this->repository->addRecords($id, new FrontendErrorResponse(

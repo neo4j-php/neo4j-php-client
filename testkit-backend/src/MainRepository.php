@@ -113,7 +113,7 @@ final class MainRepository
         $this->records[$id->toRfc4122()] = $result;
         if ($result instanceof SummarizedResult) {
             /** @var SummarizedResult<CypherMap<OGMTypes>> $result */
-            $this->recordIterators[$id->toRfc4122()] = $result->getIterator();
+            $this->recordIterators[$id->toRfc4122()] = $result;
         }
     }
 

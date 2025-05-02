@@ -38,21 +38,21 @@ final class NewSession implements RequestHandlerInterface
      */
     public function handle($request): SessionResponse
     {
-        $driver = $this->repository->getDriver($request->getDriverId());
+        $driver = $this->repository->getDriver($request->driverId);
 
         $config = SessionConfiguration::default()
-            ->withAccessMode($request->getAccessMode() === 'r' ? AccessMode::READ() : AccessMode::WRITE());
+            ->withAccessMode($request->accessMode === 'r' ? AccessMode::READ() : AccessMode::WRITE());
 
-        if ($request->getBookmarks() !== null) {
-            $config = $config->withBookmarks($request->getBookmarks());
+        if ($request->bookmarks !== null) {
+            $config = $config->withBookmarks($request->bookmarks);
         }
 
-        if ($request->getDatabase() !== null) {
-            $config = $config->withDatabase($request->getDatabase());
+        if ($request->database !== null) {
+            $config = $config->withDatabase($request->database);
         }
 
-        if ($request->getFetchSize() !== null) {
-            $config = $config->withFetchSize($request->getFetchSize());
+        if ($request->fetchSize !== null) {
+            $config = $config->withFetchSize($request->fetchSize);
         }
 
         $session = $driver->createSession($config);

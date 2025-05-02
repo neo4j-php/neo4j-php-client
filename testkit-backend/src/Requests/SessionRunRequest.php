@@ -23,19 +23,17 @@ final class SessionRunRequest
     private iterable $params;
     /** @var iterable<string, scalar|iterable|null>|null */
     private ?iterable $txMeta;
-    private ?int $timeout;
 
     /**
      * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>|null $params
      * @param iterable<string, scalar|iterable|null>|null                                          $txMeta
      */
-    public function __construct(Uuid $sessionId, string $cypher, ?iterable $params, ?iterable $txMeta, ?int $timeout)
+    public function __construct(Uuid $sessionId, string $cypher, ?iterable $params, ?iterable $txMeta)
     {
         $this->sessionId = $sessionId;
         $this->cypher = $cypher;
         $this->params = $params ?? [];
         $this->txMeta = $txMeta;
-        $this->timeout = $timeout;
     }
 
     public function getSessionId(): Uuid
@@ -62,10 +60,5 @@ final class SessionRunRequest
     public function getTxMeta(): ?iterable
     {
         return $this->txMeta;
-    }
-
-    public function getTimeout(): ?int
-    {
-        return $this->timeout;
     }
 }

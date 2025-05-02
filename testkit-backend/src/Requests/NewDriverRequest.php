@@ -22,58 +22,25 @@ namespace Laudis\Neo4j\TestkitBackend\Requests;
  * file that was distributed with this source code.
  */
 
+namespace Laudis\Neo4j\TestkitBackend\Requests;
+
 final class NewDriverRequest
 {
-    private string $uri;
-    private AuthorizationTokenRequest $authToken;
-    private ?string $userAgent;
-    private ?bool $resolverRegistered;
-    private ?bool $domainNameResolverRegistered;
-    private ?int $connectionTimeoutMs;
-
     public function __construct(
-        string $uri,
-        AuthorizationTokenRequest $authToken,
-        ?string $userAgent = null,
-        ?bool $resolverRegistered = null,
-        ?bool $domainNameResolverRegistered = null,
-        ?int $connectionTimeoutMs = null,
-    ) {
-        $this->uri = $uri;
-        $this->authToken = $authToken;
-        $this->userAgent = $userAgent;
-        $this->resolverRegistered = $resolverRegistered;
-        $this->domainNameResolverRegistered = $domainNameResolverRegistered;
-        $this->connectionTimeoutMs = $connectionTimeoutMs;
-    }
-
-    public function getUri(): string
-    {
-        return $this->uri;
-    }
-
-    public function getAuthToken(): AuthorizationTokenRequest
-    {
-        return $this->authToken;
-    }
-
-    public function getUserAgent(): ?string
-    {
-        return $this->userAgent;
-    }
-
-    public function isResolverRegistered(): ?bool
-    {
-        return $this->resolverRegistered;
-    }
-
-    public function isDomainNameResolverRegistered(): ?bool
-    {
-        return $this->domainNameResolverRegistered;
-    }
-
-    public function getConnectionTimeoutMs(): ?int
-    {
-        return $this->connectionTimeoutMs;
-    }
+        public readonly string $uri,
+        public readonly AuthorizationTokenRequest $authToken,
+        public readonly ?string $authTokenManagerId = null,
+        public readonly ?string $userAgent = null,
+        public readonly ?bool $resolverRegistered = null,
+        public readonly ?bool $domainNameResolverRegistered = null,
+        public readonly ?int $connectionTimeoutMs = null,
+        public readonly ?int $fetchSize = null,
+        public readonly ?int $maxTxRetryTimeMs = null,
+        public readonly ?int $livenessCheckTimeoutMs = null,
+        public readonly ?int $maxConnectionPoolSize = null,
+        public readonly ?int $connectionAcquisitionTimeoutMs = null,
+        public readonly mixed $clientCertificate = null,
+        public readonly ?string $clientCertificateProviderId = null
+    ) {}
 }
+
