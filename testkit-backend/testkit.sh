@@ -7,6 +7,7 @@ export TEST_NEO4J_USER=neo4j
 export TEST_NEO4J_PASS=testtest
 export TEST_DRIVER_NAME=php
 
+
 TEST_DRIVER_REPO=$(realpath ..)
 export TEST_DRIVER_REPO
 
@@ -31,4 +32,4 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # exec python3 main.py --tests UNIT_TESTS
-exec python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic.test_error_on_incorrect_credentials
+exec python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic

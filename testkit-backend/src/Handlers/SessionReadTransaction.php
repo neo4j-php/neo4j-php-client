@@ -14,10 +14,15 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\TestkitBackend\Backend;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionReadTransactionRequest;
+use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
 use Symfony\Component\Uid\Uuid;
 
@@ -50,12 +55,21 @@ final class SessionReadTransaction implements RequestHandlerInterface
             $config = $config->withMetaData($request->getTxMeta());
         }
 
-        // TODO - Create beginReadTransaction and beginWriteTransaction
-        $transaction = $session->beginTransaction(null, $config);
         $id = Uuid::v4();
+        try {
+            // TODO - Create beginReadTransaction and beginWriteTransaction
+            $transaction = $session->beginTransaction(null, $config);
 
-        $this->repository->addTransaction($id, $transaction);
-        $this->repository->bindTransactionToSession($request->getSessionId(), $id);
+            $this->repository->addTransaction($id, $transaction);
+            $this->repository->bindTransactionToSession($request->getSessionId(), $id);
+        } catch (Neo4jException $exception) {
+            $this->repository->addRecords($id, new DriverErrorResponse(
+                $id,
+                $exception
+            ));
+
+            return new DriverErrorResponse($id, $exception);
+        }
 
         return new RetryableTryResponse($id);
     }

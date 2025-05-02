@@ -57,25 +57,18 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 $params[$key] = $this->decodeToValue($value);
             }
             $result = $session->run($request->getCypher(), $params);
-        } catch (Neo4jException|InvalidTransactionStateException $exception) {
+        } catch (Neo4jException $exception) {
             $this->logger->debug($exception->__toString());
-            if ($exception instanceof InvalidTransactionStateException
-                || str_contains($exception->getMessage(), 'Neo.ClientError.Security.Unauthorized')
-                || str_contains($exception->getMessage(), 'ClientError')
-            ) {
-                $this->repository->addRecords($id, new DriverErrorResponse(
-                    $this->getId($request),
-                    $exception instanceof Neo4jException ? $exception->getNeo4jCode() : 'n/a',
-                    $exception->getMessage(),
-                    $exception->getCode()
-                ));
-            } else {
+            $this->repository->addRecords($id, new DriverErrorResponse(
+                $this->getId($request),
+                $exception
+            ));
+
+            return new ResultResponse($id, []);
+        } catch (\Throwable $exception) {
                 $this->repository->addRecords($id, new FrontendErrorResponse(
                     $exception->getMessage()
                 ));
-            }
-
-            return new ResultResponse($id, []);
         }
         $this->repository->addRecords($id, $result);
 

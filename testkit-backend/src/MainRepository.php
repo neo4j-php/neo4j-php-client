@@ -143,10 +143,7 @@ final class MainRepository
         unset($this->transactions[$id->toRfc4122()]);
     }
 
-    /**
-     * @return UnmanagedTransactionInterface<SummarizedResult<CypherMap<OGMTypes>>>
-     */
-    public function getTransaction(Uuid $id): UnmanagedTransactionInterface
+    public function getTransaction(Uuid $id): ?UnmanagedTransactionInterface
     {
         return $this->transactions[$id->toRfc4122()];
     }

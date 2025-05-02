@@ -107,7 +107,7 @@ final class Backend
                 RequestHandlerInterface::class,
                 get_debug_type($action)
             );
-            throw new UnexpectedValueException($str);
+            throw new UnexpectedValueException((string)$str);
         }
 
         return $action;
