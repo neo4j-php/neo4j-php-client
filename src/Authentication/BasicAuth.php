@@ -20,20 +20,17 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Exception;
+use Laudis\Neo4j\Bolt\BoltMessageFactory;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\UriInterface;
-use Psr\Log\LogLevel;
 
 /**
  * Authenticates connections using a basic username and password.
  */
 final class BasicAuth implements AuthenticateInterface
 {
-    /**
-     * @psalm-external-mutation-free
-     */
     public function __construct(
         private readonly string $username,
         private readonly string $password,
@@ -48,36 +45,60 @@ final class BasicAuth implements AuthenticateInterface
      */
     public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
+        $factory = $this->createMessageFactory($protocol);
+
         if (method_exists($protocol, 'logon')) {
-            $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent]);
-            $protocol->hello(['user_agent' => $userAgent]);
+            $helloMetadata = ['user_agent' => $userAgent];
+
+            $factory->createHelloMessage($helloMetadata)->send();
             $response = ResponseHelper::getResponse($protocol);
-            $this->logger?->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'basic', 'principal' => $this->username]);
-            $protocol->logon([
+
+            $credentials = [
                 'scheme' => 'basic',
                 'principal' => $this->username,
                 'credentials' => $this->password,
-            ]);
+            ];
+
+            $factory->createLogonMessage($credentials)->send();
             ResponseHelper::getResponse($protocol);
 
             /** @var array{server: string, connection_id: string, hints: list} */
             return $response->content;
-        } else {
-            $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent, 'scheme' => 'basic', 'principal' => $this->username]);
-            $protocol->hello([
-                'user_agent' => $userAgent,
-                'scheme' => 'basic',
-                'principal' => $this->username,
-                'credentials' => $this->password,
-            ]);
-
-            /** @var array{server: string, connection_id: string, hints: list} */
-            return ResponseHelper::getResponse($protocol)->content;
         }
+
+        $helloMetadata = [
+            'user_agent' => $userAgent,
+            'scheme' => 'basic',
+            'principal' => $this->username,
+            'credentials' => $this->password,
+        ];
+
+        $factory->createHelloMessage($helloMetadata)->send();
+
+        /** @var array{server: string, connection_id: string, hints: list} */
+        return ResponseHelper::getResponse($protocol)->content;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function logoff(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol): void
+    {
+        $factory = $this->createMessageFactory($protocol);
+        $factory->createLogoffMessage()->send();
+        ResponseHelper::getResponse($protocol);
     }
 
     public function toString(UriInterface $uri): string
     {
         return sprintf('Basic %s:%s@%s:%s', $this->username, '######', $uri->getHost(), $uri->getPort() ?? '');
+    }
+
+    /**
+     * Helper to create message factory.
+     */
+    private function createMessageFactory(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol): BoltMessageFactory
+    {
+        return new BoltMessageFactory($protocol, $this->logger);
     }
 }

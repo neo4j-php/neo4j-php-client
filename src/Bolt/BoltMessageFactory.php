@@ -23,6 +23,9 @@ use Laudis\Neo4j\Bolt\Messages\BoltBeginMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltCommitMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltDiscardMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltGoodbyeMessage;
+use Laudis\Neo4j\Bolt\Messages\BoltHelloMessage;
+use Laudis\Neo4j\Bolt\Messages\BoltLogoffMessage;
+use Laudis\Neo4j\Bolt\Messages\BoltLogonMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltPullMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltResetMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltRollbackMessage;
@@ -32,7 +35,7 @@ use Laudis\Neo4j\Common\Neo4jLogger;
 /**
  * Factory class for creating Bolt protocol messages.
  */
-final class BoltMessageFactory
+class BoltMessageFactory
 {
     public function __construct(
         private readonly V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol,
@@ -73,6 +76,25 @@ final class BoltMessageFactory
     public function createPullMessage(array $extra): BoltPullMessage
     {
         return new BoltPullMessage($this->protocol, $extra, $this->logger);
+    }
+
+    public function createHelloMessage(array $extra): BoltHelloMessage
+    {
+        /** @var array<string, mixed> $extra */
+
+        return new BoltHelloMessage($this->protocol, $extra, $this->logger);
+    }
+
+    public function createLogonMessage(array $credentials): BoltLogonMessage
+    {
+        /** @var array<string, mixed> $credentials */
+
+        return new BoltLogonMessage($this->protocol, $credentials, $this->logger);
+    }
+
+    public function createLogoffMessage(): BoltLogoffMessage
+    {
+        return new BoltLogoffMessage($this->protocol, $this->logger);
     }
 
     public function createGoodbyeMessage(): BoltGoodbyeMessage
