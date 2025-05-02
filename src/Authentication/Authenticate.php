@@ -35,13 +35,13 @@ final class Authenticate
      */
     public static function basic(string $username, string $password, ?Neo4jLogger $logger = null): BasicAuth
     {
+        /** @psalm-suppress ImpureMethodCall Uri is a pure object */
+
         return new BasicAuth($username, $password, $logger);
     }
 
     /**
      * Authenticate using a kerberos token.
-     *
-     * @pure
      */
     public static function kerberos(string $token, ?Neo4jLogger $logger = null): KerberosAuth
     {
@@ -50,8 +50,6 @@ final class Authenticate
 
     /**
      * Authenticate using a OpenID Connect token.
-     *
-     * @pure
      */
     public static function oidc(string $token, ?Neo4jLogger $logger = null): OpenIDConnectAuth
     {
@@ -60,8 +58,6 @@ final class Authenticate
 
     /**
      * Don't authenticate at all.
-     *
-     * @pure
      */
     public static function disabled(?Neo4jLogger $logger = null): NoAuth
     {
@@ -70,8 +66,6 @@ final class Authenticate
 
     /**
      * Authenticate from information found in the url.
-     *
-     * @pure
      */
     public static function fromUrl(UriInterface $uri, ?Neo4jLogger $logger = null): AuthenticateInterface
     {

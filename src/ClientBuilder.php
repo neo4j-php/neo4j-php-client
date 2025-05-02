@@ -66,9 +66,6 @@ final class ClientBuilder
         );
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?int $priority = 0): self
     {
         $uri = Uri::create($url);
