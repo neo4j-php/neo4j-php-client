@@ -118,9 +118,13 @@ services:
 
   testkit_backend:
     <<: *common-php
-    command: php ./testkit-backend/index.php
+    environment:
+      PHP_IDE_CONFIG: "serverName=myserver"
+    command: php -d xdebug.mode=debug -d xdebug.start_with_request=yes -d xdebug.client_host=host.docker.internal ./testkit-backend/index.php
     networks:
       - neo4j
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - neo4j
     ports:

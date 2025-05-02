@@ -15,48 +15,9 @@ namespace Laudis\Neo4j\TestkitBackend\Requests;
 
 final class AuthorizationTokenRequest
 {
-    private string $scheme;
-    private string $principal;
-    private string $credentials;
-    private string $realm;
-    private string $ticket;
-
     public function __construct(
-        string $scheme,
-        string $principal,
-        string $credentials,
-        ?string $realm = null,
-        ?string $ticket = null,
-    ) {
-        $this->scheme = $scheme;
-        $this->principal = $principal;
-        $this->credentials = $credentials;
-        $this->realm = $realm ?? '';
-        $this->ticket = $ticket ?? '';
-    }
-
-    public function getScheme(): string
-    {
-        return $this->scheme;
-    }
-
-    public function getPrincipal(): string
-    {
-        return $this->principal;
-    }
-
-    public function getCredentials(): string
-    {
-        return $this->credentials;
-    }
-
-    public function getRealm(): string
-    {
-        return $this->realm;
-    }
-
-    public function getTicket(): string
-    {
-        return $this->ticket;
-    }
+        public readonly string $scheme,
+        public readonly string $principal,
+        public readonly string $credentials
+    ) {}
 }
