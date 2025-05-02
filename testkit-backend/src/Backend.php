@@ -79,6 +79,10 @@ final class Backend
     {
         while (true) {
             $message = $this->socket->readMessage();
+            $this->logger->info("Raw request message: " . $message);
+            echo "Raw request message: " . $message . PHP_EOL;
+
+
             if ($message === null) {
                 $this->socket->reset();
                 continue;
