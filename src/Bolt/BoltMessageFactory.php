@@ -39,9 +39,8 @@ class BoltMessageFactory
 {
     public function __construct(
         private readonly V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol,
-        private readonly ?Neo4jLogger                $logger = null,
-    )
-    {
+        private readonly ?Neo4jLogger $logger = null,
+    ) {
     }
 
     public function createResetMessage(): BoltResetMessage

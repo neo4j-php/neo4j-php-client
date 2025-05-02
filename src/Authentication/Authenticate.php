@@ -42,8 +42,6 @@ final class Authenticate
 
     /**
      * Authenticate using a kerberos token.
-     *
-     *
      */
     public static function kerberos(string $token, ?Neo4jLogger $logger = null): KerberosAuth
     {
@@ -52,8 +50,6 @@ final class Authenticate
 
     /**
      * Authenticate using a OpenID Connect token.
-     *
-     *
      */
     public static function oidc(string $token, ?Neo4jLogger $logger = null): OpenIDConnectAuth
     {
@@ -62,8 +58,6 @@ final class Authenticate
 
     /**
      * Don't authenticate at all.
-     *
-     *
      */
     public static function disabled(?Neo4jLogger $logger = null): NoAuth
     {
@@ -72,8 +66,6 @@ final class Authenticate
 
     /**
      * Authenticate from information found in the url.
-     *
-     *
      */
     public static function fromUrl(UriInterface $uri, ?Neo4jLogger $logger = null): AuthenticateInterface
     {

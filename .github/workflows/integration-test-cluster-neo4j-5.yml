@@ -14,9 +14,6 @@ jobs:
     strategy:
       matrix:
         php: [8.1, 8.3]
-    env:
-      PHP_VERSION: ${{ matrix.php }}
-      CONNECTION: neo4j://neo4j:testtest@localhost:7687
     name: "Running on PHP ${{ matrix.php }} with a Neo4j 5.20-enterprise cluster"
 
     steps:
@@ -24,7 +21,7 @@ jobs:
       - name: Populate .env
         run: |
           echo "PHP_VERSION=${{ matrix.php }}" > .env
-          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
+          echo "CONNECTION=neo4j://neo4j:testtest@server1" >> .env
       - uses: hoverkraft-tech/compose-action@v2.0.2
         name: Start services
         with:

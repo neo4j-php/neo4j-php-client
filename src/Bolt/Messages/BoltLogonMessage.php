@@ -29,16 +29,15 @@ use Psr\Log\LogLevel;
 final class BoltLogonMessage extends BoltMessage
 {
     /**
-     * @param V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol The Bolt protocol version
-     * @param array<string,mixed> $credentials The credentials for the LOGON request (e.g., username and password)
-     * @param Neo4jLogger|null $logger Optional logger for logging purposes
+     * @param V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol    The Bolt protocol version
+     * @param array<string,mixed>         $credentials The credentials for the LOGON request (e.g., username and password)
+     * @param Neo4jLogger|null            $logger      Optional logger for logging purposes
      */
     public function __construct(
         private readonly V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol,
-        private readonly array                       $credentials,
-        private readonly ?Neo4jLogger                $logger,
-    )
-    {
+        private readonly array $credentials,
+        private readonly ?Neo4jLogger $logger,
+    ) {
         parent::__construct($protocol);
     }
 
@@ -49,9 +48,11 @@ final class BoltLogonMessage extends BoltMessage
      */
     public function send(): BoltLogonMessage
     {
-        $this->logger?->log(LogLevel::DEBUG, 'LOGON', $this->credentials);
-        /** @psalm-suppress PossiblyUndefinedMethod */
+        $toLog = $this->credentials;
+        unset($toLog['credentials']);
 
+        $this->logger?->log(LogLevel::DEBUG, 'LOGON', $toLog);
+        /** @psalm-suppress PossiblyUndefinedMethod */
         $this->protocol->logon($this->credentials);
 
         return $this;

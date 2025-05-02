@@ -29,6 +29,10 @@ final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testValidHostname(): void
     {
+        if (!str_contains($this->getUri()->getScheme(), 'bolt')) {
+            $this->markTestSkipped('This test only works with Bolt drivers.');
+        }
+
         $results = BoltDriver::create($this->getUri())
             ->createSession()
             ->run('RETURN 1 AS x');
@@ -43,6 +47,10 @@ final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
      */
     public function testValidUrl(): void
     {
+        if (!str_contains($this->getUri()->getScheme(), 'bolt')) {
+            $this->markTestSkipped('This test only works with Bolt drivers.');
+        }
+
         $ip = gethostbyname($this->getUri()->getHost());
         try {
             $results = BoltDriver::create($this->getUri()->withHost($ip)->__toString())

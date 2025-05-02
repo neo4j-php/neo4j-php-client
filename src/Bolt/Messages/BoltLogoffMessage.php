@@ -30,13 +30,12 @@ class BoltLogoffMessage extends BoltMessage
 {
     /**
      * @param V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol The Bolt protocol version
-     * @param Neo4jLogger|null $logger Optional logger for logging purposes
+     * @param Neo4jLogger|null            $logger   Optional logger for logging purposes
      */
     public function __construct(
         private readonly V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol,
-        private readonly ?Neo4jLogger                $logger = null,
-    )
-    {
+        private readonly ?Neo4jLogger $logger = null,
+    ) {
         parent::__construct($protocol);
     }
 
@@ -49,7 +48,6 @@ class BoltLogoffMessage extends BoltMessage
     {
         $this->logger?->log(LogLevel::DEBUG, 'LOGOFF', []);
         /** @psalm-suppress PossiblyUndefinedMethod */
-
         $this->protocol->logoff();
 
         return $this;

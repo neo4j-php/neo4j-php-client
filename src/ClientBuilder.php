@@ -66,12 +66,12 @@ final class ClientBuilder
         );
     }
 
-
     public function withDriver(string $alias, string $url, ?AuthenticateInterface $authentication = null, ?int $priority = 0): self
     {
         $uri = Uri::create($url);
 
         $authentication ??= Authenticate::fromUrl($uri, $this->driverSetups->getLogger());
+
         return $this->withParsedUrl($alias, $uri, $authentication, $priority ?? 0);
     }
 
