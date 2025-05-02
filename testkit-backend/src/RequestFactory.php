@@ -79,6 +79,15 @@ final class RequestFactory
     {
         $class = self::MAPPINGS[$name];
 
+        if ($name === 'AuthorizationToken') {
+            return new AuthorizationTokenRequest(
+                $data['scheme'],
+                $data['realm'] ?? '',
+                $data['principal'],
+                $data['credentials']
+            );
+        }
+
         $params = [];
         foreach ($data as $value) {
             if (is_array($value) && isset($value['name'], $value['data'])) {

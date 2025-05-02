@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Exception\InvalidTransactionStateException;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -42,8 +43,8 @@ final class TransactionRollback implements RequestHandlerInterface
 
         try {
             $tsx->rollback();
-        } catch (InvalidTransactionStateException $e) {
-            return new DriverErrorResponse($request->getTxId(), '', $e->getMessage());
+        } catch (Neo4jException $e) {
+            return new DriverErrorResponse($request->getTxId(), $e);
         }
 
         return new TransactionResponse($request->getTxId());

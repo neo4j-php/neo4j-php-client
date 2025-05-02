@@ -17,6 +17,7 @@ final class AuthorizationTokenRequest
 {
     public function __construct(
         public readonly string $scheme,
+        public readonly string $realm,
         public readonly string $principal,
         public readonly string $credentials
     ) {}
