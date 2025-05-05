@@ -366,7 +366,7 @@ trait CypherSequenceTrait
 
     protected function cacheKey(): string|int
     {
-        return $this->keyCache[$this->currentPosition % max($this->cacheLimit, 1)];
+        return (string) $this->keyCache[$this->currentPosition % max($this->cacheLimit, 1)];
     }
 
     /**

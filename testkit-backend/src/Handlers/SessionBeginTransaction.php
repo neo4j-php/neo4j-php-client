@@ -14,11 +14,14 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionBeginTransactionRequest;
+use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\TransactionResponse;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -27,10 +30,12 @@ use Symfony\Component\Uid\Uuid;
 final class SessionBeginTransaction implements RequestHandlerInterface
 {
     private MainRepository $repository;
+    private LoggerInterface $logger;
 
-    public function __construct(MainRepository $repository)
+    public function __construct(MainRepository $repository, LoggerInterface $logger)
     {
         $this->repository = $repository;
+        $this->logger = $logger;
     }
 
     /**
@@ -51,7 +56,13 @@ final class SessionBeginTransaction implements RequestHandlerInterface
         }
 
         // TODO - Create beginReadTransaction and beginWriteTransaction
-        $transaction = $session->beginTransaction(null, $config);
+        try {
+            $transaction = $session->beginTransaction(null, $config);
+        } catch (Neo4jException $exception) {
+            $this->logger->debug($exception->__toString());
+
+            return new DriverErrorResponse($request->getSessionId(), $exception);
+        }
         $id = Uuid::v4();
 
         $this->repository->addTransaction($id, $transaction);

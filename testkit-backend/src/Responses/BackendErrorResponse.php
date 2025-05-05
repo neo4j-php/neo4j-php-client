@@ -25,6 +25,7 @@ final class BackendErrorResponse implements TestkitResponseInterface
     public function __construct(string $message)
     {
         $this->message = $message;
+
     }
 
     public function jsonSerialize(): array
@@ -37,3 +38,4 @@ final class BackendErrorResponse implements TestkitResponseInterface
         ];
     }
 }
+

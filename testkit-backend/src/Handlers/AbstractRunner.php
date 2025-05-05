@@ -65,11 +65,8 @@ abstract class AbstractRunner implements RequestHandlerInterface
             ));
 
             return new ResultResponse($id, []);
-        } catch (\Throwable $exception) {
-                $this->repository->addRecords($id, new FrontendErrorResponse(
-                    $exception->getMessage()
-                ));
-        }
+        } // NOTE: all other exceptions will be caught in the Backend
+
         $this->repository->addRecords($id, $result);
 
         return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());

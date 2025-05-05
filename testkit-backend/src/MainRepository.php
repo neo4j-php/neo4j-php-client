@@ -123,17 +123,14 @@ final class MainRepository
     }
 
     /**
-     * @return SummarizedResult<CypherMap<OGMTypes>>|TestkitResponseInterface
+     * @return SummarizedResult|TestkitResponseInterface
      */
     public function getRecords(Uuid $id)
     {
         return $this->records[$id->toRfc4122()];
     }
 
-    /**
-     * @param UnmanagedTransactionInterface<SummarizedResult<CypherMap<OGMTypes>>> $transaction
-     */
-    public function addTransaction(Uuid $id, UnmanagedTransactionInterface $transaction): void
+    public function addTransaction(Uuid $id, SessionInterface|UnmanagedTransactionInterface $transaction): void
     {
         $this->transactions[$id->toRfc4122()] = $transaction;
     }
@@ -143,7 +140,7 @@ final class MainRepository
         unset($this->transactions[$id->toRfc4122()]);
     }
 
-    public function getTransaction(Uuid $id): ?UnmanagedTransactionInterface
+    public function getTransaction(Uuid $id): UnmanagedTransactionInterface|SessionInterface|null
     {
         return $this->transactions[$id->toRfc4122()];
     }

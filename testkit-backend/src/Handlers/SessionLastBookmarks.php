@@ -15,19 +15,38 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionLastBookmarksRequest;
+use Laudis\Neo4j\TestkitBackend\Responses\BookmarksResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\SkipTestResponse;
+use Monolog\Handler\AbstractHandler;
+use Symfony\Component\Uid\Uuid;
 
 /**
- * @implements RequestHandlerInterface<SessionLastBookmarksRequest>
+ * @implements AbstractRunner<SessionLastBookmarksRequest>
  */
 final class SessionLastBookmarks implements RequestHandlerInterface
 {
+    public function __construct(private readonly MainRepository $repository)
+    {
+    }
+
     /**
      * @param SessionLastBookmarksRequest $request
+     *
+     * @return TestkitResponseInterface<BookmarksResponse>
      */
     public function handle($request): TestkitResponseInterface
     {
-        return new SkipTestResponse('Bookmarks not implemented yet');
+        $session = $this->repository->getSession($request->getSessionId());
+
+        $bookmarks = $session->getLastBookmark()->values();
+
+        return new BookmarksResponse($bookmarks);
+    }
+
+    protected function getId($request): Uuid
+    {
+        return $request->getSessionId();
     }
 }

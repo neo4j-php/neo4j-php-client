@@ -19,12 +19,12 @@ final class NewSessionRequest
 {
 
     /**
-     * @param iterable<string>|null $bookmarks
+     * @param list<string>|null $bookmarks
      */
     public function __construct(
         public Uuid      $driverId,
         public string    $accessMode,
-        public ?iterable $bookmarks,
+        public ?array $bookmarks,
         public ?string   $database,
         public ?int              $fetchSize,
         public ?string           $impersonatedUser
