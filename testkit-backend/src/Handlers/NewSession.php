@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
@@ -44,7 +45,7 @@ final class NewSession implements RequestHandlerInterface
             ->withAccessMode($request->accessMode === 'r' ? AccessMode::READ() : AccessMode::WRITE());
 
         if ($request->bookmarks !== null) {
-            $config = $config->withBookmarks($request->bookmarks);
+            $config = $config->withBookmarks([new Bookmark($request->bookmarks)]);
         }
 
         if ($request->database !== null) {

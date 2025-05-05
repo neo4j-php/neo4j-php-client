@@ -32,4 +32,4 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # exec python3 main.py --tests UNIT_TESTS
-exec python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic
+exec python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks

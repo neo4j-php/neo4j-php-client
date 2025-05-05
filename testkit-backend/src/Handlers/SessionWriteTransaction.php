@@ -40,21 +40,9 @@ final class SessionWriteTransaction implements RequestHandlerInterface
     {
         $session = $this->repository->getSession($request->getSessionId());
 
-        $config = TransactionConfiguration::default();
-
-        if ($request->getTimeout()) {
-            $config = $config->withTimeout($request->getTimeout());
-        }
-
-        if ($request->getTxMeta()) {
-            $config = $config->withMetaData($request->getTxMeta());
-        }
-
-        // TODO - Create beginReadTransaction and beginWriteTransaction
-        $transaction = $session->beginTransaction(null, $config);
         $id = Uuid::v4();
 
-        $this->repository->addTransaction($id, $transaction);
+        $this->repository->addTransaction($id, $session);
         $this->repository->bindTransactionToSession($request->getSessionId(), $id);
 
         return new RetryableTryResponse($id);
