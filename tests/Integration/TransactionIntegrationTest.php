@@ -184,6 +184,7 @@ CYPHER,
         self::assertTrue($tsx->isFinished());
         self::assertFalse($tsx->isRolledBack());
         self::assertTrue($tsx->isCommitted());
+        self::assertFalse($this->getSession()->getLastBookmark()->isEmpty());
     }
 
     public function testCommitValidFilled(): void

@@ -21,6 +21,8 @@ use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\BoltMessage;
+use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 use Psr\Log\LogLevel;
 
 final class BoltCommitMessage extends BoltMessage
@@ -28,6 +30,7 @@ final class BoltCommitMessage extends BoltMessage
     public function __construct(
         private readonly V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol,
         private readonly ?Neo4jLogger $logger,
+        private readonly BookmarkHolder $bookmarks,
     ) {
         parent::__construct($protocol);
     }
@@ -35,7 +38,13 @@ final class BoltCommitMessage extends BoltMessage
     public function send(): BoltCommitMessage
     {
         $this->logger?->log(LogLevel::DEBUG, 'COMMIT');
-        $this->protocol->commit();
+        $response = $this->protocol->commit()->getResponse();
+
+        $bookmark = $response->content['bookmark'] ?? '';
+
+        if (is_string($bookmark) && trim($bookmark) !== '') {
+            $this->bookmarks->setBookmark(new Bookmark([$bookmark]));
+        }
 
         return $this;
     }
