@@ -51,6 +51,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly SessionConfiguration $config,
         private readonly TransactionConfiguration $tsxConfig,
         private readonly BookmarkHolder $bookmarkHolder,
+        private readonly BoltMessageFactory $messageFactory,
     ) {
     }
 
@@ -83,7 +84,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $list->preload();
         });
 
-        $this->connection->commit();
+        $this->messageFactory->createCommitMessage($this->bookmarkHolder)->send();
         $this->state = TransactionState::COMMITTED;
 
         return $tbr;
@@ -105,7 +106,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         }
 
-        $this->connection->rollback();
+        $this->messageFactory->createRollbackMessage()->send();
         $this->state = TransactionState::ROLLED_BACK;
     }
 

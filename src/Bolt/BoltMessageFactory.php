@@ -31,6 +31,7 @@ use Laudis\Neo4j\Bolt\Messages\BoltResetMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltRollbackMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltRunMessage;
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Databags\BookmarkHolder;
 
 /**
  * Factory class for creating Bolt protocol messages.
@@ -63,9 +64,9 @@ class BoltMessageFactory
         return new BoltRunMessage($this->protocol, $text, $parameters, $extra, $this->logger);
     }
 
-    public function createCommitMessage(): BoltCommitMessage
+    public function createCommitMessage(BookmarkHolder $bookmarkHolder): BoltCommitMessage
     {
-        return new BoltCommitMessage($this->protocol, $this->logger);
+        return new BoltCommitMessage($this->protocol, $this->logger, $bookmarkHolder);
     }
 
     public function createRollbackMessage(): BoltRollbackMessage

@@ -259,20 +259,6 @@ class BoltConnection implements ConnectionInterface
     }
 
     /**
-     * Commits a transaction.
-     *
-     * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
-     */
-    public function commit(): void
-    {
-        $this->consumeResults();
-
-        $message = $this->messageFactory->createCommitMessage();
-        $response = $message->send()->getResponse();
-        $this->assertNoFailure($response);
-    }
-
-    /**
      * Rolls back a transaction.
      *
      * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
