@@ -146,7 +146,15 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $tsxConfig, $this->bookmarkHolder);
+        return new BoltUnmanagedTransaction(
+            $this->config->getDatabase(),
+            $this->formatter,
+            $connection,
+            $this->config,
+            $tsxConfig,
+            $this->bookmarkHolder,
+            new BoltMessageFactory($connection->protocol(), $this->getLogger()),
+        );
     }
 
     /**
@@ -184,7 +192,15 @@ final class Session implements SessionInterface
             throw $e;
         }
 
-        return new BoltUnmanagedTransaction($this->config->getDatabase(), $this->formatter, $connection, $this->config, $config, $this->bookmarkHolder);
+        return new BoltUnmanagedTransaction(
+            $this->config->getDatabase(),
+            $this->formatter,
+            $connection,
+            $this->config,
+            $config,
+            $this->bookmarkHolder,
+            new BoltMessageFactory($connection->protocol(), $this->getLogger()),
+        );
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration
