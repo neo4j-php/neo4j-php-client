@@ -40,6 +40,7 @@ final class BoltCommitMessage extends BoltMessage
     {
         $this->logger?->log(LogLevel::DEBUG, 'COMMIT');
         $response = $this->protocol->commit()->getResponse();
+        $this->protocol->serverState = ServerState::READY;
 
         /** @var array{bookmark?: string} $content */
         $content = $response->content;
