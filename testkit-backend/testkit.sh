@@ -18,7 +18,7 @@ if [ "$1" == "--clean" ]; then
 fi
 
 if [ ! -d testkit ]; then
-    git clone git@github.com:neo4j-drivers/testkit.git
+    git clone https://github.com/neo4j-drivers/testkit.git
     if [ "$(cd testkit && git branch --show-current)" != "${TESTKIT_VERSION}" ]; then
         (cd testkit && git checkout ${TESTKIT_VERSION})
     fi
