@@ -1,4 +1,4 @@
-name: Integration Tests
+name: Testkit
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: "Running on PHP 8.3.17 with a Neo4j 5.20-enterprise cluster"
+    name: "Testkit"
 
     steps:
       - uses: actions/checkout@v4
