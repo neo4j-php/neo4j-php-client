@@ -2,14 +2,12 @@
 
 TESTKIT_VERSION=5.0
 
-export TEST_NEO4J_HOST=neo4j
-export TEST_NEO4J_USER=neo4j
-export TEST_NEO4J_PASS=testtest
-export TEST_DRIVER_NAME=php
+[ -z "$TEST_NEO4J_HOST" ] && export TEST_NEO4J_HOST=neo4j
+[ -z "$TEST_NEO4J_USER" ] && export TEST_NEO4J_USER=neo4j
+[ -z "$TEST_NEO4J_PASS" ] && export TEST_NEO4J_PASS=testtest
+[ -z "$TEST_DRIVER_NAME" ] && export TEST_DRIVER_NAME=php
 
-
-TEST_DRIVER_REPO=$(realpath ..)
-export TEST_DRIVER_REPO
+[ -z "$TEST_DRIVER_REPO" ] && TEST_DRIVER_REPO=$(realpath ..) && export TEST_DRIVER_REPO
 
 if [ "$1" == "--clean" ]; then
     if [ -d testkit ]; then
@@ -31,12 +29,16 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
+# python3 main.py --tests UNIT_TESTS
+
 echo "Starting tests..."
-# exec python3 main.py --tests UNIT_TESTS
-(exec python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic) || true
-#echo "TestAuthenticationBasic Done"
-python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks || true
+
+python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic || exit 1
+echo "TestAuthenticationBasic Done"
+python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks || exit 1
 echo "TestBookmarks Done"
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_nested || exit 1
+echo "TestSessionRun Done"
 #python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_recover_from_fail_on_streaming|| true
 #echo "TestSessionRun Done"
 
