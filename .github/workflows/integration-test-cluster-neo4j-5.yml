@@ -29,5 +29,5 @@ jobs:
           up-flags: '--build --remove-orphans'
       - name: Test
         run: |
-          docker compose run client composer install
-          docker compose run client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run --rm client composer install
+          docker compose run --rm client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration

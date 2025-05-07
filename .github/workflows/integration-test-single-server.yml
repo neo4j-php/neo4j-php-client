@@ -62,16 +62,16 @@ jobs:
           up-flags: '--build'
       - name: Composer install
         run: |
-          docker compose run client composer install
+          docker compose run --rm client composer install
       - name: Test neo4j://
         run: |
-          docker compose run \
+          docker compose run --rm \
             -e PHP_VERSION=${{ matrix.php }} \
             -e CONNECTION=neo4j://neo4j:testtest@neo4j \
             client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
       - name: Test bolt://
         run: |
-          docker compose run \
+          docker compose run --rm \
             -e PHP_VERSION=${{ matrix.php }} \
             -e CONNECTION=bolt://neo4j:testtest@neo4j \
             client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
