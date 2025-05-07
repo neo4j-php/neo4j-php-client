@@ -40,6 +40,11 @@ final class BoltCommitMessage extends BoltMessage
     {
         $this->logger?->log(LogLevel::DEBUG, 'COMMIT');
         $response = $this->protocol->commit()->getResponse();
+        // TODO: This is an issue with the underlying bolt library.
+        // The serverState should be READY after a successful commit but
+        // it's still in TX_STREAMING if the results were not consumed
+        //
+        // This should be removed once it's fixed
         $this->protocol->serverState = ServerState::READY;
 
         /** @var array{bookmark?: string} $content */
