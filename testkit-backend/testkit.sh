@@ -33,12 +33,16 @@ pip install -r requirements.txt
 
 echo "Starting tests..."
 
-python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic || exit 1
-echo "TestAuthenticationBasic Done"
-python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks || exit 1
-echo "TestBookmarks Done"
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_nested || exit 1
-echo "TestSessionRun Done"
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_recover_from_fail_on_streaming|| true
-#echo "TestSessionRun Done"
+EXIT_CODE=0
+
+python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic || EXIT_CODE=1
+
+python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks || EXIT_CODE=1
+
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_nested || EXIT_CODE=1
+
+# Uncomment to run this test as well
+# python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_recover_from_fail_on_streaming || EXIT_CODE=1
+
+exit $EXIT_CODE
 

@@ -61,7 +61,7 @@ final class ServerInfo extends AbstractCypherObject
     {
         return [
             'address' => $this->address,
-cc            'protocolVersion' => $this->protocol,
+            'protocolVersion' => $this->protocol,
             'agent' => $this->agent,
         ];
     }
