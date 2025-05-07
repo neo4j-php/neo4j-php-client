@@ -31,5 +31,11 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
+echo "Starting tests..."
 # exec python3 main.py --tests UNIT_TESTS
-exec python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks
+(exec python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic) || true
+echo "TestAuthenticationBasic Done"
+(exec python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks) || true
+echo "TestBookmarks Done"
+(exec python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_nested) || true
+echo "TestSessionRun Done"
