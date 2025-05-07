@@ -102,18 +102,17 @@ final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
             }
         }
 
-        $statements = [];
+        $count = 0;
         foreach ($personIds as $personId) {
             foreach ($movieIds as $movieId) {
-                $statements[] = Statement::create(
+                $count++;
+                $this->getSession()->runStatement(Statement::create(
                     'MATCH (a), (b) WHERE id(a) = $ida AND id(b) = $idb MERGE (a) <-[r:ACTED_IN]- (b) RETURN id(r)',
                     ['ida' => $personId, 'idb' => $movieId]
-                );
+                ));
             }
         }
-
-        $this->getSession()->runStatements($statements);
-        self::assertCount(4978, $statements);
+        self::assertEquals(4978, $count);
     }
 
     public function testGettingKeysFromArraylist(): void

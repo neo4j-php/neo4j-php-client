@@ -24,6 +24,7 @@ use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 
+use Laudis\Neo4j\Exception\ConnectionPoolException;
 use function method_exists;
 use function microtime;
 
@@ -44,6 +45,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         private readonly BoltFactory $factory,
         private readonly ConnectionRequestData $data,
         private readonly ?Neo4jLogger $logger,
+        private readonly float $acquireConnectionTimeout
     ) {
     }
 
@@ -63,33 +65,39 @@ final class ConnectionPool implements ConnectionPoolInterface
                 $conf->getUserAgent(),
                 $conf->getSslConfiguration()
             ),
-            $conf->getLogger()
+            $conf->getLogger(),
+            $conf->getAcquireConnectionTimeout()
         );
     }
 
     public function acquire(SessionConfiguration $config): Generator
     {
-        $generator = $this->semaphore->wait();
-        $start = microtime(true);
+        return (function () use ($config) {
+            $connection = $this->reuseConnectionIfPossible($config);
+            if ($connection !== null) {
+                return $connection;
+            }
 
-        return (function () use ($generator, $start, $config) {
+            $generator = $this->semaphore->wait();
             // If the generator is valid, it means we are waiting to acquire a new connection.
             // This means we can use this time to check if we can reuse a connection or should throw a timeout exception.
             while ($generator->valid()) {
-                /** @var bool $continue */
-                $continue = yield microtime(true) - $start;
-                $generator->send($continue);
-                if ($continue === false) {
-                    return null;
-                }
+                $waitTime = $generator->current();
+                if ($waitTime <= $this->acquireConnectionTimeout) {
+                    yield $waitTime;
 
-                $connection = $this->returnAnyAvailableConnection($config);
-                if ($connection !== null) {
-                    return $connection;
+                    $connection = $this->reuseConnectionIfPossible($config);
+                    if ($connection !== null) {
+                        return $connection;
+                    }
+
+                    $generator->next();
+                } else {
+                    throw new ConnectionPoolException('Connection acquire timeout reached: ' . $waitTime);
                 }
             }
 
-            $connection = $this->returnAnyAvailableConnection($config);
+            $connection = $this->reuseConnectionIfPossible($config);
             if ($connection !== null) {
                 return $connection;
             }
@@ -119,53 +127,15 @@ final class ConnectionPool implements ConnectionPoolInterface
         return $this->logger;
     }
 
-    /**
-     * @return BoltConnection|null
-     */
-    private function returnAnyAvailableConnection(SessionConfiguration $config): ?ConnectionInterface
+    private function reuseConnectionIfPossible(SessionConfiguration $config): ?ConnectionInterface
     {
-        $streamingConnection = null;
-        $requiresReconnectConnection = null;
         // Ensure random connection reuse before picking one.
         shuffle($this->activeConnections);
-
         foreach ($this->activeConnections as $activeConnection) {
             // We prefer a connection that is just ready
-            if ($activeConnection->getServerState() === 'READY') {
-                if ($this->factory->canReuseConnection($activeConnection, $this->data, $config)) {
-                    return $this->factory->reuseConnection($activeConnection, $config);
-                } else {
-                    $requiresReconnectConnection = $activeConnection;
-                }
+            if ($activeConnection->getServerState() === 'READY' && $this->factory->canReuseConnection($activeConnection, $config)) {
+                return $this->factory->reuseConnection($activeConnection, $config);
             }
-
-            // We will store any streaming connections, so we can use that one
-            // as we can force the subscribed result sets to consume the results
-            // and become ready again.
-            // This code will make sure we never get stuck if the user has many
-            // results open that aren't consumed yet.
-            // https://github.com/neo4j-php/neo4j-php-client/issues/146
-            // NOTE: we cannot work with TX_STREAMING as we cannot force the transaction to implicitly close.
-            if ($streamingConnection === null && $activeConnection->getServerState() === 'STREAMING') {
-                if ($this->factory->canReuseConnection($activeConnection, $this->data, $config)) {
-                    $streamingConnection = $activeConnection;
-                    if (method_exists($streamingConnection, 'consumeResults')) {
-                        $streamingConnection->consumeResults(); // State should now be ready
-                    }
-                } else {
-                    $requiresReconnectConnection = $activeConnection;
-                }
-            }
-        }
-
-        if ($streamingConnection) {
-            return $this->factory->reuseConnection($streamingConnection, $config);
-        }
-
-        if ($requiresReconnectConnection) {
-            $this->release($requiresReconnectConnection);
-
-            return $this->factory->createConnection($this->data, $config);
         }
 
         return null;
