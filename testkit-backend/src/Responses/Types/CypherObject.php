@@ -107,7 +107,8 @@ final class CypherObject implements TestkitResponseInterface
                 $tbr = new CypherNode(
                     new CypherObject('CypherInt', $value->getId()),
                     new CypherObject('CypherList', new CypherList($labels)),
-                    new CypherObject('CypherMap', new CypherMap($props))
+                    new CypherObject('CypherMap', new CypherMap($props)),
+                    new CypherObject('CypherString', $value->getElementId())
                 );
                 break;
             case Relationship::class:
@@ -123,6 +124,7 @@ final class CypherObject implements TestkitResponseInterface
                     new CypherObject('CypherInt', $value->getEndNodeId()),
                     new CypherObject('CypherString', $value->getType()),
                     new CypherObject('CypherMap', new CypherMap($props)),
+                    new CypherObject('CypherString', $value->getElementId())
                 );
                 break;
             case Path::class:
@@ -157,7 +159,8 @@ final class CypherObject implements TestkitResponseInterface
                     new CypherObject('CypherNull', null),
                     new CypherObject('CypherNull', null),
                     new CypherObject('CypherString', $value->getType()),
-                    new CypherObject('CypherMap', new CypherMap($props))
+                    new CypherObject('CypherMap', new CypherMap($props)),
+                    new CypherObject('CypherString', $value->getElementId())
                 );
                 break;
             default:

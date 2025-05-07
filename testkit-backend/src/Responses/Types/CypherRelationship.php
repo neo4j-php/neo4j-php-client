@@ -22,14 +22,16 @@ final class CypherRelationship implements TestkitResponseInterface
     private CypherObject $endNodeId;
     private CypherObject $type;
     private CypherObject $props;
+    private CypherObject $elementId;
 
-    public function __construct(CypherObject $id, CypherObject $startNodeId, CypherObject $endNodeId, CypherObject $type, CypherObject $props)
+    public function __construct(CypherObject $id, CypherObject $startNodeId, CypherObject $endNodeId, CypherObject $type, CypherObject $props, CypherObject $elementId)
     {
         $this->id = $id;
         $this->startNodeId = $startNodeId;
         $this->endNodeId = $endNodeId;
         $this->type = $type;
         $this->props = $props;
+        $this->elementId = $elementId;
     }
 
     public function jsonSerialize(): array
@@ -42,6 +44,7 @@ final class CypherRelationship implements TestkitResponseInterface
                 'endNodeId' => $this->endNodeId,
                 'type' => $this->type,
                 'props' => $this->props,
+                'elementId' => $this->elementId,
             ],
         ];
     }

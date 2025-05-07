@@ -338,9 +338,9 @@ class CypherList implements CypherSequence, Iterator, ArrayAccess
         return $this->getAsObject($key, WGS843DPoint::class);
     }
 
-    public function key(): string
+    public function key(): int
     {
-        /** @var string */
+        /** @var int */
         return $this->cacheKey();
     }
 

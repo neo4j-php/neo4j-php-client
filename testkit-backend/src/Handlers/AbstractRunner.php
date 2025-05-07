@@ -24,6 +24,7 @@ use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\AbstractCypherObject;
+use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -106,7 +107,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
                     $list[] = $this->decodeToValue($v);
                 }
 
-                return new CypherMap($list);
+                return new CypherList($list);
             }
         }
 
