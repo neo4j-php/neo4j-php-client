@@ -163,9 +163,13 @@ final class Session implements SessionInterface
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Acquiring connection', ['config' => $config, 'sessionConfig' => $sessionConfig]);
-        $connection = $this->pool->acquire($sessionConfig);
-        /** @var BoltConnection $connection */
-        $connection = GeneratorHelper::getReturnFromGenerator($connection);
+        $connectionGenerator = $this->pool->acquire($sessionConfig);
+        /**
+         * @var BoltConnection $connection
+         *
+         * @psalm-suppress UnnecessaryVarAnnotation
+         */
+        $connection = GeneratorHelper::getReturnFromGenerator($connectionGenerator);
 
         // We try and let the server do the timeout management.
         // Since the client should not run indefinitely, we just add the client side by two, just in case

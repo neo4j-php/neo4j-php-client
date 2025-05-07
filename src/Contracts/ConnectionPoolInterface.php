@@ -35,7 +35,7 @@ interface ConnectionPoolInterface
      *      int,
      *      float,
      *      bool,
-     *      Connection|null
+     *      Connection
      * >
      */
     public function acquire(SessionConfiguration $config): Generator;
