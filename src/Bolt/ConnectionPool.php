@@ -23,11 +23,7 @@ use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-
 use Laudis\Neo4j\Exception\ConnectionPoolException;
-use function method_exists;
-use function microtime;
-
 use Psr\Http\Message\UriInterface;
 
 use function shuffle;
@@ -45,7 +41,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         private readonly BoltFactory $factory,
         private readonly ConnectionRequestData $data,
         private readonly ?Neo4jLogger $logger,
-        private readonly float $acquireConnectionTimeout
+        private readonly float $acquireConnectionTimeout,
     ) {
     }
 
@@ -72,6 +68,9 @@ final class ConnectionPool implements ConnectionPoolInterface
 
     public function acquire(SessionConfiguration $config): Generator
     {
+        /**
+         * @var Generator<int, float, bool, BoltConnection>
+         */
         return (function () use ($config) {
             $connection = $this->reuseConnectionIfPossible($config);
             if ($connection !== null) {
@@ -93,7 +92,7 @@ final class ConnectionPool implements ConnectionPoolInterface
 
                     $generator->next();
                 } else {
-                    throw new ConnectionPoolException('Connection acquire timeout reached: ' . $waitTime);
+                    throw new ConnectionPoolException('Connection acquire timeout reached: '.($waitTime ?? 0.0));
                 }
             }
 
@@ -127,7 +126,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         return $this->logger;
     }
 
-    private function reuseConnectionIfPossible(SessionConfiguration $config): ?ConnectionInterface
+    private function reuseConnectionIfPossible(SessionConfiguration $config): ?BoltConnection
     {
         // Ensure random connection reuse before picking one.
         shuffle($this->activeConnections);

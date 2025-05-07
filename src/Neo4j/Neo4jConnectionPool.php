@@ -143,7 +143,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                     $this->data->getUri()->withHost($address)
                 );
                 try {
-                    /** @var BoltConnection $connection */
+                    /**
+                     * @var BoltConnection $connection
+                     *
+                     * @psalm-suppress UnnecessaryVarAnnotation
+                     */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
                     $table = $this->routingTable($connection, $config);
                 } catch (ConnectException $e) {

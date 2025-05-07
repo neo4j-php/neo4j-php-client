@@ -105,7 +105,7 @@ final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
         $count = 0;
         foreach ($personIds as $personId) {
             foreach ($movieIds as $movieId) {
-                $count++;
+                ++$count;
                 $this->getSession()->runStatement(Statement::create(
                     'MATCH (a), (b) WHERE id(a) = $ida AND id(b) = $idb MERGE (a) <-[r:ACTED_IN]- (b) RETURN id(r)',
                     ['ida' => $personId, 'idb' => $movieId]

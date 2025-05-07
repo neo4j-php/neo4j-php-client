@@ -78,5 +78,9 @@
         "platform": {
             "php": "8.1.17"
         }
+    },
+    "scripts": {
+        "fix-cs": "./vendor/bin/php-cs-fixer fix",
+        "psalm": "./vendor/bin/psalm"
     }
 }
