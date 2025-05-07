@@ -27,4 +27,7 @@ jobs:
       - name: Test
         run: |
           docker compose run client composer install
+          # We need to restart the testkit_backend service since it relies on the previous step (composer install) to work
+          docker compose restart testkit_backend
+          docker compose logs testkit_backend
           docker compose run testkit ./testkit.sh
