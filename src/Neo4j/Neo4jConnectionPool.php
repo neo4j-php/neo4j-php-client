@@ -74,6 +74,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         private readonly CacheInterface $cache,
         private readonly AddressResolverInterface $resolver,
         private readonly ?Neo4jLogger $logger,
+        private readonly float $acquireConnectionTimeout,
     ) {
     }
 
@@ -96,7 +97,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             ),
             Cache::getInstance(),
             $resolver,
-            $conf->getLogger()
+            $conf->getLogger(),
+            $conf->getAcquireConnectionTimeout()
         );
     }
 
@@ -112,7 +114,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $key = $this->createKey($data);
         if (!array_key_exists($key, self::$pools)) {
-            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data, $this->logger);
+            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data, $this->logger, $this->acquireConnectionTimeout);
         }
 
         return self::$pools[$key];
@@ -141,7 +143,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                     $this->data->getUri()->withHost($address)
                 );
                 try {
-                    /** @var BoltConnection $connection */
+                    /**
+                     * @var BoltConnection $connection
+                     *
+                     * @psalm-suppress UnnecessaryVarAnnotation
+                     */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
                     $table = $this->routingTable($connection, $config);
                 } catch (ConnectException $e) {

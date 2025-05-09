@@ -138,7 +138,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->database,
                 $this->tsxConfig->getTimeout(),
                 $this->bookmarkHolder,
-                $this->config->getAccessMode()
+                $this->config->getAccessMode(),
+                $this->tsxConfig->getMetaData()
             );
         } catch (Throwable $e) {
             $this->state = TransactionState::TERMINATED;

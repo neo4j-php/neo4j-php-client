@@ -171,6 +171,7 @@ class BoltConnectionPoolTest extends TestCase
                 SslConfiguration::default()
             ),
             null,
+            10.0
         );
     }
 }

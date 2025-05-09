@@ -1,0 +1,31 @@
+name: Testkit
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    name: "Testkit"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Populate .env
+        run: |
+          echo "PHP_VERSION=8.3.17" > .env
+          echo "CONNECTION=neo4j://neo4j:testtest@server1" >> .env
+      - uses: hoverkraft-tech/compose-action@v2.0.2
+        name: Start services
+        with:
+          compose-file: './docker-compose.yml'
+          up-flags: '--build --remove-orphans'
+      - name: Test
+        run: |
+          docker compose run --rm client composer install
+          # We need to restart the testkit_backend service since it relies on the previous step (composer install) to work
+          docker compose restart testkit_backend
+          docker compose logs testkit_backend
+          docker compose run --rm testkit ./testkit.sh
