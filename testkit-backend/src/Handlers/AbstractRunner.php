@@ -16,12 +16,12 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
-use Laudis\Neo4j\Exception\InvalidTransactionStateException;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
+use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
@@ -54,10 +54,30 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
         try {
             $params = [];
-            foreach ($request->getParams() as $key => $value) {
-                $params[$key] = $this->decodeToValue($value);
+            if ($request->getParams() !== null) {
+                foreach ($request->getParams() as $key => $value) {
+                    $params[$key] = $this->decodeToValue($value);
+                }
             }
-            $result = $session->run($request->getCypher(), $params);
+
+            if ($request instanceof SessionRunRequest && $session instanceof SessionInterface) {
+                $metaData = $request->getTxMeta();
+                $actualMeta = [];
+                if ($metaData !== null) {
+                    foreach ($metaData as $key => $meta) {
+                        $actualMeta[$key] = $this->decodeToValue($meta);
+                    }
+                }
+                $config = TransactionConfiguration::default()->withMetadata($actualMeta)->withTimeout($request->getTimeout());
+
+                $result = $session->run($request->getCypher(), $params, $config);
+            } else {
+                $result = $session->run($request->getCypher(), $params);
+            }
+
+            $this->repository->addRecords($id, $result);
+
+            return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
         } catch (Neo4jException $exception) {
             $this->logger->debug($exception->__toString());
             $this->repository->addRecords($id, new DriverErrorResponse(
@@ -67,10 +87,6 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             return new ResultResponse($id, []);
         } // NOTE: all other exceptions will be caught in the Backend
-
-        $this->repository->addRecords($id, $result);
-
-        return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
     }
 
     /**

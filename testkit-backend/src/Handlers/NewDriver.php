@@ -16,7 +16,6 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\DriverFactory;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;

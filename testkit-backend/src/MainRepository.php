@@ -40,6 +40,9 @@ final class MainRepository
     /** @var array<string, Uuid> */
     private array $sessionToTransactions = [];
 
+    /** @var array<string, bool> */
+    private array $iteratorFetchedFirst;
+
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
      * @param array<string, SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>>              $sessions
@@ -74,6 +77,16 @@ final class MainRepository
     public function getIterator(Uuid $id): Iterator
     {
         return $this->recordIterators[$id->toRfc4122()];
+    }
+
+    public function getIteratorFetchedFirst(Uuid $id): bool
+    {
+        return $this->iteratorFetchedFirst[$id->toRfc4122()] ?? false;
+    }
+
+    public function setIteratorFetchedFirst(Uuid $id, bool $value): void
+    {
+        $this->iteratorFetchedFirst[$id->toRfc4122()] = $value;
     }
 
     /**

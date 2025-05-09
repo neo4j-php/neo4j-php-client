@@ -99,6 +99,7 @@ final class RequestFactory
                 $params[] = $value;
             }
         }
+
         return new $class(...$params);
     }
 }

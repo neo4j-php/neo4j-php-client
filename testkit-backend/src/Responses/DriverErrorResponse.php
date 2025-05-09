@@ -38,7 +38,7 @@ final class DriverErrorResponse implements TestkitResponseInterface
             'data' => [
                 'id' => $this->id->toRfc4122(),
                 'code' => $this->exception->getNeo4jCode(),
-                'msg' => $this->exception->getNeo4jMessage()
+                'msg' => $this->exception->getNeo4jMessage(),
             ],
         ];
     }

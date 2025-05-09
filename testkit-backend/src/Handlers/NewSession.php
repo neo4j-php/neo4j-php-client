@@ -52,9 +52,7 @@ final class NewSession implements RequestHandlerInterface
             $config = $config->withDatabase($request->database);
         }
 
-        if ($request->fetchSize !== null) {
-            $config = $config->withFetchSize($request->fetchSize);
-        }
+        $config = $config->withFetchSize($request->fetchSize ?? 1);
 
         $session = $driver->createSession($config);
         $id = Uuid::v4();

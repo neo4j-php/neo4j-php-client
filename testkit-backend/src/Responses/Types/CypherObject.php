@@ -139,7 +139,8 @@ final class CypherObject implements TestkitResponseInterface
                         $value->getNodes()->get($i)->getId(),
                         $value->getNodes()->get($i + 1)->getId(),
                         $rel->getType(),
-                        $rel->getProperties()
+                        $rel->getProperties(),
+                        $rel->getElementId()
                     ));
                 }
                 $tbr = new CypherPath(

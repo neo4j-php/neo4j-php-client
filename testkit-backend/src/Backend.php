@@ -16,9 +16,6 @@ namespace Laudis\Neo4j\TestkitBackend;
 use DI\ContainerBuilder;
 use Exception;
 
-use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use function get_debug_type;
 use function json_decode;
 use function json_encode;
@@ -82,15 +79,13 @@ final class Backend
     {
         while (true) {
             $message = $this->socket->readMessage();
-            $this->logger->info("Raw request message: " . $message);
-            echo "Raw request message: " . $message . PHP_EOL;
-
+            $this->logger->info('Raw request message: '.$message);
+            echo 'Raw request message: '.$message.PHP_EOL;
 
             if ($message === null) {
                 $this->socket->reset();
                 continue;
             }
-
 
             [$handler, $request] = $this->extractRequest($message);
             try {
@@ -112,7 +107,7 @@ final class Backend
                 RequestHandlerInterface::class,
                 get_debug_type($action)
             );
-            throw new UnexpectedValueException((string)$str);
+            throw new UnexpectedValueException((string) $str);
         }
 
         return $action;

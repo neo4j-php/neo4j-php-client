@@ -18,8 +18,6 @@ use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionLastBookmarksRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\BookmarksResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\SkipTestResponse;
-use Monolog\Handler\AbstractHandler;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -27,8 +25,9 @@ use Symfony\Component\Uid\Uuid;
  */
 final class SessionLastBookmarks implements RequestHandlerInterface
 {
-    public function __construct(private readonly MainRepository $repository)
-    {
+    public function __construct(
+        private readonly MainRepository $repository,
+    ) {
     }
 
     /**

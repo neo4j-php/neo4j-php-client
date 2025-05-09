@@ -17,19 +17,15 @@ use Symfony\Component\Uid\Uuid;
 
 final class TransactionRunRequest
 {
-    private Uuid $txId;
-    private string $cypher;
-    /** @var iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> */
-    private iterable $params;
-
     /**
      * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>|null $params
      */
-    public function __construct(Uuid $txId, string $cypher, ?iterable $params = null)
-    {
-        $this->txId = $txId;
-        $this->cypher = $cypher;
-        $this->params = $params ?? [];
+    public function __construct(
+        private Uuid $txId,
+        private string $cypher,
+        private ?iterable $params = null,
+        private ?float $timeout = null,
+    ) {
     }
 
     public function getTxId(): Uuid
@@ -47,6 +43,11 @@ final class TransactionRunRequest
      */
     public function getParams(): iterable
     {
-        return $this->params;
+        return $this->params ?? [];
+    }
+
+    public function getTimeout(): ?float
+    {
+        return $this->timeout;
     }
 }

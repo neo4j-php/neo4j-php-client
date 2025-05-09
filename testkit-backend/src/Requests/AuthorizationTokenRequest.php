@@ -19,6 +19,7 @@ final class AuthorizationTokenRequest
         public readonly string $scheme,
         public readonly string $realm,
         public readonly string $principal,
-        public readonly string $credentials
-    ) {}
+        public readonly string $credentials,
+    ) {
+    }
 }

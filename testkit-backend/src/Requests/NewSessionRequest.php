@@ -17,17 +17,16 @@ use Symfony\Component\Uid\Uuid;
 
 final class NewSessionRequest
 {
-
     /**
      * @param list<string>|null $bookmarks
      */
     public function __construct(
-        public Uuid      $driverId,
-        public string    $accessMode,
+        public Uuid $driverId,
+        public string $accessMode,
         public ?array $bookmarks,
-        public ?string   $database,
-        public ?int              $fetchSize,
-        public ?string           $impersonatedUser
+        public ?string $database,
+        public ?int $fetchSize,
+        public ?string $impersonatedUser,
     ) {
     }
 }

@@ -17,23 +17,17 @@ use Symfony\Component\Uid\Uuid;
 
 final class SessionRunRequest
 {
-    private Uuid $sessionId;
-    private string $cypher;
-    /** @var iterable<string, array{name: string, data: array{value: iterable|scalar|null}}> */
-    private iterable $params;
-    /** @var iterable<string, scalar|iterable|null>|null */
-    private ?iterable $txMeta;
-
     /**
      * @param iterable<string, array{name: string, data: array{value: iterable|scalar|null}}>|null $params
      * @param iterable<string, scalar|iterable|null>|null                                          $txMeta
      */
-    public function __construct(Uuid $sessionId, string $cypher, ?iterable $params, ?iterable $txMeta)
-    {
-        $this->sessionId = $sessionId;
-        $this->cypher = $cypher;
-        $this->params = $params ?? [];
-        $this->txMeta = $txMeta;
+    public function __construct(
+        private Uuid $sessionId,
+        private string $cypher,
+        private ?iterable $params = null,
+        private ?iterable $txMeta = null,
+        private ?float $timeout = null,
+    ) {
     }
 
     public function getSessionId(): Uuid
@@ -51,7 +45,7 @@ final class SessionRunRequest
      */
     public function getParams(): iterable
     {
-        return $this->params;
+        return $this->params ?? [];
     }
 
     /**
@@ -60,5 +54,10 @@ final class SessionRunRequest
     public function getTxMeta(): ?iterable
     {
         return $this->txMeta;
+    }
+
+    public function getTimeout(): ?float
+    {
+        return $this->timeout;
     }
 }
