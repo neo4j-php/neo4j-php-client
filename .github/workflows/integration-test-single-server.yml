@@ -16,30 +16,22 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Populate .env
+      - name: Run tests Neo4j 4
         run: |
+
           echo "PHP_VERSION=${{ matrix.php }}" > .env
-          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
-      - uses: hoverkraft-tech/compose-action@v2.2.0
-        name: Start services
-        with:
-          compose-file: "./docker-compose-neo4j-4.yml"
-          up-flags: "--build --remove-orphans"
-      - name: Composer install
-        run: |
-          docker compose -f docker-compose-neo4j-4.yml run client composer install
-      - name: Test neo4j://
-        run: |
-          docker compose -f docker-compose-neo4j-4.yml run \
-            -e PHP_VERSION=${{ matrix.php }} \
-            -e CONNECTION=neo4j://neo4j:testtest@neo4j \
-            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
-      - name: Test bolt://
-        run: |
-          docker compose -f docker-compose-neo4j-4.yml run \
-            -e PHP_VERSION=${{ matrix.php }} \
-            -e CONNECTION=bolt://neo4j:testtest@neo4j \
-            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          echo "CONNECTION=bolt://neo4j:testtest@neo4j" >> .env
+
+          docker compose -f docker-compose-neo4j-4.yml up -d --build --remove-orphans --wait neo4j
+
+          docker compose -f docker-compose-neo4j-4.yml run --rm --no-deps \
+            client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
+
+          docker compose -f docker-compose-neo4j-4.yml run --rm --no-deps \
+            client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
+
+          docker compose -f docker-compose-neo4j-4.yml down --remove-orphans --volumes
+
   tests-v5:
     runs-on: ubuntu-latest
     strategy:
@@ -53,23 +45,17 @@ jobs:
         run: |
           echo "PHP_VERSION=${{ matrix.php }}" > .env
           echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
-      - uses: hoverkraft-tech/compose-action@v2.2.0
-        name: Start services
-        with:
-          compose-file: "./docker-compose.yml"
-          up-flags: "--build"
-      - name: Composer install
+      - name: Run tests Neo4j 5
         run: |
-          docker compose run --rm client composer install
-      - name: Test neo4j://
-        run: |
-          docker compose run --rm \
-            -e PHP_VERSION=${{ matrix.php }} \
-            -e CONNECTION=neo4j://neo4j:testtest@neo4j \
-            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
-      - name: Test bolt://
-        run: |
-          docker compose run --rm \
-            -e PHP_VERSION=${{ matrix.php }} \
-            -e CONNECTION=bolt://neo4j:testtest@neo4j \
-            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          echo "PHP_VERSION=${{ matrix.php }}" > .env
+          echo "CONNECTION=bolt://neo4j:testtest@neo4j" >> .env
+
+          docker compose up -d --build --remove-orphans --wait neo4j
+
+          docker compose run --rm --no-deps \
+            client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
+
+          docker compose run --rm --no-deps \
+            client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
+
+          docker compose down --remove-orphans --volumes

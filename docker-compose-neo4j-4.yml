@@ -51,8 +51,6 @@ services:
       server4:
         condition: service_healthy
   neo4j:
-    networks:
-      - neo4j
     image: neo4j:4.4-enterprise
     healthcheck:
       test: "wget -q --method=HEAD http://localhost:7474 || exit 1"
@@ -64,10 +62,12 @@ services:
       - "7474:7474"
     environment:
       <<: *common
-    volumes:
-      - ./tests/resources:/import
+      NEO4J_dbms_connector_http_advertised__address: server1:7474
+      NEO4J_dbms_connector_bolt_advertised__address: server1:7687
     env_file:
       - .env
+    networks:
+      - neo4j
   server1:
     image: neo4j:4.4-enterprise
     healthcheck:
@@ -77,8 +77,6 @@ services:
       retries: 5
     networks:
       - neo4j
-    volumes:
-      - ./tests/resources:/import
     environment:
       <<: *common-core
       NEO4J_causal__clustering_discovery__advertised__address: server1:5000
@@ -105,8 +103,6 @@ services:
       NEO4J_causal__clustering_raft__advertised__address: server2:7000
       NEO4J_dbms_connector_http_advertised__address: server2:7474
       NEO4J_dbms_connector_bolt_advertised__address: server2:7687
-    volumes:
-      - ./tests/resources:/import
     env_file:
       - .env
 
@@ -126,8 +122,6 @@ services:
       NEO4J_causal__clustering_raft__advertised__address: server3:7000
       NEO4J_dbms_connector_http_advertised__address: server3:7474
       NEO4J_dbms_connector_bolt_advertised__address: server3:7687
-    volumes:
-      - ./tests/resources:/import
     env_file:
       - .env
 
@@ -150,5 +144,3 @@ services:
       NEO4J_dbms_connector_bolt_advertised__address: server4:7687
     env_file:
       - .env
-    volumes:
-      - ./tests/resources:/import
