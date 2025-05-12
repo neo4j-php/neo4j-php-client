@@ -17,6 +17,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build & cache client image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: PHP_VERSION=8.1.31
+          tags: integration-client:8.1.31
+
       - name: Populate .env
         run: |
           echo "PHP_VERSION=8.1.31" > .env
