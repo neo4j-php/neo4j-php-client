@@ -5,16 +5,14 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - main
 
 jobs:
   tests:
     runs-on: ubuntu-latest
     name: "Running Unit Tests"
     strategy:
-        matrix:
-            php: ['8.1.31', '8.2.27', '8.3.17']
+      matrix:
+        php: ["8.1.31", "8.2.27", "8.3.17"]
 
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         run: composer install
-        
+
       - uses: php-actions/phpunit@v4
         with:
           configuration: phpunit.xml.dist
