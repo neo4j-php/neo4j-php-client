@@ -105,6 +105,6 @@ jobs:
           echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
 
           docker compose run --rm \
-            client /vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+            client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
 
           docker compose down --remove-orphans --volumes
