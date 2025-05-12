@@ -15,8 +15,8 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use Bolt\error\ConnectException;
 use Exception;
+use Laudis\Neo4j\Basic\Driver;
 use Laudis\Neo4j\Bolt\BoltDriver;
-use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Throwable;
 
@@ -85,7 +85,7 @@ final class BoltDriverIntegrationTest extends EnvironmentAwareIntegrationTest
 
     public function testBookmarkUpdates(): void
     {
-        $session = Neo4jDriver::create($this->getUri(['bolt', 'neo4j'])->__toString())->createSession();
+        $session = Driver::create($this->getUri(['bolt', 'neo4j'])->__toString())->createSession();
         $bookmark = $session->getLastBookmark();
         $this->assertEquals([], $bookmark->values());
         $this->assertTrue($bookmark->isEmpty());

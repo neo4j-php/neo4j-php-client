@@ -22,6 +22,7 @@ x-definitions:
       - .env
   x-common-php:
     &common-php
+    image: "integration-client:${PHP_VERSION-8.1}"
     build:
       context: .
       dockerfile: Dockerfile
@@ -50,9 +51,6 @@ services:
       - .:/opt/project
     env_file:
       - .env
-    depends_on:
-      neo4j:
-        condition: service_healthy
   neo4j:
     <<: *common
     image: neo4j:5.23-community

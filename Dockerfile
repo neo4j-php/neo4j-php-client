@@ -12,21 +12,10 @@ RUN apt-get update \
     && mv test-reporter-latest-linux-amd64 /usr/bin/cc-test-reporter  \
     && chmod +x /usr/bin/cc-test-reporter \
     && pecl install xdebug \
-    && docker-php-ext-enable xdebug \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    && docker-php-ext-enable xdebug && \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /opt/project
-
-COPY composer.json ./
-
-RUN composer install
-
-COPY phpunit.xml.dist phpunit.coverage.xml.dist psalm.xml .php-cs-fixer.dist.php LICENSE README.md ./
-COPY src/ src/
-COPY tests/ tests/
-COPY .git/ .git/
-
-RUN git config --global --add safe.directory /opt/project
 
 
 
