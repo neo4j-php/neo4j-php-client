@@ -22,6 +22,7 @@ jobs:
         with:
           compose-file: './docker-compose.yml'
           up-flags: '--build --remove-orphans'
+          down-flags: '-t 60 --remove-orphans'
       - name: Test
         run: |
           docker compose run --rm client composer install
