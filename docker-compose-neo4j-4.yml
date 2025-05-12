@@ -28,6 +28,7 @@ networks:
 
 services:
   client:
+    image: "integration-client:${PHP_VERSION-8.1}"
     build:
       context: .
       dockerfile: Dockerfile

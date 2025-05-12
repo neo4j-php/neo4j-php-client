@@ -22,6 +22,7 @@ x-definitions:
       - .env
   x-common-php:
     &common-php
+    image: "integration-client:${PHP_VERSION-8.1}"
     build:
       context: .
       dockerfile: Dockerfile
