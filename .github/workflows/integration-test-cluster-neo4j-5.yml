@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1.31', '8.3.17']
+        php: ["8.1.31", "8.3.17"]
     name: "Running on PHP ${{ matrix.php }} with a Neo4j 5.20-enterprise cluster"
 
     steps:
@@ -23,8 +23,8 @@ jobs:
       - uses: hoverkraft-tech/compose-action@v2.0.2
         name: Start services
         with:
-          compose-file: './docker-compose.yml'
-          up-flags: '--build --remove-orphans'
+          compose-file: "./docker-compose.yml"
+          up-flags: "--build --remove-orphans"
       - name: Test
         run: |
           docker compose run --rm client composer install

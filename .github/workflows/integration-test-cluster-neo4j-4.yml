@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1.31', '8.3.17']
+        php: ["8.1.31", "8.3.17"]
     name: "Running on PHP ${{ matrix.php }} in a Neo4j 4.4 cluster"
 
     steps:
@@ -23,9 +23,9 @@ jobs:
       - uses: hoverkraft-tech/compose-action@v2.0.2
         name: Start services
         with:
-          compose-file: './docker-compose-neo4j-4.yml'
-          up-flags: '--build --remove-orphans'
+          compose-file: "./docker-compose-neo4j-4.yml"
+          up-flags: "--build --remove-orphans"
       - name: Test
         run: |
-          docker compose run --rm client composer install
-          docker compose run --rm client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose -f docker-compose-neo4j-4.yml run --rm client composer install
+          docker compose -f docker-compose-neo4j-4.yml run --rm client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
