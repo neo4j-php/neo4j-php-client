@@ -20,13 +20,13 @@ jobs:
       - uses: hoverkraft-tech/compose-action@v2.0.2
         name: Start services
         with:
-          compose-file: './docker-compose.yml'
-          up-flags: '--build --remove-orphans'
-          down-flags: '-t 60 --remove-orphans'
+          compose-file: "./docker-compose.yml"
+          up-flags: "--build --remove-orphans"
+          down-flags: "-t 60 --remove-orphans"
       - name: Test
         run: |
           docker compose run --rm client composer install
           # We need to restart the testkit_backend service since it relies on the previous step (composer install) to work
-          docker compose restart testkit_backend
+          docker compose up -d --force-recreate --build testkit_backend
           docker compose logs testkit_backend
           docker compose run --rm testkit ./testkit.sh
