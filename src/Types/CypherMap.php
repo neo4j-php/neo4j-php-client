@@ -572,8 +572,9 @@ final class CypherMap implements CypherSequence, ArrayAccess, Iterator
 
     public function key(): string
     {
-        /** @var string */
-        return $this->cacheKey();
+        // we have to cast to a string, as the value is potentially an integer if the key is numeric:
+        // https://stackoverflow.com/questions/4100488/a-numeric-string-as-array-key-in-php
+        return (string) $this->cacheKey();
     }
 
     /**

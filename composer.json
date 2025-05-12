@@ -57,7 +57,8 @@
         "cache/integration-tests": "dev-master",
         "kubawerlos/php-cs-fixer-custom-fixers": "3.13.*",
         "rector/rector": "^1.0",
-        "psr/log": "^3.0"
+        "psr/log": "^3.0",
+        "php-di/php-di": "^6.3"
     },
     "autoload": {
         "psr-4": {
@@ -66,7 +67,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Laudis\\Neo4j\\Tests\\": "tests/"
+            "Laudis\\Neo4j\\Tests\\": "tests/",
+            "Laudis\\Neo4j\\TestkitBackend\\": "testkit-backend/src"
         }
     },
     "minimum-stability": "stable",
@@ -81,6 +83,7 @@
     },
     "scripts": {
         "fix-cs": "./vendor/bin/php-cs-fixer fix",
+        "check-cs": "./vendor/bin/php-cs-fixer fix --dry-run",
         "psalm": "./vendor/bin/psalm"
     }
 }

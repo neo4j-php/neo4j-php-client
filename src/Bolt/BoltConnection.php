@@ -38,6 +38,7 @@ use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 use Throwable;
+use Traversable;
 use WeakReference;
 
 /**
@@ -209,12 +210,14 @@ class BoltConnection implements ConnectionInterface
      * Begins a transaction.
      *
      * Any of the preconditioned states are: 'READY', 'INTERRUPTED'.
+     *
+     * @param iterable<string, scalar|array|null>|null $txMetaData
      */
-    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder): void
+    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData): void
     {
         $this->consumeResults();
 
-        $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE());
+        $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE(), $txMetaData);
         $message = $this->messageFactory->createBeginMessage($extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -248,8 +251,9 @@ class BoltConnection implements ConnectionInterface
         ?float $timeout,
         BookmarkHolder $holder,
         ?AccessMode $mode,
+        ?iterable $tsxMetadata,
     ): array {
-        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode);
+        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -327,7 +331,7 @@ class BoltConnection implements ConnectionInterface
         }
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode): array
+    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
     {
         $extra = [];
         if ($database !== null) {
@@ -343,6 +347,13 @@ class BoltConnection implements ConnectionInterface
 
         if ($mode) {
             $extra['mode'] = AccessMode::WRITE() === $mode ? 'w' : 'r';
+        }
+
+        if ($metadata !== null) {
+            $metadataArray = $metadata instanceof Traversable ? iterator_to_array($metadata) : $metadata;
+            if (count($metadataArray) > 0) {
+                $extra['tx_metadata'] = $metadataArray;
+            }
         }
 
         return $extra;
