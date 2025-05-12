@@ -13,60 +13,96 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-/**
- * Representation for notifications found when executing a query. A notification can be visualized in a client pinpointing problems or other information about the query.
- *
- * @psalm-immutable
- */
+use InvalidArgumentException;
+
 final class Notification
 {
     public function __construct(
-        private readonly string $code,
-        private readonly string $description,
-        private readonly ?InputPosition $inputPosition,
-        private readonly string $severity,
-        private readonly string $title,
+        private string $severity,
+        private string $description,
+        private string $code,
+        private Position $position,
+        private string $title,
+        private string $category,
     ) {
     }
 
     /**
-     * Returns a notification code for the discovered issue.
+     * @throws InvalidArgumentException
+     *
+     * @return array{classification: string, category: string, title: string}
      */
-    public function getCode(): string
+    private function splitCode(): array
     {
-        return $this->code;
+        $parts = explode('.', $this->code, 4);
+        if (count($parts) < 4) {
+            throw new InvalidArgumentException('Invalid message exception code');
+        }
+
+        return [
+            'classification' => $parts[1],
+            'category' => $parts[2],
+            'title' => $parts[3],
+        ];
     }
 
-    /**
-     * Returns a longer description of the notification.
-     */
-    public function getDescription(): string
+    public function getCodeClassification(): string
     {
-        return $this->description;
+        return $this->splitCode()['classification'];
     }
 
-    /**
-     * The position in the query where this notification points to.
-     * Not all notifications have a unique position to point to and in that case the position would be set to null.
-     */
-    public function getInputPosition(): ?InputPosition
+    public function getCodeCategory(): string
     {
-        return $this->inputPosition;
+        return $this->splitCode()['category'];
     }
 
-    /**
-     * The severity level of the notification.
-     */
+    public function getCodeTitle(): string
+    {
+        return $this->splitCode()['title'];
+    }
+
     public function getSeverity(): string
     {
         return $this->severity;
     }
 
-    /**
-     * Returns a short summary of the notification.
-     */
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    public function getCode(): string
+    {
+        return $this->code;
+    }
+
+    public function getPosition(): Position
+    {
+        return $this->position;
+    }
+
     public function getTitle(): string
     {
         return $this->title;
+    }
+
+    public function getCategory(): string
+    {
+        return $this->category;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function toArray(): array
+    {
+        return [
+            'severity' => $this->severity,
+            'description' => $this->description,
+            'code' => $this->code,
+            'position' => $this->position->toArray(),
+            'title' => $this->title,
+            'category' => $this->category,
+        ];
     }
 }

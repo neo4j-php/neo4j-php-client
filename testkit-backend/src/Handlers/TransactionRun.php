@@ -22,6 +22,9 @@ use Symfony\Component\Uid\Uuid;
  */
 final class TransactionRun extends AbstractRunner
 {
+    /**
+     * @param TransactionRunRequest $request
+     */
     protected function getRunner($request): TransactionInterface
     {
         return $this->repository->getTransaction($request->getTxId());

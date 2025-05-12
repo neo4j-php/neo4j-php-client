@@ -65,4 +65,16 @@ final class ServerInfo extends AbstractCypherObject
             'agent' => $this->agent,
         ];
     }
+
+    /**
+     * @psalm-suppress ImpureMethodCall
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'address' => "{$this->address->getHost()}:{$this->address->getPort()}",
+            'protocolVersion' => $this->protocol,
+            'agent' => $this->agent,
+        ];
+    }
 }

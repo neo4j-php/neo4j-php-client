@@ -21,6 +21,11 @@ use Laudis\Neo4j\Bolt\BoltResult;
 use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\Notification;
+use Laudis\Neo4j\Databags\Plan;
+use Laudis\Neo4j\Databags\PlanArguments;
+use Laudis\Neo4j\Databags\Position;
+use Laudis\Neo4j\Databags\ProfiledQueryPlan;
 use Laudis\Neo4j\Databags\ResultSummary;
 use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\Statement;
@@ -90,6 +95,11 @@ use function microtime;
  * @psalm-type CypherResponse = array{columns:list<string>, data:list<CypherRowResponse>, stats?:CypherStats}
  * @psalm-type CypherResponseSet = array{results: list<CypherResponse>, errors: list<CypherError>}
  * @psalm-type BoltMeta = array{t_first: int, fields: list<string>, qid ?: int}
+ *
+ * @psalm-suppress PossiblyUndefinedStringArrayOffset
+ * @psalm-suppress ArgumentTypeCoercion
+ * @psalm-suppress MixedArgument
+ * @psalm-suppress MixedArrayAccess
  */
 final class SummarizedResultFormatter
 {
@@ -158,17 +168,23 @@ final class SummarizedResultFormatter
                 /** @var array{stats?: BoltCypherStats}&array $response */
                 $stats = $this->formatBoltStats($response);
                 $resultConsumedAfter = microtime(true) - $runStart;
-                $db = $response['stats']['db'] ?? '';
+                /** @var string $db */
+                $db = $response['db'] ?? '';
+
+                $notifications = array_map($this->formatNotification(...), $response['notifications'] ?? []);
+                $profiledPlan = array_key_exists('profile', $response) ? $this->formatProfiledPlan($response['profile']) : null;
+                $plan = array_key_exists('plan', $response) ? $this->formatPlan($response['plan']) : null;
+
                 $summary = new ResultSummary(
                     $stats,
                     new DatabaseInfo($db),
-                    new CypherList(),
-                    null,
-                    null,
+                    new CypherList($notifications),
+                    $plan,
+                    $profiledPlan,
                     $statement,
                     QueryTypeEnum::fromCounters($stats),
-                    $resultAvailableAfter,
-                    $resultConsumedAfter,
+                    (int) ($resultAvailableAfter * 1000),
+                    (int) ($resultConsumedAfter * 1000),
                     new ServerInfo(
                         $connection->getServerAddress(),
                         $connection->getProtocol(),
@@ -183,6 +199,65 @@ final class SummarizedResultFormatter
          * @var SummarizedResult<CypherMap<OGMTypes>>
          */
         return new SummarizedResult($summary, (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize()));
+    }
+
+    public function formatArgs(array $profiledPlanData): PlanArguments
+    {
+        return new PlanArguments(
+            globalMemory: $profiledPlanData['GlobalMemory'] ?? null,
+            plannerImpl: $profiledPlanData['planner-impl'] ?? null,
+            memory: $profiledPlanData['Memory'] ?? null,
+            stringRepresentation: $profiledPlanData['string-representation'] ?? null,
+            runtime: $profiledPlanData['runtime'] ?? null,
+            time: $profiledPlanData['Time'] ?? null,
+            pageCacheMisses: $profiledPlanData['PageCacheMisses'] ?? null,
+            pageCacheHits: $profiledPlanData['PageCacheHits'] ?? null,
+            runtimeImpl: $profiledPlanData['runtime-impl'] ?? null,
+            version: $profiledPlanData['version'] ?? null,
+            dbHits: $profiledPlanData['DbHits'] ?? null,
+            batchSize: $profiledPlanData['batch-size'] ?? null,
+            details: $profiledPlanData['Details'] ?? null,
+            plannerVersion: $profiledPlanData['planner-version'] ?? null,
+            pipelineInfo: $profiledPlanData['PipelineInfo'] ?? null,
+            runtimeVersion: $profiledPlanData['runtime-version'] ?? null,
+            id: $profiledPlanData['Id'] ?? null,
+            estimatedRows: $profiledPlanData['EstimatedRows'] ?? null,
+            planner: $profiledPlanData['planner'] ?? null,
+            rows: $profiledPlanData['Rows'] ?? null
+        );
+    }
+
+    private function formatNotification(array $notifications): Notification
+    {
+        return new Notification(
+            severity: $notifications['severity'],
+            description: $notifications['description'] ?? '',
+            code: $notifications['code'],
+            position: new Position(
+                column: $notifications['position']['column'] ?? 0,
+                offset: $notifications['position']['offset'] ?? 0,
+                line: $notifications['position']['line'] ?? 0,
+            ),
+            title: $notifications['title'] ?? '',
+            category: $notifications['category'] ?? ''
+        );
+    }
+
+    private function formatProfiledPlan(array $profiledPlanData): ProfiledQueryPlan
+    {
+        return new ProfiledQueryPlan(
+            arguments: $this->formatArgs($profiledPlanData['args']),
+            dbHits: (int) ($profiledPlanData['dbHits'] ?? 0),
+            records: (int) ($profiledPlanData['records'] ?? 0),
+            hasPageCacheStats: (bool) ($profiledPlanData['hasPageCacheStats'] ?? false),
+            pageCacheHits: (int) ($profiledPlanData['pageCacheHits'] ?? 0),
+            pageCacheMisses: (int) ($profiledPlanData['pageCacheMisses'] ?? 0),
+            pageCacheHitRatio: (float) ($profiledPlanData['pageCacheHitRatio'] ?? 0.0),
+            time: (int) ($profiledPlanData['time'] ?? 0),
+            operatorType: $profiledPlanData['operatorType'] ?? '',
+            children: array_map([$this, 'formatProfiledPlan'], $profiledPlanData['children'] ?? []),
+            identifiers: $profiledPlanData['identifiers'] ?? []
+        );
     }
 
     /**
@@ -228,5 +303,15 @@ final class SummarizedResultFormatter
         }
 
         return new CypherMap($map);
+    }
+
+    private function formatPlan(array $plan): Plan
+    {
+        return new Plan(
+            $this->formatArgs($plan['args']),
+            array_map($this->formatPlan(...), $plan['children'] ?? []),
+            $plan['identifiers'] ?? [],
+            $plan['operatorType'] ?? ''
+        );
     }
 }

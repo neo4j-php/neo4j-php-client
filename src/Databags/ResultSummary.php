@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Laudis\Neo4j\Enum\QueryTypeEnum;
-use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
 
 /**
@@ -26,12 +25,8 @@ use Laudis\Neo4j\Types\CypherList;
  * - the query plan and profiling information if available
  * - timing information
  * - information about connection environment
- *
- * @psalm-immutable
- *
- * @extends AbstractCypherObject<string, mixed>
  */
-final class ResultSummary extends AbstractCypherObject
+final class ResultSummary
 {
     /**
      * @param CypherList<Notification> $notifications
@@ -41,11 +36,11 @@ final class ResultSummary extends AbstractCypherObject
         private readonly DatabaseInfo $databaseInfo,
         private readonly CypherList $notifications,
         private readonly ?Plan $plan,
-        private readonly ?ProfiledPlan $profiledPlan,
+        private readonly ?ProfiledQueryPlan $profiledPlan,
         private readonly Statement $statement,
         private readonly QueryTypeEnum $queryType,
-        private readonly float $resultAvailableAfter,
-        private readonly float $resultConsumedAfter,
+        private readonly int $resultAvailableAfter,
+        private readonly int $resultConsumedAfter,
         private readonly ServerInfo $serverInfo,
     ) {
     }
@@ -87,7 +82,7 @@ final class ResultSummary extends AbstractCypherObject
     /**
      * This describes how the database executed your query.
      */
-    public function getProfiledPlan(): ?ProfiledPlan
+    public function getProfiledPlan(): ?ProfiledQueryPlan
     {
         return $this->profiledPlan;
     }
@@ -109,17 +104,17 @@ final class ResultSummary extends AbstractCypherObject
     }
 
     /**
-     * The time it took the server to make the result available for consumption.
+     * The time it took the server to make the result available for consumption in milliseconds.
      */
-    public function getResultAvailableAfter(): float
+    public function getResultAvailableAfter(): int
     {
         return $this->resultAvailableAfter;
     }
 
     /**
-     * The time it took the server to consume the result.
+     * The time it took the client to consume the result in milliseconds.
      */
-    public function getResultConsumedAfter(): float
+    public function getResultConsumedAfter(): int
     {
         return $this->resultConsumedAfter;
     }

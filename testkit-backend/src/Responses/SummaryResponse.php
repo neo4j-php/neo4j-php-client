@@ -15,6 +15,8 @@ namespace Laudis\Neo4j\TestkitBackend\Responses;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
+use stdClass;
 
 /**
  * Represents summary when consuming a result.
@@ -35,17 +37,34 @@ final class SummaryResponse implements TestkitResponseInterface
         return [
             'name' => 'Summary',
             'data' => [
-                'counters' => $summary->getCounters(),
+                'counters' => $summary->getCounters()->toArray(),
                 'database' => $summary->getDatabaseInfo()->getName(),
                 'notifications' => $summary->getNotifications(),
                 'plan' => $summary->getPlan(),
                 'profile' => $summary->getProfiledPlan(),
-                'query' => $summary->getStatement(),
+                'query' => [
+                    'text' => $summary->getStatement()->getText(),
+                    'parameters' => $this->toCypherObjects($summary->getStatement()->getParameters()),
+                ],
                 'queryType' => $summary->getQueryType(),
                 'resultAvailableAfter' => $summary->getResultAvailableAfter(),
                 'resultConsumedAfter' => $summary->getResultConsumedAfter(),
                 'serverInfo' => $summary->getServerInfo(),
             ],
         ];
+    }
+
+    private function toCypherObjects(iterable $toArray): array|stdClass
+    {
+        $cypherObjects = [];
+        foreach ($toArray as $name => $value) {
+            $cypherObjects[$name] = CypherObject::autoDetect($value);
+        }
+
+        if (count($cypherObjects) === 0) {
+            return new stdClass();
+        }
+
+        return $cypherObjects;
     }
 }

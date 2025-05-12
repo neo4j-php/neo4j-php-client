@@ -13,60 +13,49 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use Laudis\Neo4j\Types\AbstractCypherObject;
-use Laudis\Neo4j\Types\CypherList;
-use Laudis\Neo4j\Types\CypherMap;
-
 /**
  * This describes the plan that the database planner produced and used (or will use) to execute your query.
  *
  * @see https://neo4j.com/docs/cypher-manual/current/execution-plans/
- *
- * @psalm-immutable
- *
- * @extends AbstractCypherObject<string, mixed>
  */
-final class Plan extends AbstractCypherObject
+final class Plan
 {
     /**
-     * @param CypherMap<mixed>   $arguments
-     * @param CypherList<Plan>   $list
-     * @param CypherList<string> $identifiers
+     * @param list<Plan>   $children
+     * @param list<string> $identifiers
      */
     public function __construct(
-        private readonly CypherMap $arguments,
-        private readonly CypherList $list,
-        private readonly CypherList $identifiers,
+        private readonly PlanArguments $args,
+        private readonly array $children,
+        private readonly array $identifiers,
         private readonly string $operator,
     ) {
     }
 
     /**
      * Returns the arguments for the operator.
-     *
-     * @return CypherMap<mixed>
      */
-    public function getArguments(): CypherMap
+    public function getArgs(): PlanArguments
     {
-        return $this->arguments;
+        return $this->args;
     }
 
     /**
      * Returns the sub-plans.
      *
-     * @return CypherList<Plan>
+     * @return list<Plan>
      */
-    public function getList(): CypherList
+    public function getChildren(): array
     {
-        return $this->list;
+        return $this->children;
     }
 
     /**
      * Identifiers used by this part of the plan.
      *
-     * @return CypherList<string>
+     * @return list<string>
      */
-    public function getIdentifiers(): CypherList
+    public function getIdentifiers(): array
     {
         return $this->identifiers;
     }
@@ -82,8 +71,8 @@ final class Plan extends AbstractCypherObject
     public function toArray(): array
     {
         return [
-            'arguments' => $this->arguments,
-            'list' => $this->list,
+            'arguments' => $this->args,
+            'list' => $this->children,
             'identifiers' => $this->identifiers,
             'operator' => $this->operator,
         ];

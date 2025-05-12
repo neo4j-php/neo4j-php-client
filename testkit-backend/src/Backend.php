@@ -79,8 +79,6 @@ final class Backend
     {
         while (true) {
             $message = $this->socket->readMessage();
-            $this->logger->info('Raw request message: '.$message);
-            echo 'Raw request message: '.$message.PHP_EOL;
 
             if ($message === null) {
                 $this->socket->reset();
@@ -117,7 +115,7 @@ final class Backend
     {
         $message = json_encode($response, JSON_THROW_ON_ERROR);
 
-        $this->logger->debug('Sending: '.$message);
+        $this->logger->debug('Sending: '.$this->cutoffStringForLogging($message));
         $this->socket->write('#response begin'.PHP_EOL);
         $this->socket->write($message.PHP_EOL);
         $this->socket->write('#response end'.PHP_EOL);
@@ -128,7 +126,7 @@ final class Backend
      */
     private function extractRequest(string $message): array
     {
-        $this->logger->debug('Received: '.$message);
+        $this->logger->debug('Received: '.$this->cutoffStringForLogging($message));
         /** @var array{name: string, data: iterable<array|scalar|null>} $response */
         $response = json_decode($message, true, 512, JSON_THROW_ON_ERROR);
 
@@ -136,5 +134,14 @@ final class Backend
         $request = $this->factory->create($response['name'], $response['data']);
 
         return [$handler, $request];
+    }
+
+    public function cutoffStringForLogging(string $message): string
+    {
+        if (mb_strlen($message) > 1000) {
+            return substr($message, 0, 1000).'### Long message cut for brevity';
+        }
+
+        return $message;
     }
 }

@@ -34,10 +34,10 @@ use Stringable;
  */
 final class QueryTypeEnum extends TypedEnum implements JsonSerializable, Stringable
 {
-    private const READ_ONLY = 'read_only';
-    private const READ_WRITE = 'read_write';
-    private const SCHEMA_WRITE = 'schema_write';
-    private const WRITE_ONLY = 'write_only';
+    private const READ_ONLY = 'r';
+    private const READ_WRITE = 'rw';
+    private const SCHEMA_WRITE = 's';
+    private const WRITE_ONLY = 'w';
 
     /**
      * Decide the type of the query from the provided counters.

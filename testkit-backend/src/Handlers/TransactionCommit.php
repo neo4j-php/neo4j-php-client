@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
@@ -42,7 +42,7 @@ final class TransactionCommit implements RequestHandlerInterface
     {
         $tsx = $this->repository->getTransaction($request->getTxId());
 
-        if ($tsx === null || !$tsx instanceof TransactionInterface) {
+        if (!$tsx instanceof UnmanagedTransactionInterface) {
             return new BackendErrorResponse('Transaction not found');
         }
 

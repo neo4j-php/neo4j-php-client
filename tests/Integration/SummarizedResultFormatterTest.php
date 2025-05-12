@@ -107,11 +107,11 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
 
     public function testAvailableAfter(): void
     {
-        $results = $this->getSession()->run('RETURN 1 AS one');
+        $results = $this->getSession()->run('CALL apoc.util.sleep(5) RETURN 1 AS one');
 
         self::assertInstanceOf(SummarizedResult::class, $results);
 
-        self::assertGreaterThan(0, $results->getSummary()->getResultAvailableAfter());
+        self::assertGreaterThan(3, $results->getSummary()->getResultAvailableAfter());
     }
 
     public function testDateTime(): void
