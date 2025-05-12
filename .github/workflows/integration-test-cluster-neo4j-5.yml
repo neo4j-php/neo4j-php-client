@@ -23,6 +23,12 @@ jobs:
 
       - name: Run integration tests
         run: |
+          docker compose up -d --build --remove-orphans --wait \
+            server1 \
+            server2 \
+            server3 \
+            server4
+
           # install PHP deps and run PHPUnit inside the client container
           docker compose run --rm client \
             sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
