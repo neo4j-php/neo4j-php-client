@@ -1,39 +1,29 @@
-#name: Integration Tests
-#
-#on:
-#  push:
-#    branches:
-#      - main
-#  pull_request:
-#    branches:
-#      - main
-#
-#jobs:
-#  tests:
-#    runs-on: ubuntu-latest
-#    env:
-#      CONNECTION: ${{ secrets.AURA_PRO }}
-#    name: "Running on all provided Aura instances"
-#
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: Cache Composer dependencies
-#        uses: actions/cache@v2
-#        with:
-#          path: /tmp/composer-cache
-#          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-#      - uses: php-actions/composer@v6
-#        with:
-#          progress: yes
-#          php_version: 8.1
-#          version: 2
-#      - name: clean database
-#        run: CONNECTION=$CONNECTION php tests/clean-database.php
-#      - uses: php-actions/phpunit@v3
-#        with:
-#          configuration: phpunit.xml.dist
-#          php_version: 8.1
-#          memory_limit: 1024M
-#          version: 10
-#          testsuite: Integration
-#          bootstrap: vendor/autoload.php
+name: Integration Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: integration-tests-aura
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        php: ["8.1.31", "8.3.17"]
+    name: "Running on all provided Aura instances"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          echo "PHP_VERSION=${{ matrix.php }}" > .env
+          echo "CONNECTION=\"${{ secrets.AURA_PRO }}\"" >> .env
+
+          docker compose run --rm --no-deps \
+            client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
