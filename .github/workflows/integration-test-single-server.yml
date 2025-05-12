@@ -16,6 +16,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Restore Neo4j Image Cache if it exists
+        id: cache-docker-neo4j
+        uses: actions/cache@v4
+        with:
+          path: ci/cache/docker/neo4j
+          key: cache-docker-neo4j-4-enterprise
+
+      - name: Update Neo4j Image Cache if cache miss
+        if: steps.cache-docker-neo4j.outputs.cache-hit != 'true'
+        run: |
+          docker pull neo4j:4.4-enterprise
+          mkdir -p ci/cache/docker/neo4j
+          docker image save neo4j:4.4-enterprise --output ./ci/cache/docker/neo4j/neo4j-4-enterprise.tar
+
+      - name: Use Neo4j Image Cache if cache hit
+        if: steps.cache-docker-neo4j.outputs.cache-hit == 'true'
+        run: docker image load --input ./ci/cache/docker/neo4j/neo4j-4-enterprise.tar
+
       - name: Populate .env
         run: |
           echo "PHP_VERSION=${{ matrix.php }}" > .env
@@ -77,6 +96,24 @@ jobs:
       - name: Populate .env
         run: |
           echo "PHP_VERSION=${{ matrix.php }}" > .env
+
+      - name: Restore Neo4j Image Cache if it exists
+        id: cache-docker-neo4j
+        uses: actions/cache@v4
+        with:
+          path: ci/cache/docker/neo4j
+          key: cache-docker-neo4j-5-community
+
+      - name: Update Neo4j Image Cache if cache miss
+        if: steps.cache-docker-neo4j.outputs.cache-hit != 'true'
+        run: |
+          docker pull neo4j:5.23-community
+          mkdir -p ci/cache/docker/neo4j
+          docker image save neo4j:5.23-community --output ./ci/cache/docker/neo4j/neo4j-5-community.tar
+
+      - name: Use Neo4j Image Cache if cache hit
+        if: steps.cache-docker-neo4j.outputs.cache-hit == 'true'
+        run: docker image load --input ./ci/cache/docker/neo4j/neo4j-5-community.tar
 
       - name: Cache PHP deps
         id: cache-php-deps
