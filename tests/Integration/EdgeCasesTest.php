@@ -81,6 +81,10 @@ final class EdgeCasesTest extends EnvironmentAwareIntegrationTest
             $this->markTestSkipped('HTTP mass queries overload tiny neo4j instances');
         }
 
+        if (str_contains($_ENV['CONNECTION'] ?? '', 'databases.neo4j.io')) {
+            $this->markTestSkipped('We assume neo4j aura shuts down connections that are too demanding');
+        }
+
         $persons = $this->getSession()->run('MATCH (p:Person) RETURN p');
         $movies = $this->getSession()->run('MATCH (m:Movie) RETURN m');
 
