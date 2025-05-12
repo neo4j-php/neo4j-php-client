@@ -5,15 +5,13 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - main
 
 jobs:
   tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1.31', '8.3.17']
+        php: ["8.1.31", "8.3.17"]
     name: "Running on PHP ${{ matrix.php }} with a Neo4j 5.20-enterprise cluster"
 
     steps:
@@ -22,12 +20,12 @@ jobs:
         run: |
           echo "PHP_VERSION=${{ matrix.php }}" > .env
           echo "CONNECTION=neo4j://neo4j:testtest@server1" >> .env
-      - uses: hoverkraft-tech/compose-action@v2.0.2
+      - uses: hoverkraft-tech/compose-action@v2.2.0
         name: Start services
         with:
-          compose-file: './docker-compose.yml'
-          up-flags: '--build --remove-orphans'
+          compose-file: "./docker-compose.yml"
+          up-flags: "--build --remove-orphans"
       - name: Test
         run: |
-          docker compose run client composer install
-          docker compose run client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          docker compose run --rm client composer install
+          docker compose run --rm client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration

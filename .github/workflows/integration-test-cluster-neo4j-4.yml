@@ -5,29 +5,31 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - main
 
 jobs:
   tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1.31', '8.3.17']
+        php: ["8.1.31", "8.3.17"]
     name: "Running on PHP ${{ matrix.php }} in a Neo4j 4.4 cluster"
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Populate .env
         run: |
           echo "PHP_VERSION=${{ matrix.php }}" > .env
-          echo "CONNECTION=neo4j://neo4j:testtest@core1" >> .env
-      - uses: hoverkraft-tech/compose-action@v2.0.2
-        name: Start services
-        with:
-          compose-file: './docker-compose-neo4j-4.yml'
-          up-flags: '--build --remove-orphans'
-      - name: Test
+          echo "CONNECTION=neo4j://neo4j:testtest@server1" >> .env
+
+      - name: Run integration tests
         run: |
-          docker compose run client composer install
-          docker compose run client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+          # bring up Neo4j cluster
+          docker compose -f docker-compose-neo4j-4.yml up -d --build --remove-orphans
+
+          # install PHP deps and run PHPUnit inside the client container
+          docker compose -f docker-compose-neo4j-4.yml run --rm client \
+            sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
+
+          # tear down services
+          docker compose -f docker-compose-neo4j-4.yml down --remove-orphans --volumes
