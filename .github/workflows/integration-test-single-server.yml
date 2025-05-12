@@ -27,6 +27,9 @@ jobs:
           docker compose -f docker-compose-neo4j-4.yml run --rm --no-deps \
             client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
 
+          echo "PHP_VERSION=${{ matrix.php }}" > .env
+          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
+
           docker compose -f docker-compose-neo4j-4.yml run --rm --no-deps \
             client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
 
@@ -54,6 +57,9 @@ jobs:
 
           docker compose run --rm --no-deps \
             client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
+
+          echo "PHP_VERSION=${{ matrix.php }}" > .env
+          echo "CONNECTION=neo4j://neo4j:testtest@neo4j" >> .env
 
           docker compose run --rm --no-deps \
             client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
