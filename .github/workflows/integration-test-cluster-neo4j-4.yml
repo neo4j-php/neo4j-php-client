@@ -22,6 +22,19 @@ jobs:
           echo "PHP_VERSION=${{ matrix.php }}" > .env
           echo "CONNECTION=neo4j://neo4j:testtest@server1" >> .env
 
+      - name: Cache PHP deps
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php }}-
+
+      - name: Install PHP deps
+        if: steps.cache-php-deps.outputs.cache-hit != 'true'
+        run: |
+          docker compose -f docker-compose-neo4j-4.yml run --rm client composer install
+
       - name: Run integration tests
         run: |
           docker compose -f docker-compose-neo4j-4.yml up -d --build --remove-orphans --wait \
@@ -31,7 +44,7 @@ jobs:
             server4
 
           docker compose -f docker-compose-neo4j-4.yml run --rm client \
-            sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
+            ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
 
           # tear down services
           docker compose -f docker-compose-neo4j-4.yml down --remove-orphans --volumes
