@@ -16,10 +16,24 @@ jobs:
     name: "Running on all provided Aura instances"
     steps:
       - uses: actions/checkout@v4
-      - name: Run tests
+
+      - name: Populate .env
         run: |
           echo "PHP_VERSION=8.1.31" > .env
           echo "CONNECTION=\"${{ secrets.AURA_PRO }}\"" >> .env
 
-          docker compose run --rm --no-deps \
-            client sh -c "composer install && ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration"
+      - name: Cache PHP deps
+        id: cache-php-deps
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-8.1.31-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.1.31-
+
+      - name: Install PHP deps
+        if: steps.cache-php-deps.outputs.cache-hit != 'true'
+        run: docker compose run --rm client composer install
+
+      - name: Run tests
+        run: docker compose run --rm client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
