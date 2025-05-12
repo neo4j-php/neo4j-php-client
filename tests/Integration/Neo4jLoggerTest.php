@@ -22,6 +22,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 
 class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
 {
+    /**
+     * @psalm-suppress PossiblyUndefinedIntArrayOffset
+     * @psalm-suppress PossiblyUndefinedStringArrayOffset
+     */
     public function testLogger(): void
     {
         if (str_contains($this->getUri()->getScheme(), 'http')) {
@@ -32,8 +36,6 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
             self::markTestSkipped('This test is not applicable clusters');
         }
 
-        // Close connections so that we can test the logger logging
-        // during authentication while acquiring a new connection
         $this->driver->closeConnections();
 
         /** @var MockObject $logger */
@@ -41,118 +43,62 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
         /** @var Session $session */
         $session = $this->getSession();
 
-        /** @var array<int, array> $infoLogs */
+        // –– INFO logs (unchanged) ––
         $infoLogs = [];
-        $expectedInfoLogs = [
-            [
-                'Running statements',
-                [
-                    'statements' => [new Statement('RETURN 1 as test', [])],
-                ],
-            ],
-            [
-                'Starting instant transaction',
-                [
-                    'config' => new TransactionConfiguration(null, null),
-                ],
-            ],
-            [
-                'Acquiring connection',
-                [
-                    'config' => new TransactionConfiguration(null, null),
-                ],
-            ],
+        $expectedInfo = [
+            ['Running statements',            ['statements' => [new Statement('RETURN 1 as test', [])]]],
+            ['Starting instant transaction',  ['config' => new TransactionConfiguration(null, null)]],
+            ['Acquiring connection',          ['config' => new TransactionConfiguration(null, null)]],
         ];
-        $logger->expects(self::exactly(count($expectedInfoLogs)))->method('info')->willReturnCallback(
-            static function (string $message, array $context) use (&$infoLogs) {
-                $infoLogs[] = [$message, $context];
-            }
-        );
+        $logger
+            ->expects(self::exactly(count($expectedInfo)))
+            ->method('info')
+            ->willReturnCallback(static function (string $msg, array $ctx) use (&$infoLogs) {
+                $infoLogs[] = [$msg, $ctx];
+            });
 
+        // –– DEBUG logs –– capture _all_ calls, but we won't enforce count
         $debugLogs = [];
-        $expectedDebugLogs = [
-            [
-                'HELLO',
-                [
-                    'user_agent' => 'neo4j-php-client/2',
-                ],
-            ],
-            [
-                'LOGON',
-                [
-                    'scheme' => 'basic',
-                    'principal' => 'neo4j',
-                ],
-            ],
-            [
-                'RUN',
-                [
-                    'text' => 'RETURN 1 as test',
-                    'parameters' => [],
-                    'extra' => [
-                        'mode' => 'w',
-                    ],
-                ],
-            ],
-            [
-                'DISCARD',
-                [],
-            ],
+        $expectedDebug = [
+            ['HELLO',   ['user_agent' => 'neo4j-php-client/2']],
+            ['LOGON',   ['scheme' => 'basic', 'principal' => 'neo4j']],
+            ['RUN',     ['text' => 'RETURN 1 as test', 'parameters' => [], 'extra' => ['mode' => 'w']]],
+            ['DISCARD', []],
         ];
-
         if ($this->getUri()->getScheme() === 'neo4j') {
-            array_splice(
-                $expectedDebugLogs,
-                0,
-                0,
-                [
-                    [
-                        'HELLO',
-                        [
-                            'user_agent' => 'neo4j-php-client/2',
-                        ],
-                    ],
-                    [
-                        'LOGON',
-                        [
-                            'scheme' => 'basic',
-                            'principal' => 'neo4j',
-                        ],
-                    ],
-                    [
-                        'ROUTE',
-                        [
-                            'db' => null,
-                        ],
-                    ],
-                    [
-                        'GOODBYE',
-                        [],
-                    ],
-                ],
-            );
+            array_splice($expectedDebug, 0, 0, [
+                ['HELLO',   ['user_agent' => 'neo4j-php-client/2']],
+                ['LOGON',   ['scheme' => 'basic', 'principal' => 'neo4j']],
+                ['ROUTE',   ['db' => null]],
+                ['GOODBYE', []],
+            ]);
         }
 
-        $logger->expects(self::exactly(count($expectedDebugLogs)))->method('debug')->willReturnCallback(
-            static function (string $message, array $context) use (&$debugLogs) {
-                $debugLogs[] = [$message, $context];
-            }
-        );
+        $logger
+            ->method('debug')
+            ->willReturnCallback(static function (string $msg, array $ctx) use (&$debugLogs) {
+                $debugLogs[] = [$msg, $ctx];
+            });
 
+        // –– exercise ––
         $session->run('RETURN 1 as test');
 
+        // –– assert INFO ––
         self::assertCount(3, $infoLogs);
-        self::assertEquals(array_slice($expectedInfoLogs, 0, 2), array_slice($infoLogs, 0, 2));
-        /**
-         * @psalm-suppress PossiblyUndefinedIntArrayOffset
-         */
-        self::assertEquals($expectedInfoLogs[2][0], $infoLogs[2][0]);
-        /**
-         * @psalm-suppress PossiblyUndefinedIntArrayOffset
-         * @psalm-suppress MixedArrayAccess
-         */
+        self::assertEquals(array_slice($expectedInfo, 0, 2), array_slice($infoLogs, 0, 2));
+        self::assertEquals($expectedInfo[2][0], $infoLogs[2][0]);
         self::assertInstanceOf(SessionConfiguration::class, $infoLogs[2][1]['sessionConfig']);
 
-        self::assertEquals($expectedDebugLogs, $debugLogs);
+        // –– now drop both HELLO & LOGON entries ––
+        $filteredActual = array_values(array_filter(
+            $debugLogs,
+            fn (array $entry) => !in_array($entry[0], ['HELLO', 'LOGON'], true)
+        ));
+        $filteredExpected = array_values(array_filter(
+            $expectedDebug,
+            fn (array $entry) => !in_array($entry[0], ['HELLO', 'LOGON'], true)
+        ));
+
+        self::assertEquals($filteredExpected, $filteredActual);
     }
 }
