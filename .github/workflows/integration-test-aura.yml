@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: integration-tests-aura
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   tests:
