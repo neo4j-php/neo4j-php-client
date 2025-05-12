@@ -46,6 +46,3 @@ jobs:
 
           docker compose -f docker-compose-neo4j-4.yml run --rm client \
             ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
-
-          # tear down services
-          docker compose -f docker-compose-neo4j-4.yml down --remove-orphans --volumes
