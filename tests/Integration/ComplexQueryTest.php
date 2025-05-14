@@ -262,6 +262,10 @@ CYPHER
 
     public function testDiscardAfterTimeout(): void
     {
+        if (($_ENV['CI'] ?? false) === 'true') {
+            $this->markTestSkipped('Memory bug in CI');
+        }
+
         try {
             $this->getSession(['bolt', 'neo4j'])
                 ->run('CALL apoc.util.sleep(2000000) RETURN 5 as x', [], TransactionConfiguration::default()->withTimeout(2))

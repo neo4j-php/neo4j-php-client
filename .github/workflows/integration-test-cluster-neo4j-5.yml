@@ -11,21 +11,73 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1.31', '8.3.17']
+        php: ["8.1.31", "8.3.17"]
     name: "Running on PHP ${{ matrix.php }} with a Neo4j 5.20-enterprise cluster"
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Restore Neo4j Image Cache if it exists
+        id: cache-docker-neo4j
+        uses: actions/cache@v4
+        with:
+          path: ci/cache/docker/neo4j
+          key: cache-docker-neo4j-5-enterprise
+
+      - name: Update Neo4j Image Cache if cache miss
+        if: steps.cache-docker-neo4j.outputs.cache-hit != 'true'
+        run: |
+          docker pull neo4j:5-enterprise
+          mkdir -p ci/cache/docker/neo4j
+          docker image save neo4j:5-enterprise --output ./ci/cache/docker/neo4j/neo4j-5-enterprise.tar
+
+      - name: Use Neo4j Image Cache if cache hit
+        if: steps.cache-docker-neo4j.outputs.cache-hit == 'true'
+        run: docker image load --input ./ci/cache/docker/neo4j/neo4j-5-enterprise.tar
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build & cache client image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: PHP_VERSION=${{ matrix.php }}
+          tags: integration-client:${{ matrix.php }}
+
       - name: Populate .env
         run: |
           echo "PHP_VERSION=${{ matrix.php }}" > .env
           echo "CONNECTION=neo4j://neo4j:testtest@server1" >> .env
-      - uses: hoverkraft-tech/compose-action@v2.0.2
-        name: Start services
+          echo "CI=true" >> .env
+
+      - name: Cache PHP deps
+        id: cache-php-deps
+        uses: actions/cache@v4
         with:
-          compose-file: './docker-compose.yml'
-          up-flags: '--build --remove-orphans'
-      - name: Test
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php }}-
+
+      - name: Install PHP deps
+        if: steps.cache-php-deps.outputs.cache-hit != 'true'
         run: |
           docker compose run --rm client composer install
-          docker compose run --rm client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+
+      - name: Run integration tests
+        run: |
+          docker compose up -d --remove-orphans --wait --no-build \
+            server1 \
+            server2 \
+            server3 \
+            server4
+
+          # install PHP deps and run PHPUnit inside the client container
+          docker compose run --rm client \
+            ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration --teamcity

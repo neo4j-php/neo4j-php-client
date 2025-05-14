@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     name: "Running Unit Tests"
     strategy:
-        matrix:
-            php: ['8.1.31', '8.2.27', '8.3.17']
+      matrix:
+        php: ["8.1.31", "8.2.27", "8.3.17"]
 
     steps:
       - uses: actions/checkout@v4
@@ -23,13 +23,17 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
 
-      - name: Cache Composer dependencies
+      - name: Cache PHP deps
+        id: cache-php-deps
         uses: actions/cache@v4
         with:
-          path: /tmp/composer-cache
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php }}-
 
-      - name: Install dependencies
+      - name: Install PHP deps
+        if: steps.cache-php-deps.outputs.cache-hit != 'true'
         run: composer install
 
       - uses: php-actions/phpunit@v4
