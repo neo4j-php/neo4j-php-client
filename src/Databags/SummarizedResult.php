@@ -28,16 +28,24 @@ use Laudis\Neo4j\Types\CypherMap;
 final class SummarizedResult extends CypherList
 {
     private ?ResultSummary $summary = null;
+    /**
+     * @var list<string>
+     */
+    private array $keys;
 
     /**
      * @param iterable<mixed, CypherMap<OGMTypes>>|callable():Generator<mixed, CypherMap<OGMTypes>> $iterable
+     * @param list<string> $iterable
      *
      * @psalm-mutation-free
+     * @param list<string> $keys
+
      */
-    public function __construct(?ResultSummary &$summary, iterable|callable $iterable = [])
+    public function __construct(?ResultSummary &$summary, iterable|callable $iterable = [], array $keys)
     {
         parent::__construct($iterable);
         $this->summary = &$summary;
+        $this->keys = array_values($keys);
     }
 
     /**
@@ -70,5 +78,13 @@ final class SummarizedResult extends CypherList
             'summary' => $this->summary,
             'result' => parent::jsonSerialize(),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function keys(): array
+    {
+        return $this->keys;
     }
 }

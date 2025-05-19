@@ -417,8 +417,10 @@ CYPHER
                 'id' => $result->getId(),
                 'type' => $result->getType(),
                 'properties' => $result->getProperties(),
+                'elementId' => $result->getElementId(),
                 'startNodeId' => $result->getStartNodeId(),
                 'endNodeId' => $result->getEndNodeId(),
+
             ], JSON_THROW_ON_ERROR),
             json_encode($result, JSON_THROW_ON_ERROR)
         );

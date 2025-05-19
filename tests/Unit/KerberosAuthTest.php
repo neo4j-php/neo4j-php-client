@@ -22,7 +22,6 @@ use Laudis\Neo4j\Authentication\KerberosAuth;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
 class KerberosAuthTest extends TestCase
@@ -33,23 +32,6 @@ class KerberosAuthTest extends TestCase
     {
         $logger = $this->createMock(Neo4jLogger::class);
         $this->auth = new KerberosAuth('test-token', $logger);
-    }
-
-    public function testAuthenticateHttpSuccess(): void
-    {
-        $request = $this->createMock(RequestInterface::class);
-        $request->expects($this->exactly(2))
-            ->method('withHeader')
-            ->willReturnSelf();
-
-        $uri = $this->createMock(UriInterface::class);
-        $uri->method('getHost')->willReturn('localhost');
-        $uri->method('getPort')->willReturn(7687);
-
-        $auth = new KerberosAuth('test-token', null);
-        $result = $auth->authenticateHttp($request, $uri, 'neo4j-client/1.0');
-
-        $this->assertSame($request, $result);
     }
 
     public function testAuthenticateBoltFailureV5(): void

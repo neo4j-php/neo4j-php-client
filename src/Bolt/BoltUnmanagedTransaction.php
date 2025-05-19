@@ -21,7 +21,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\TransactionState;
-use Laudis\Neo4j\Exception\ClientException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherList;
@@ -58,23 +58,23 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @param iterable<Statement> $statements
      *
-     * @throws ClientException|Throwable
-     *
      * @return CypherList<SummarizedResult>
+     *@throws TransactionException|Throwable
+     *
      */
     public function commit(iterable $statements = []): CypherList
     {
         if ($this->isFinished()) {
             if ($this->state === TransactionState::TERMINATED) {
-                throw new ClientException("Can't commit, transaction has been terminated");
+                throw new TransactionException("Can't commit a terminated transaction.");
             }
 
             if ($this->state === TransactionState::COMMITTED) {
-                throw new ClientException("Can't commit, transaction has already been committed");
+                throw new TransactionException("Can't commit a committed transaction.");
             }
 
             if ($this->state === TransactionState::ROLLED_BACK) {
-                throw new ClientException("Can't commit, transaction has already been rolled back");
+                throw new TransactionException("Can't commit a committed transaction.");
             }
         }
 
@@ -84,7 +84,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $list->preload();
         });
 
-        $this->messageFactory->createCommitMessage($this->bookmarkHolder)->send();
+        $this->messageFactory->createCommitMessage($this->bookmarkHolder)->send()->getResponse();
         $this->state = TransactionState::COMMITTED;
 
         return $tbr;
@@ -93,16 +93,12 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function rollback(): void
     {
         if ($this->isFinished()) {
-            if ($this->state === TransactionState::TERMINATED) {
-                throw new ClientException("Can't rollback, transaction has been terminated");
-            }
-
             if ($this->state === TransactionState::COMMITTED) {
-                throw new ClientException("Can't rollback, transaction has already been committed");
+                throw new TransactionException("Can't rollback a committed transaction.");
             }
 
             if ($this->state === TransactionState::ROLLED_BACK) {
-                throw new ClientException("Can't rollback, transaction has already been rolled back");
+                throw new TransactionException("Can't rollback a rolled back transaction.");
             }
         }
 
@@ -115,6 +111,20 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function run(string $statement, iterable $parameters = []): SummarizedResult
     {
+        if ($this->isFinished()) {
+            if ($this->state === TransactionState::TERMINATED) {
+                throw new TransactionException("Can't run a query on a terminated transaction.");
+            }
+
+            if ($this->state === TransactionState::COMMITTED) {
+                throw new TransactionException("Can't run a query on a committed transaction.");
+            }
+
+            if ($this->state === TransactionState::ROLLED_BACK) {
+                throw new TransactionException("Can't run a query on a rolled back transaction.");
+            }
+        }
+
         return $this->runStatement(new Statement($statement, $parameters));
     }
 
@@ -127,7 +137,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $start = microtime(true);
 
         $serverState = $this->connection->protocol()->serverState;
-        if (in_array($serverState, [ServerState::STREAMING, ServerState::TX_STREAMING])) {
+        if ($serverState === ServerState::STREAMING) {
             $this->connection->consumeResults();
         }
 

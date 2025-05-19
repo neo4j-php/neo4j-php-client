@@ -85,7 +85,7 @@ class BoltConnection implements ConnectionInterface
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
     ) {
-        $this->messageFactory = new BoltMessageFactory($this->protocol(), $this->logger);
+        $this->messageFactory = new BoltMessageFactory($this, $this->logger);
     }
 
     public function getEncryptionLevel(): string
@@ -107,14 +107,6 @@ class BoltConnection implements ConnectionInterface
     public function getServerAddress(): UriInterface
     {
         return $this->config->getServerAddress();
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function getServerVersion(): string
-    {
-        return $this->config->getServerVersion();
     }
 
     /**
@@ -392,16 +384,12 @@ class BoltConnection implements ConnectionInterface
         return $this->userAgent;
     }
 
-    private function assertNoFailure(Response $response): void
+    public function assertNoFailure(Response $response): void
     {
         if ($response->signature === Signature::FAILURE) {
             $this->logger?->log(LogLevel::ERROR, 'FAILURE');
-            $message = $this->messageFactory->createResetMessage();
-            $resetResponse = $message->send()->getResponse();
             $this->subscribedResults = [];
-            if ($resetResponse->signature === Signature::FAILURE) {
-                throw new Neo4jException([Neo4jError::fromBoltResponse($resetResponse), Neo4jError::fromBoltResponse($response)]);
-            }
+
             throw Neo4jException::fromBoltResponse($response);
         }
     }

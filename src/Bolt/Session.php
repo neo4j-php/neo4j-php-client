@@ -48,7 +48,6 @@ final class Session implements SessionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        /** @psalm-readonly */
         private readonly SessionConfiguration $config,
         private readonly ConnectionPoolInterface $pool,
         /**
@@ -153,7 +152,7 @@ final class Session implements SessionInterface
             $this->config,
             $tsxConfig,
             $this->bookmarkHolder,
-            new BoltMessageFactory($connection->protocol(), $this->getLogger()),
+            new BoltMessageFactory($connection, $this->getLogger()),
         );
     }
 
@@ -203,7 +202,7 @@ final class Session implements SessionInterface
             $this->config,
             $config,
             $this->bookmarkHolder,
-            new BoltMessageFactory($connection->protocol(), $this->getLogger()),
+            new BoltMessageFactory($connection, $this->getLogger()) ,
         );
     }
 

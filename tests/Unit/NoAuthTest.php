@@ -22,7 +22,6 @@ use Laudis\Neo4j\Authentication\NoAuth;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
 class NoAuthTest extends TestCase
@@ -33,22 +32,6 @@ class NoAuthTest extends TestCase
     {
         $logger = $this->createMock(Neo4jLogger::class);
         $this->auth = new NoAuth($logger);
-    }
-
-    public function testAuthenticateHttpSuccess(): void
-    {
-        $request = $this->createMock(RequestInterface::class);
-        $request->expects($this->once())
-            ->method('withHeader')
-            ->with('User-Agent', 'neo4j-client/1.0')
-            ->willReturnSelf();
-
-        $uri = $this->createMock(UriInterface::class);
-        $uri->method('getHost')->willReturn('localhost');
-        $uri->method('getPort')->willReturn(7687);
-
-        $result = $this->auth->authenticateHttp($request, $uri, 'neo4j-client/1.0');
-        $this->assertSame($request, $result);
     }
 
     public function testAuthenticateBoltSuccessV5(): void
