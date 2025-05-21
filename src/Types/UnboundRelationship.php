@@ -72,7 +72,6 @@ class UnboundRelationship extends AbstractPropertyObject
             'id' => $this->getId(),
             'type' => $this->getType(),
             'properties' => $this->getProperties(),
-            'elementId' => $this->getElementId(),
         ];
     }
 

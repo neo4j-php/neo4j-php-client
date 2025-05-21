@@ -34,18 +34,16 @@ final class SummarizedResult extends CypherList
     private array $keys;
 
     /**
-     * @param iterable<mixed, CypherMap<OGMTypes>>|callable():Generator<mixed, CypherMap<OGMTypes>> $iterable
-     * @param list<string> $iterable
-     *
      * @psalm-mutation-free
-     * @param list<string> $keys
-
+     *
+     * @param iterable<mixed, CypherMap<OGMTypes>>|callable():Generator<mixed, CypherMap<OGMTypes>> $iterable
+     * @param list<string>                                                                          $keys
      */
     public function __construct(?ResultSummary &$summary, iterable|callable $iterable = [], array $keys)
     {
         parent::__construct($iterable);
         $this->summary = &$summary;
-        $this->keys = array_values($keys);
+        $this->keys = $keys;
     }
 
     /**

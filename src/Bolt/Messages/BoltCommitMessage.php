@@ -15,12 +15,6 @@ namespace Laudis\Neo4j\Bolt\Messages;
 
 use Bolt\enum\ServerState;
 use Bolt\protocol\Response;
-use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
-use Bolt\protocol\V5_1;
-use Bolt\protocol\V5_2;
-use Bolt\protocol\V5_3;
-use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\BoltMessage;

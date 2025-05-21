@@ -202,7 +202,7 @@ final class Session implements SessionInterface
             $this->config,
             $config,
             $this->bookmarkHolder,
-            new BoltMessageFactory($connection, $this->getLogger()) ,
+            new BoltMessageFactory($connection, $this->getLogger()),
         );
     }
 

@@ -70,9 +70,7 @@ python3 -m unittest tests.neo4j.test_summary.TestSummary || EXIT_CODE=1
 
 #test_tx_run
 ##This test is still failing so we skip it test_tx_run
-
 #python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_tx_timeout || EXIT_CODE=1
-
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_should_be_able_to_rollback_a_failure || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_should_not_commit_a_failure || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_simple_query || EXIT_CODE=1
@@ -98,9 +96,9 @@ python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_interwoven_queries ||
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_unconsumed_result || EXIT_CODE=1
 
 
-
 #test_tx_run
 ##This test is still failing so we skip it test_tx_func_run
+#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_simple_query  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_parameter || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_meta_data || EXIT_CODE=1
@@ -109,16 +107,5 @@ python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_updates_last
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_does_not_update_last_bookmark_on_rollback || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_client_exception_rolls_back_change || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_func_configuration || EXIT_CODE=1
-#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout || EXIT_CODE=1
-
-
-
-
-
-
-
-
-
-
 
 

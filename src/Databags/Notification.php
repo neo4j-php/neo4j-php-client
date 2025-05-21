@@ -14,16 +14,22 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use InvalidArgumentException;
+use Laudis\Neo4j\Types\AbstractCypherObject;
 
-final class Notification
+/**
+ * @psalm-immutable
+ *
+ * @template-extends AbstractCypherObject<string, string|Position>
+ */
+final class Notification extends AbstractCypherObject
 {
     public function __construct(
-        private string $severity,
-        private string $description,
-        private string $code,
-        private Position $position,
-        private string $title,
-        private string $category,
+        private readonly string $severity,
+        private readonly string $description,
+        private readonly string $code,
+        private readonly Position $position,
+        private readonly string $title,
+        private readonly string $category,
     ) {
     }
 
@@ -92,9 +98,38 @@ final class Notification
     }
 
     /**
+     * Matches inherited return type: array<string, string|Position>.
+     *
      * @psalm-external-mutation-free
+     *
+     * @return array<string, string|Position>
      */
     public function toArray(): array
+    {
+        return [
+            'severity' => $this->severity,
+            'description' => $this->description,
+            'code' => $this->code,
+            'position' => $this->position,
+            'title' => $this->title,
+            'category' => $this->category,
+        ];
+    }
+
+    /**
+     * If you still want a version with the position converted to array,
+     * use this custom method instead of overriding toArray().
+     *
+     * @return array{
+     *     severity: string,
+     *     description: string,
+     *     code: string,
+     *     position: array<string, float|int|null|string>,
+     *     title: string,
+     *     category: string
+     * }
+     */
+    public function toSerializedArray(): array
     {
         return [
             'severity' => $this->severity,

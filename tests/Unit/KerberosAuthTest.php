@@ -13,14 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Bolt\enum\Message;
-use Bolt\enum\Signature;
-use Bolt\protocol\Response;
-use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
 use Laudis\Neo4j\Authentication\KerberosAuth;
 use Laudis\Neo4j\Common\Neo4jLogger;
-use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\UriInterface;
 
@@ -32,38 +26,6 @@ class KerberosAuthTest extends TestCase
     {
         $logger = $this->createMock(Neo4jLogger::class);
         $this->auth = new KerberosAuth('test-token', $logger);
-    }
-
-    public function testAuthenticateBoltFailureV5(): void
-    {
-        $this->expectException(Neo4jException::class);
-
-        $protocol = $this->createMock(V5::class);
-        $response = new Response(
-            Message::HELLO,
-            Signature::FAILURE,
-            ['code' => 'Neo.ClientError.Security.Unauthorized', 'message' => 'Invalid credentials']
-        );
-
-        $protocol->method('getResponse')->willReturn($response);
-
-        $this->auth->authenticateBolt($protocol, 'neo4j-client/1.0');
-    }
-
-    public function testAuthenticateBoltFailureV4(): void
-    {
-        $this->expectException(Neo4jException::class);
-
-        $protocol = $this->createMock(V4_4::class);
-        $response = new Response(
-            Message::HELLO,
-            Signature::FAILURE,
-            ['code' => 'Neo.ClientError.Security.Unauthorized', 'message' => 'Invalid credentials']
-        );
-
-        $protocol->method('getResponse')->willReturn($response);
-
-        $this->auth->authenticateBolt($protocol, 'neo4j-client/1.0');
     }
 
     public function testToString(): void

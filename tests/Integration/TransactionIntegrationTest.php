@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 
@@ -231,7 +231,7 @@ CYPHER
             $exception = $e;
         }
 
-        self::assertTrue($exception instanceof Neo4jException);
+        self::assertTrue($exception instanceof TransactionException);
 
         self::assertTrue($tsx->isFinished());
         self::assertFalse($tsx->isRolledBack());
@@ -265,7 +265,7 @@ CYPHER
             $exception = $e;
         }
 
-        self::assertTrue($exception instanceof Neo4jException);
+        self::assertTrue($exception instanceof TransactionException);
 
         self::assertTrue($tsx->isFinished());
         self::assertTrue($tsx->isRolledBack());

@@ -18,6 +18,7 @@ use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltMessageFactory;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Psr\Http\Message\UriInterface;
 
 use function sprintf;
@@ -38,7 +39,7 @@ final class NoAuth implements AuthenticateInterface
     {
         $factory = $this->createMessageFactory($connection);
 
-        if (method_exists($connection, 'logon')) {
+        if ($connection->getProtocol()->compare(ConnectionProtocol::BOLT_V5_1()) >= 0) {
             $helloMetadata = ['user_agent' => $userAgent];
 
             $factory->createHelloMessage($helloMetadata)->send()->getResponse();

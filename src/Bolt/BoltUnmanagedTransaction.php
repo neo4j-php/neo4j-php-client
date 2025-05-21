@@ -58,9 +58,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @param iterable<Statement> $statements
      *
-     * @return CypherList<SummarizedResult>
-     *@throws TransactionException|Throwable
+     * @throws TransactionException|Throwable
      *
+     * @return CypherList<SummarizedResult>
      */
     public function commit(iterable $statements = []): CypherList
     {
