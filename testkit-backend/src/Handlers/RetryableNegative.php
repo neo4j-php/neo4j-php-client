@@ -16,7 +16,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\RetryableNegativeRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
 
 /**
  * @implements RequestHandlerInterface<RetryableNegativeRequest>
@@ -28,6 +28,6 @@ final class RetryableNegative implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        return new BackendErrorResponse('Retryable negative not implemented yet'); // TODO
+        return new FrontendErrorResponse('Retryable negative not implemented yet'); // TODO
     }
 }
