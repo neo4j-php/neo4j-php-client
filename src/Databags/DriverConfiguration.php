@@ -38,7 +38,9 @@ final class DriverConfiguration
     public const DEFAULT_USER_AGENT = 'neo4j-php-client/%s';
     public const DEFAULT_POOL_SIZE = 0x2F;
     public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
-    public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
+    public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 60.0;
+    public const DEFAULT_CONNECTION_TIMEOUT = 30.0;
+
     /** @var callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
     /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
@@ -58,6 +60,7 @@ final class DriverConfiguration
         private ?int $maxPoolSize,
         CacheInterface|callable|null $cache,
         private ?float $acquireConnectionTimeout,
+        private ?float $connectionTimeout,
         callable|SemaphoreFactoryInterface|null $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
@@ -80,6 +83,7 @@ final class DriverConfiguration
         int $maxPoolSize,
         CacheInterface $cache,
         float $acquireConnectionTimeout,
+        float $connectionTimeout,
         SemaphoreFactoryInterface $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
@@ -90,6 +94,7 @@ final class DriverConfiguration
             $maxPoolSize,
             $cache,
             $acquireConnectionTimeout,
+            $connectionTimeout,
             $semaphore,
             $logLevel,
             $logger
@@ -107,6 +112,7 @@ final class DriverConfiguration
         return new self(
             null,
             SslConfiguration::default(),
+            null,
             null,
             null,
             null,
@@ -229,6 +235,25 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->acquireConnectionTimeout = $acquireConnectionTimeout;
+
+        return $tbr;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function getConnectionTimeout(): float
+    {
+        return $this->connectionTimeout ??= self::DEFAULT_CONNECTION_TIMEOUT;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function withConnectionTimeout(?float $connectionTimeout): self
+    {
+        $tbr = clone $this;
+        $tbr->connectionTimeout = $connectionTimeout;
 
         return $tbr;
     }

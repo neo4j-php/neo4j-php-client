@@ -35,6 +35,7 @@ class ClientBuilderTest extends TestCase
             ->withSslConfiguration($sslConfig)
             ->withMaxPoolSize(4096)
             ->withAcquireConnectionTimeout(2.5)
+            ->withConnectionTimeout(76)
         ->withLogger(LogLevel::DEBUG, $logger);
         $sessionConfig = SessionConfiguration::default()->withDatabase('neo4j');
         $transactionConfig = TransactionConfiguration::default()->withTimeout(120.0);

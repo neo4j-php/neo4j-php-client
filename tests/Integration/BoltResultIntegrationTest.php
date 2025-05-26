@@ -20,6 +20,7 @@ use Laudis\Neo4j\Bolt\SslConfigurationFactory;
 use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
@@ -41,7 +42,7 @@ final class BoltResultIntegrationTest extends EnvironmentAwareIntegrationTest
         );
         $connection = $factory->createConnection(
             new ConnectionRequestData($this->getUri()->getHost(), $this->getUri(), Authenticate::fromUrl($this->getUri()), 'a/b', new SslConfiguration(SslMode::FROM_URL(), false)),
-            SessionConfiguration::default()
+            SessionConfiguration::default(),DriverConfiguration::DEFAULT_CONNECTION_TIMEOUT
         );
 
         $connection->protocol()->run('UNWIND range(1, 100000) AS i RETURN i')

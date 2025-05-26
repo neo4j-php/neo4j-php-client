@@ -67,7 +67,6 @@ services:
       NEO4J_server_http_advertised__address: neo4j:7474
 
 
-
   server1:
     <<: *common-cluster
     hostname: server1
@@ -141,6 +140,7 @@ services:
       - neo4j
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "thehost:host-gateway"
     depends_on:
       - neo4j
     ports:

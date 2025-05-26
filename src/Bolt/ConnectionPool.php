@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\error\ConnectionTimeoutException;
 use Generator;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Neo4jLogger;
@@ -24,6 +25,7 @@ use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Exception\ConnectionPoolException;
+use Laudis\Neo4j\Exception\TimeoutException;
 use Psr\Http\Message\UriInterface;
 
 use function shuffle;
@@ -42,6 +44,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         private readonly ConnectionRequestData $data,
         private readonly ?Neo4jLogger $logger,
         private readonly float $acquireConnectionTimeout,
+        private readonly float $connectionTimeout,
     ) {
     }
 
@@ -62,7 +65,8 @@ final class ConnectionPool implements ConnectionPoolInterface
                 $conf->getSslConfiguration()
             ),
             $conf->getLogger(),
-            $conf->getAcquireConnectionTimeout()
+            $conf->getAcquireConnectionTimeout(),
+            $conf->getConnectionTimeout()
         );
     }
 
@@ -101,11 +105,14 @@ final class ConnectionPool implements ConnectionPoolInterface
                 return $connection;
             }
 
-            $connection = $this->factory->createConnection($this->data, $config);
+            try {
+                $connection = $this->factory->createConnection($this->data, $config, $this->connectionTimeout);
 
-            $this->activeConnections[] = $connection;
-
-            return $connection;
+                $this->activeConnections[] = $connection;
+                return $connection;
+            } catch (ConnectionTimeoutException $e) {
+                throw new TimeoutException($e->getMessage(), $e->getCode(), $e);
+            }
         })();
     }
 

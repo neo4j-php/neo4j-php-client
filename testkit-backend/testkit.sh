@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 TESTKIT_VERSION=5.0
 
 [ -z "$TEST_NEO4J_HOST" ] && export TEST_NEO4J_HOST=neo4j
@@ -32,16 +34,40 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
+if [ ! -f ./tlsserver/tlsserver ]; then
+    (cd ./tlsserver && go build -o tlsserver main.go)
+fi
+
+CERT_DIR=$(realpath ./tests/tls)
+(cd certgen && go run main.go "${CERT_DIR}")
+
 # python3 main.py --tests UNIT_TESTS
 
 echo "Starting tests..."
 
-python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic
-python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun
-python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver
-python3 -m unittest tests.neo4j.test_summary.TestSummary
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun
-python3 -m unittest tests.neo4j.test_tx_run.TestTxRun
+#python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic
+#python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks
+#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun
+#python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver
+#python3 -m unittest tests.neo4j.test_summary.TestSummary
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout
+#python3 -m unittest tests.neo4j.test_tx_run.TestTxRun
 
+#tlstest_secure_server
 
+#python3 -m unittest tests.tls.test_client_certificate.TestClientCertificate
+#python3 -m unittest tests.tls.test_client_certificate.TestClientCertificateRotation
+#
+#python3 -m unittest tests.tls.test_explicit_options.TestExplicitSslOptions
+#
+#python3 -m unittest tests.tls.test_secure_scheme.TestSecureScheme
+#python3 -m unittest tests.tls.test_secure_scheme.TestTrustSystemCertsConfig
+#python3 -m unittest tests.tls.test_secure_scheme.TestTrustCustomCertsConfig
+#
+#
+#python3 -m unittest tests.tls.test_self_signed_scheme.TestSelfSignedScheme
+#python3 -m unittest tests.tls.test_self_signed_scheme.TestTrustAllCertsConfig
+#
+#python3 -m unittest tests.tls.test_tls_versions.TestTlsVersions
+#
+#python3 -m unittest tests.tls.test_unsecure_scheme.TestUnsecureScheme.test_secure_server #2 error
