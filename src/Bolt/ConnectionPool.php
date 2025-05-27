@@ -102,6 +102,7 @@ final class ConnectionPool implements ConnectionPoolInterface
             }
 
             $connection = $this->factory->createConnection($this->data, $config);
+
             $this->activeConnections[] = $connection;
 
             return $connection;
