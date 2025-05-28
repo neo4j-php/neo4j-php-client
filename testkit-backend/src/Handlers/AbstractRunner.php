@@ -19,6 +19,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TimeoutException;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -57,7 +58,8 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
         try {
             $params = [];
-            if ($request->getParams() !== null) {
+            $requestParams = $request->getParams();
+            if ($requestParams !== null) {
                 foreach ($request->getParams() as $key => $value) {
                     $params[$key] = $this->decodeToValue($value);
                 }
@@ -96,6 +98,12 @@ abstract class AbstractRunner implements RequestHandlerInterface
             }
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
+        } catch (TimeoutException $exception) {
+            if ($request instanceof TransactionRunRequest) {
+                return new DriverErrorResponse($request->getTxId(), $exception);
+            }
+
+            return new DriverErrorResponse($request->getSessionId(), $exception);
         }
         // NOTE: all other exceptions will be caught in the Backend
     }

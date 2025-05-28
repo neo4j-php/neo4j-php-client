@@ -45,29 +45,16 @@ CERT_DIR=$(realpath ./tests/tls)
 
 echo "Starting tests..."
 
-#python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic
-#python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun
-#python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver
-#python3 -m unittest tests.neo4j.test_summary.TestSummary
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout
-#python3 -m unittest tests.neo4j.test_tx_run.TestTxRun
 
 #tlstest_secure_server
 
-#python3 -m unittest tests.tls.test_client_certificate.TestClientCertificate
-#python3 -m unittest tests.tls.test_client_certificate.TestClientCertificateRotation
-#
-#python3 -m unittest tests.tls.test_explicit_options.TestExplicitSslOptions
-#
-#python3 -m unittest tests.tls.test_secure_scheme.TestSecureScheme
-#python3 -m unittest tests.tls.test_secure_scheme.TestTrustSystemCertsConfig
-#python3 -m unittest tests.tls.test_secure_scheme.TestTrustCustomCertsConfig
-#
-#
-#python3 -m unittest tests.tls.test_self_signed_scheme.TestSelfSignedScheme
-#python3 -m unittest tests.tls.test_self_signed_scheme.TestTrustAllCertsConfig
-#
-#python3 -m unittest tests.tls.test_tls_versions.TestTlsVersions
-#
-#python3 -m unittest tests.tls.test_unsecure_scheme.TestUnsecureScheme.test_secure_server #2 error
+python3 -m unittest tests.tls.test_client_certificate.TestClientCertificate
+python3 -m unittest tests.tls.test_client_certificate.TestClientCertificateRotation
+python3 -m unittest tests.tls.test_explicit_options.TestExplicitSslOptions
+python3 -m unittest tests.tls.test_secure_scheme.TestSecureScheme
+python3 -m unittest tests.tls.test_secure_scheme.TestTrustSystemCertsConfig
+python3 -m unittest tests.tls.test_secure_scheme.TestTrustCustomCertsConfig
+python3 -m unittest tests.tls.test_self_signed_scheme.TestSelfSignedScheme
+python3 -m unittest tests.tls.test_self_signed_scheme.TestTrustAllCertsConfig
+python3 -m unittest tests.tls.test_tls_versions.TestTlsVersions
+python3 -m unittest tests.tls.test_unsecure_scheme.TestUnsecureScheme.test_secure_server

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Responses;
 
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TimeoutException;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Symfony\Component\Uid\Uuid;
@@ -24,9 +25,9 @@ use Symfony\Component\Uid\Uuid;
 final class DriverErrorResponse implements TestkitResponseInterface
 {
     private Uuid $id;
-    private Neo4jException|TransactionException $exception;
+    private Neo4jException|TransactionException|TimeoutException $exception;
 
-    public function __construct(Uuid $id, Neo4jException|TransactionException $exception)
+    public function __construct(Uuid $id, Neo4jException|TransactionException|TimeoutException $exception)
     {
         $this->id = $id;
         $this->exception = $exception;
