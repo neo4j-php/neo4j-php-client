@@ -29,7 +29,6 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
-use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -64,6 +63,7 @@ class BoltConnection implements ConnectionInterface
      * @var list<WeakReference<CypherList>>
      */
     private array $subscribedResults = [];
+    private float $createdAtMillis;
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -73,9 +73,6 @@ class BoltConnection implements ConnectionInterface
         return [$this->boltProtocol, $this->connection];
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function __construct(
         private V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
         private readonly Connection $connection,
@@ -85,7 +82,8 @@ class BoltConnection implements ConnectionInterface
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
     ) {
-        $this->messageFactory = new BoltMessageFactory($this->protocol(), $this->logger);
+        $this->messageFactory = new BoltMessageFactory($this, $this->logger);
+        $this->createdAtMillis = (int) (microtime(true) * 1000);
     }
 
     public function getEncryptionLevel(): string
@@ -107,14 +105,6 @@ class BoltConnection implements ConnectionInterface
     public function getServerAddress(): UriInterface
     {
         return $this->config->getServerAddress();
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function getServerVersion(): string
-    {
-        return $this->config->getServerVersion();
     }
 
     /**
@@ -392,17 +382,18 @@ class BoltConnection implements ConnectionInterface
         return $this->userAgent;
     }
 
-    private function assertNoFailure(Response $response): void
+    public function assertNoFailure(Response $response): void
     {
         if ($response->signature === Signature::FAILURE) {
             $this->logger?->log(LogLevel::ERROR, 'FAILURE');
-            $message = $this->messageFactory->createResetMessage();
-            $resetResponse = $message->send()->getResponse();
             $this->subscribedResults = [];
-            if ($resetResponse->signature === Signature::FAILURE) {
-                throw new Neo4jException([Neo4jError::fromBoltResponse($resetResponse), Neo4jError::fromBoltResponse($response)]);
-            }
+
             throw Neo4jException::fromBoltResponse($response);
         }
+    }
+
+    public function getCreatedAtMillis(): float
+    {
+        return $this->createdAtMillis;
     }
 }

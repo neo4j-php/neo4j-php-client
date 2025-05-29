@@ -20,7 +20,7 @@ namespace Laudis\Neo4j\Databags;
  */
 final class TransactionConfiguration
 {
-    public const DEFAULT_TIMEOUT = 60.0;
+    public const DEFAULT_TIMEOUT = 60 * 60 * 24;
     public const DEFAULT_METADATA = '[]';
 
     /**

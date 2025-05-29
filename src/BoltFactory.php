@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use function explode;
-
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
@@ -27,7 +25,6 @@ use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 /**
@@ -51,7 +48,7 @@ class BoltFactory
         return new self(SystemWideConnectionFactory::getInstance(), new ProtocolFactory(), new SslConfigurationFactory(), $logger);
     }
 
-    public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig): BoltConnection
+    public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig, float $connectionTimeout, float $maxConnectionLifetime): BoltConnection
     {
         [$sslLevel, $sslConfig] = $this->sslConfigurationFactory->create($data->getUri()->withHost($data->getHostname()), $data->getSslConfig());
 
@@ -60,23 +57,27 @@ class BoltFactory
             $data->getUri()->getPort(),
             $sslLevel,
             $sslConfig,
-            TransactionConfiguration::DEFAULT_TIMEOUT
-        );
+            $connectionTimeout);
 
         $connection = $this->connectionFactory->create($uriConfig);
-        [$protocol, $authResponse] = $this->protocolFactory->createProtocol($connection->getIConnection(), $data->getAuth(), $data->getUserAgent());
+        $protocol = $this->protocolFactory->createProtocol($connection->getIConnection());
 
         $config = new ConnectionConfiguration(
-            $authResponse['server'],
+            '',
             $data->getUri(),
-            explode('/', $authResponse['server'])[1] ?? '',
             ConnectionProtocol::determineBoltVersion($protocol),
             $sessionConfig->getAccessMode(),
             $sessionConfig->getDatabase() === null ? null : new DatabaseInfo($sessionConfig->getDatabase()),
             $sslLevel
         );
 
-        return new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger);
+        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger);
+
+        $response = $data->getAuth()->authenticateBolt($connection, $data->getUserAgent());
+
+        $config->setServerAgent($response['server']);
+
+        return $connection;
     }
 
     public function canReuseConnection(ConnectionInterface $connection, SessionConfiguration $config): bool

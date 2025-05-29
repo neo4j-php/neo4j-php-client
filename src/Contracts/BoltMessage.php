@@ -13,19 +13,16 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+use Bolt\error\ConnectionTimeoutException;
 use Bolt\protocol\Response;
-use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
-use Bolt\protocol\V5_1;
-use Bolt\protocol\V5_2;
-use Bolt\protocol\V5_3;
-use Bolt\protocol\V5_4;
 use Iterator;
+use Laudis\Neo4j\Bolt\BoltConnection;
+use Laudis\Neo4j\Exception\TimeoutException;
 
 abstract class BoltMessage
 {
     public function __construct(
-        private readonly V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol,
+        protected readonly BoltConnection $connection,
     ) {
     }
 
@@ -36,7 +33,15 @@ abstract class BoltMessage
 
     public function getResponse(): Response
     {
-        return $this->protocol->getResponse();
+        try {
+            $response = $this->connection->protocol()->getResponse();
+        } catch (ConnectionTimeoutException $e) {
+            throw new TimeoutException(previous: $e);
+        }
+
+        $this->connection->assertNoFailure($response);
+
+        return $response;
     }
 
     /**
@@ -44,9 +49,13 @@ abstract class BoltMessage
      */
     public function getResponses(): Iterator
     {
-        /**
-         * @var Iterator<Response>
-         */
-        return $this->protocol->getResponses();
+        try {
+            /**
+             * @var Iterator<Response>
+             */
+            return $this->connection->protocol()->getResponses();
+        } catch (ConnectionTimeoutException $e) {
+            throw new TimeoutException(previous: $e);
+        }
     }
 }

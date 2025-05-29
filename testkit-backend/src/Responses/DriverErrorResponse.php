@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Responses;
 
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TimeoutException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -23,9 +25,9 @@ use Symfony\Component\Uid\Uuid;
 final class DriverErrorResponse implements TestkitResponseInterface
 {
     private Uuid $id;
-    private Neo4jException $exception;
+    private Neo4jException|TransactionException|TimeoutException $exception;
 
-    public function __construct(Uuid $id, Neo4jException $exception)
+    public function __construct(Uuid $id, Neo4jException|TransactionException|TimeoutException $exception)
     {
         $this->id = $id;
         $this->exception = $exception;
@@ -33,12 +35,23 @@ final class DriverErrorResponse implements TestkitResponseInterface
 
     public function jsonSerialize(): array
     {
+        if ($this->exception instanceof Neo4jException) {
+            return [
+                'name' => 'DriverError',
+                'data' => [
+                    'id' => $this->id->toRfc4122(),
+                    'code' => $this->exception->getNeo4jCode(),
+                    'msg' => $this->exception->getNeo4jMessage(),
+                ],
+            ];
+        }
+
         return [
             'name' => 'DriverError',
             'data' => [
                 'id' => $this->id->toRfc4122(),
-                'code' => $this->exception->getNeo4jCode(),
-                'msg' => $this->exception->getNeo4jMessage(),
+                'code' => $this->exception->getCode(),
+                'msg' => $this->exception->getMessage(),
             ],
         ];
     }
