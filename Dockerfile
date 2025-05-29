@@ -7,7 +7,7 @@ ENV PATH="/usr/local/go/bin:${PATH}" \
     COMPOSER_ALLOW_SUPERUSER=1 \
     DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies, Go, PHP extensions, and tools
+# Install dependencies, Go, PHP extensions, Python venv and tools
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libzip-dev \
@@ -22,6 +22,9 @@ RUN apt-get update \
         build-essential \
         pkg-config \
         software-properties-common \
+        python3-venv \
+        python3-pip \
+        python3-setuptools \
     # Install Go 1.22.0
     && curl -LO https://golang.org/dl/go1.22.0.linux-amd64.tar.gz \
     && tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz \
