@@ -30,6 +30,7 @@ x-definitions:
         PHP_VERSION: "${PHP_VERSION-8.1}"
     volumes:
       - .:/opt/project
+
   x-common-cluster:
     &common-cluster
     <<: *common
@@ -51,6 +52,7 @@ services:
       - .:/opt/project
     env_file:
       - .env
+
   neo4j:
     <<: *common
     image: neo4j:5-enterprise
@@ -65,7 +67,6 @@ services:
       NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
       NEO4J_server_bolt_advertised__address: neo4j:7687
       NEO4J_server_http_advertised__address: neo4j:7474
-
 
   server1:
     <<: *common-cluster
@@ -117,9 +118,7 @@ services:
       NEO4J_server_http_advertised__address: server4:7474
 
   testkit:
-    image: python:3.13
-    volumes:
-      - .:/opt/project
+    <<: *common-php
     working_dir: /opt/project/testkit-backend
     networks:
       - neo4j
