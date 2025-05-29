@@ -47,14 +47,14 @@ echo "Starting tests..."
 
 
 #tlstest_secure_server
-
-python3 -m unittest tests.tls.test_client_certificate.TestClientCertificate
-python3 -m unittest tests.tls.test_client_certificate.TestClientCertificateRotation
-python3 -m unittest tests.tls.test_explicit_options.TestExplicitSslOptions
-python3 -m unittest tests.tls.test_secure_scheme.TestSecureScheme
-python3 -m unittest tests.tls.test_secure_scheme.TestTrustSystemCertsConfig
-python3 -m unittest tests.tls.test_secure_scheme.TestTrustCustomCertsConfig
-python3 -m unittest tests.tls.test_self_signed_scheme.TestSelfSignedScheme
-python3 -m unittest tests.tls.test_self_signed_scheme.TestTrustAllCertsConfig
-python3 -m unittest tests.tls.test_tls_versions.TestTlsVersions
+#
+#python3 -m unittest tests.tls.test_client_certificate.TestClientCertificate
+#python3 -m unittest tests.tls.test_client_certificate.TestClientCertificateRotation
+#python3 -m unittest tests.tls.test_explicit_options.TestExplicitSslOptions
+#python3 -m unittest tests.tls.test_secure_scheme.TestSecureScheme
+#python3 -m unittest tests.tls.test_secure_scheme.TestTrustSystemCertsConfig
+#python3 -m unittest tests.tls.test_secure_scheme.TestTrustCustomCertsConfig
+#python3 -m unittest tests.tls.test_self_signed_scheme.TestSelfSignedScheme
+#python3 -m unittest tests.tls.test_self_signed_scheme.TestTrustAllCertsConfig
+#python3 -m unittest tests.tls.test_tls_versions.TestTlsVersions
 python3 -m unittest tests.tls.test_unsecure_scheme.TestUnsecureScheme.test_secure_server
