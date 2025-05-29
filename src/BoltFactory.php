@@ -48,7 +48,7 @@ class BoltFactory
         return new self(SystemWideConnectionFactory::getInstance(), new ProtocolFactory(), new SslConfigurationFactory(), $logger);
     }
 
-    public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig, float $connectionTimeout): BoltConnection
+    public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig, float $connectionTimeout, float $maxConnectionLifetime): BoltConnection
     {
         [$sslLevel, $sslConfig] = $this->sslConfigurationFactory->create($data->getUri()->withHost($data->getHostname()), $data->getSslConfig());
 
@@ -57,8 +57,7 @@ class BoltFactory
             $data->getUri()->getPort(),
             $sslLevel,
             $sslConfig,
-            $connectionTimeout
-        );
+            $connectionTimeout);
 
         $connection = $this->connectionFactory->create($uriConfig);
         $protocol = $this->protocolFactory->createProtocol($connection->getIConnection());

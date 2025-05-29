@@ -42,7 +42,7 @@ final class BoltResultIntegrationTest extends EnvironmentAwareIntegrationTest
         );
         $connection = $factory->createConnection(
             new ConnectionRequestData($this->getUri()->getHost(), $this->getUri(), Authenticate::fromUrl($this->getUri()), 'a/b', new SslConfiguration(SslMode::FROM_URL(), false)),
-            SessionConfiguration::default(),DriverConfiguration::DEFAULT_CONNECTION_TIMEOUT
+            SessionConfiguration::default(), DriverConfiguration::DEFAULT_CONNECTION_TIMEOUT, DriverConfiguration::DEFAULT_MAX_CONNECTION_LIFETIME
         );
 
         $connection->protocol()->run('UNWIND range(1, 100000) AS i RETURN i')

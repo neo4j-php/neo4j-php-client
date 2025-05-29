@@ -40,6 +40,7 @@ final class DriverConfiguration
     public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
     public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 60.0;
     public const DEFAULT_CONNECTION_TIMEOUT = 30.0;
+    public const DEFAULT_MAX_CONNECTION_LIFETIME = 3600.0;
 
     /** @var callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
@@ -61,6 +62,7 @@ final class DriverConfiguration
         CacheInterface|callable|null $cache,
         private ?float $acquireConnectionTimeout,
         private ?float $connectionTimeout,
+        private ?float $maxConnectionLifetime,
         callable|SemaphoreFactoryInterface|null $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
@@ -84,6 +86,7 @@ final class DriverConfiguration
         CacheInterface $cache,
         float $acquireConnectionTimeout,
         float $connectionTimeout,
+        float $maxConnectionLifetime,
         SemaphoreFactoryInterface $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
@@ -95,6 +98,7 @@ final class DriverConfiguration
             $cache,
             $acquireConnectionTimeout,
             $connectionTimeout,
+            $maxConnectionLifetime,
             $semaphore,
             $logLevel,
             $logger
@@ -112,6 +116,7 @@ final class DriverConfiguration
         return new self(
             null,
             SslConfiguration::default(),
+            null,
             null,
             null,
             null,
@@ -254,6 +259,25 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->connectionTimeout = $connectionTimeout;
+
+        return $tbr;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function getMaxConnectionLifetime(): float
+    {
+        return $this->maxConnectionLifetime ??= self::DEFAULT_MAX_CONNECTION_LIFETIME;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function withMaxConnectionLifetime(?float $maxConnectionLifetime): self
+    {
+        $tbr = clone $this;
+        $tbr->maxConnectionLifetime = $maxConnectionLifetime;
 
         return $tbr;
     }

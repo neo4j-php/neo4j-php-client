@@ -172,7 +172,8 @@ class BoltConnectionPoolTest extends TestCase
             ),
             null,
             10.0,
-            30
+            30,
+            1
         );
     }
 }

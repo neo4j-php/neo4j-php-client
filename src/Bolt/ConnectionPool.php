@@ -33,7 +33,7 @@ use function shuffle;
 /**
  * @implements ConnectionPoolInterface<BoltConnection>
  */
-final class ConnectionPool implements ConnectionPoolInterface
+class ConnectionPool implements ConnectionPoolInterface
 {
     /** @var list<BoltConnection> */
     private array $activeConnections = [];
@@ -45,6 +45,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         private readonly ?Neo4jLogger $logger,
         private readonly float $acquireConnectionTimeout,
         private readonly float $connectionTimeout,
+        private readonly float $maxConnectionLifetime,
     ) {
     }
 
@@ -66,7 +67,8 @@ final class ConnectionPool implements ConnectionPoolInterface
             ),
             $conf->getLogger(),
             $conf->getAcquireConnectionTimeout(),
-            $conf->getConnectionTimeout()
+            $conf->getConnectionTimeout(),
+            $conf->getMaxConnectionLifetime()
         );
     }
 
@@ -106,9 +108,10 @@ final class ConnectionPool implements ConnectionPoolInterface
             }
 
             try {
-                $connection = $this->factory->createConnection($this->data, $config, $this->connectionTimeout);
+                $connection = $this->factory->createConnection($this->data, $config, $this->connectionTimeout, $this->maxConnectionLifetime);
 
                 $this->activeConnections[] = $connection;
+
                 return $connection;
             } catch (ConnectionTimeoutException $e) {
                 throw new TimeoutException($e->getMessage(), $e->getCode(), $e);
@@ -138,9 +141,15 @@ final class ConnectionPool implements ConnectionPoolInterface
     {
         // Ensure random connection reuse before picking one.
         shuffle($this->activeConnections);
-        foreach ($this->activeConnections as $activeConnection) {
+        foreach ($this->activeConnections as $index => $activeConnection) {
             // We prefer a connection that is just ready
             if ($activeConnection->getServerState() === 'READY' && $this->factory->canReuseConnection($activeConnection, $config)) {
+                if ($this->isConnectionExpired($activeConnection)) {
+                    $activeConnection->close();
+                    unset($this->activeConnections[$index]); // Remove expired connection
+                    continue;
+                }
+
                 return $this->factory->reuseConnection($activeConnection, $config);
             }
         }
@@ -154,5 +163,13 @@ final class ConnectionPool implements ConnectionPoolInterface
             $activeConnection->close();
         }
         $this->activeConnections = [];
+    }
+
+    public function isConnectionExpired(BoltConnection $activeConnection): bool
+    {
+        $now = (int) (microtime(true) * 1000);
+        $timeSinceCreatedInSeconds = (int) (($now - $activeConnection->getCreatedAtMillis()) / 1000);
+
+        return $timeSinceCreatedInSeconds >= $this->maxConnectionLifetime;
     }
 }

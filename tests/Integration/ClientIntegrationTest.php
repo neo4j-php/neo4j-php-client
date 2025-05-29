@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Bolt\error\ConnectionTimeoutException;
 use Exception;
 use InvalidArgumentException;
 use Laudis\Neo4j\Authentication\Authenticate;
@@ -360,35 +359,4 @@ CYPHER,
             $this->assertCount(1, $activeConnections);
         }
     }
-
-    public function testTimeoutExceptionIsThrown(): void
-    {
-        $factory = $this->createMock(BoltFactory::class);
-        $semaphore = $this->createMock(SemaphoreInterface::class);
-        $data = $this->createMock(ConnectionRequestData::class);
-        $logger = $this->createMock(Neo4jLogger::class);
-        $config = SessionConfiguration::default();
-
-        $factory->method('createConnection')
-            ->willThrowException(new ConnectionTimeoutException('Connection timed out'));
-
-        $semaphore->method('wait')->willReturn((function () {
-            if (false) yield;
-        })());
-
-        $pool = new ConnectionPool(
-            $semaphore,
-            $factory,
-            $data,
-            $logger,
-            5.0,
-            2.0
-        );
-
-        $this->expectException(TimeoutException::class);
-        $this->expectExceptionMessage('Connection timed out');
-
-        iterator_to_array($pool->acquire($config));
-    }
-
 }

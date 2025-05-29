@@ -51,24 +51,23 @@ final class RetryableNegative implements RequestHandlerInterface
             // for a 'RetryableNegative' test case.
             // It typically involves an operation designed to fail with a retryable error.
 
-            throw new Neo4jException(
-                'Simulated retryable error: Transaction failed due to deadlock.',
-                'Neo.TransientError.Transaction.DeadlockDetected'
-            );
-
+            throw new Neo4jException('Simulated retryable error: Transaction failed due to deadlock.', 'Neo.TransientError.Transaction.DeadlockDetected');
         } catch (Neo4jException $e) {
             $this->logger->info('Caught Neo4jException in RetryableNegative handler', ['exception' => $e->getMessage()]);
+
             return new DriverErrorResponse($sessionId, $e);
         } catch (TransactionException $e) {
             $this->logger->info('Caught TransactionException in RetryableNegative handler', ['exception' => $e->getMessage()]);
+
             return new DriverErrorResponse($sessionId, $e);
         } catch (TimeoutException $e) {
             $this->logger->info('Caught TimeoutException in RetryableNegative handler', ['exception' => $e->getMessage()]);
+
             return new DriverErrorResponse($sessionId, $e);
         } catch (Exception $e) {
             $this->logger->error('Unhandled exception in RetryableNegative handler', ['exception' => $e->getMessage()]);
-            return new FrontendErrorResponse('Unhandled exception in RetryableNegative handler: ' . $e->getMessage());
-        }
 
+            return new FrontendErrorResponse('Unhandled exception in RetryableNegative handler: '.$e->getMessage());
+        }
     }
 }

@@ -63,6 +63,7 @@ class BoltConnection implements ConnectionInterface
      * @var list<WeakReference<CypherList>>
      */
     private array $subscribedResults = [];
+    private float $createdAtMillis;
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -72,9 +73,6 @@ class BoltConnection implements ConnectionInterface
         return [$this->boltProtocol, $this->connection];
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function __construct(
         private V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
         private readonly Connection $connection,
@@ -85,6 +83,7 @@ class BoltConnection implements ConnectionInterface
         private readonly ?Neo4jLogger $logger,
     ) {
         $this->messageFactory = new BoltMessageFactory($this, $this->logger);
+        $this->createdAtMillis = (int) (microtime(true) * 1000);
     }
 
     public function getEncryptionLevel(): string
@@ -391,5 +390,10 @@ class BoltConnection implements ConnectionInterface
 
             throw Neo4jException::fromBoltResponse($response);
         }
+    }
+
+    public function getCreatedAtMillis(): float
+    {
+        return $this->createdAtMillis;
     }
 }
