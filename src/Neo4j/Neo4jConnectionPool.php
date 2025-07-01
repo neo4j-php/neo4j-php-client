@@ -75,6 +75,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         private readonly AddressResolverInterface $resolver,
         private readonly ?Neo4jLogger $logger,
         private readonly float $acquireConnectionTimeout,
+        private readonly float $connectionTimeout,
+        private readonly float $maxConnectionLifetimeMillis,
     ) {
     }
 
@@ -98,7 +100,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             Cache::getInstance(),
             $resolver,
             $conf->getLogger(),
-            $conf->getAcquireConnectionTimeout()
+            $conf->getAcquireConnectionTimeout(),
+            $conf->getConnectionTimeout(),
+            $conf->getMaxConnectionLifetime()
         );
     }
 
@@ -114,7 +118,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $key = $this->createKey($data);
         if (!array_key_exists($key, self::$pools)) {
-            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data, $this->logger, $this->acquireConnectionTimeout);
+            self::$pools[$key] = new ConnectionPool($this->semaphore, $this->factory, $data, $this->logger, $this->acquireConnectionTimeout, $this->connectionTimeout, $this->maxConnectionLifetimeMillis);
         }
 
         return self::$pools[$key];

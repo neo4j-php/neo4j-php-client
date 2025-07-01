@@ -13,12 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
-use Bolt\protocol\V5_1;
-use Bolt\protocol\V5_2;
-use Bolt\protocol\V5_3;
-use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Bolt\Messages\BoltBeginMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltCommitMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltDiscardMessage;
@@ -39,67 +33,67 @@ use Laudis\Neo4j\Databags\BookmarkHolder;
 class BoltMessageFactory
 {
     public function __construct(
-        private readonly V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol,
+        private readonly BoltConnection $connection,
         private readonly ?Neo4jLogger $logger = null,
     ) {
     }
 
     public function createResetMessage(): BoltResetMessage
     {
-        return new BoltResetMessage($this->protocol, $this->logger);
+        return new BoltResetMessage($this->connection, $this->logger);
     }
 
     public function createBeginMessage(array $extra): BoltBeginMessage
     {
-        return new BoltBeginMessage($this->protocol, $extra, $this->logger);
+        return new BoltBeginMessage($this->connection, $extra, $this->logger);
     }
 
     public function createDiscardMessage(array $extra): BoltDiscardMessage
     {
-        return new BoltDiscardMessage($this->protocol, $extra, $this->logger);
+        return new BoltDiscardMessage($this->connection, $extra, $this->logger);
     }
 
     public function createRunMessage(string $text, array $parameters, array $extra): BoltRunMessage
     {
-        return new BoltRunMessage($this->protocol, $text, $parameters, $extra, $this->logger);
+        return new BoltRunMessage($this->connection, $text, $parameters, $extra, $this->logger);
     }
 
     public function createCommitMessage(BookmarkHolder $bookmarkHolder): BoltCommitMessage
     {
-        return new BoltCommitMessage($this->protocol, $this->logger, $bookmarkHolder);
+        return new BoltCommitMessage($this->connection, $this->logger, $bookmarkHolder);
     }
 
     public function createRollbackMessage(): BoltRollbackMessage
     {
-        return new BoltRollbackMessage($this->protocol, $this->logger);
+        return new BoltRollbackMessage($this->connection, $this->logger);
     }
 
     public function createPullMessage(array $extra): BoltPullMessage
     {
-        return new BoltPullMessage($this->protocol, $extra, $this->logger);
+        return new BoltPullMessage($this->connection, $extra, $this->logger);
     }
 
     public function createHelloMessage(array $extra): BoltHelloMessage
     {
         /** @var array<string, mixed> $extra */
 
-        return new BoltHelloMessage($this->protocol, $extra, $this->logger);
+        return new BoltHelloMessage($this->connection, $extra, $this->logger);
     }
 
     public function createLogonMessage(array $credentials): BoltLogonMessage
     {
         /** @var array<string, mixed> $credentials */
 
-        return new BoltLogonMessage($this->protocol, $credentials, $this->logger);
+        return new BoltLogonMessage($this->connection, $credentials, $this->logger);
     }
 
     public function createLogoffMessage(): BoltLogoffMessage
     {
-        return new BoltLogoffMessage($this->protocol, $this->logger);
+        return new BoltLogoffMessage($this->connection, $this->logger);
     }
 
     public function createGoodbyeMessage(): BoltGoodbyeMessage
     {
-        return new BoltGoodbyeMessage($this->protocol, $this->logger);
+        return new BoltGoodbyeMessage($this->connection, $this->logger);
     }
 }

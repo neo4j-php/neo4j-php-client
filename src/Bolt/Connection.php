@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\IConnection;
+use Bolt\error\ConnectionTimeoutException;
+use Laudis\Neo4j\Exception\TimeoutException;
 
 class Connection
 {
@@ -33,12 +35,20 @@ class Connection
 
     public function write(string $buffer): void
     {
-        $this->connection->write($buffer);
+        try {
+            $this->connection->write($buffer);
+        } catch (ConnectionTimeoutException $e) {
+            throw new TimeoutException(previous: $e);
+        }
     }
 
     public function read(int $length = 2048): string
     {
-        return $this->connection->read($length);
+        try {
+            return $this->connection->read($length);
+        } catch (ConnectionTimeoutException $e) {
+            throw new TimeoutException(previous: $e);
+        }
     }
 
     public function disconnect(): void
