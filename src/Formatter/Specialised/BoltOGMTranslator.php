@@ -178,6 +178,9 @@ final class BoltOGMTranslator
         foreach ($rel->properties as $key => $property) {
             $map[$key] = $this->mapValueToType($property);
         }
+        /** @var string|null $elementId */
+        $startNodeElementId = null;
+        $endNodeElementId = null;
 
         /** @var string|null $elementId */
         $elementId = null;
@@ -191,7 +194,9 @@ final class BoltOGMTranslator
             $rel->endNodeId,
             $rel->type,
             new CypherMap($map),
-            $elementId
+            $elementId,
+            $startNodeElementId,  // Add this parameter
+            $endNodeElementId
         );
     }
 
