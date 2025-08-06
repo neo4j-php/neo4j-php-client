@@ -35,6 +35,11 @@ final class SessionClose implements RequestHandlerInterface
      */
     public function handle($request): SessionResponse
     {
+        $session = $this->repository->getSession($request->getSessionId());
+
+        if ($session !== null) {
+            $session->close();
+        }
         $this->repository->removeSession($request->getSessionId());
 
         return new SessionResponse($request->getSessionId());

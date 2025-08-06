@@ -47,7 +47,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
         $this->logger = $logger;
     }
 
-    public function handle($request): ResultResponse
+    public function handle($request): ResultResponse|DriverErrorResponse
     {
         $session = $this->getRunner($request);
         $id = Uuid::v4();
@@ -80,12 +80,11 @@ abstract class AbstractRunner implements RequestHandlerInterface
             return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
         } catch (Neo4jException $exception) {
             $this->logger->debug($exception->__toString());
-            $this->repository->addRecords($id, new DriverErrorResponse(
+
+            return new DriverErrorResponse(
                 $this->getId($request),
                 $exception
-            ));
-
-            return new ResultResponse($id, []);
+            );
         } // NOTE: all other exceptions will be caught in the Backend
     }
 
