@@ -268,7 +268,7 @@ CYPHER
 
         try {
             $this->getSession(['bolt', 'neo4j'])
-                ->run('CALL apoc.util.sleep(2000000) RETURN 5 as x', [], TransactionConfiguration::default()->withTimeout(2))
+                ->run('CALL apoc.util.sleep(3000) RETURN 5 as x', [], TransactionConfiguration::default()->withTimeout(2))
                 ->first()
                 ->get('x');
         } catch (Neo4jException $e) {

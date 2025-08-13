@@ -125,6 +125,7 @@ services:
       - neo4j
     environment:
       TEST_NEO4J_HOST: neo4j
+      TEST_NEO4J_PORT: 7687         # Add this if your testkit uses it
       TEST_NEO4J_USER: neo4j
       TEST_NEO4J_PASS: testtest
       TEST_DRIVER_NAME: php
