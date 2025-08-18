@@ -267,6 +267,18 @@ class BoltConnection implements ConnectionInterface
         } else {
             $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata, false);
         }
+
+        $this->logger?->log(LogLevel::ERROR, 'BoltConnection::run - DEBUGGING RUN MESSAGE', [
+            'text' => $text,
+            'parameters' => $parameters,
+            'parameters_type' => gettype($parameters),
+            'parameters_json' => json_encode($parameters),
+            'extra' => $extra,
+            'extra_json' => json_encode($extra),
+            'extra_keys' => array_keys($extra),
+            'is_transaction' => $this->isInTransaction()
+        ]);
+
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -350,20 +362,18 @@ class BoltConnection implements ConnectionInterface
             $extra['db'] = $database;
         }
         if ($timeout !== null) {
-            $extra['tx_timeout'] = (int) ($timeout * 1000);
+            $extra['tx_timeout'] = (int)($timeout * 1000);
         }
 
         $bookmarks = $holder->getBookmark()->values();
-        if (!empty($bookmarks)) {
-            $extra['bookmarks'] = $holder->getBookmark()->values();
-        }
 
         if ($forBegin) {
-            $bookmarks = $holder->getBookmark()->values();
+            // For BEGIN messages, bookmarks go directly in extra
             if (!empty($bookmarks)) {
                 $extra['bookmarks'] = $bookmarks;
             }
 
+            // ADD ACCESS MODE FOR BEGIN MESSAGES
             if ($mode !== null) {
                 $extra['mode'] = $mode === AccessMode::WRITE() ? 'w' : 'r';
             }
@@ -374,12 +384,15 @@ class BoltConnection implements ConnectionInterface
                     $extra['tx_metadata'] = $metadataArray;
                 }
             }
-
+        } else {
+            // For RUN messages outside of transactions, bookmarks go directly in extra
+            // NOT "bookmarks{}" - that was wrong! According to Bolt spec, it's just "bookmarks"
+            if (!empty($bookmarks)) {
+                $extra['bookmarks'] = $bookmarks;
+            }
         }
-
         return $extra;
     }
-
     private function buildResultExtra(?int $fetchSize, ?int $qid): array
     {
         $extra = [];

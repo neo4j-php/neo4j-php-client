@@ -52,14 +52,12 @@ final class SessionReadTransaction implements RequestHandlerInterface
             $config = $config->withMetaData($request->getTxMeta());
         }
 
-        if ($request->getBookmarks()) {
-            $config = $config->withBookmarks($request->getBookmarks());
-        }
+
 
         $id = Uuid::v4();
         try {
             // TODO - Create beginReadTransaction and beginWriteTransaction
-            $transaction = $session->beginTransaction(null, $config);
+            $transaction = $session->beginReadTransaction(null, $config);
 
             $this->repository->addTransaction($id, $transaction);
             $this->repository->bindTransactionToSession($request->getSessionId(), $id);

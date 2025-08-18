@@ -48,6 +48,10 @@ interface SessionInterface extends TransactionInterface
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
 
+    public function beginReadTransaction(?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
+
+    public function beginWriteTransaction(?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
+
     /**
      * @template HandlerResult
      *

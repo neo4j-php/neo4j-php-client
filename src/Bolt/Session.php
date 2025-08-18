@@ -138,6 +138,18 @@ final class Session implements SessionInterface
         return $tsx;
     }
 
+    public function beginReadTransaction(?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    {
+        $config = ($config ?? TransactionConfiguration::default())->withAccessMode('r');
+        return $this->beginTransaction(null, $config);
+    }
+
+    public function beginWriteTransaction(?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    {
+        $config = ($config ?? TransactionConfiguration::default())->withAccessMode('w');
+        return $this->beginTransaction(null, $config);
+    }
+
     /**
      * @return UnmanagedTransactionInterface
      */

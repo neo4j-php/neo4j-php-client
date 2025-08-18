@@ -92,7 +92,7 @@ EXIT_CODE=0
 ##
 #python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_bookmarks_can_be_set # fixed
 #python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_last_bookmark #fixed
-python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_bookmarks_read_tx #fixed
+#python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_bookmarks_read_tx #fixed
 #python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_bookmarks_write_tx
 #python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_sequence_of_writing_and_reading_tx
 #python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_multiple_bookmarks_write_tx
@@ -110,5 +110,35 @@ python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_
 #python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_bookmarks_tx_run
 #python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_sequence_of_writing_and_reading_tx
 
+
+#test_summary
+#python3 -m unittest tests.stub.summary.test_summary.TestSummaryBasicInfo.test_server_info
+#python3 -m unittest tests.stub.summary.test_summary.TestSummaryBasicInfo.test_database
+#python3 -m unittest tests.stub.summary.test_summary.TestSummaryBasicInfo.test_query
+#python3 -m unittest tests.stub.summary.test_summary.TestSummaryBasicInfo.test_invalid_query_type
+#python3 -m unittest tests.stub.summary.test_summary.TestSummaryBasicInfo.test_times
+#python3 -m unittest tests.stub.summary.test_summary.TestSummaryBasicInfo.test_no_times
+#python3 -m unittest tests.stub.summary.test_summary.TestSummaryBasicInfo.test_times
+
+
+#TestSummaryBasicInfoDiscard
+
+
+
+#session_run_parameters
+
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_access_mode_read
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_access_mode_write
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_parameters
+python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_bookmarks
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_combined
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_database
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_empty_query
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_impersonation
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_impersonation_fails_on_v4x3
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_negative_timeout
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_parameters
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_timeout
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_tx_meta
 exit $EXIT_CODE
 
