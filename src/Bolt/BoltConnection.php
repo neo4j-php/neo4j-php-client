@@ -223,7 +223,9 @@ class BoltConnection implements ConnectionInterface
      */
     public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?array $txMetaData): void
     {
-        $extra = $this->buildRunExtra($database, $timeout, $holder, null, $txMetaData, true);
+        $this->consumeResults();
+
+        $extra = $this->buildRunExtra($database, $timeout, $holder, $this->getAccessMode(), $txMetaData);
         $message = $this->messageFactory->createBeginMessage($extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -372,6 +374,7 @@ class BoltConnection implements ConnectionInterface
                     $extra['tx_metadata'] = $metadataArray;
                 }
             }
+
         }
 
         return $extra;
