@@ -41,6 +41,8 @@ final class SessionConfiguration
         private readonly ?AccessMode $accessMode = null,
         private readonly ?array $bookmarks = null,
         private readonly ?Neo4jLogger $logger = null,
+        private readonly ?string $impersonatedUser = null, // 👈 new
+
     ) {
     }
 
@@ -143,6 +145,11 @@ final class SessionConfiguration
     public function getLogger(): ?Neo4jLogger
     {
         return $this->logger;
+    }
+
+    public function getImpersonatedUser(): ?string // 👈 new
+    {
+        return $this->impersonatedUser;
     }
 
     /**

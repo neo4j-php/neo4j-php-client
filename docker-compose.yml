@@ -131,6 +131,17 @@ services:
       TEST_DRIVER_NAME: php
       TEST_DRIVER_REPO: /opt/project
       TEST_BACKEND_HOST: testkit_backend
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+      - "9002:9002"
+      - "9003:9003"
+      - "9004:9004"
+      - "9005:9005"
+      - "9006:9006"
+      - "9007:9007"
+      - "9008:9008"
+      - "9009:9009"
 
   testkit_backend:
     <<: *common-php

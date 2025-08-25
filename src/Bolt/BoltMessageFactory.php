@@ -29,6 +29,7 @@ use Laudis\Neo4j\Bolt\Messages\BoltLogonMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltPullMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltResetMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltRollbackMessage;
+use Laudis\Neo4j\Bolt\Messages\BoltRouteMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltRunMessage;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Databags\BookmarkHolder;
@@ -85,7 +86,6 @@ class BoltMessageFactory
 
         return new BoltHelloMessage($this->protocol, $extra, $this->logger);
     }
-
     public function createLogonMessage(array $credentials): BoltLogonMessage
     {
         /** @var array<string, mixed> $credentials */

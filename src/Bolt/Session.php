@@ -114,7 +114,7 @@ final class Session implements SessionInterface
         $config = $this->mergeTsxConfig($config);
 
         return TransactionHelper::retry(
-            fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ())),
+            fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::read())),
             $tsxHandler
         );
     }
@@ -131,6 +131,8 @@ final class Session implements SessionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
         $config = $this->mergeTsxConfig($config);
+
+        // Use the current session config as-is since access mode is part of SessionConfiguration
         $tsx = $this->startTransaction($config, $this->config);
 
         $tsx->runStatements($statements ?? []);
@@ -140,14 +142,22 @@ final class Session implements SessionInterface
 
     public function beginReadTransaction(?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        $config = ($config ?? TransactionConfiguration::default())->withAccessMode('r');
-        return $this->beginTransaction(null, $config);
+        $config = $config ?? TransactionConfiguration::default();
+
+        // Use session config with read access mode
+        $sessionConfig = $this->config->withAccessMode(AccessMode::read());
+
+        return $this->startTransaction($config, $sessionConfig);
     }
 
     public function beginWriteTransaction(?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        $config = ($config ?? TransactionConfiguration::default())->withAccessMode('w');
-        return $this->beginTransaction(null, $config);
+        $config = $config ?? TransactionConfiguration::default();
+
+        // Use session config with write access mode
+        $sessionConfig = $this->config->withAccessMode(AccessMode::WRITE());
+
+        return $this->startTransaction($config, $sessionConfig);
     }
 
     /**
@@ -158,6 +168,8 @@ final class Session implements SessionInterface
         TransactionConfiguration $tsxConfig,
     ): TransactionInterface {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
+
+        // Use the session config as-is since access mode is already part of it
         $connection = $this->acquireConnection($tsxConfig, $config);
 
         return new BoltUnmanagedTransaction(
@@ -202,20 +214,19 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         try {
             $connection = $this->acquireConnection($config, $sessionConfig);
-            $connection->begin($this->config->getDatabase(), $config->getTimeout(), $this->bookmarkHolder, $config->getMetaData());
+            $connection->begin($sessionConfig->getDatabase(), $config->getTimeout(), $this->bookmarkHolder, $config->getMetaData());
         } catch (Neo4jException $e) {
             if (isset($connection) && $connection->getServerState() === 'FAILED') {
                 $connection->reset();
             }
             throw $e;
         }
-        error_log('>>> EXIT startTransaction()');
 
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $sessionConfig->getDatabase(),
             $this->formatter,
             $connection,
-            $this->config,
+            $sessionConfig,
             $config,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection->protocol(), $this->getLogger()),

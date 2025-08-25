@@ -53,6 +53,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
         $id = Uuid::v4();
 
         try {
+            // Convert parameters from testkit format
             $params = [];
             if ($request->getParams() !== null) {
                 foreach ($request->getParams() as $key => $value) {
@@ -60,7 +61,14 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 }
             }
 
+            // Log the parameters being processed
+            $this->logger->debug('Processing parameters', [
+                'raw_params' => $request->getParams(),
+                'converted_params' => $params
+            ]);
+
             if ($request instanceof SessionRunRequest && $session instanceof SessionInterface) {
+                // Convert metadata from testkit format
                 $metaData = $request->getTxMeta();
                 $actualMeta = [];
                 if ($metaData !== null) {
@@ -68,7 +76,32 @@ abstract class AbstractRunner implements RequestHandlerInterface
                         $actualMeta[$key] = $this->decodeToValue($meta);
                     }
                 }
-                $config = TransactionConfiguration::default()->withMetadata($actualMeta)->withTimeout($request->getTimeout());
+
+                // Convert timeout from milliseconds to seconds
+                $timeout = $request->getTimeout();
+                if ($timeout !== null) {
+                    $timeout = $timeout / 1000.0; // Convert ms to seconds
+                }
+
+                // Log configuration being created
+                $this->logger->debug('Creating transaction configuration', [
+                    'metadata' => $actualMeta,
+                    'timeout_ms' => $request->getTimeout(),
+                    'timeout_s' => $timeout
+                ]);
+
+                $config = TransactionConfiguration::default()
+                    ->withMetaData($actualMeta) // Fixed method name
+                    ->withTimeout($timeout);
+
+                $this->logger->debug('Running query', [
+                    'cypher' => $request->getCypher(),
+                    'params' => $params,
+                    'config' => [
+                        'timeout' => $config->getTimeout(),
+                        'metadata' => $config->getMetaData()
+                    ]
+                ]);
 
                 $result = $session->run($request->getCypher(), $params, $config);
             } else {
@@ -79,7 +112,11 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
         } catch (Neo4jException $exception) {
-            $this->logger->debug($exception->__toString());
+            $this->logger->error('Neo4j exception occurred', [
+                'exception' => $exception->__toString(),
+                'cypher' => $request->getCypher(),
+                'params' => $params ?? []
+            ]);
 
             return new DriverErrorResponse(
                 $this->getId($request),
@@ -96,6 +133,14 @@ abstract class AbstractRunner implements RequestHandlerInterface
     private function decodeToValue(array $param)
     {
         $value = $param['data']['value'];
+
+        // Log the conversion for debugging
+        $this->logger->debug('Converting parameter', [
+            'name' => $param['name'],
+            'value' => $value,
+            'is_iterable' => is_iterable($value)
+        ]);
+
         if (is_iterable($value)) {
             if ($param['name'] === 'CypherMap') {
                 /** @psalm-suppress MixedArgumentTypeCoercion */

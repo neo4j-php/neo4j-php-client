@@ -135,7 +135,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $meta = $this->connection->run(
                 $statement->getText(),
                 $parameters->toArray(),
-                $this->database,
+                $this->config->getDatabase(),
                 $this->tsxConfig->getTimeout(),
                 $this->bookmarkHolder,
                 $this->config->getAccessMode(),

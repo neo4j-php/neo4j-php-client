@@ -48,6 +48,7 @@ use WeakReference;
  */
 class BoltConnection implements ConnectionInterface
 {
+    public array $pipelinedMessages;
     private BoltMessageFactory $messageFactory;
 
     /**
@@ -65,6 +66,9 @@ class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
     private bool $inTransaction = false;
+
+    // Add this property for user impersonation support
+    private ?string $impersonatedUser = null;
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -262,28 +266,31 @@ class BoltConnection implements ConnectionInterface
         ?AccessMode $mode,
         ?iterable $tsxMetadata,
     ): array {
-        if ($this->isInTransaction()) {
-            $extra = [];
-        } else {
-            $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata, false);
+        if (empty($parameters)) {
+            $parameters = (array)(object)[]; // This creates an associative array that should serialize as {}
         }
 
-        $this->logger?->log(LogLevel::ERROR, 'BoltConnection::run - DEBUGGING RUN MESSAGE', [
-            'text' => $text,
-            'parameters' => $parameters,
-            'parameters_type' => gettype($parameters),
-            'parameters_json' => json_encode($parameters),
-            'extra' => $extra,
-            'extra_json' => json_encode($extra),
-            'extra_keys' => array_keys($extra),
-            'is_transaction' => $this->isInTransaction()
-        ]);
+        if ($this->isInTransaction()) {
+            $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata, true, true);
+            error_log(">>> In transaction - extra: " . json_encode($extra));
+        } else {
+            $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata, false, true);
+            error_log(">>> Not in transaction - extra: " . json_encode($extra));
+        }
+
+        error_log(">>> About to call createRunMessage with:");
+        error_log(">>> text: " . $text);
+        error_log(">>> parameters: " . json_encode($parameters));
+        error_log(">>> extra: " . json_encode($extra));
 
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
+
+        error_log(">>> About to send message");
         $response = $message->send()->getResponse();
+        error_log(">>> Response received");
+
         $this->assertNoFailure($response);
 
-        /** @var BoltMeta */
         return $response->content;
     }
 
@@ -355,7 +362,7 @@ class BoltConnection implements ConnectionInterface
         }
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata, bool $forBegin = false): array
+    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata, bool $isInTsx = false , bool $impersonated = false): array
     {
         $extra = [];
         if ($database !== null) {
@@ -367,7 +374,7 @@ class BoltConnection implements ConnectionInterface
 
         $bookmarks = $holder->getBookmark()->values();
 
-        if ($forBegin) {
+        if ($isInTsx) {
             // For BEGIN messages, bookmarks go directly in extra
             if (!empty($bookmarks)) {
                 $extra['bookmarks'] = $bookmarks;
@@ -379,7 +386,7 @@ class BoltConnection implements ConnectionInterface
             }
 
             if ($metadata !== null) {
-                $metadataArray = $metadata instanceof Traversable ? iterator_to_array($metadata) : $metadata;
+                $metadataArray = $metadata instanceof Traversable ? iterator_to_array($metadata) : (array)$metadata;
                 if (!empty($metadataArray)) {
                     $extra['tx_metadata'] = $metadataArray;
                 }
@@ -390,6 +397,22 @@ class BoltConnection implements ConnectionInterface
             if (!empty($bookmarks)) {
                 $extra['bookmarks'] = $bookmarks;
             }
+            // ADD ACCESS MODE FOR BEGIN MESSAGES
+            if ($mode !== null) {
+                $extra['mode'] = $mode === AccessMode::WRITE() ? 'w' : 'r';
+            }
+            // ALSO handle transaction metadata for RUN messages!
+            if ($metadata !== null) {
+                $metadataArray = $metadata instanceof Traversable ? iterator_to_array($metadata) : (array)$metadata;
+                if (!empty($metadataArray)) {
+                    $extra['tx_metadata'] = $metadataArray;
+                }
+            }
+        }
+
+        // Impersonated user if configured (for testkit combined.script)
+        if ($impersonated && property_exists($this, 'impersonatedUser') && $this->impersonatedUser !== null) {
+            $extra['imp_user'] = $this->impersonatedUser;
         }
         return $extra;
     }

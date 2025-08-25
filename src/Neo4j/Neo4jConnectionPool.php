@@ -202,10 +202,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     private function routingTable(BoltConnection $connection, SessionConfiguration $config): RoutingTable
     {
         $bolt = $connection->protocol();
-
-        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
+        $extra = [];
+        if ($config->getDatabase() !== null) {
+            $extra['db'] = $config->getDatabase();
+        }
+        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE',$extra);
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
-        $route = $bolt->route([], [], ['db' => $config->getDatabase()])
+        $route = $bolt->route([], [],$extra)
             ->getResponse()
             ->content;
 

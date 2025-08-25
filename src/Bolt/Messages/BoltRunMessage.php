@@ -28,7 +28,7 @@ final class BoltRunMessage extends BoltMessage
     public function __construct(
         private readonly V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol,
         private readonly string $text,
-        private readonly array $parameters,
+        private readonly array |object $parameters,
         private readonly array $extra,
         private readonly ?Neo4jLogger $logger,
     ) {

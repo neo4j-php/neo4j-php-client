@@ -129,16 +129,14 @@ EXIT_CODE=0
 
 #python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_access_mode_read
 #python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_access_mode_write
-#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_parameters
-python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_bookmarks
+#  python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_bookmarks
 #python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_combined
 #python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_database
 #python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_empty_query
 #python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_impersonation
 #python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_impersonation_fails_on_v4x3
 #python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_negative_timeout
-#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_parameters
-#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_timeout
-#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_tx_meta
+#python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_timeout //homedb
+python3 -m unittest tests.stub.session_run_parameters.test_session_run_parameters.TestSessionRunParameters.test_tx_meta
 exit $EXIT_CODE
 
