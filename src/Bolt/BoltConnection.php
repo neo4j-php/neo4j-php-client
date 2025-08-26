@@ -319,7 +319,7 @@ class BoltConnection implements ConnectionInterface
         try {
             if ($this->isOpen()) {
                 if ($this->isStreaming()) {
-                    $this->consumeResults();
+                    $this->discardUnconsumedResults();
                 }
 
                 $message = $this->messageFactory->createGoodbyeMessage();
@@ -404,5 +404,31 @@ class BoltConnection implements ConnectionInterface
             }
             throw Neo4jException::fromBoltResponse($response);
         }
+    }
+
+    /**
+     * Discard unconsumed results - sends DISCARD to server for each subscribed result.
+     */
+    public function discardUnconsumedResults(): void
+    {
+        $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
+
+        $this->subscribedResults = array_values(array_filter(
+            $this->subscribedResults,
+            static fn (WeakReference $ref): bool => $ref->get() !== null
+        ));
+
+        if (!empty($this->subscribedResults)) {
+            try {
+                $this->discard(null);
+                $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
+            } catch (Throwable $e) {
+                $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
+                    'exception' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $this->subscribedResults = [];
     }
 }

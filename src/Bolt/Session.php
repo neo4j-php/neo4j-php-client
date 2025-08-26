@@ -39,6 +39,8 @@ use Psr\Log\LogLevel;
  */
 final class Session implements SessionInterface
 {
+    /** @var list<BoltConnection> */
+    private array $usedConnections = [];
     /** @psalm-readonly */
     private readonly BookmarkHolder $bookmarkHolder;
     private const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'TransientError', 'DatabaseError'];
@@ -217,6 +219,7 @@ final class Session implements SessionInterface
             $timeout = ($timeout < 30) ? 30 : $timeout;
             $connection->setTimeout($timeout + 2);
         }
+        $this->usedConnections[] = $connection;
 
         return $connection;
     }
@@ -254,6 +257,14 @@ final class Session implements SessionInterface
     public function getLastBookmark(): Bookmark
     {
         return $this->bookmarkHolder->getBookmark();
+    }
+
+    public function close(): void
+    {
+        foreach ($this->usedConnections as $connection) {
+            $connection->discardUnconsumedResults();
+        }
+        $this->usedConnections = [];
     }
 
     private function getLogger(): ?Neo4jLogger

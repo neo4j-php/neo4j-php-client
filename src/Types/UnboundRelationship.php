@@ -32,12 +32,15 @@ class UnboundRelationship extends AbstractPropertyObject
     /**
      * @param CypherMap<OGMTypes> $properties
      */
+    private string $elementId;
+
     public function __construct(
         private readonly int $id,
         private readonly string $type,
         private readonly CypherMap $properties,
-        private readonly ?string $elementId,
+        ?string $elementId = null,
     ) {
+        $this->elementId = $elementId ?? (string) $id;
     }
 
     public function getElementId(): ?string
@@ -55,6 +58,9 @@ class UnboundRelationship extends AbstractPropertyObject
         return $this->type;
     }
 
+    /**
+     * @psalm-suppress MixedReturnTypeCoercion
+     */
     public function getProperties(): CypherMap
     {
         /** @psalm-suppress InvalidReturnStatement false positive with type alias. */
@@ -80,7 +86,11 @@ class UnboundRelationship extends AbstractPropertyObject
      *
      * @return OGMTypes
      */
-    public function getProperty(string $key)
+
+    /**
+     * @psalm-suppress MixedReturnStatement
+     */
+    public function getProperty(string $key): string
     {
         /** @psalm-suppress ImpureMethodCall */
         if (!$this->properties->hasKey($key)) {
