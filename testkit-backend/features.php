@@ -80,7 +80,7 @@ return [
     'Feature:API:SSLConfig' => true,
     // The result summary provides a way to access the transaction's
     // GqlStatusObject.
-    'Feature:API:Summary:GqlStatusObjects' => true,
+    'Feature:API:Summary:GqlStatusObjects' => false,
     // The driver supports sending and receiving geospatial data types.
     'Feature:API:Type.Spatial' => true,
     // The driver supports sending and receiving temporal data types.
@@ -120,9 +120,9 @@ return [
     'Feature:Bolt:5.4' => true,
     // The driver supports Bolt protocol version 5.5, support dropped due
     // to a bug in the spec
-    'Feature:Bolt:5.5' => true,
+    'Feature:Bolt:5.5' => false,
     // The driver supports Bolt protocol version 5.6
-    'Feature:Bolt:5.6' => true,
+    'Feature:Bolt:5.6' => false,
     // The driver supports Bolt protocol version 5.7
     'Feature:Bolt:5.7' => true,
     // The driver supports Bolt protocol version 5.8

@@ -37,50 +37,50 @@ pip install -r requirements.txt
 echo "Starting tests..."
 
 EXIT_CODE=0
-#
-#python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic || EXIT_CODE=1
-#python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks || EXIT_CODE=1
-#
-## This test is still failing so we skip it
-## python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_autocommit_transactions_should_support_timeouttest_autocommit_transactions_should_support_timeout|| EXIT_CODE=1
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_smaller_than_fetch_size
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_node
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_relationship
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_path
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_autocommit_transactions_should_support_metadata
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_regex_in_parameter
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_regex_inline
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_larger_than_fetch_size
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_partial_iteration
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_simple_query
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_session_reuse
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_nested
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_recover_from_invalid_query
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_recover_from_fail_on_streaming
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_updates_last_bookmark
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_fails_on_bad_syntax
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_fails_on_missing_parameter
-#python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_long_string
-#
-### This test is still failing so we skip it test_direct_driver
-#python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_custom_resolver|| EXIT_CODE=1
-#python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_http_port|| EXIT_CODE=1
-#python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_supports_multi_db|| EXIT_CODE=1
-#python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db|| EXIT_CODE=1
-#python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_various_databases|| EXIT_CODE=1
-#
-##test_summary
-#python3 -m unittest tests.neo4j.test_summary.TestSummary || EXIT_CODE=1
+#neo4j
+#test_authentication
+python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic || EXIT_CODE=1
 
+#test_bookmarks
+python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks || EXIT_CODE=1
 
-#stub
-#test-basic-query
+#test_session_run
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_smaller_than_fetch_size
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_node
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_relationship
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_path
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_autocommit_transactions_should_support_metadata
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_regex_in_parameter
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_regex_inline
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_larger_than_fetch_size
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_partial_iteration
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_simple_query
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_session_reuse
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_nested
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_recover_from_invalid_query
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_recover_from_fail_on_streaming
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_updates_last_bookmark
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_fails_on_bad_syntax
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_fails_on_missing_parameter
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_long_string
 
+#test_direct_driver
+python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_custom_resolver|| EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_http_port|| EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_supports_multi_db|| EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_non_existing
+python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db|| EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_various_databases|| EXIT_CODE=1
+
+#test_summary
+python3 -m unittest tests.neo4j.test_summary.TestSummary
+
+####stub
+####test-basic-query
+python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_path_element_ids_with_string
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_node_element_id_with_id
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_node_element_id_with_string
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_rel_element_id_with_id
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_path_element_ids_with_long
 
-
 exit $EXIT_CODE
-

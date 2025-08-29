@@ -48,6 +48,7 @@ final class ResultNext implements RequestHandlerInterface
 
             $iterator = $this->repository->getIterator($request->getResultId());
 
+            // Advance iterator only if it’s not the first fetch
             if ($this->repository->getIteratorFetchedFirst($request->getResultId()) === true) {
                 $iterator->next();
             }
