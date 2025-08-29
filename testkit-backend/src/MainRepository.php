@@ -126,7 +126,11 @@ final class MainRepository
         $this->records[$id->toRfc4122()] = $result;
         if ($result instanceof SummarizedResult) {
             /** @var SummarizedResult<CypherMap<OGMTypes>> $result */
-            $this->recordIterators[$id->toRfc4122()] = $result;
+            $this->recordIterators[$id->toRfc4122()] = (function () use ($result) {
+                foreach ($result as $row) {
+                    yield $row;
+                }
+            })();
         }
     }
 
