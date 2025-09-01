@@ -51,7 +51,7 @@ final class BasicAuth implements AuthenticateInterface
             $helloMetadata = ['user_agent' => $userAgent];
 
             $factory->createHelloMessage($helloMetadata)->send();
-            $response = ResponseHelper::getResponse($protocol);
+            $response = $protocol->getResponse();
 
             $credentials = [
                 'scheme' => 'basic',
@@ -60,7 +60,7 @@ final class BasicAuth implements AuthenticateInterface
             ];
 
             $factory->createLogonMessage($credentials)->send();
-            ResponseHelper::getResponse($protocol);
+          $protocol->getResponse();
 
             /** @var array{server: string, connection_id: string, hints: list} */
             return $response->content;
@@ -76,7 +76,7 @@ final class BasicAuth implements AuthenticateInterface
         $factory->createHelloMessage($helloMetadata)->send();
 
         /** @var array{server: string, connection_id: string, hints: list} */
-        return ResponseHelper::getResponse($protocol)->content;
+        return $protocol->getResponse()->content;
     }
 
     /**
@@ -86,7 +86,7 @@ final class BasicAuth implements AuthenticateInterface
     {
         $factory = $this->createMessageFactory($protocol);
         $factory->createLogoffMessage()->send();
-        ResponseHelper::getResponse($protocol);
+       $protocol->getResponse();
     }
 
     public function toString(UriInterface $uri): string

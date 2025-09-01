@@ -62,7 +62,7 @@ final class KerberosAuth implements AuthenticateInterface
 
         $factory->createHelloMessage(['user_agent' => $userAgent])->send();
 
-        $response = ResponseHelper::getResponse($protocol);
+        $response = $protocol->getResponse();
 
         $this->logger?->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'kerberos', 'principal' => '']);
 
@@ -72,7 +72,7 @@ final class KerberosAuth implements AuthenticateInterface
             'credentials' => $this->token,
         ])->send();
 
-        ResponseHelper::getResponse($protocol);
+      $protocol->getResponse();
 
         /**
          * @var array{server: string, connection_id: string, hints: list}

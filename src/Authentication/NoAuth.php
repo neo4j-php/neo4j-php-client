@@ -57,10 +57,10 @@ final class NoAuth implements AuthenticateInterface
             $helloMetadata = ['user_agent' => $userAgent];
 
             $factory->createHelloMessage($helloMetadata)->send();
-            $response = ResponseHelper::getResponse($protocol);
+            $response = $protocol->getResponse();
 
             $factory->createLogonMessage(['scheme' => 'none'])->send();
-            ResponseHelper::getResponse($protocol);
+          $protocol->getResponse();
 
             /** @var array{server: string, connection_id: string, hints: list} */
             return $response->content;
@@ -74,14 +74,14 @@ final class NoAuth implements AuthenticateInterface
         $factory->createHelloMessage($helloMetadata)->send();
 
         /** @var array{server: string, connection_id: string, hints: list} */
-        return ResponseHelper::getResponse($protocol)->content;
+        return $protocol->getResponse()->content;
     }
 
     public function logoff(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol): void
     {
         $factory = $this->createMessageFactory($protocol);
         $factory->createLogoffMessage()->send();
-        ResponseHelper::getResponse($protocol);
+       $protocol->getResponse();
     }
 
     public function toString(UriInterface $uri): string
