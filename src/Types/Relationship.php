@@ -24,6 +24,9 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
  */
 final class Relationship extends UnboundRelationship
 {
+    private string $startNodeElementId;
+    private string $endNodeElementId;
+
     /**
      * @param CypherMap<OGMTypes> $properties
      */
@@ -34,8 +37,17 @@ final class Relationship extends UnboundRelationship
         string $type,
         CypherMap $properties,
         ?string $elementId,
+        int|string|null $startNodeElementId = null,
+        int|string|null $endNodeElementId = null,
     ) {
         parent::__construct($id, $type, $properties, $elementId);
+        $this->startNodeElementId = $startNodeElementId !== null
+            ? (string) $startNodeElementId
+            : (string) $startNodeId;
+
+        $this->endNodeElementId = $endNodeElementId !== null
+            ? (string) $endNodeElementId
+            : (string) $endNodeId;
     }
 
     /**
