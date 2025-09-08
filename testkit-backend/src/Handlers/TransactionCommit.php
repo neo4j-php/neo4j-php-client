@@ -23,7 +23,6 @@ use Laudis\Neo4j\TestkitBackend\Requests\TransactionCommitRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\TransactionResponse;
-use Throwable;
 
 /**
  * @implements RequestHandlerInterface<TransactionCommitRequest>

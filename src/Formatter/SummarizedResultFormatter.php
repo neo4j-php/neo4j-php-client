@@ -198,8 +198,7 @@ final class SummarizedResultFormatter
         /**
          * @var SummarizedResult<CypherMap<OGMTypes>>
          */
-        return new SummarizedResult($summary, (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize()),
-            $meta['fields'] ?? [] );
+        return new SummarizedResult($summary, (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize()));
     }
 
     public function formatArgs(array $profiledPlanData): PlanArguments

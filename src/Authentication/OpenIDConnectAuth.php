@@ -22,7 +22,6 @@ use Bolt\protocol\V5_4;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltMessageFactory;
 use Laudis\Neo4j\Common\Neo4jLogger;
-use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -68,7 +67,7 @@ class OpenIDConnectAuth implements AuthenticateInterface
             'credentials' => $this->token,
         ])->send();
 
-       $protocol->getResponse();
+        $protocol->getResponse();
 
         /**
          * @var array{server: string, connection_id: string, hints: list}

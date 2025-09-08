@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
+use Bolt\enum\Signature;
+use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
@@ -22,8 +24,8 @@ use Bolt\protocol\V5_4;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltMessageFactory;
 use Laudis\Neo4j\Common\Neo4jLogger;
-use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
@@ -62,7 +64,7 @@ final class KerberosAuth implements AuthenticateInterface
 
         $factory->createHelloMessage(['user_agent' => $userAgent])->send();
 
-        $response = $protocol->getResponse();
+        $response = self::getResponse($protocol);
 
         $this->logger?->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'kerberos', 'principal' => '']);
 
@@ -72,12 +74,22 @@ final class KerberosAuth implements AuthenticateInterface
             'credentials' => $this->token,
         ])->send();
 
-      $protocol->getResponse();
+        self::getResponse($protocol);
 
         /**
          * @var array{server: string, connection_id: string, hints: list}
          */
         return $response->content;
+    }
+
+    public static function getResponse(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol): Response
+    {
+        $response = $protocol->getResponse();
+        if ($response->signature === Signature::FAILURE) {
+            throw Neo4jException::fromBoltResponse($response);
+        }
+
+        return $response;
     }
 
     public function toString(UriInterface $uri): string

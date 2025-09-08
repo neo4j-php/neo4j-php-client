@@ -23,7 +23,7 @@ use Throwable;
  *
  * @psalm-suppress MutableDependency
  */
-final class ClientException extends RuntimeException
+final class TransactionException extends RuntimeException
 {
     public function __construct(string $message, ?Throwable $previous = null)
     {
