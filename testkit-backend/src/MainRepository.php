@@ -178,5 +178,4 @@ final class MainRepository
     {
         return $this->sessionToTransactions[$sessionId->toRfc4122()];
     }
-
 }
