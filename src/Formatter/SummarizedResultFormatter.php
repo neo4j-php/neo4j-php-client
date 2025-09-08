@@ -86,8 +86,8 @@ use function microtime;
  *     constraints-added?: int,
  *     constraints-removed?: int,
  *     contains-updates?: bool,
- *     contains-system-updates?: bool,
- *     system-updates?: int,
+ *     contains-system-updates?: bool|int,
+ *     system-updates?: int|bool,
  *     db?: string
  * }
  * @psalm-type CypherError = array{code: string, message: string}
@@ -138,6 +138,21 @@ final class SummarizedResultFormatter
             }
         }
 
+        $systemUpdates = $stats['system-updates'] ?? 0;
+        if (is_bool($systemUpdates)) {
+            $systemUpdates = (int) $systemUpdates;
+        }
+
+        $containsSystemUpdates = $stats['contains-system-updates'] ?? null;
+
+        if ($containsSystemUpdates === null) {
+            $containsSystemUpdates = $systemUpdates > 0;
+        } else {
+            if (!is_bool($containsSystemUpdates)) {
+                $containsSystemUpdates = (bool) $containsSystemUpdates;
+            }
+        }
+
         return new SummaryCounters(
             $stats['nodes-created'] ?? 0,
             $stats['nodes-deleted'] ?? 0,
@@ -151,8 +166,8 @@ final class SummarizedResultFormatter
             $stats['constraints-added'] ?? 0,
             $stats['constraints-removed'] ?? 0,
             $updateCount > 0,
-            ($stats['contains-system-updates'] ?? $stats['system-updates'] ?? 0) >= 1,
-            $stats['system-updates'] ?? 0
+            $containsSystemUpdates,
+            $systemUpdates
         );
     }
 
@@ -195,10 +210,11 @@ final class SummarizedResultFormatter
 
         $formattedResult = $this->processBoltResult($meta, $result, $connection, $holder);
 
-        /**
-         * @var SummarizedResult<CypherMap<OGMTypes>>
-         */
-        return new SummarizedResult($summary, (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize()));
+        /** @var SummarizedResult */
+        $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
+        //        $keys = $meta['fields'];
+
+        return new SummarizedResult($summary, $result);
     }
 
     public function formatArgs(array $profiledPlanData): PlanArguments
@@ -255,7 +271,7 @@ final class SummarizedResultFormatter
             pageCacheHitRatio: (float) ($profiledPlanData['pageCacheHitRatio'] ?? 0.0),
             time: (int) ($profiledPlanData['time'] ?? 0),
             operatorType: $profiledPlanData['operatorType'] ?? '',
-            children: array_map([$this, 'formatProfiledPlan'], $profiledPlanData['children'] ?? []),
+            children: array_values(array_map([$this, 'formatProfiledPlan'], $profiledPlanData['children'] ?? [])),
             identifiers: $profiledPlanData['identifiers'] ?? []
         );
     }
@@ -309,7 +325,7 @@ final class SummarizedResultFormatter
     {
         return new Plan(
             $this->formatArgs($plan['args']),
-            array_map($this->formatPlan(...), $plan['children'] ?? []),
+            array_values(array_map($this->formatPlan(...), $plan['children'] ?? [])),
             $plan['identifiers'] ?? [],
             $plan['operatorType'] ?? ''
         );
