@@ -13,6 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
+use Bolt\protocol\V4_4;
+use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Bolt\protocol\V5_2;
+use Bolt\protocol\V5_3;
+use Bolt\protocol\V5_4;
 use Exception;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltMessageFactory;
@@ -45,20 +51,24 @@ class OpenIDConnectAuth implements AuthenticateInterface
      *
      * @return array{server: string, connection_id: string, hints: list}
      */
-    public function authenticateBolt(BoltConnection $connection, string $userAgent): array
+    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
     {
-        $factory = $this->createMessageFactory($connection);
+        $factory = $this->createMessageFactory($protocol);
 
         $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent]);
 
-        $factory->createHelloMessage(['user_agent' => $userAgent])->send()->getResponse();
+        $factory->createHelloMessage(['user_agent' => $userAgent])->send();
+
+        $response = $protocol->getResponse();
 
         $this->logger?->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'bearer']);
 
-        $response = $factory->createLogonMessage([
+        $factory->createLogonMessage([
             'scheme' => 'bearer',
             'credentials' => $this->token,
-        ])->send()->getResponse();
+        ])->send();
+
+        $protocol->getResponse();
 
         /**
          * @var array{server: string, connection_id: string, hints: list}

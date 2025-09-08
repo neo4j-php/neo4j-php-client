@@ -16,8 +16,8 @@ namespace Laudis\Neo4j\Bolt;
 use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Neo4jLogger;
-use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
+use Laudis\Neo4j\Contracts\CypherSequence;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -41,6 +41,7 @@ final class Session implements SessionInterface
 {
     /** @psalm-readonly */
     private readonly BookmarkHolder $bookmarkHolder;
+    private const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'TransientError', 'DatabaseError'];
 
     /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
@@ -99,10 +100,7 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning write transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
 
-        return TransactionHelper::retry(
-            fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE())),
-            $tsxHandler
-        );
+        return $this->retry($tsxHandler, false, $config);
     }
 
     public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
@@ -110,10 +108,51 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning read transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
 
-        return TransactionHelper::retry(
-            fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ())),
-            $tsxHandler
-        );
+        return $this->retry($tsxHandler, true, $config);
+    }
+
+    /**
+     * @template U
+     *
+     * @param callable(TransactionInterface):U $tsxHandler
+     *
+     * @return U
+     */
+    private function retry(callable $tsxHandler, bool $read, TransactionConfiguration $config)
+    {
+        while (true) {
+            $transaction = null;
+            try {
+                if ($read) {
+                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()));
+                } else {
+                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE()));
+                }
+                $tbr = $tsxHandler($transaction);
+                self::triggerLazyResult($tbr);
+                $transaction->commit();
+
+                return $tbr;
+            } catch (Neo4jException $e) {
+                if ($transaction && !in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS)) {
+                    $transaction->rollback();
+                }
+
+                if ($e->getTitle() === 'NotALeader') {
+                    // By closing the pool, we force the connection to be re-acquired and the routing table to be refetched
+                    $this->pool->close();
+                } elseif ($e->getClassification() !== 'TransientError') {
+                    throw $e;
+                }
+            }
+        }
+    }
+
+    private static function triggerLazyResult(mixed $tbr): void
+    {
+        if ($tbr instanceof CypherSequence) {
+            $tbr->preload();
+        }
     }
 
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null)

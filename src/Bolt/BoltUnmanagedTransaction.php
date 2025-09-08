@@ -66,15 +66,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         if ($this->isFinished()) {
             if ($this->state === TransactionState::TERMINATED) {
-                throw new TransactionException("Can't commit a terminated transaction.");
+                throw new TransactionException("Can't commit, transaction has been terminated");
             }
 
             if ($this->state === TransactionState::COMMITTED) {
-                throw new TransactionException("Can't commit a committed transaction.");
+                throw new TransactionException("Can't commit, transaction has already been committed");
             }
 
             if ($this->state === TransactionState::ROLLED_BACK) {
-                throw new TransactionException("Can't commit a committed transaction.");
+                throw new TransactionException("Can't commit, transaction has already been rolled back");
             }
         }
 
@@ -84,7 +84,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $list->preload();
         });
 
-        $this->messageFactory->createCommitMessage($this->bookmarkHolder)->send()->getResponse();
+        $this->messageFactory->createCommitMessage($this->bookmarkHolder)->send();
         $this->state = TransactionState::COMMITTED;
 
         return $tbr;
@@ -94,11 +94,19 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         if ($this->isFinished()) {
             if ($this->state === TransactionState::COMMITTED) {
-                throw new TransactionException("Can't rollback a committed transaction.");
+                throw new TransactionException("Can't rollback, transaction has already been committed");
             }
 
             if ($this->state === TransactionState::ROLLED_BACK) {
-                throw new TransactionException("Can't rollback a rolled back transaction.");
+                // Already rolled back, throw a TransactionException to be wrapped by DriverErrorResponse
+                throw new TransactionException('Transaction has already been rolled back');
+            }
+
+            if ($this->state === TransactionState::TERMINATED) {
+                // Transaction failed, allow rollback as a no-op
+                $this->state = TransactionState::ROLLED_BACK;
+
+                return;
             }
         }
 
@@ -113,15 +121,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         if ($this->isFinished()) {
             if ($this->state === TransactionState::TERMINATED) {
-                throw new TransactionException("Can't run a query on a terminated transaction.");
+                throw new TransactionException("Can't rollback, transaction has been terminated");
             }
 
             if ($this->state === TransactionState::COMMITTED) {
-                throw new TransactionException("Can't run a query on a committed transaction.");
+                throw new TransactionException("Can't rollback, transaction has already been committed");
             }
 
             if ($this->state === TransactionState::ROLLED_BACK) {
-                throw new TransactionException("Can't run a query on a rolled back transaction.");
+                throw new TransactionException("Can't rollback, transaction has already been rolled back");
             }
         }
 
@@ -137,7 +145,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $start = microtime(true);
 
         $serverState = $this->connection->protocol()->serverState;
-        if ($serverState === ServerState::STREAMING) {
+        if (in_array($serverState, [ServerState::STREAMING, ServerState::TX_STREAMING])) {
             $this->connection->consumeResults();
         }
 
