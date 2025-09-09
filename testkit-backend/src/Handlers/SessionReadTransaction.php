@@ -64,7 +64,8 @@ final class SessionReadTransaction implements RequestHandlerInterface
         $id = Uuid::v4();
         try {
             // TODO - Create beginReadTransaction and beginWriteTransaction
-            $transaction = $session->beginTransaction(null, $config);
+
+            $transaction = $session->beginReadTransaction(null, $config);
 
             $this->repository->addTransaction($id, $transaction);
             $this->repository->bindTransactionToSession($request->getSessionId(), $id);

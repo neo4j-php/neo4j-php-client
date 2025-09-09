@@ -207,6 +207,8 @@ class BoltConnection implements ConnectionInterface
     public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData): void
     {
         $this->consumeResults();
+        // ADD THIS: Authenticate the connection before beginning transaction
+        $this->auth->authenticateBolt($this, $this->userAgent);
 
         $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE(), $txMetaData);
         $message = $this->messageFactory->createBeginMessage($extra);

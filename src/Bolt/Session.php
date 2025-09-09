@@ -173,6 +173,37 @@ final class Session implements SessionInterface
 
         return $tsx;
     }
+    /**
+     * Begin a read transaction.
+     *
+     * @param iterable<Statement>|null $statements
+     */
+    public function beginReadTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    {
+        $this->getLogger()?->log(LogLevel::INFO, 'Beginning read transaction', ['statements' => $statements, 'config' => $config]);
+        $config = $this->mergeTsxConfig($config);
+        $tsx = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()));
+
+        $tsx->runStatements($statements ?? []);
+
+        return $tsx;
+    }
+
+    /**
+     * Begin a write transaction.
+     *
+     * @param iterable<Statement>|null $statements
+     */
+    public function beginWriteTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    {
+        $this->getLogger()?->log(LogLevel::INFO, 'Beginning write transaction', ['statements' => $statements, 'config' => $config]);
+        $config = $this->mergeTsxConfig($config);
+        $tsx = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::write()));
+
+        $tsx->runStatements($statements ?? []);
+
+        return $tsx;
+    }
 
     /**
      * @return UnmanagedTransactionInterface

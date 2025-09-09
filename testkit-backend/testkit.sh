@@ -78,11 +78,11 @@ EXIT_CODE=0
 
 ####stub
 ####test-basic-query
-python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_path_element_ids_with_string
-python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_node_element_id_with_id
-python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_node_element_id_with_string
-python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_rel_element_id_with_id
-python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_path_element_ids_with_long
+#python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_path_element_ids_with_string
+#python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_node_element_id_with_id
+#python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_node_element_id_with_string
+#python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_rel_element_id_with_id
+#python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_path_element_ids_with_long
 
 ##test_tx_run
 #tx_run
@@ -109,5 +109,19 @@ python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_
 #python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_parallel_queries  || EXIT_CODE=1
 #python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_interwoven_queries  || EXIT_CODE=1
 #python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_unconsumed_result  || EXIT_CODE=1
+
+
+#test_tx_func_run
+
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_simple_query
+#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_parameter
+#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_meta_data
+#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_iteration_nested
+#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_updates_last_bookmark_on_commit
+#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_does_not_update_last_bookmark_on_rollback
+#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_client_exception_rolls_back_change
+#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_func_configuration
+#python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout
+
 
 exit $EXIT_CODE

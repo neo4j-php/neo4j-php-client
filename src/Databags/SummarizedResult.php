@@ -39,11 +39,10 @@ final class SummarizedResult extends CypherList
      * @param iterable<mixed, CypherMap<OGMTypes>>|callable():Generator<mixed, CypherMap<OGMTypes>> $iterable
      * @param list<string>                                                                          $keys
      */
-    public function __construct(?ResultSummary &$summary, iterable|callable $iterable = [], array $keys)
+    public function __construct(?ResultSummary &$summary, iterable|callable $iterable = [])
     {
         parent::__construct($iterable);
         $this->summary = &$summary;
-        $this->keys = $keys;
     }
 
     /**
@@ -78,11 +77,4 @@ final class SummarizedResult extends CypherList
         ];
     }
 
-    /**
-     * @return list<string>
-     */
-    public function keys(): array
-    {
-        return $this->keys;
-    }
 }

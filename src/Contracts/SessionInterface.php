@@ -47,6 +47,23 @@ interface SessionInterface extends TransactionInterface
      * @throws Neo4jException
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
+    /**
+     * Begin a read transaction.
+     *
+     * @param iterable<Statement>|null $statements
+     *
+     * @throws Neo4jException
+     */
+    public function beginReadTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
+
+    /**
+     * Begin a write transaction.
+     *
+     * @param iterable<Statement>|null $statements
+     *
+     * @throws Neo4jException
+     */
+    public function beginWriteTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
 
     /**
      * @template HandlerResult
