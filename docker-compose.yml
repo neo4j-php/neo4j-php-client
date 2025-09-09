@@ -53,7 +53,7 @@ services:
       - .env
   neo4j:
     <<: *common
-    image: neo4j:5.23-enterprise
+    image: neo4j:5-enterprise
     hostname: neo4j
     networks:
       - neo4j
@@ -62,7 +62,7 @@ services:
       - "11474:7474"
     environment:
       <<: *common-env
-      NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'  # Also add this
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
       NEO4J_server_bolt_advertised__address: neo4j:7687
       NEO4J_server_http_advertised__address: neo4j:7474
 

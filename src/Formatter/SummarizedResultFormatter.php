@@ -86,8 +86,8 @@ use function microtime;
  *     constraints-added?: int,
  *     constraints-removed?: int,
  *     contains-updates?: bool,
- *     contains-system-updates?: bool|int,
- *     system-updates?: int|bool,
+ *     contains-system-updates?: bool,
+ *     system-updates?: int,
  *     db?: string
  * }
  * @psalm-type CypherError = array{code: string, message: string}
@@ -197,9 +197,9 @@ final class SummarizedResultFormatter
 
         /** @var SummarizedResult */
         $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
-        //        $keys = $meta['fields'];
+        $keys = $meta['fields'];
 
-        return new SummarizedResult($summary, $result);
+        return new SummarizedResult($summary, $result, $keys);
     }
 
     public function formatArgs(array $profiledPlanData): PlanArguments

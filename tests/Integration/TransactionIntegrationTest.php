@@ -231,11 +231,6 @@ CYPHER
             $exception = $e;
         }
 
-        if (str_starts_with($_ENV['CONNECTION'] ?? '', 'http')) {
-            self::assertTrue($exception instanceof Neo4jException);
-        } else {
-            self::assertTrue($exception instanceof TransactionException);
-        }
         self::assertTrue($exception instanceof TransactionException);
 
         self::assertTrue($tsx->isFinished());
@@ -270,11 +265,6 @@ CYPHER
             $exception = $e;
         }
 
-        if (str_starts_with($_ENV['CONNECTION'] ?? '', 'http')) {
-            self::assertTrue($exception instanceof Neo4jException);
-        } else {
-            self::assertTrue($exception instanceof TransactionException);
-        }
         self::assertTrue($exception instanceof TransactionException);
 
         self::assertTrue($tsx->isFinished());
