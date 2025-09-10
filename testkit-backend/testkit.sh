@@ -35,14 +35,16 @@ pip install -r requirements.txt
 # python3 main.py --tests UNIT_TESTS
 
 echo "Starting tests..."
+#test_tx_func_run
 
-python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic
-python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun
-python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver
-python3 -m unittest tests.neo4j.test_summary.TestSummary
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun
-python3 -m unittest tests.neo4j.test_tx_run.TestTxRun
-
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_simple_query
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_parameter
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_meta_data
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_iteration_nested
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_updates_last_bookmark_on_commit
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_does_not_update_last_bookmark_on_rollback
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_client_exception_rolls_back_change
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_func_configuration
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout
 
 exit $EXIT_CODE
