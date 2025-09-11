@@ -21,7 +21,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\TransactionState;
-use Laudis\Neo4j\Exception\ClientException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\CypherList;
@@ -58,7 +58,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     /**
      * @param iterable<Statement> $statements
      *
-     * @throws ClientException|Throwable
+     * @throws TransactionException|Throwable
      *
      * @return CypherList<SummarizedResult>
      */
@@ -66,15 +66,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     {
         if ($this->isFinished()) {
             if ($this->state === TransactionState::TERMINATED) {
-                throw new ClientException("Can't commit, transaction has been terminated");
+                throw new TransactionException("Can't commit, transaction has been terminated");
             }
 
             if ($this->state === TransactionState::COMMITTED) {
-                throw new ClientException("Can't commit, transaction has already been committed");
+                throw new TransactionException("Can't commit, transaction has already been committed");
             }
 
             if ($this->state === TransactionState::ROLLED_BACK) {
-                throw new ClientException("Can't commit, transaction has already been rolled back");
+                throw new TransactionException("Can't commit, transaction has already been rolled back");
             }
         }
 
@@ -93,16 +93,20 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function rollback(): void
     {
         if ($this->isFinished()) {
-            if ($this->state === TransactionState::TERMINATED) {
-                throw new ClientException("Can't rollback, transaction has been terminated");
-            }
-
             if ($this->state === TransactionState::COMMITTED) {
-                throw new ClientException("Can't rollback, transaction has already been committed");
+                throw new TransactionException("Can't rollback, transaction has already been committed");
             }
 
             if ($this->state === TransactionState::ROLLED_BACK) {
-                throw new ClientException("Can't rollback, transaction has already been rolled back");
+                // Already rolled back, throw a TransactionException to be wrapped by DriverErrorResponse
+                throw new TransactionException('Transaction has already been rolled back');
+            }
+
+            if ($this->state === TransactionState::TERMINATED) {
+                // Transaction failed, allow rollback as a no-op
+                $this->state = TransactionState::ROLLED_BACK;
+
+                return;
             }
         }
 
@@ -115,6 +119,20 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function run(string $statement, iterable $parameters = []): SummarizedResult
     {
+        if ($this->isFinished()) {
+            if ($this->state === TransactionState::TERMINATED) {
+                throw new TransactionException("Can't rollback, transaction has been terminated");
+            }
+
+            if ($this->state === TransactionState::COMMITTED) {
+                throw new TransactionException("Can't rollback, transaction has already been committed");
+            }
+
+            if ($this->state === TransactionState::ROLLED_BACK) {
+                throw new TransactionException("Can't rollback, transaction has already been rolled back");
+            }
+        }
+
         return $this->runStatement(new Statement($statement, $parameters));
     }
 

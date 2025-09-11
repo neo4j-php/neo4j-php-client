@@ -18,6 +18,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
@@ -47,7 +48,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
         $this->logger = $logger;
     }
 
-    public function handle($request): ResultResponse
+    public function handle($request): ResultResponse|DriverErrorResponse
     {
         $session = $this->getRunner($request);
         $id = Uuid::v4();
@@ -78,14 +79,16 @@ abstract class AbstractRunner implements RequestHandlerInterface
             $this->repository->addRecords($id, $result);
 
             return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
-        } catch (Neo4jException $exception) {
+        } catch (Neo4jException|TransactionException $exception) {
             $this->logger->debug($exception->__toString());
-            $this->repository->addRecords($id, new DriverErrorResponse(
+
+            $driverErrorResponse = new DriverErrorResponse(
                 $this->getId($request),
                 $exception
-            ));
+            );
+            $this->repository->addRecords($id, $driverErrorResponse);
 
-            return new ResultResponse($id, []);
+            return $driverErrorResponse;
         } // NOTE: all other exceptions will be caught in the Backend
     }
 

@@ -23,14 +23,17 @@ use function json_encode;
 use const JSON_THROW_ON_ERROR;
 
 use JsonException;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 
 use const PHP_EOL;
 
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 use UnexpectedValueException;
 
@@ -88,9 +91,13 @@ final class Backend
             [$handler, $request] = $this->extractRequest($message);
             try {
                 $this->properSendoff($handler->handle($request));
+            } catch (Neo4jException $e) {
+                $this->logger->error($e->__toString());
+                // Convert Neo4jException to DriverErrorResponse for testkit protocol
+                $this->properSendoff(new DriverErrorResponse(Uuid::v4(), $e));
             } catch (Throwable $e) {
                 $this->logger->error($e->__toString());
-
+                // All other exceptions become BackendErrorResponse
                 $this->properSendoff(new BackendErrorResponse($e->getMessage()));
             }
         }

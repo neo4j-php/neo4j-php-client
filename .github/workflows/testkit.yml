@@ -68,11 +68,5 @@ jobs:
 
       - name: Run integration tests
         run: |
-          docker compose up -d --remove-orphans --wait --no-build \
-            server1 \
-            server2 \
-            server3 \
-            server4 \
-            testkit_backend
-
-          docker compose run --rm testkit ./testkit.sh
+          docker compose up -d --remove-orphans --wait --no-build testkit_backend neo4j
+          docker compose up testkit
