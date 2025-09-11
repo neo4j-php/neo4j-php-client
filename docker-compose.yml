@@ -119,6 +119,7 @@ services:
 
   testkit:
     image: python:3.13
+    command: ./testkit.sh
     volumes:
       - .:/opt/project
     working_dir: /opt/project/testkit-backend
@@ -131,6 +132,9 @@ services:
       TEST_DRIVER_NAME: php
       TEST_DRIVER_REPO: /opt/project
       TEST_BACKEND_HOST: testkit_backend
+      TEST_STUB_HOST: testkit
+    depends_on:
+      - testkit_backend
 
   testkit_backend:
     <<: *common-php
@@ -141,7 +145,5 @@ services:
       - neo4j
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
-      - neo4j
     ports:
       - "9876:9876"

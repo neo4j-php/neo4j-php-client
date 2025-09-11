@@ -69,8 +69,8 @@ python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_long_string
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_custom_resolver|| EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_http_port|| EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_supports_multi_db|| EXIT_CODE=1
-python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_non_existing
-python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db|| EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_non_existing || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_various_databases|| EXIT_CODE=1
 ##
 ###test_summary
