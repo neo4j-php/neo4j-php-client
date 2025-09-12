@@ -33,6 +33,9 @@ final class CypherObject implements TestkitResponseInterface
     private $value;
     private string $name;
 
+    // Store element ID mappings for relationships created from paths
+    private static array $relationshipElementIdMap = [];
+
     /**
      * @param CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null $value
      */
@@ -103,12 +106,16 @@ final class CypherObject implements TestkitResponseInterface
                     /** @psalm-suppress MixedArgumentTypeCoercion */
                     $props[$key] = self::autoDetect($property);
                 }
+                $elementId = $value->getElementId();
+                if ($elementId === null) {
+                    $elementId = (string) $value->getId();
+                }
 
                 $tbr = new CypherNode(
                     new CypherObject('CypherInt', $value->getId()),
                     new CypherObject('CypherList', new CypherList($labels)),
                     new CypherObject('CypherMap', new CypherMap($props)),
-                    new CypherObject('CypherString', $value->getElementId())
+                    new CypherObject('CypherString', $elementId)
                 );
                 break;
             case Relationship::class:
@@ -118,13 +125,25 @@ final class CypherObject implements TestkitResponseInterface
                     $props[$key] = self::autoDetect($property);
                 }
 
+                $elementId = $value->getElementId();
+                if ($elementId === null) {
+                    $elementId = (string) $value->getId();
+                }
+
+                $relationshipKey = $value->getId().'_'.$value->getStartNodeId().'_'.$value->getEndNodeId();
+
+                $startNodeElementId = self::$relationshipElementIdMap[$relationshipKey]['startNodeElementId'] ?? (string) $value->getStartNodeId();
+                $endNodeElementId = self::$relationshipElementIdMap[$relationshipKey]['endNodeElementId'] ?? (string) $value->getEndNodeId();
+
                 $tbr = new CypherRelationship(
                     new CypherObject('CypherInt', $value->getId()),
                     new CypherObject('CypherInt', $value->getStartNodeId()),
                     new CypherObject('CypherInt', $value->getEndNodeId()),
                     new CypherObject('CypherString', $value->getType()),
                     new CypherObject('CypherMap', new CypherMap($props)),
-                    new CypherObject('CypherString', $value->getElementId())
+                    new CypherObject('CypherString', $elementId),
+                    new CypherObject('CypherString', $startNodeElementId), // Use stored element ID
+                    new CypherObject('CypherString', $endNodeElementId)    // Use stored element ID
                 );
                 break;
             case Path::class:
@@ -132,17 +151,47 @@ final class CypherObject implements TestkitResponseInterface
                 foreach ($value->getNodes() as $node) {
                     $nodes[] = self::autoDetect($node);
                 }
+
                 $rels = [];
+                $nodesList = $value->getNodes();
+
                 foreach ($value->getRelationships() as $i => $rel) {
-                    $rels[] = self::autoDetect(new Relationship(
-                        $rel->getId(),
-                        $value->getNodes()->get($i)->getId(),
-                        $value->getNodes()->get($i + 1)->getId(),
-                        $rel->getType(),
-                        $rel->getProperties(),
-                        $rel->getElementId()
-                    ));
+                    $relElementId = $rel->getElementId() ?? (string) $rel->getId();
+
+                    if ($rel instanceof UnboundRelationship) {
+                        if ($i < $nodesList->count() - 1) {
+                            $startNode = $nodesList->get($i);
+                            $endNode = $nodesList->get($i + 1);
+
+                            $startNodeElementId = $startNode->getElementId() ?? (string) $startNode->getId();
+                            $endNodeElementId = $endNode->getElementId() ?? (string) $endNode->getId();
+
+                            $boundRel = new Relationship(
+                                $rel->getId(),
+                                $startNode->getId(),
+                                $endNode->getId(),
+                                $rel->getType(),
+                                $rel->getProperties(),
+                                $relElementId
+                            );
+
+                            $relationshipKey = $boundRel->getId().'_'.$boundRel->getStartNodeId().'_'.$boundRel->getEndNodeId();
+                            self::$relationshipElementIdMap[$relationshipKey] = [
+                                'startNodeElementId' => $startNodeElementId,
+                                'endNodeElementId' => $endNodeElementId,
+                            ];
+
+                            error_log('DEBUG PATH: Stored mapping for key: '.$relationshipKey);
+                            error_log('DEBUG PATH: Stored startNodeElementId: '.$startNodeElementId);
+                            error_log('DEBUG PATH: Stored endNodeElementId: '.$endNodeElementId);
+
+                            $rels[] = self::autoDetect($boundRel);
+                        }
+                    } else {
+                        $rels[] = self::autoDetect($rel);
+                    }
                 }
+
                 $tbr = new CypherPath(
                     new CypherObject('CypherList', new CypherList($nodes)),
                     new CypherObject('CypherList', new CypherList($rels))
@@ -161,7 +210,9 @@ final class CypherObject implements TestkitResponseInterface
                     new CypherObject('CypherNull', null),
                     new CypherObject('CypherString', $value->getType()),
                     new CypherObject('CypherMap', new CypherMap($props)),
-                    new CypherObject('CypherString', $value->getElementId())
+                    new CypherObject('CypherString', $value->getElementId()),
+                    new CypherObject('CypherNull', null),
+                    new CypherObject('CypherNull', null)
                 );
                 break;
             default:
