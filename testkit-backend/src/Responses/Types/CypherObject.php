@@ -33,6 +33,9 @@ final class CypherObject implements TestkitResponseInterface
     private $value;
     private string $name;
 
+    // Store element ID mappings for relationships created from paths
+    private static array $relationshipElementIdMap = [];
+
     /**
      * @param CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null $value
      */
@@ -103,16 +106,16 @@ final class CypherObject implements TestkitResponseInterface
                     /** @psalm-suppress MixedArgumentTypeCoercion */
                     $props[$key] = self::autoDetect($property);
                 }
-                $elementId = $value->getElementId();  // or elementId() - pick one
+                $elementId = $value->getElementId();
                 if ($elementId === null) {
-                    // Fallback to string representation of numeric ID for Bolt 4.4+
                     $elementId = (string) $value->getId();
                 }
+
                 $tbr = new CypherNode(
                     new CypherObject('CypherInt', $value->getId()),
                     new CypherObject('CypherList', new CypherList($labels)),
                     new CypherObject('CypherMap', new CypherMap($props)),
-                    new CypherObject('CypherString', $elementId),
+                    new CypherObject('CypherString', $elementId)
                 );
                 break;
             case Relationship::class:
@@ -121,10 +124,16 @@ final class CypherObject implements TestkitResponseInterface
                     /** @psalm-suppress MixedArgumentTypeCoercion */
                     $props[$key] = self::autoDetect($property);
                 }
+
                 $elementId = $value->getElementId();
                 if ($elementId === null) {
                     $elementId = (string) $value->getId();
                 }
+
+                $relationshipKey = $value->getId().'_'.$value->getStartNodeId().'_'.$value->getEndNodeId();
+
+                $startNodeElementId = self::$relationshipElementIdMap[$relationshipKey]['startNodeElementId'] ?? (string) $value->getStartNodeId();
+                $endNodeElementId = self::$relationshipElementIdMap[$relationshipKey]['endNodeElementId'] ?? (string) $value->getEndNodeId();
 
                 $tbr = new CypherRelationship(
                     new CypherObject('CypherInt', $value->getId()),
@@ -133,8 +142,8 @@ final class CypherObject implements TestkitResponseInterface
                     new CypherObject('CypherString', $value->getType()),
                     new CypherObject('CypherMap', new CypherMap($props)),
                     new CypherObject('CypherString', $elementId),
-                    new CypherObject('CypherString', (string) $value->getStartNodeId()),  // ← Add this line
-                    new CypherObject('CypherString', (string) $value->getEndNodeId())     // ← Add this line
+                    new CypherObject('CypherString', $startNodeElementId), // Use stored element ID
+                    new CypherObject('CypherString', $endNodeElementId)    // Use stored element ID
                 );
                 break;
             case Path::class:
@@ -143,41 +152,43 @@ final class CypherObject implements TestkitResponseInterface
                     $nodes[] = self::autoDetect($node);
                 }
 
-                $nodeList = $value->getNodes();
-                $relationshipList = $value->getRelationships();
-                $nodeCount = count($nodeList);
-
                 $rels = [];
-                foreach ($relationshipList as $i => $rel) {
-                    if ($i + 1 >= $nodeCount) {
-                        break;
-                    }
+                $nodesList = $value->getNodes();
 
-                    $startNode = $nodeList->get($i);
-                    $endNode = $nodeList->get($i + 1);
+                foreach ($value->getRelationships() as $i => $rel) {
+                    $relElementId = $rel->getElementId() ?? (string) $rel->getId();
 
-                    if ($startNode !== null && $endNode !== null) {
-                        $startNodeId = $startNode->getId();
-                        $endNodeId = $endNode->getId();
+                    if ($rel instanceof UnboundRelationship) {
+                        if ($i < $nodesList->count() - 1) {
+                            $startNode = $nodesList->get($i);
+                            $endNode = $nodesList->get($i + 1);
 
-                        $relElementId = $rel->getElementId();
-                        if ($relElementId === null) {
-                            $relElementId = (string) $rel->getId();
+                            $startNodeElementId = $startNode->getElementId() ?? (string) $startNode->getId();
+                            $endNodeElementId = $endNode->getElementId() ?? (string) $endNode->getId();
+
+                            $boundRel = new Relationship(
+                                $rel->getId(),
+                                $startNode->getId(),
+                                $endNode->getId(),
+                                $rel->getType(),
+                                $rel->getProperties(),
+                                $relElementId
+                            );
+
+                            $relationshipKey = $boundRel->getId().'_'.$boundRel->getStartNodeId().'_'.$boundRel->getEndNodeId();
+                            self::$relationshipElementIdMap[$relationshipKey] = [
+                                'startNodeElementId' => $startNodeElementId,
+                                'endNodeElementId' => $endNodeElementId,
+                            ];
+
+                            error_log('DEBUG PATH: Stored mapping for key: '.$relationshipKey);
+                            error_log('DEBUG PATH: Stored startNodeElementId: '.$startNodeElementId);
+                            error_log('DEBUG PATH: Stored endNodeElementId: '.$endNodeElementId);
+
+                            $rels[] = self::autoDetect($boundRel);
                         }
-
-                        $startNodeElementId = $startNode->getElementId();
-                        $endNodeElementId = $endNode->getElementId();
-
-                        $rels[] = self::autoDetect(new Relationship(
-                            $rel->getId(),
-                            $startNodeId,
-                            $endNodeId,
-                            $rel->getType(),
-                            $rel->getProperties(),
-                            $relElementId,
-                            $startNodeElementId,
-                            $endNodeElementId
-                        ));
+                    } else {
+                        $rels[] = self::autoDetect($rel);
                     }
                 }
 
@@ -186,7 +197,6 @@ final class CypherObject implements TestkitResponseInterface
                     new CypherObject('CypherList', new CypherList($rels))
                 );
                 break;
-
             case UnboundRelationship::class:
                 $props = [];
                 foreach ($value->getProperties() as $key => $property) {
@@ -200,7 +210,9 @@ final class CypherObject implements TestkitResponseInterface
                     new CypherObject('CypherNull', null),
                     new CypherObject('CypherString', $value->getType()),
                     new CypherObject('CypherMap', new CypherMap($props)),
-                    new CypherObject('CypherString', $value->getElementId())
+                    new CypherObject('CypherString', $value->getElementId()),
+                    new CypherObject('CypherNull', null),
+                    new CypherObject('CypherNull', null)
                 );
                 break;
             default:

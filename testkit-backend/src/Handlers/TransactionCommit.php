@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -48,7 +49,7 @@ final class TransactionCommit implements RequestHandlerInterface
 
         try {
             $tsx->commit();
-        } catch (Neo4jException $e) {
+        } catch (Neo4jException|TransactionException $e) {
             return new DriverErrorResponse($request->getTxId(), $e);
         }
 

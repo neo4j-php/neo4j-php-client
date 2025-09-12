@@ -78,6 +78,7 @@ final class Socket
     {
         $bind = 'tcp://'.$address.':'.$port;
         $streamSocketServer = stream_socket_server($bind, $errorNumber, $errorString);
+        stream_set_timeout($streamSocketServer, 60 * 60 * 24);
         if ($streamSocketServer === false) {
             throw new RuntimeException('stream_socket_server() failed: reason: '.$errorNumber.':'.$errorString);
         }

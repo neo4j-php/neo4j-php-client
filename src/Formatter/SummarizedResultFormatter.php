@@ -195,10 +195,11 @@ final class SummarizedResultFormatter
 
         $formattedResult = $this->processBoltResult($meta, $result, $connection, $holder);
 
-        /**
-         * @var SummarizedResult<CypherMap<OGMTypes>>
-         */
-        return new SummarizedResult($summary, (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize()));
+        /** @var SummarizedResult */
+        $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
+        $keys = $meta['fields'];
+
+        return new SummarizedResult($summary, $result, $keys);
     }
 
     public function formatArgs(array $profiledPlanData): PlanArguments
@@ -255,7 +256,7 @@ final class SummarizedResultFormatter
             pageCacheHitRatio: (float) ($profiledPlanData['pageCacheHitRatio'] ?? 0.0),
             time: (int) ($profiledPlanData['time'] ?? 0),
             operatorType: $profiledPlanData['operatorType'] ?? '',
-            children: array_map([$this, 'formatProfiledPlan'], $profiledPlanData['children'] ?? []),
+            children: array_values(array_map([$this, 'formatProfiledPlan'], $profiledPlanData['children'] ?? [])),
             identifiers: $profiledPlanData['identifiers'] ?? []
         );
     }
@@ -309,7 +310,7 @@ final class SummarizedResultFormatter
     {
         return new Plan(
             $this->formatArgs($plan['args']),
-            array_map($this->formatPlan(...), $plan['children'] ?? []),
+            array_values(array_map($this->formatPlan(...), $plan['children'] ?? [])),
             $plan['identifiers'] ?? [],
             $plan['operatorType'] ?? ''
         );

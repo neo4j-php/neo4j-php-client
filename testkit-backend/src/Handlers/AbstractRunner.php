@@ -13,14 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Exception;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\AbstractCypherObject;
@@ -77,15 +80,24 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             $this->repository->addRecords($id, $result);
 
-            return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
+            return new ResultResponse($id, $result->keys());
         } catch (Neo4jException $exception) {
-            $this->logger->debug($exception->__toString());
+            if ($request instanceof SessionRunRequest) {
+                return new DriverErrorResponse($request->getSessionId(), $exception);
+            }
+            if ($request instanceof TransactionRunRequest) {
+                return new DriverErrorResponse($request->getTxId(), $exception);
+            }
 
-            return new DriverErrorResponse(
-                $this->getId($request),
-                $exception
-            );
-        } // NOTE: all other exceptions will be caught in the Backend
+            throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
+        } catch (TransactionException $exception) {
+            if ($request instanceof TransactionRunRequest) {
+                return new DriverErrorResponse($request->getTxId(), $exception);
+            }
+
+            throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
+        }
+        // NOTE: all other exceptions will be caught in the Backend
     }
 
     /**

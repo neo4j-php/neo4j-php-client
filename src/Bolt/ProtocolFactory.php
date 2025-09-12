@@ -21,15 +21,11 @@ use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
-use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use RuntimeException;
 
 class ProtocolFactory
 {
-    /**
-     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4, 1: array{server: string, connection_id: string, hints: list}}
-     */
-    public function createProtocol(IConnection $connection, AuthenticateInterface $auth, string $userAgent): array
+    public function createProtocol(IConnection $connection): V4_4|V5|V5_1|V5_2|V5_3|V5_4
     {
         $boltOptoutEnv = getenv('BOLT_ANALYTICS_OPTOUT');
         if ($boltOptoutEnv === false) {
@@ -44,8 +40,6 @@ class ProtocolFactory
             throw new RuntimeException('Client only supports bolt version 4.4 to 5.4');
         }
 
-        $response = $auth->authenticateBolt($protocol, $userAgent);
-
-        return [$protocol, $response];
+        return $protocol;
     }
 }

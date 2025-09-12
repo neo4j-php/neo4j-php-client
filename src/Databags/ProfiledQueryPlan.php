@@ -18,6 +18,8 @@ final class ProfiledQueryPlan
     /**
      * @param list<ProfiledQueryPlan> $children
      * @param list<string>            $identifiers
+     *
+     * @psalm-immutable
      */
     public function __construct(
         public readonly PlanArguments $arguments,
