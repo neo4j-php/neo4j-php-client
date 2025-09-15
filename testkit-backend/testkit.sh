@@ -41,30 +41,29 @@ EXIT_CODE=0
 #test_authentication
 python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic|| EXIT_CODE=1
 
-####test_bookmarks
+#test_bookmarks
 python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks || EXIT_CODE=1
-#
-##test_session_run
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_smaller_than_fetch_size
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_node
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_relationship
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_path
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_autocommit_transactions_should_support_metadata
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_regex_in_parameter
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_regex_inline
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_larger_than_fetch_size
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_partial_iteration
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_simple_query
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_session_reuse
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_nested
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_recover_from_invalid_query
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_updates_last_bookmark
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_fails_on_bad_syntax
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_fails_on_missing_parameter
-python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_long_string
-#
-##test_direct_driver
-#
+
+#test_session_run
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_smaller_than_fetch_size  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_node  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_relationship  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_path  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_autocommit_transactions_should_support_metadata  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_regex_in_parameter  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_regex_inline  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_larger_than_fetch_size  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_partial_iteration  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_simple_query  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_session_reuse  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_nested  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_recover_from_invalid_query  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_updates_last_bookmark  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_fails_on_bad_syntax  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_fails_on_missing_parameter  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_long_string  || EXIT_CODE=1
+
+#test_direct_driver
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_custom_resolver|| EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_http_port|| EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_supports_multi_db|| EXIT_CODE=1
@@ -75,7 +74,8 @@ python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_d
 #test_summary
 python3 -m unittest tests.neo4j.test_summary.TestSummary
 
-#test_tx_run
+
+##test_tx_run
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_simple_query  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_can_commit_transaction  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_can_rollback_transaction  || EXIT_CODE=1
@@ -100,19 +100,20 @@ python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_parallel_queries  || 
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_interwoven_queries  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_unconsumed_result  || EXIT_CODE=1
 
-#test_tx_func_run
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_simple_query
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_parameter
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_meta_data
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_iteration_nested
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_updates_last_bookmark_on_commit
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_does_not_update_last_bookmark_on_rollback
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_client_exception_rolls_back_change
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_func_configuration
-python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout
+
+##test_tx_func_run
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_simple_query  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_parameter  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_meta_data  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_iteration_nested  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_updates_last_bookmark_on_commit  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_does_not_update_last_bookmark_on_rollback  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_client_exception_rolls_back_change  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_func_configuration  || EXIT_CODE=1
+python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout  || EXIT_CODE=1
 
 ##stub
-#test-basic-query
+##test-basic-query
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_path_element_ids_with_string  || EXIT_CODE=1
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_node_element_id_with_id  || EXIT_CODE=1
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_node_element_id_with_string  || EXIT_CODE=1
@@ -121,10 +122,10 @@ python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_
 
 
 #test-session-run
-python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_discard_on_session_close_untouched_result
-python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_discard_on_session_close_unfinished_result
-python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_no_discard_on_session_close_finished_result
-python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_raises_error_on_session_run
+python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_discard_on_session_close_untouched_result  || EXIT_CODE=1
+python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_discard_on_session_close_unfinished_result  || EXIT_CODE=1
+python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_no_discard_on_session_close_finished_result  || EXIT_CODE=1
+python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_raises_error_on_session_run  || EXIT_CODE=1
 
 
 exit $EXIT_CODE
