@@ -392,7 +392,7 @@ class BoltConnection implements ConnectionInterface
 
             try {
                 $resetResponse = $message->send()->getResponse();
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $this->subscribedResults = [];
                 throw Neo4jException::fromBoltResponse($response);
             }
@@ -400,16 +400,12 @@ class BoltConnection implements ConnectionInterface
             $this->subscribedResults = [];
 
             if ($resetResponse->signature === Signature::FAILURE) {
-                throw new Neo4jException([
-                    Neo4jError::fromBoltResponse($resetResponse),
-                    Neo4jError::fromBoltResponse($response),
-                ]);
+                throw new Neo4jException([Neo4jError::fromBoltResponse($resetResponse), Neo4jError::fromBoltResponse($response)]);
             }
 
             throw Neo4jException::fromBoltResponse($response);
         }
     }
-
 
     /**
      * Discard unconsumed results - sends DISCARD to server for each subscribed result.
