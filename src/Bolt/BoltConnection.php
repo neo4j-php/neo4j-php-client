@@ -393,7 +393,6 @@ class BoltConnection implements ConnectionInterface
             try {
                 $resetResponse = $message->send()->getResponse();
             } catch (\Throwable $e) {
-                // Socket is already closed (e.g. server rejected auth and dropped connection).
                 $this->subscribedResults = [];
                 throw Neo4jException::fromBoltResponse($response);
             }
