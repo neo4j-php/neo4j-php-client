@@ -103,7 +103,6 @@ python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_broken_transaction_sh
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_tx_configuration  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_consume_after_commit  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_parallel_queries  || EXIT_CODE=1
-#python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_interwoven_queries  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_unconsumed_result  || EXIT_CODE=1
 ##
 ####test_tx_func_run
