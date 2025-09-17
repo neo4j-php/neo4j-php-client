@@ -389,14 +389,28 @@ class BoltConnection implements ConnectionInterface
         if ($response->signature === Signature::FAILURE) {
             $this->logger?->log(LogLevel::ERROR, 'FAILURE');
             $message = $this->messageFactory->createResetMessage();
-            $resetResponse = $message->send()->getResponse();
-            $this->subscribedResults = [];
-            if ($resetResponse->signature === Signature::FAILURE) {
-                throw new Neo4jException([Neo4jError::fromBoltResponse($resetResponse), Neo4jError::fromBoltResponse($response)]);
+
+            try {
+                $resetResponse = $message->send()->getResponse();
+            } catch (\Throwable $e) {
+                // Socket is already closed (e.g. server rejected auth and dropped connection).
+                $this->subscribedResults = [];
+                throw Neo4jException::fromBoltResponse($response);
             }
+
+            $this->subscribedResults = [];
+
+            if ($resetResponse->signature === Signature::FAILURE) {
+                throw new Neo4jException([
+                    Neo4jError::fromBoltResponse($resetResponse),
+                    Neo4jError::fromBoltResponse($response),
+                ]);
+            }
+
             throw Neo4jException::fromBoltResponse($response);
         }
     }
+
 
     /**
      * Discard unconsumed results - sends DISCARD to server for each subscribed result.
