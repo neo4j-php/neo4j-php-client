@@ -374,7 +374,6 @@ class BoltConnection implements ConnectionInterface
                     $extra['tx_metadata'] = $metadataArray;
                 }
             }
-
         }
 
         return $extra;

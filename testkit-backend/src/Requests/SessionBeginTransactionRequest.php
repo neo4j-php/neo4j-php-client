@@ -48,7 +48,7 @@ final class SessionBeginTransactionRequest
         return $this->txMeta ?? [];
     }
 
-    public function getTimeout(): int|null
+    public function getTimeout(): ?int
     {
         return $this->timeout;
     }

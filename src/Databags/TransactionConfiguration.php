@@ -67,15 +67,7 @@ final class TransactionConfiguration
     {
         return $this->timeout;
     }
-    /**
-     * Get the configured bookmarks for causal consistency.
-     *
-     * @return array<string>|null
-     */
-    public function getBookmarks(): ?array
-    {
-        return $this->bookmarks;
-    }
+
 
     /**
      * Creates a new transaction object with the provided timeout.

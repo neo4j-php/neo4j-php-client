@@ -270,7 +270,7 @@ CYPHER
 
         // First, let's debug what timeout value is actually being sent
         $config = TransactionConfiguration::default()->withTimeout(2);
-        echo "Config timeout: " . $config->getTimeout() . " seconds\n";
+        echo 'Config timeout: '.$config->getTimeout()." seconds\n";
 
         try {
             $result = $this->getSession(['bolt', 'neo4j'])
@@ -280,25 +280,23 @@ CYPHER
             $firstResult = $result->first();
             echo "Got first result, attempting to get 'x' value...\n";
             $value = $firstResult->get('x');
-            echo "Successfully got value: " . $value . "\n";
+            echo 'Successfully got value: '.$value."\n";
 
             // If we reach here, no timeout occurred
             $this->fail('Query completed successfully - no timeout occurred. This suggests the timeout is not being applied correctly.');
-
         } catch (Neo4jException $e) {
-            echo "Neo4jException caught: " . $e->getMessage() . "\n";
-            echo "Neo4j Code: " . $e->getNeo4jCode() . "\n";
+            echo 'Neo4jException caught: '.$e->getMessage()."\n";
+            echo 'Neo4j Code: '.$e->getNeo4jCode()."\n";
             self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
-
         } catch (ConnectionTimeoutException $e) {
-            echo "ConnectionTimeoutException: " . $e->getMessage() . "\n";
+            echo 'ConnectionTimeoutException: '.$e->getMessage()."\n";
             $this->fail('Connection timeout occurred instead of transaction timeout');
-
         } catch (Exception $e) {
-            echo "Other exception: " . get_class($e) . " - " . $e->getMessage() . "\n";
+            echo 'Other exception: '.get_class($e).' - '.$e->getMessage()."\n";
             throw $e; // Re-throw for debugging
         }
     }
+
     public function testTimeoutNoReturn(): void
     {
         $result = $this->getSession(['bolt', 'neo4j'])

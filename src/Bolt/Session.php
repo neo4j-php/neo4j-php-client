@@ -190,6 +190,7 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         try {
             $connection = $this->acquireConnection($config, $sessionConfig);
+            $connection->discardUnconsumedResults();
             $connection->begin($this->config->getDatabase(), $config->getTimeout(), $this->bookmarkHolder, $config->getMetaData());
         } catch (Neo4jException $e) {
             if (isset($connection) && $connection->getServerState() === 'FAILED') {
