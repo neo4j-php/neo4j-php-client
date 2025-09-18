@@ -335,9 +335,16 @@ class BoltConnection implements ConnectionInterface
         }
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata, bool $forBegin = false): array
-    {
+    private function buildRunExtra(
+        ?string $database,
+        ?float $timeout,
+        BookmarkHolder $holder,
+        ?AccessMode $mode,
+        ?iterable $metadata,
+        bool $forBegin = false,
+    ): array {
         $extra = [];
+
         if ($database !== null) {
             $extra['db'] = $database;
         }
@@ -347,24 +354,19 @@ class BoltConnection implements ConnectionInterface
 
         $bookmarks = $holder->getBookmark()->values();
         if (!empty($bookmarks)) {
-            $extra['bookmarks'] = $holder->getBookmark()->values();
+            $extra['bookmarks'] = $bookmarks;
         }
 
         if ($forBegin) {
-            $bookmarks = $holder->getBookmark()->values();
-            if (!empty($bookmarks)) {
-                $extra['bookmarks'] = $bookmarks;
-            }
-
             if ($mode !== null) {
                 $extra['mode'] = $mode === AccessMode::WRITE() ? 'w' : 'r';
             }
+        }
 
-            if ($metadata !== null) {
-                $metadataArray = $metadata instanceof Traversable ? iterator_to_array($metadata) : $metadata;
-                if (!empty($metadataArray)) {
-                    $extra['tx_metadata'] = $metadataArray;
-                }
+        if ($metadata !== null) {
+            $metadataArray = $metadata instanceof Traversable ? iterator_to_array($metadata) : $metadata;
+            if (!empty($metadataArray)) {
+                $extra['tx_metadata'] = $metadataArray;
             }
         }
 
