@@ -68,7 +68,6 @@ final class TransactionConfiguration
         return $this->timeout;
     }
 
-
     /**
      * Creates a new transaction object with the provided timeout.
      *
