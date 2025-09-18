@@ -77,7 +77,7 @@ final class ComplexQueryTest extends EnvironmentAwareIntegrationTest
     {
         $this->expectNotToPerformAssertions();
         $this->getSession()->transaction(static fn (TSX $tsx) => $tsx->run(<<<'CYPHER'
-MERGE (x:Node {slug: 'a'})
+MERGE (x:Node {slug:  'a'})
 WITH x
 MATCH (x) WHERE x.slug IN $listOrMap RETURN x
 CYPHER, ['listOrMap' => []]));

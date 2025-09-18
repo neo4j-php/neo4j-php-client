@@ -23,10 +23,12 @@ final class CypherRelationship implements TestkitResponseInterface
     private CypherObject $type;
     private CypherObject $props;
     private CypherObject $elementId;
+
     private CypherObject $startNodeElementId;
     private CypherObject $endNodeElementId;
 
-    public function __construct(CypherObject $id, CypherObject $startNodeId, CypherObject $endNodeId, CypherObject $type, CypherObject $props, CypherObject $elementId, CypherObject $startNodeElementId, CypherObject $endNodeElementId)
+    public function __construct(CypherObject $id, CypherObject $startNodeId, CypherObject $endNodeId, CypherObject $type, CypherObject $props, CypherObject $elementId, CypherObject $startNodeElementId,
+        CypherObject $endNodeElementId)
     {
         $this->id = $id;
         $this->startNodeId = $startNodeId;

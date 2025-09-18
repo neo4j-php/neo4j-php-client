@@ -52,13 +52,6 @@ interface ConnectionInterface
     public function getServerAddress(): UriInterface;
 
     /**
-     * Returns the version of the neo4j server.
-     *
-     * @psalm-mutation-free
-     */
-    public function getServerVersion(): string;
-
-    /**
      * Returns the assumed server state.
      */
     public function getServerState(): string;

@@ -67,6 +67,11 @@ class CypherList implements CypherSequence, Iterator, ArrayAccess
         };
     }
 
+    public function getQid(): ?int
+    {
+        return $this->qid;
+    }
+
     /**
      * @template Value
      *
@@ -426,10 +431,5 @@ class CypherList implements CypherSequence, Iterator, ArrayAccess
         }
 
         return $this;
-    }
-
-    public function getQid(): ?int
-    {
-        return $this->qid;
     }
 }

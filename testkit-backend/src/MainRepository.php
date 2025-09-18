@@ -172,4 +172,9 @@ final class MainRepository
     {
         return $this->sessionToTransactions[$sessionId->toRfc4122()];
     }
+
+    public function addBufferedRecords(string $id, array $records): void
+    {
+        $this->records[$id] = $records;
+    }
 }
