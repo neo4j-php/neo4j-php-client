@@ -18,18 +18,14 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Psr\Http\Message\UriInterface;
 
-/**
- * @psalm-immutable
- */
 final class ConnectionConfiguration
 {
     /**
      * @param ''|'s'|'ssc' $encryptionLevel
      */
     public function __construct(
-        private readonly string $serverAgent,
+        private string $serverAgent,
         private readonly UriInterface $serverAddress,
-        private readonly string $serverVersion,
         private readonly ConnectionProtocol $protocol,
         private readonly AccessMode $accessMode,
         private readonly ?DatabaseInfo $databaseInfo,
@@ -42,14 +38,15 @@ final class ConnectionConfiguration
         return $this->serverAgent;
     }
 
+    // We can only know the server agent once we have established a connection and gotten a re
+    public function setServerAgent(string $serverAgent): void
+    {
+        $this->serverAgent = $serverAgent;
+    }
+
     public function getServerAddress(): UriInterface
     {
         return $this->serverAddress;
-    }
-
-    public function getServerVersion(): string
-    {
-        return $this->serverVersion;
     }
 
     public function getProtocol(): ConnectionProtocol

@@ -13,7 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-final class PlanArguments
+use Laudis\Neo4j\Types\AbstractCypherObject;
+
+/**
+ * @psalm-immutable
+ *
+ * @template-extends AbstractCypherObject<string, int|float|string|null>
+ */
+final class PlanArguments extends AbstractCypherObject
 {
     public function __construct(
         public readonly ?int $globalMemory = null,

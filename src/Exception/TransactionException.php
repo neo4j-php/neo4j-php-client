@@ -14,7 +14,19 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Exception;
 
 use RuntimeException;
+use Throwable;
 
-class TimeoutException extends RuntimeException
+/**
+ * Exception when a Client Error occurs.
+ *
+ * @psalm-immutable
+ *
+ * @psalm-suppress MutableDependency
+ */
+final class TransactionException extends RuntimeException
 {
+    public function __construct(string $message, ?Throwable $previous = null)
+    {
+        parent::__construct($message, 0, $previous);
+    }
 }

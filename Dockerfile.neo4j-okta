@@ -1,3 +1,0 @@
-FROM neo4j:5-enterprise
-
-COPY ./neo4j-with-okta.conf /var/lib/neo4j/conf/neo4j.conf

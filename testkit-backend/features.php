@@ -124,9 +124,9 @@ return [
     // The driver supports Bolt protocol version 5.6
     'Feature:Bolt:5.6' => false,
     // The driver supports Bolt protocol version 5.7
-    'Feature:Bolt:5.7' => true,
+    'Feature:Bolt:5.7' => false,
     // The driver supports Bolt protocol version 5.8
-    'Feature:Bolt:5.8' => true,
+    'Feature:Bolt:5.8' => false,
     // The driver supports negotiating the Bolt protocol version with the server
     // using handshake manifest v1.
     'Feature:Bolt:HandshakeManifestV1' => true,
@@ -221,7 +221,7 @@ return [
     // time period. On timout, the driver should remove the server from its
     // routing table and assume all other connections to the server are dead
     // as well.
-    'ConfHint:connection.recv_timeout_seconds' => true,
+    'ConfHint:connection.recv_timeout_seconds' => false,
 
     // === BACKEND FEATURES FOR TESTING ===
     // The backend understands the FakeTimeInstall, FakeTimeUninstall and

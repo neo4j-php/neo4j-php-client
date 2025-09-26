@@ -126,11 +126,7 @@ final class MainRepository
         $this->records[$id->toRfc4122()] = $result;
         if ($result instanceof SummarizedResult) {
             /** @var SummarizedResult<CypherMap<OGMTypes>> $result */
-            $this->recordIterators[$id->toRfc4122()] = (function () use ($result) {
-                foreach ($result as $row) {
-                    yield $row;
-                }
-            })();
+            $this->recordIterators[$id->toRfc4122()] = $result;
         }
     }
 
@@ -175,5 +171,10 @@ final class MainRepository
     public function getTsxIdFromSession(Uuid $sessionId): Uuid
     {
         return $this->sessionToTransactions[$sessionId->toRfc4122()];
+    }
+
+    public function addBufferedRecords(string $id, array $records): void
+    {
+        $this->records[$id] = $records;
     }
 }

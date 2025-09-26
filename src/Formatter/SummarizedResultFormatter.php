@@ -86,8 +86,8 @@ use function microtime;
  *     constraints-added?: int,
  *     constraints-removed?: int,
  *     contains-updates?: bool,
- *     contains-system-updates?: bool|int,
- *     system-updates?: int|bool,
+ *     contains-system-updates?: bool,
+ *     system-updates?: int,
  *     db?: string
  * }
  * @psalm-type CypherError = array{code: string, message: string}
@@ -138,21 +138,6 @@ final class SummarizedResultFormatter
             }
         }
 
-        $systemUpdates = $stats['system-updates'] ?? 0;
-        if (is_bool($systemUpdates)) {
-            $systemUpdates = (int) $systemUpdates;
-        }
-
-        $containsSystemUpdates = $stats['contains-system-updates'] ?? null;
-
-        if ($containsSystemUpdates === null) {
-            $containsSystemUpdates = $systemUpdates > 0;
-        } else {
-            if (!is_bool($containsSystemUpdates)) {
-                $containsSystemUpdates = (bool) $containsSystemUpdates;
-            }
-        }
-
         return new SummaryCounters(
             $stats['nodes-created'] ?? 0,
             $stats['nodes-deleted'] ?? 0,
@@ -166,8 +151,8 @@ final class SummarizedResultFormatter
             $stats['constraints-added'] ?? 0,
             $stats['constraints-removed'] ?? 0,
             $updateCount > 0,
-            $containsSystemUpdates,
-            $systemUpdates
+            ($stats['contains-system-updates'] ?? $stats['system-updates'] ?? 0) >= 1,
+            $stats['system-updates'] ?? 0
         );
     }
 
@@ -212,9 +197,9 @@ final class SummarizedResultFormatter
 
         /** @var SummarizedResult */
         $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
-        //        $keys = $meta['fields'];
+        $keys = $meta['fields'];
 
-        return new SummarizedResult($summary, $result);
+        return new SummarizedResult($summary, $result, $keys);
     }
 
     public function formatArgs(array $profiledPlanData): PlanArguments

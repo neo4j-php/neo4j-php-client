@@ -13,10 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Requests;
 
-final class NewClientCertificateProviderRequest
+use Symfony\Component\Uid\Uuid;
+
+final class GetServerInfoRequest
 {
-    public function __construct(
-        public readonly array $data = [],
-    ) {
+    private Uuid $driverId;
+
+    public function __construct(Uuid $driverId)
+    {
+        $this->driverId = $driverId;
+    }
+
+    public function getDriverId(): Uuid
+    {
+        return $this->driverId;
     }
 }

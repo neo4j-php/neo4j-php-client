@@ -16,8 +16,8 @@ namespace Laudis\Neo4j\Bolt;
 use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Common\TransactionHelper;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
-use Laudis\Neo4j\Contracts\CypherSequence;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -39,9 +39,10 @@ use Psr\Log\LogLevel;
  */
 final class Session implements SessionInterface
 {
+    /** @var list<BoltConnection> */
+    private array $usedConnections = [];
     /** @psalm-readonly */
     private readonly BookmarkHolder $bookmarkHolder;
-    private const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'TransientError', 'DatabaseError'];
 
     /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
@@ -49,7 +50,6 @@ final class Session implements SessionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        /** @psalm-readonly */
         private readonly SessionConfiguration $config,
         private readonly ConnectionPoolInterface $pool,
         /**
@@ -101,7 +101,10 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning write transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
 
-        return $this->retry($tsxHandler, false, $config);
+        return TransactionHelper::retry(
+            fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE())),
+            $tsxHandler
+        );
     }
 
     public function readTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
@@ -109,51 +112,10 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning read transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
 
-        return $this->retry($tsxHandler, true, $config);
-    }
-
-    /**
-     * @template U
-     *
-     * @param callable(TransactionInterface):U $tsxHandler
-     *
-     * @return U
-     */
-    private function retry(callable $tsxHandler, bool $read, TransactionConfiguration $config)
-    {
-        while (true) {
-            $transaction = null;
-            try {
-                if ($read) {
-                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()));
-                } else {
-                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE()));
-                }
-                $tbr = $tsxHandler($transaction);
-                self::triggerLazyResult($tbr);
-                $transaction->commit();
-
-                return $tbr;
-            } catch (Neo4jException $e) {
-                if ($transaction && !in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS)) {
-                    $transaction->rollback();
-                }
-
-                if ($e->getTitle() === 'NotALeader') {
-                    // By closing the pool, we force the connection to be re-acquired and the routing table to be refetched
-                    $this->pool->close();
-                } elseif ($e->getClassification() !== 'TransientError') {
-                    throw $e;
-                }
-            }
-        }
-    }
-
-    private static function triggerLazyResult(mixed $tbr): void
-    {
-        if ($tbr instanceof CypherSequence) {
-            $tbr->preload();
-        }
+        return TransactionHelper::retry(
+            fn () => $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ())),
+            $tsxHandler
+        );
     }
 
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
@@ -192,7 +154,7 @@ final class Session implements SessionInterface
             $this->config,
             $tsxConfig,
             $this->bookmarkHolder,
-            new BoltMessageFactory($connection->protocol(), $this->getLogger()),
+            new BoltMessageFactory($connection, $this->getLogger()),
         );
     }
 
@@ -217,6 +179,7 @@ final class Session implements SessionInterface
             $timeout = ($timeout < 30) ? 30 : $timeout;
             $connection->setTimeout($timeout + 2);
         }
+        $this->usedConnections[] = $connection;
 
         return $connection;
     }
@@ -226,7 +189,7 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         try {
             $connection = $this->acquireConnection($config, $sessionConfig);
-
+            $connection->discardUnconsumedResults();
             $connection->begin($this->config->getDatabase(), $config->getTimeout(), $this->bookmarkHolder, $config->getMetaData());
         } catch (Neo4jException $e) {
             if (isset($connection) && $connection->getServerState() === 'FAILED') {
@@ -234,6 +197,7 @@ final class Session implements SessionInterface
             }
             throw $e;
         }
+        error_log('>>> EXIT startTransaction()');
 
         return new BoltUnmanagedTransaction(
             $this->config->getDatabase(),
@@ -242,7 +206,7 @@ final class Session implements SessionInterface
             $this->config,
             $config,
             $this->bookmarkHolder,
-            new BoltMessageFactory($connection->protocol(), $this->getLogger()),
+            new BoltMessageFactory($connection, $this->getLogger()),
         );
     }
 
@@ -254,6 +218,14 @@ final class Session implements SessionInterface
     public function getLastBookmark(): Bookmark
     {
         return $this->bookmarkHolder->getBookmark();
+    }
+
+    public function close(): void
+    {
+        foreach ($this->usedConnections as $connection) {
+            $connection->discardUnconsumedResults();
+        }
+        $this->usedConnections = [];
     }
 
     private function getLogger(): ?Neo4jLogger
