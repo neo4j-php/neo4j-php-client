@@ -65,6 +65,11 @@ class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
     private bool $inTransaction = false;
+    /** @var array<string, bool> Track if this connection was ever used for a query */
+    private array $connectionUsed = [
+        'reader' => false,
+        'writer' => false,
+    ];
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -254,6 +259,12 @@ class BoltConnection implements ConnectionInterface
         ?AccessMode $mode,
         ?iterable $tsxMetadata,
     ): array {
+        if ($mode === AccessMode::WRITE()) {
+            $this->connectionUsed['writer'] = true;
+        } else {
+            $this->connectionUsed['reader'] = true;
+        }
+
         if ($this->isInTransaction()) {
             $extra = [];
         } else {
@@ -323,17 +334,23 @@ class BoltConnection implements ConnectionInterface
     {
         try {
             if ($this->isOpen()) {
-                if ($this->isStreaming()) {
+                if ($this->isStreaming() && ($this->connectionUsed['reader'] || $this->connectionUsed['writer'])) {
                     $this->discardUnconsumedResults();
                 }
-                $message = $this->messageFactory->createGoodbyeMessage();
-                $message->send();
 
-                unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
+                // Only send GOODBYE if the connection was ever used
+                if ($this->connectionUsed['reader'] || $this->connectionUsed['writer']) {
+                    $message = $this->messageFactory->createGoodbyeMessage();
+                    $message->send();
+                }
+
+                unset($this->boltProtocol);
             }
         } catch (Throwable) {
+            // ignore, but could log
         }
     }
+
 
     private function buildRunExtra(
         ?string $database,
@@ -437,6 +454,7 @@ class BoltConnection implements ConnectionInterface
     public function discardUnconsumedResults(): void
     {
         $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
+
         $this->subscribedResults = array_values(array_filter(
             $this->subscribedResults,
             static fn (WeakReference $ref): bool => $ref->get() !== null
@@ -444,12 +462,18 @@ class BoltConnection implements ConnectionInterface
 
         if (empty($this->subscribedResults)) {
             $this->logger?->log(LogLevel::DEBUG, 'No unconsumed results to discard');
-
             return;
         }
 
         $state = $this->getServerState();
         $this->logger?->log(LogLevel::DEBUG, "Server state before discard: {$state}");
+
+        // Skip discard if this connection was never used
+        if (!$this->connectionUsed['reader'] && !$this->connectionUsed['writer']) {
+            $this->logger?->log(LogLevel::DEBUG, 'Skipping discard - connection never used');
+            $this->subscribedResults = [];
+            return;
+        }
 
         try {
             if (in_array($state, ['STREAMING', 'TX_STREAMING'], true)) {

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend;
 
+use Laudis\Neo4j\TestkitBackend\Requests\GetServerInfoRequest;
 use function is_string;
 
 use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
@@ -70,6 +71,7 @@ final class RequestFactory
         'RetryableNegative' => RetryableNegativeRequest::class,
         'ForcedRoutingTableUpdate' => ForcedRoutingTableUpdateRequest::class,
         'GetRoutingTable' => GetRoutingTableRequest::class,
+        'GetServerInfo' => GetServerInfoRequest::class,
     ];
 
     /**

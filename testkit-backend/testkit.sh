@@ -37,11 +37,13 @@ pip install -r requirements.txt
 echo "Starting tests..."
 
 EXIT_CODE=0
+#python3 -m unittest tests.stub.tx_run.TestTxRun
+
 ##neo4j
 #test_authentication
 python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic|| EXIT_CODE=1
 
-###test_bookmarks
+##test_bookmarks
 python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks.test_can_obtain_bookmark_after_commit || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks.test_can_pass_bookmark_into_next_session || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks.test_no_bookmark_after_rollback || EXIT_CODE=1
@@ -49,8 +51,7 @@ python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks.test_fails_on_inval
 python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks.test_fails_on_invalid_bookmark_using_tx_func || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks.test_can_handle_multiple_bookmarks || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_bookmarks.TestBookmarks.test_can_pass_write_bookmark_into_write_session || EXIT_CODE=1
-
-##test_session_run
+#test_session_run
 python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_iteration_smaller_than_fetch_size  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_node  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_can_return_relationship  || EXIT_CODE=1
@@ -70,7 +71,7 @@ python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_fails_on_mi
 python3 -m unittest tests.neo4j.test_session_run.TestSessionRun.test_long_string  || EXIT_CODE=1
 
 
-##test_direct_driver
+###test_direct_driver
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_custom_resolver|| EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_http_port|| EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_supports_multi_db|| EXIT_CODE=1
@@ -81,7 +82,7 @@ python3 -m unittest tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_d
 ##test_summary
 python3 -m unittest tests.neo4j.test_summary.TestSummary
 
-#test_tx_run
+##test_tx_run
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_simple_query  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_can_commit_transaction  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_can_rollback_transaction  || EXIT_CODE=1
@@ -105,8 +106,7 @@ python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_consume_after_commit 
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_parallel_queries  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_run.TestTxRun.test_unconsumed_result  || EXIT_CODE=1
 
-
-#test_tx_func_run
+##test_tx_func_run
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_simple_query  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_parameter  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_meta_data  || EXIT_CODE=1
@@ -118,14 +118,14 @@ python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_func_conf
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout  || EXIT_CODE=1
 
 ##stub
-#test-basic-query
+##test-basic-query
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_path_element_ids_with_string  || EXIT_CODE=1
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_node_element_id_with_id  || EXIT_CODE=1
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_node_element_id_with_string  || EXIT_CODE=1
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_rel_element_id_with_id  || EXIT_CODE=1
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_path_element_ids_with_long  || EXIT_CODE=1
 
-#####test-session-run
+##test-session-run
 python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_discard_on_session_close_untouched_result  || EXIT_CODE=1
 python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_discard_on_session_close_unfinished_result  || EXIT_CODE=1
 python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_no_discard_on_session_close_finished_result  || EXIT_CODE=1
@@ -143,6 +143,15 @@ python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_
 python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_bookmarks_session_run || EXIT_CODE=1
 python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_sequence_of_writing_and_reading_tx || EXIT_CODE=1
 python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_bookmarks_tx_run || EXIT_CODE=1
+
+#connectivity_check
+##get_server_info
+python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct_no_server
+python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct_raises_error
+python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct
+python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_no_server
+
+
 
 exit $EXIT_CODE
 
