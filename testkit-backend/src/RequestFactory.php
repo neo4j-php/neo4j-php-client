@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend;
 
-use Laudis\Neo4j\TestkitBackend\Requests\GetServerInfoRequest;
 use function is_string;
 
 use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
@@ -23,6 +22,7 @@ use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ForcedRoutingTableUpdateRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetRoutingTableRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\GetServerInfoRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\NewSessionRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ResolverResolutionCompletedRequest;

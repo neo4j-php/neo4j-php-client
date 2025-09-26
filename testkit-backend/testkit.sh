@@ -152,6 +152,5 @@ python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetSe
 python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_no_server
 
 
-
 exit $EXIT_CODE
 

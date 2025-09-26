@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
-use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;

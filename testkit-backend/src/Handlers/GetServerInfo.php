@@ -37,8 +37,9 @@ use Symfony\Component\Uid\Uuid;
 final class GetServerInfo implements RequestHandlerInterface
 {
     public function __construct(
-        private MainRepository $repository
-    ) {}
+        private MainRepository $repository,
+    ) {
+    }
 
     /**
      * @param GetServerInfoRequest $request
@@ -53,7 +54,6 @@ final class GetServerInfo implements RequestHandlerInterface
             }
 
             return $this->getServerInfoFromSession($driver);
-
         } catch (Exception $e) {
             $uuid = Uuid::v4();
 
@@ -81,6 +81,7 @@ final class GetServerInfo implements RequestHandlerInterface
         try {
             $pool = $this->getConnectionPool($driver);
             $connection = $this->acquireConnectionFromPool($pool, SessionConfiguration::default());
+
             return new ServerInfoResponse($this->extractServerInfo($connection));
         } finally {
             if ($connection !== null && $pool !== null) {
@@ -120,15 +121,7 @@ final class GetServerInfo implements RequestHandlerInterface
         if (method_exists($pool, 'getRoutingTable')) {
             $routingTable = $pool->getRoutingTable();
             if ($routingTable !== null && empty($routingTable->getReaders())) {
-                throw new Neo4jException([
-                    new Neo4jError(
-                        'No readers available in routing table',
-                        'N/A',
-                        'ClientError',
-                        'Routing',
-                        'RoutingTable'
-                    )
-                ]);
+                throw new Neo4jException([new Neo4jError('No readers available in routing table', 'N/A', 'ClientError', 'Routing', 'RoutingTable')]);
             }
         }
 
@@ -153,8 +146,8 @@ final class GetServerInfo implements RequestHandlerInterface
             }
         }
 
-        $address  = $connection->getServerAddress();
-        $agent    = $connection->getServerAgent();
+        $address = $connection->getServerAddress();
+        $agent = $connection->getServerAgent();
         $protocol = $connection->getProtocol();
 
         if (empty($address) || empty($agent)) {
@@ -178,6 +171,7 @@ final class GetServerInfo implements RequestHandlerInterface
 
         try {
             $result = $session->run('RETURN 1');
+
             return new ServerInfoResponse($result->summary()->getServerInfo());
         } finally {
             $session->close();

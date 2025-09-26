@@ -334,12 +334,12 @@ class BoltConnection implements ConnectionInterface
     {
         try {
             if ($this->isOpen()) {
-                if ($this->isStreaming() && ($this->connectionUsed['reader'] || $this->connectionUsed['writer'])) {
+                if ($this->isStreaming() && (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false))) {
                     $this->discardUnconsumedResults();
                 }
 
                 // Only send GOODBYE if the connection was ever used
-                if ($this->connectionUsed['reader'] || $this->connectionUsed['writer']) {
+                if (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false)) {
                     $message = $this->messageFactory->createGoodbyeMessage();
                     $message->send();
                 }
@@ -350,7 +350,6 @@ class BoltConnection implements ConnectionInterface
             // ignore, but could log
         }
     }
-
 
     private function buildRunExtra(
         ?string $database,
@@ -462,6 +461,7 @@ class BoltConnection implements ConnectionInterface
 
         if (empty($this->subscribedResults)) {
             $this->logger?->log(LogLevel::DEBUG, 'No unconsumed results to discard');
+
             return;
         }
 
@@ -469,9 +469,11 @@ class BoltConnection implements ConnectionInterface
         $this->logger?->log(LogLevel::DEBUG, "Server state before discard: {$state}");
 
         // Skip discard if this connection was never used
-        if (!$this->connectionUsed['reader'] && !$this->connectionUsed['writer']) {
+        // Skip discard if this connection was never used
+        if (!($this->connectionUsed['reader'] ?? false) && !($this->connectionUsed['writer'] ?? false)) {
             $this->logger?->log(LogLevel::DEBUG, 'Skipping discard - connection never used');
             $this->subscribedResults = [];
+
             return;
         }
 

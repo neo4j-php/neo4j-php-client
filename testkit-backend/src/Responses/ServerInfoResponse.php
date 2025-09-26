@@ -28,7 +28,7 @@ final class ServerInfoResponse implements TestkitResponseInterface
     public function __construct(ServerInfo $serverInfo)
     {
         $uri = $serverInfo->getAddress();
-        $this->address = $uri->getHost() . ':' . $uri->getPort();
+        $this->address = $uri->getHost().':'.$uri->getPort();
 
         $this->agent = $serverInfo->getAgent();
 
