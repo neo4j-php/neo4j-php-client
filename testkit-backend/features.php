@@ -221,7 +221,7 @@ return [
     // time period. On timout, the driver should remove the server from its
     // routing table and assume all other connections to the server are dead
     // as well.
-    'ConfHint:connection.recv_timeout_seconds' => false,
+    'ConfHint:connection.recv_timeout_seconds' => true,
 
     // === BACKEND FEATURES FOR TESTING ===
     // The backend understands the FakeTimeInstall, FakeTimeUninstall and

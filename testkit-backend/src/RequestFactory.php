@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend;
 
+use Laudis\Neo4j\TestkitBackend\Handlers\ExecuteQuery;
+use Laudis\Neo4j\TestkitBackend\Requests\ExecuteQueryRequest;
 use function is_string;
 
 use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
@@ -72,6 +74,7 @@ final class RequestFactory
         'ForcedRoutingTableUpdate' => ForcedRoutingTableUpdateRequest::class,
         'GetRoutingTable' => GetRoutingTableRequest::class,
         'GetServerInfo' => GetServerInfoRequest::class,
+        'ExecuteQuery'=> ExecuteQueryRequest::class
     ];
 
     /**

@@ -43,6 +43,8 @@ final class MainRepository
     /** @var array<string, bool> */
     private array $iteratorFetchedFirst;
 
+    private array $eagerResults = [];
+
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
      * @param array<string, SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>>              $sessions
@@ -176,5 +178,27 @@ final class MainRepository
     public function addBufferedRecords(string $id, array $records): void
     {
         $this->records[$id] = $records;
+    }
+
+
+    /**
+     * @param SummarizedResult<CypherMap<OGMTypes>> $eagerResult
+     */
+    public function addEagerResult(Uuid $id, $eagerResult): void
+    {
+        $this->eagerResults[$id->toRfc4122()] = $eagerResult;
+    }
+
+    public function removeEagerResult(Uuid $id): void
+    {
+        unset($this->eagerResults[$id->toRfc4122()]);
+    }
+
+    /**
+     * @return SummarizedResult<CypherMap<OGMTypes>>
+     */
+    public function getEagerResult(Uuid $id)
+    {
+        return $this->eagerResults[$id->toRfc4122()];
     }
 }
