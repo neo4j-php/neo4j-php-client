@@ -54,6 +54,8 @@ final class TransactionConfiguration
 
     /**
      * @return array<string, scalar|array|null>|null
+     *
+     *  @psalm-suppress MixedReturnTypeCoercion
      */
     public function getMetaData(): ?array
     {
