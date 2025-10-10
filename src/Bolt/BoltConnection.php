@@ -325,17 +325,30 @@ class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
-        if ($this->isOpen()) {
-            if ($this->isStreaming() && (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false))) {
-                $this->discardUnconsumedResults();
-            }
+        try {
+            if ($this->isOpen()) {
+                if ($this->isStreaming() && (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false))) {
+                    $this->discardUnconsumedResults();
+                }
 
-            if (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false)) {
-                $message = $this->messageFactory->createGoodbyeMessage();
-                $message->send();
-            }
+                if (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false)) {
+                    try {
+                        $message = $this->messageFactory->createGoodbyeMessage();
+                        $message->send();
+                    } catch (Throwable $e) {
+                           $this->logger?->log(LogLevel::DEBUG, 'Failed to send GOODBYE message during connection close', [
+                            'error' => $e->getMessage(),
+                            'connection' => $this->getServerAddress()->__toString()
+                        ]);
+                    }
+                }
 
-            unset($this->boltProtocol);
+                unset($this->boltProtocol);
+            }
+        } catch (Throwable $e) {
+            $this->logger?->log(LogLevel::DEBUG, 'Error during connection close', [
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
