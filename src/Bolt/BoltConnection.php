@@ -336,9 +336,9 @@ class BoltConnection implements ConnectionInterface
                         $message = $this->messageFactory->createGoodbyeMessage();
                         $message->send();
                     } catch (Throwable $e) {
-                           $this->logger?->log(LogLevel::DEBUG, 'Failed to send GOODBYE message during connection close', [
+                        $this->logger?->log(LogLevel::DEBUG, 'Failed to send GOODBYE message during connection close', [
                             'error' => $e->getMessage(),
-                            'connection' => $this->getServerAddress()->__toString()
+                            'connection' => $this->getServerAddress()->__toString(),
                         ]);
                     }
                 }
@@ -347,7 +347,7 @@ class BoltConnection implements ConnectionInterface
             }
         } catch (Throwable $e) {
             $this->logger?->log(LogLevel::DEBUG, 'Error during connection close', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
