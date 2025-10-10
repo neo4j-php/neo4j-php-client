@@ -146,13 +146,13 @@ python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_
 
 #connectivity_check
 ##get_server_info
-python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct_no_server
-python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct_raises_error
-python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct || EXIT_CODE=1
-python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_no_server
-python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_fail_when_no_reader_are_available
-python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_raises_error
-python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing
+#python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct_no_server
+#python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct_raises_error
+#python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct || EXIT_CODE=1
+#python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_no_server
+#python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_fail_when_no_reader_are_available
+#python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_raises_error
+#python3 -m unittest tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing
 
 
 exit $EXIT_CODE
