@@ -19,6 +19,7 @@ use Exception;
 use function is_string;
 
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Common\DNSAddressResolver;
 use Laudis\Neo4j\Common\GeneratorHelper;
@@ -28,7 +29,9 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
@@ -75,6 +78,8 @@ final class Neo4jDriver implements DriverInterface
     /**
      * @psalm-mutation-free
      *
+     * @psalm-suppress UnnecessaryVarAnnotation
+     *
      * @throws Exception
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
@@ -97,6 +102,39 @@ final class Neo4jDriver implements DriverInterface
         }
 
         return true;
+    }
+
+    /**
+     * Gets server information without running a query.
+     *
+     * Acquires a connection from the pool and extracts server metadata.
+     * The pool handles all connection management, routing, and retries.
+     *
+     * @throws Exception if unable to acquire a connection
+     */
+    public function getServerInfo(?SessionConfiguration $config = null): ServerInfo
+    {
+        $config ??= SessionConfiguration::default()->withAccessMode(AccessMode::READ());
+
+        $this->pool->refreshRoutingTable($config);
+
+        $connectionGenerator = $this->pool->acquire($config);
+        /**
+         * @var BoltConnection $connection
+         *
+         * @psalm-suppress UnnecessaryVarAnnotation
+         */
+        $connection = GeneratorHelper::getReturnFromGenerator($connectionGenerator);
+
+        try {
+            return new ServerInfo(
+                $connection->getServerAddress(),
+                $connection->getProtocol(),
+                $connection->getServerAgent()
+            );
+        } finally {
+            $this->pool->release($connection);
+        }
     }
 
     public function closeConnections(): void
