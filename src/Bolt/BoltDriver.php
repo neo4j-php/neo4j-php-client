@@ -25,7 +25,9 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
@@ -95,6 +97,37 @@ final class BoltDriver implements DriverInterface
         }
 
         return true;
+    }
+
+    /**
+     * Gets server information without running a query.
+     *
+     * Acquires a connection from the pool and extracts server metadata.
+     * The pool handles all connection management, routing, and retries.
+     *
+     * @throws Exception if unable to acquire a connection
+     */
+    public function getServerInfo(?SessionConfiguration $config = null): ServerInfo
+    {
+        $config ??= SessionConfiguration::default()->withAccessMode(AccessMode::READ());
+
+        $connectionGenerator = $this->pool->acquire($config);
+        /**
+         * @var BoltConnection $connection
+         *
+         * @psalm-suppress UnnecessaryVarAnnotation
+         */
+        $connection = GeneratorHelper::getReturnFromGenerator($connectionGenerator);
+
+        try {
+            return new ServerInfo(
+                $connection->getServerAddress(),
+                $connection->getProtocol(),
+                $connection->getServerAgent()
+            );
+        } finally {
+            $this->pool->release($connection);
+        }
     }
 
     public function closeConnections(): void

@@ -180,7 +180,6 @@ final class MainRepository
         $this->records[$id] = $records;
     }
 
-
     /**
      * @param SummarizedResult<CypherMap<OGMTypes>> $eagerResult
      */

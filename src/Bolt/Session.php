@@ -172,8 +172,6 @@ final class Session implements SessionInterface
          */
         $connection = GeneratorHelper::getReturnFromGenerator($connectionGenerator);
 
-        // We try and let the server do the timeout management.
-        // Since the client should not run indefinitely, we just add the client side by two, just in case
         $timeout = $config->getTimeout();
         if ($timeout !== null) {
             $timeout = ($timeout < 30) ? 30 : $timeout;

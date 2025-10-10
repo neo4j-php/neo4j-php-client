@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Neo4j PHP Client and Driver package.
+ *
+ * (c) Nagels <https://nagels.tech>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Exception;
@@ -36,14 +45,11 @@ final class ExecuteQuery implements RequestHandlerInterface
         try {
             $driver = $this->repository->getDriver($request->getDriverId());
 
-            // Check if driver has executeQuery method
             if (method_exists($driver, 'executeQuery')) {
                 return $this->handleWithExecuteQuery($driver, $request);
             }
 
-            // Fallback: use session-based approach
             return $this->handleWithSession($driver, $request);
-
         } catch (Exception $e) {
             $uuid = Uuid::v4();
 
@@ -84,21 +90,14 @@ final class ExecuteQuery implements RequestHandlerInterface
     {
         $config = $request->getConfig();
 
-        // Build session configuration
         $sessionConfig = SessionConfiguration::default();
 
-        if (isset($config['database'])) {
+        if (array_key_exists('database', $config)) {
             $sessionConfig = $sessionConfig->withDatabase($config['database']);
         }
 
-        // REMOVE THIS - IT DOESN'T WORK YET
-        // if (isset($config['impersonatedUser'])) {
-        //     $sessionConfig = $sessionConfig->withImpersonatedUser($config['impersonatedUser']);
-        // }
-
-        // Determine access mode
         $accessMode = AccessMode::READ();
-        if (isset($config['routing']) && $config['routing'] === 'w') {
+        if (array_key_exists('routing', $config) && $config['routing'] === 'w') {
             $accessMode = AccessMode::WRITE();
         }
         $sessionConfig = $sessionConfig->withAccessMode($accessMode);
@@ -115,11 +114,11 @@ final class ExecuteQuery implements RequestHandlerInterface
             $this->repository->addEagerResult($resultId, $result);
 
             return new EagerResultResponse($resultId, $result);
-
         } finally {
             $session->close();
         }
     }
+
     private function buildExecutionConfig(?array $config): array
     {
         if ($config === null) {
@@ -128,29 +127,29 @@ final class ExecuteQuery implements RequestHandlerInterface
 
         $executionConfig = [];
 
-        if (isset($config['database']) && $config['database'] !== null) {
+        if (array_key_exists('database', $config) && $config['database'] !== null) {
             $executionConfig['database'] = $config['database'];
         }
 
-        if (isset($config['routing']) && $config['routing'] !== null) {
+        if (array_key_exists('routing', $config) && $config['routing'] !== null) {
             $executionConfig['routing'] = $config['routing'];
         }
 
-        if (isset($config['impersonatedUser']) && $config['impersonatedUser'] !== null) {
+        if (array_key_exists('impersonatedUser', $config) && $config['impersonatedUser'] !== null) {
             $executionConfig['impersonatedUser'] = $config['impersonatedUser'];
         }
 
-        if (isset($config['txMeta']) && $config['txMeta'] !== null) {
+        if (array_key_exists('txMeta', $config) && $config['txMeta'] !== null) {
             $executionConfig['txMeta'] = $config['txMeta'];
         }
 
-        if (isset($config['timeout']) && $config['timeout'] !== null) {
+        if (array_key_exists('timeout', $config) && $config['timeout'] !== null) {
             $executionConfig['timeout'] = $config['timeout'] / 1000;
         }
 
-        if (isset($config['authorizationToken']) && $config['authorizationToken'] !== null) {
+        if (array_key_exists('authorizationToken', $config) && $config['authorizationToken'] !== null) {
             $authToken = $config['authorizationToken'];
-            if (isset($authToken['data'])) {
+            if (array_key_exists('data', $authToken)) {
                 $executionConfig['auth'] = $this->convertAuthToken($authToken['data']);
             }
         }
@@ -162,23 +161,23 @@ final class ExecuteQuery implements RequestHandlerInterface
     {
         $auth = [];
 
-        if (isset($tokenData['scheme'])) {
+        if (array_key_exists('scheme', $tokenData)) {
             $auth['scheme'] = $tokenData['scheme'];
         }
 
-        if (isset($tokenData['principal'])) {
+        if (array_key_exists('principal', $tokenData)) {
             $auth['principal'] = $tokenData['principal'];
         }
 
-        if (isset($tokenData['credentials'])) {
+        if (array_key_exists('credentials', $tokenData)) {
             $auth['credentials'] = $tokenData['credentials'];
         }
 
-        if (isset($tokenData['realm'])) {
+        if (array_key_exists('realm', $tokenData)) {
             $auth['realm'] = $tokenData['realm'];
         }
 
-        if (isset($tokenData['parameters'])) {
+        if (array_key_exists('parameters', $tokenData)) {
             $auth['parameters'] = $tokenData['parameters'];
         }
 

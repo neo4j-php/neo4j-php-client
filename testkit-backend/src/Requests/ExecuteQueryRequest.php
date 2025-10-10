@@ -26,7 +26,7 @@ final class ExecuteQueryRequest
         Uuid $driverId,
         string $cypher,
         ?array $params = null,
-        ?array $config = null
+        ?array $config = null,
     ) {
         $this->driverId = $driverId;
         $this->cypher = $cypher;

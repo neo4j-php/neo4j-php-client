@@ -193,6 +193,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $servers = $table->getWithRole(RoutingRoles::FOLLOWER());
         }
 
+        if (empty($servers)) {
+            throw new RuntimeException('No available servers found for the requested access mode');
+        }
+
         return Uri::create($servers[random_int(0, count($servers) - 1)]);
     }
 
@@ -257,6 +261,16 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
         self::$pools = [];
         $this->cache->clear();
+    }
+
+    /**
+     * Forces a routing table refresh for the given configuration.
+     * This will cause the next acquire() call to fetch a fresh routing table.
+     */
+    public function refreshRoutingTable(SessionConfiguration $config): void
+    {
+        $key = $this->createKey($this->data, $config);
+        $this->cache->delete($key);
     }
 
     /**

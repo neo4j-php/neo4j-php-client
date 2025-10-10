@@ -204,13 +204,6 @@ class BoltConnection implements ConnectionInterface
         $this->subscribedResults = [];
     }
 
-    private function prepareForBegin(): void
-    {
-        if (in_array($this->getServerState(), ['STREAMING', 'TX_STREAMING'], true)) {
-            $this->discardUnconsumedResults();
-        }
-    }
-
     /**
      * Begins a transaction.
      *
@@ -332,22 +325,17 @@ class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
-        try {
-            if ($this->isOpen()) {
-                if ($this->isStreaming() && (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false))) {
-                    $this->discardUnconsumedResults();
-                }
-
-                // Only send GOODBYE if the connection was ever used
-                if (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false)) {
-                    $message = $this->messageFactory->createGoodbyeMessage();
-                    $message->send();
-                }
-
-                unset($this->boltProtocol);
+        if ($this->isOpen()) {
+            if ($this->isStreaming() && (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false))) {
+                $this->discardUnconsumedResults();
             }
-        } catch (Throwable) {
-            // ignore, but could log
+
+            if (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false)) {
+                $message = $this->messageFactory->createGoodbyeMessage();
+                $message->send();
+            }
+
+            unset($this->boltProtocol);
         }
     }
 
@@ -468,8 +456,6 @@ class BoltConnection implements ConnectionInterface
         $state = $this->getServerState();
         $this->logger?->log(LogLevel::DEBUG, "Server state before discard: {$state}");
 
-        // Skip discard if this connection was never used
-        // Skip discard if this connection was never used
         if (!($this->connectionUsed['reader'] ?? false) && !($this->connectionUsed['writer'] ?? false)) {
             $this->logger?->log(LogLevel::DEBUG, 'Skipping discard - connection never used');
             $this->subscribedResults = [];

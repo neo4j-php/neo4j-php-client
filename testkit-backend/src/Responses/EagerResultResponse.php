@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\TestkitBackend\Responses;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Symfony\Component\Uid\Uuid;
+use Traversable;
 
 /**
  * Response for ExecuteQuery containing an eager result.
@@ -29,10 +30,8 @@ final class EagerResultResponse implements TestkitResponseInterface
     {
         $this->id = $id;
 
-        // Extract keys
         $this->keys = $eagerResult->getKeys()->toArray();
 
-        // Extract records
         $this->records = [];
         foreach ($eagerResult as $record) {
             $values = [];
@@ -56,11 +55,10 @@ final class EagerResultResponse implements TestkitResponseInterface
     }
 
     /**
-     * Convert Neo4j values to testkit format
+     * Convert Neo4j values to testkit format.
      */
     private function convertValue($value)
     {
-        // Handle null
         if ($value === null) {
             return [
                 'name' => 'CypherNull',
@@ -68,7 +66,6 @@ final class EagerResultResponse implements TestkitResponseInterface
             ];
         }
 
-        // Handle integers
         if (is_int($value)) {
             return [
                 'name' => 'CypherInt',
@@ -76,7 +73,6 @@ final class EagerResultResponse implements TestkitResponseInterface
             ];
         }
 
-        // Handle floats
         if (is_float($value)) {
             return [
                 'name' => 'CypherFloat',
@@ -84,7 +80,6 @@ final class EagerResultResponse implements TestkitResponseInterface
             ];
         }
 
-        // Handle strings
         if (is_string($value)) {
             return [
                 'name' => 'CypherString',
@@ -92,7 +87,6 @@ final class EagerResultResponse implements TestkitResponseInterface
             ];
         }
 
-        // Handle booleans
         if (is_bool($value)) {
             return [
                 'name' => 'CypherBool',
@@ -100,29 +94,25 @@ final class EagerResultResponse implements TestkitResponseInterface
             ];
         }
 
-        // Handle arrays/lists
-        if (is_array($value) || $value instanceof \Traversable) {
+        if (is_array($value) || $value instanceof Traversable) {
             $values = [];
             foreach ($value as $item) {
                 $values[] = $this->convertValue($item);
             }
+
             return [
                 'name' => 'CypherList',
                 'data' => ['value' => $values],
             ];
         }
 
-        // Handle objects/maps
         if (is_object($value)) {
-            // You may need more sophisticated type detection here
-            // based on your type system (Node, Relationship, Path, etc.)
             return [
                 'name' => 'CypherMap',
                 'data' => ['value' => (array) $value],
             ];
         }
 
-        // Default fallback
         return [
             'name' => 'CypherString',
             'data' => ['value' => (string) $value],

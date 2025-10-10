@@ -41,9 +41,10 @@ final class SessionConfiguration
         private readonly ?AccessMode $accessMode = null,
         private readonly ?array $bookmarks = null,
         private readonly ?Neo4jLogger $logger = null,
-        private readonly ?string $impersonatedUser = null
+        private readonly ?string $impersonatedUser = null,
     ) {
     }
+
     public function withImpersonatedUser(?string $user): self
     {
         return new self(
