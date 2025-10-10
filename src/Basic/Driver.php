@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Basic;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\DriverFactory;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
@@ -42,6 +43,11 @@ final class Driver implements DriverInterface
     public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
         return $this->driver->verifyConnectivity($config);
+    }
+
+    public function getServerInfo(?SessionConfiguration $config = null): ServerInfo
+    {
+        return $this->driver->getServerInfo($config);
     }
 
     public static function create(string|UriInterface $uri, ?DriverConfiguration $configuration = null, ?AuthenticateInterface $authenticate = null): self

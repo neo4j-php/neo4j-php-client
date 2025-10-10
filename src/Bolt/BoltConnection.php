@@ -65,6 +65,11 @@ class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
     private bool $inTransaction = false;
+    /** @var array<string, bool> Track if this connection was ever used for a query */
+    private array $connectionUsed = [
+        'reader' => false,
+        'writer' => false,
+    ];
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -199,13 +204,6 @@ class BoltConnection implements ConnectionInterface
         $this->subscribedResults = [];
     }
 
-    private function prepareForBegin(): void
-    {
-        if (in_array($this->getServerState(), ['STREAMING', 'TX_STREAMING'], true)) {
-            $this->discardUnconsumedResults();
-        }
-    }
-
     /**
      * Begins a transaction.
      *
@@ -254,6 +252,12 @@ class BoltConnection implements ConnectionInterface
         ?AccessMode $mode,
         ?iterable $tsxMetadata,
     ): array {
+        if ($mode === AccessMode::WRITE()) {
+            $this->connectionUsed['writer'] = true;
+        } else {
+            $this->connectionUsed['reader'] = true;
+        }
+
         if ($this->isInTransaction()) {
             $extra = [];
         } else {
@@ -323,15 +327,28 @@ class BoltConnection implements ConnectionInterface
     {
         try {
             if ($this->isOpen()) {
-                if ($this->isStreaming()) {
+                if ($this->isStreaming() && (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false))) {
                     $this->discardUnconsumedResults();
                 }
-                $message = $this->messageFactory->createGoodbyeMessage();
-                $message->send();
 
-                unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
+                if (($this->connectionUsed['reader'] ?? false) || ($this->connectionUsed['writer'] ?? false)) {
+                    try {
+                        $message = $this->messageFactory->createGoodbyeMessage();
+                        $message->send();
+                    } catch (Throwable $e) {
+                        $this->logger?->log(LogLevel::DEBUG, 'Failed to send GOODBYE message during connection close', [
+                            'error' => $e->getMessage(),
+                            'connection' => $this->getServerAddress()->__toString(),
+                        ]);
+                    }
+                }
+
+                unset($this->boltProtocol);
             }
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            $this->logger?->log(LogLevel::DEBUG, 'Error during connection close', [
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -437,6 +454,7 @@ class BoltConnection implements ConnectionInterface
     public function discardUnconsumedResults(): void
     {
         $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
+
         $this->subscribedResults = array_values(array_filter(
             $this->subscribedResults,
             static fn (WeakReference $ref): bool => $ref->get() !== null
@@ -450,6 +468,13 @@ class BoltConnection implements ConnectionInterface
 
         $state = $this->getServerState();
         $this->logger?->log(LogLevel::DEBUG, "Server state before discard: {$state}");
+
+        if (!($this->connectionUsed['reader'] ?? false) && !($this->connectionUsed['writer'] ?? false)) {
+            $this->logger?->log(LogLevel::DEBUG, 'Skipping discard - connection never used');
+            $this->subscribedResults = [];
+
+            return;
+        }
 
         try {
             if (in_array($state, ['STREAMING', 'TX_STREAMING'], true)) {

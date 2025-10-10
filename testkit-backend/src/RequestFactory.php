@@ -19,9 +19,11 @@ use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\CheckMultiDBSupportRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DomainNameResolutionCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ExecuteQueryRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ForcedRoutingTableUpdateRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetRoutingTableRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\GetServerInfoRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\NewSessionRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ResolverResolutionCompletedRequest;
@@ -70,6 +72,8 @@ final class RequestFactory
         'RetryableNegative' => RetryableNegativeRequest::class,
         'ForcedRoutingTableUpdate' => ForcedRoutingTableUpdateRequest::class,
         'GetRoutingTable' => GetRoutingTableRequest::class,
+        'GetServerInfo' => GetServerInfoRequest::class,
+        'ExecuteQuery' => ExecuteQueryRequest::class,
     ];
 
     /**

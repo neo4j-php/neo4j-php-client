@@ -35,6 +35,8 @@ final class DriverClose implements RequestHandlerInterface
      */
     public function handle($request): DriverResponse
     {
+        $driver = $this->repository->getDriver($request->getDriverId());
+        $driver->closeConnections();
         $this->repository->removeDriver($request->getDriverId());
 
         return new DriverResponse($request->getDriverId());
