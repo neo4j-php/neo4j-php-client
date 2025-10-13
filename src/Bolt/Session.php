@@ -111,7 +111,7 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning read transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
 
-        return $this->retry($tsxHandler, false, $config);
+        return $this->retry($tsxHandler, true, $config);
     }
 
     /**
