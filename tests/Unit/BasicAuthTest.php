@@ -13,8 +13,14 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use Bolt\enum\Message;
+use Bolt\enum\Signature;
+use Bolt\protocol\Response;
+use Bolt\protocol\V5;
 use Laudis\Neo4j\Authentication\BasicAuth;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\UriInterface;
@@ -46,6 +52,44 @@ class BasicAuthTest extends TestCase
      * @throws Exception
      * @throws \Exception
      */
+    public function testAuthenticateBoltSuccess(): void
+    {
+        $userAgent = 'neo4j-client/1.0';
+
+        $protocol = $this->createMock(BoltConnection::class);
+
+        $response = new Response(
+            Message::HELLO,
+            Signature::SUCCESS,
+            ['server' => 'neo4j-server', 'connection_id' => '12345', 'hints' => []]
+        );
+
+        $protocol->expects($this->once())
+            ->method('getResponse')
+            ->willReturn($response);
+
+        $result = $this->auth->authenticateBolt($protocol, $userAgent);
+        $this->assertArrayHasKey('server', $result);
+        $this->assertSame('neo4j-server', $result['server']);
+        $this->assertSame('12345', $result['connection_id']);
+    }
+
+    public function testAuthenticateBoltFailure(): void
+    {
+        $this->expectException(Neo4jException::class);
+
+        $protocol = $this->createMock(V5::class);
+        $response = new Response(
+            Message::HELLO,
+            Signature::FAILURE,
+            ['code' => 'Neo.ClientError.Security.Unauthorized', 'message' => 'Invalid credentials']
+        );
+
+        $protocol->method('getResponse')->willReturn($response);
+
+        $this->auth->authenticateBolt($protocol, 'neo4j-client/1.0');
+    }
+
     public function testEmptyCredentials(): void
     {
         $emptyAuth = new BasicAuth('', '', null);

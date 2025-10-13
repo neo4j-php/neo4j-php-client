@@ -55,7 +55,7 @@ final class SessionReadTransaction implements RequestHandlerInterface
             $actualMeta = [];
             if ($metaData !== null) {
                 foreach ($metaData as $key => $meta) {
-                    $actualMeta[$key] = $this->decodeToValue($meta);
+                    $actualMeta[$key] = AbstractRunner::decodeToValue($meta);
                 }
             }
             $config = $config->withMetaData($actualMeta);
@@ -78,42 +78,5 @@ final class SessionReadTransaction implements RequestHandlerInterface
         }
 
         return new RetryableTryResponse($id);
-    }
-
-    // f1aa000cede64d6a8879513c97633777
-    private function decodeToValue(array $param)
-    {
-        $value = $param['data']['value'];
-        if (is_iterable($value)) {
-            if ($param['name'] === 'CypherMap') {
-                /** @psalm-suppress MixedArgumentTypeCoercion */
-                $map = [];
-                /**
-                 * @var numeric $k
-                 * @var mixed   $v
-                 */
-                foreach ($value as $k => $v) {
-                    /** @psalm-suppress MixedArgument */
-                    $map[(string) $k] = $this->decodeToValue($v);
-                }
-
-                return new CypherMap($map);
-            }
-
-            if ($param['name'] === 'CypherList') {
-                $list = [];
-                /**
-                 * @var mixed $v
-                 */
-                foreach ($value as $v) {
-                    /** @psalm-suppress MixedArgument */
-                    $list[] = $this->decodeToValue($v);
-                }
-
-                return new CypherList($list);
-            }
-        }
-
-        return $value;
     }
 }
