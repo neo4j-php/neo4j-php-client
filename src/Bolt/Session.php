@@ -113,6 +113,7 @@ final class Session implements SessionInterface
 
         return $this->retry($tsxHandler, false, $config);
     }
+
     /**
      * @template U
      *
@@ -149,12 +150,14 @@ final class Session implements SessionInterface
             }
         }
     }
+
     private static function triggerLazyResult(mixed $tbr): void
     {
         if ($tbr instanceof CypherSequence) {
             $tbr->preload();
         }
     }
+
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
         return $this->writeTransaction($tsxHandler, $config);

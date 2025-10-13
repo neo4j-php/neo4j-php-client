@@ -24,6 +24,8 @@ use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
+use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
@@ -520,5 +522,94 @@ SET article.created = articleProperties.created,
     article.datePublished = articleProperties.datePublished,
     article.readingTime = duration(articleProperties.readingTime)
 CYPHER;
+    }
+
+    public function testFormatBoltStatsWithFalseSystemUpdates(): void
+    {
+        $formatter = new SummarizedResultFormatter(new BoltOGMTranslator());
+
+        $response = [
+            'stats' => [
+                'nodes-created' => 1,
+                'nodes-deleted' => 0,
+                'relationships-created' => 0,
+                'relationships-deleted' => 0,
+                'properties-set' => 2,
+                'labels-added' => 1,
+                'labels-removed' => 0,
+                'indexes-added' => 0,
+                'indexes-removed' => 0,
+                'constraints-added' => 0,
+                'constraints-removed' => 0,
+                'contains-updates' => true,
+                'contains-system-updates' => false,
+                'system-updates' => 0,
+            ],
+        ];
+
+        $counters = $formatter->formatBoltStats($response);
+
+        self::assertInstanceOf(SummaryCounters::class, $counters);
+        self::assertEquals(1, $counters->nodesCreated());
+        self::assertEquals(2, $counters->propertiesSet());
+        self::assertSame(0, $counters->systemUpdates());
+    }
+
+    public function testSystemUpdatesWithPotentialFalseValues(): void
+    {
+        $this->getSession()->run('CREATE INDEX duplicate_test_index IF NOT EXISTS FOR (n:TestSystemUpdates) ON (n.duplicateProperty)');
+        $result = $this->getSession()->run('CREATE INDEX duplicate_test_index IF NOT EXISTS FOR (n:TestSystemUpdates) ON (n.duplicateProperty)');
+
+        $summary = $result->getSummary();
+        $counters = $summary->getCounters();
+
+        $this->assertGreaterThanOrEqual(0, $counters->systemUpdates());
+        $this->assertEquals($counters->systemUpdates() > 0, $counters->containsSystemUpdates());
+
+        $result2 = $this->getSession()->run('DROP INDEX non_existent_test_index IF EXISTS');
+
+        $summary2 = $result2->getSummary();
+        $counters2 = $summary2->getCounters();
+
+        $this->assertEquals(0, $counters2->systemUpdates());
+        $this->assertFalse($counters2->containsSystemUpdates());
+
+        $this->getSession()->run('DROP INDEX duplicate_test_index IF EXISTS');
+    }
+
+    public function testMultipleSystemOperationsForBug(): void
+    {
+        $operations = [
+            'CREATE INDEX multi_test_1 IF NOT EXISTS FOR (n:MultiTestNode) ON (n.prop1)',
+            'CREATE INDEX multi_test_2 IF NOT EXISTS FOR (n:MultiTestNode) ON (n.prop2)',
+            'CREATE CONSTRAINT multi_test_constraint IF NOT EXISTS FOR (n:MultiTestNode) REQUIRE n.id IS UNIQUE',
+            'DROP INDEX multi_test_1 IF EXISTS',
+            'DROP INDEX multi_test_2 IF EXISTS',
+            'DROP CONSTRAINT multi_test_constraint IF EXISTS',
+        ];
+
+        foreach ($operations as $operation) {
+            $result = $this->getSession()->run($operation);
+
+            $summary = $result->getSummary();
+            $counters = $summary->getCounters();
+
+            // Test that system operations properly track system updates
+            $this->assertGreaterThanOrEqual(0, $counters->systemUpdates());
+            $this->assertEquals($counters->systemUpdates() > 0, $counters->containsSystemUpdates());
+        }
+    }
+
+    public function testRegularDataOperationsStillWork(): void
+    {
+        $result = $this->getSession()->run('CREATE (n:RegularTestNode {name: "test", id: $id}) RETURN n', ['id' => bin2hex(random_bytes(8))]);
+
+        $summary = $result->getSummary();
+        $counters = $summary->getCounters();
+
+        $this->assertEquals(0, $counters->systemUpdates());
+        $this->assertFalse($counters->containsSystemUpdates());
+
+        $this->getSession()->run('MATCH (n:RegularTestNode) DELETE n');
     }
 }
