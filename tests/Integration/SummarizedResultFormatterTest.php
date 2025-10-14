@@ -421,6 +421,8 @@ CYPHER
                 'properties' => $result->getProperties(),
                 'startNodeId' => $result->getStartNodeId(),
                 'endNodeId' => $result->getEndNodeId(),
+                'startNodeElementId' => $result->getStartNodeElementId(),
+                'endNodeElementId' => $result->getEndNodeElementId(),
             ], JSON_THROW_ON_ERROR),
             json_encode($result, JSON_THROW_ON_ERROR)
         );

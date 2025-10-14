@@ -133,18 +133,18 @@ final class CypherObject implements TestkitResponseInterface
                 // First check if the relationship has methods to get start/end node element IDs
                 $startNodeElementId = null;
                 $endNodeElementId = null;
-                
+
                 if (method_exists($value, 'getStartNodeElementId')) {
                     $startNodeElementId = $value->getStartNodeElementId();
                 }
                 if (method_exists($value, 'getEndNodeElementId')) {
                     $endNodeElementId = $value->getEndNodeElementId();
                 }
-                
+
                 // If not available directly, check our stored mappings from paths
                 if ($startNodeElementId === null || $endNodeElementId === null) {
                     $relationshipKey = $value->getId().'_'.$value->getStartNodeId().'_'.$value->getEndNodeId();
-                    
+
                     if ($startNodeElementId === null) {
                         $startNodeElementId = self::$relationshipElementIdMap[$relationshipKey]['startNodeElementId'] ?? (string) $value->getStartNodeId();
                     }

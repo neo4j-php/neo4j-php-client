@@ -19,7 +19,7 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
 /**
  * @psalm-immutable
  *
- * @template-extends AbstractCypherObject<string, string|Position>
+ * @template-extends AbstractCypherObject<string, string|array<string, float|int|null|string>>
  */
 final class Notification extends AbstractCypherObject
 {
@@ -82,13 +82,10 @@ final class Notification extends AbstractCypherObject
         return $this->title;
     }
 
-
     /**
-     * Matches inherited return type: array<string, string|Position>.
-     *
      * @psalm-external-mutation-free
      *
-     * @return array<string, string|Position>
+     * @return array<string, string|array<string, float|int|string|null>>
      */
     public function toArray(): array
     {
@@ -101,5 +98,4 @@ final class Notification extends AbstractCypherObject
             'category' => $this->category,
         ];
     }
-
 }
