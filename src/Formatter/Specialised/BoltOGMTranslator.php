@@ -104,6 +104,7 @@ final class BoltOGMTranslator
 
         /** @var string|null $elementId */
         if (property_exists($node, 'element_id')) {
+            /** @var string|null $elementIdValue */
             $elementIdValue = $node->element_id ?? null;
             $elementId = is_string($elementIdValue) ? $elementIdValue : (string) $node->id;
         } else {
@@ -183,15 +184,15 @@ final class BoltOGMTranslator
 
         /** @var string|null $elementId */
         if (property_exists($rel, 'element_id')) {
+            /** @var string|null $elementIdValue */
             $elementIdValue = $rel->element_id ?? null;
             $elementId = is_string($elementIdValue) ? $elementIdValue : (string) $rel->id;
         } else {
             $elementId = (string) $rel->id;
         }
 
-        // For Neo4j 5+, try to get actual element IDs if available
-        // For Neo4j 4, fallback to string representation of integer IDs
         if (property_exists($rel, 'startNodeElementId')) {
+            /** @var string|null $startNodeElementIdValue */
             $startNodeElementIdValue = $rel->startNodeElementId ?? null;
             $startNodeElementId = is_string($startNodeElementIdValue) ? $startNodeElementIdValue : (string) $rel->startNodeId;
         } else {
@@ -199,6 +200,7 @@ final class BoltOGMTranslator
         }
 
         if (property_exists($rel, 'endNodeElementId')) {
+            /** @var string|null $endNodeElementIdValue */
             $endNodeElementIdValue = $rel->endNodeElementId ?? null;
             $endNodeElementId = is_string($endNodeElementIdValue) ? $endNodeElementIdValue : (string) $rel->endNodeId;
         } else {
@@ -231,6 +233,7 @@ final class BoltOGMTranslator
 
         /** @var string|null $elementId */
         if (property_exists($rel, 'element_id')) {
+            /** @var string|null $elementIdValue */
             $elementIdValue = $rel->element_id ?? null;
             $elementId = is_string($elementIdValue) ? $elementIdValue : (string) $rel->id;
         } else {

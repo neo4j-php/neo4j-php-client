@@ -36,6 +36,7 @@ class NoAuthTest extends TestCase
         $logger = $this->createMock(Neo4jLogger::class);
         $this->auth = new NoAuth($logger);
     }
+
     public function testAuthenticateBoltSuccessV5(): void
     {
         $userAgent = 'neo4j-client/1.0';
