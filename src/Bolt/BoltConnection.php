@@ -104,6 +104,14 @@ class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
+    public function getServerVersion(): string
+    {
+        return explode('/', $this->getServerAgent())[1] ?? '';
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
     public function getServerAddress(): UriInterface
     {
         return $this->config->getServerAddress();
