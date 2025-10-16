@@ -64,6 +64,7 @@ class BoltConnection implements ConnectionInterface
      * @var list<WeakReference<CypherList>>
      */
     private array $subscribedResults = [];
+    private bool $inTransaction = false;
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -206,21 +207,29 @@ class BoltConnection implements ConnectionInterface
         $this->subscribedResults = [];
     }
 
+    private function prepareForBegin(): void
+    {
+        if (in_array($this->getServerState(), ['STREAMING', 'TX_STREAMING'], true)) {
+            $this->discardUnconsumedResults();
+        }
+    }
+
     /**
      * Begins a transaction.
      *
      * Any of the preconditioned states are: 'READY', 'INTERRUPTED'.
      *
-     * @param iterable<string, scalar|array|null>|null $txMetaData
+     * @param array<string, scalar|array|null>|null $txMetaData
      */
-    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData): void
+    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?array $txMetaData): void
     {
         $this->consumeResults();
 
-        $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE(), $txMetaData);
+        $extra = $this->buildRunExtra($database, $timeout, $holder, $this->getAccessMode(), $txMetaData);
         $message = $this->messageFactory->createBeginMessage($extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
+        $this->inTransaction = true;
     }
 
     /**
@@ -253,7 +262,11 @@ class BoltConnection implements ConnectionInterface
         ?AccessMode $mode,
         ?iterable $tsxMetadata,
     ): array {
-        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
+        if ($this->isInTransaction()) {
+            $extra = [];
+        } else {
+            $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata, false);
+        }
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -321,7 +334,6 @@ class BoltConnection implements ConnectionInterface
                 if ($this->isStreaming()) {
                     $this->discardUnconsumedResults();
                 }
-
                 $message = $this->messageFactory->createGoodbyeMessage();
                 $message->send();
 
@@ -331,9 +343,16 @@ class BoltConnection implements ConnectionInterface
         }
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
-    {
+    private function buildRunExtra(
+        ?string $database,
+        ?float $timeout,
+        BookmarkHolder $holder,
+        ?AccessMode $mode,
+        ?iterable $metadata,
+        bool $forBegin = false,
+    ): array {
         $extra = [];
+
         if ($database !== null) {
             $extra['db'] = $database;
         }
@@ -341,17 +360,20 @@ class BoltConnection implements ConnectionInterface
             $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
-        if (!$holder->getBookmark()->isEmpty()) {
-            $extra['bookmarks'] = $holder->getBookmark()->values();
+        $bookmarks = $holder->getBookmark()->values();
+        if (!empty($bookmarks)) {
+            $extra['bookmarks'] = $bookmarks;
         }
 
-        if ($mode) {
-            $extra['mode'] = AccessMode::WRITE() === $mode ? 'w' : 'r';
+        if ($forBegin) {
+            if ($mode !== null) {
+                $extra['mode'] = $mode === AccessMode::WRITE() ? 'w' : 'r';
+            }
         }
 
         if ($metadata !== null) {
             $metadataArray = $metadata instanceof Traversable ? iterator_to_array($metadata) : $metadata;
-            if (count($metadataArray) > 0) {
+            if (!empty($metadataArray)) {
                 $extra['tx_metadata'] = $metadataArray;
             }
         }
@@ -362,11 +384,13 @@ class BoltConnection implements ConnectionInterface
     private function buildResultExtra(?int $fetchSize, ?int $qid): array
     {
         $extra = [];
+        $fetchSize = 1000;
+        /** @psalm-suppress RedundantCondition */
         if ($fetchSize !== null) {
             $extra['n'] = $fetchSize;
         }
 
-        if ($qid !== null) {
+        if ($qid !== null && $qid >= 0) {
             $extra['qid'] = $qid;
         }
 
@@ -421,23 +445,38 @@ class BoltConnection implements ConnectionInterface
     public function discardUnconsumedResults(): void
     {
         $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
-
         $this->subscribedResults = array_values(array_filter(
             $this->subscribedResults,
             static fn (WeakReference $ref): bool => $ref->get() !== null
         ));
 
-        if (!empty($this->subscribedResults)) {
-            try {
+        if (empty($this->subscribedResults)) {
+            $this->logger?->log(LogLevel::DEBUG, 'No unconsumed results to discard');
+
+            return;
+        }
+
+        $state = $this->getServerState();
+        $this->logger?->log(LogLevel::DEBUG, "Server state before discard: {$state}");
+
+        try {
+            if (in_array($state, ['STREAMING', 'TX_STREAMING'], true)) {
                 $this->discard(null);
                 $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
-            } catch (Throwable $e) {
-                $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
-                    'exception' => $e->getMessage(),
-                ]);
+            } else {
+                $this->logger?->log(LogLevel::DEBUG, 'Skipping discard - server not in streaming state');
             }
+        } catch (Throwable $e) {
+            $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
+                'exception' => $e->getMessage(),
+            ]);
         }
 
         $this->subscribedResults = [];
+    }
+
+    private function isInTransaction(): bool
+    {
+        return $this->inTransaction;
     }
 }

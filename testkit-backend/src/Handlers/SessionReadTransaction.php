@@ -59,6 +59,10 @@ final class SessionReadTransaction implements RequestHandlerInterface
             $config = $config->withMetaData($actualMeta);
         }
 
+        if ($request->getBookmarks()) {
+            $config = $config->withBookmarks($request->getBookmarks());
+        }
+
         $id = Uuid::v4();
         try {
             // TODO - Create beginReadTransaction and beginWriteTransaction

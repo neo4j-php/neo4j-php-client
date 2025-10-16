@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Bolt\error\ConnectionTimeoutException;
 use Generator;
 
 use function getenv;
@@ -135,11 +136,11 @@ CYPHER, ['x' => 'x', 'xy' => 'xy', 'y' => 'y', 'yz' => 'yz', 'z' => 'z']));
             [['attribute' => 'xy'], ['attribute' => 'yz']],
             /** @psalm-suppress MissingClosureReturnType */
             $result->getAsCypherList('y')->map(static fn (mixed $r): array => /**
-                 * @psalm-suppress MixedMethodCall
-                 *
-                 * @var array <string, string>
-                 */
-$r->getProperties()->toArray())->toArray()
+             * @psalm-suppress MixedMethodCall
+             *
+             * @var array <string, string>
+             */
+            $r->getProperties()->toArray())->toArray()
         );
         self::assertEquals('z', $result->getAsNode('z')->getProperty('z'));
     }
@@ -198,7 +199,7 @@ CYPHER);
             ['x' => 'y'],
             ['x' => 'z'],
         ], $result->getAsPath('p')->getNodes()->map(static fn (Node $x) => /** @var array<string, string> */
-$x->getProperties()->toArray())->toArray());
+        $x->getProperties()->toArray())->toArray());
     }
 
     public function testPeriodicCommit(): void
@@ -273,6 +274,8 @@ CYPHER
                 ->get('x');
         } catch (Neo4jException $e) {
             self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
+        } catch (ConnectionTimeoutException $e) {
+            self::markTestSkipped('Client connection timed out before transaction timeout could trigger');
         }
     }
 
@@ -348,6 +351,8 @@ CYPHER
             $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
         } catch (Neo4jException $e) {
             self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
+        } catch (ConnectionTimeoutException $e) {
+            self::markTestSkipped('Client connection timed out before transaction timeout could trigger');
         }
     }
 
