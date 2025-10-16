@@ -21,8 +21,6 @@ use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionReadTransactionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
-use Laudis\Neo4j\Types\CypherList;
-use Laudis\Neo4j\Types\CypherMap;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -55,14 +53,10 @@ final class SessionReadTransaction implements RequestHandlerInterface
             $actualMeta = [];
             if ($metaData !== null) {
                 foreach ($metaData as $key => $meta) {
-                    $actualMeta[$key] = $this->decodeToValue($meta);
+                    $actualMeta[$key] = AbstractRunner::decodeToValue($meta);
                 }
             }
             $config = $config->withMetaData($actualMeta);
-        }
-
-        if ($request->getBookmarks()) {
-            $config = $config->withBookmarks($request->getBookmarks());
         }
 
         $id = Uuid::v4();
@@ -82,42 +76,5 @@ final class SessionReadTransaction implements RequestHandlerInterface
         }
 
         return new RetryableTryResponse($id);
-    }
-
-    // f1aa000cede64d6a8879513c97633777
-    private function decodeToValue(array $param)
-    {
-        $value = $param['data']['value'];
-        if (is_iterable($value)) {
-            if ($param['name'] === 'CypherMap') {
-                /** @psalm-suppress MixedArgumentTypeCoercion */
-                $map = [];
-                /**
-                 * @var numeric $k
-                 * @var mixed   $v
-                 */
-                foreach ($value as $k => $v) {
-                    /** @psalm-suppress MixedArgument */
-                    $map[(string) $k] = $this->decodeToValue($v);
-                }
-
-                return new CypherMap($map);
-            }
-
-            if ($param['name'] === 'CypherList') {
-                $list = [];
-                /**
-                 * @var mixed $v
-                 */
-                foreach ($value as $v) {
-                    /** @psalm-suppress MixedArgument */
-                    $list[] = $this->decodeToValue($v);
-                }
-
-                return new CypherList($list);
-            }
-        }
-
-        return $value;
     }
 }

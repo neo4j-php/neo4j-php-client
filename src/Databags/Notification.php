@@ -19,7 +19,7 @@ use Laudis\Neo4j\Types\AbstractCypherObject;
 /**
  * @psalm-immutable
  *
- * @template-extends AbstractCypherObject<string, string|Position>
+ * @template-extends AbstractCypherObject<string, string|array<string, float|int|null|string>>
  */
 final class Notification extends AbstractCypherObject
 {
@@ -57,16 +57,6 @@ final class Notification extends AbstractCypherObject
         return $this->splitCode()['classification'];
     }
 
-    public function getCodeCategory(): string
-    {
-        return $this->splitCode()['category'];
-    }
-
-    public function getCodeTitle(): string
-    {
-        return $this->splitCode()['title'];
-    }
-
     public function getSeverity(): string
     {
         return $this->severity;
@@ -92,44 +82,10 @@ final class Notification extends AbstractCypherObject
         return $this->title;
     }
 
-    public function getCategory(): string
-    {
-        return $this->category;
-    }
-
     /**
-     * Matches inherited return type: array<string, string|Position>.
-     *
      * @psalm-external-mutation-free
-     *
-     * @return array<string, string|Position>
      */
     public function toArray(): array
-    {
-        return [
-            'severity' => $this->severity,
-            'description' => $this->description,
-            'code' => $this->code,
-            'position' => $this->position,
-            'title' => $this->title,
-            'category' => $this->category,
-        ];
-    }
-
-    /**
-     * If you still want a version with the position converted to array,
-     * use this custom method instead of overriding toArray().
-     *
-     * @return array{
-     *     severity: string,
-     *     description: string,
-     *     code: string,
-     *     position: array<string, float|int|null|string>,
-     *     title: string,
-     *     category: string
-     * }
-     */
-    public function toSerializedArray(): array
     {
         return [
             'severity' => $this->severity,

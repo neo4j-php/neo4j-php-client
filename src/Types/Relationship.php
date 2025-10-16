@@ -34,6 +34,8 @@ final class Relationship extends UnboundRelationship
         string $type,
         CypherMap $properties,
         ?string $elementId,
+        private readonly ?string $startNodeElementId = null,
+        private readonly ?string $endNodeElementId = null,
     ) {
         parent::__construct($id, $type, $properties, $elementId);
     }
@@ -55,6 +57,22 @@ final class Relationship extends UnboundRelationship
     }
 
     /**
+     * Returns the element ID of the start node.
+     */
+    public function getStartNodeElementId(): ?string
+    {
+        return $this->startNodeElementId;
+    }
+
+    /**
+     * Returns the element ID of the end node.
+     */
+    public function getEndNodeElementId(): ?string
+    {
+        return $this->endNodeElementId;
+    }
+
+    /**
      * @psalm-suppress ImplementedReturnTypeMismatch False positive.
      *
      * @return array{
@@ -62,7 +80,9 @@ final class Relationship extends UnboundRelationship
      *                type: string,
      *                startNodeId: int,
      *                endNodeId: int,
-     *                properties: CypherMap<OGMTypes>
+     *                properties: CypherMap<OGMTypes>,
+     *                startNodeElementId: ?string,
+     *                endNodeElementId: ?string
      *                }
      */
     public function toArray(): array
@@ -71,6 +91,8 @@ final class Relationship extends UnboundRelationship
 
         $tbr['startNodeId'] = $this->getStartNodeId();
         $tbr['endNodeId'] = $this->getEndNodeId();
+        $tbr['startNodeElementId'] = $this->getStartNodeElementId();
+        $tbr['endNodeElementId'] = $this->getEndNodeElementId();
 
         return $tbr;
     }

@@ -59,7 +59,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
             $params = [];
             if ($request->getParams() !== null) {
                 foreach ($request->getParams() as $key => $value) {
-                    $params[$key] = $this->decodeToValue($value);
+                    $params[$key] = self::decodeToValue($value);
                 }
             }
 
@@ -68,7 +68,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 $actualMeta = [];
                 if ($metaData !== null) {
                     foreach ($metaData as $key => $meta) {
-                        $actualMeta[$key] = $this->decodeToValue($meta);
+                        $actualMeta[$key] = self::decodeToValue($meta);
                     }
                 }
                 $config = TransactionConfiguration::default()->withMetadata($actualMeta)->withTimeout($request->getTimeout());
@@ -105,7 +105,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
      *
      * @return scalar|AbstractCypherObject|iterable|null
      */
-    private function decodeToValue(array $param)
+    public static function decodeToValue(array $param)
     {
         $value = $param['data']['value'];
         if (is_iterable($value)) {
@@ -118,7 +118,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
                  */
                 foreach ($value as $k => $v) {
                     /** @psalm-suppress MixedArgument */
-                    $map[(string) $k] = $this->decodeToValue($v);
+                    $map[(string) $k] = self::decodeToValue($v);
                 }
 
                 return new CypherMap($map);
@@ -131,7 +131,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
                  */
                 foreach ($value as $v) {
                     /** @psalm-suppress MixedArgument */
-                    $list[] = $this->decodeToValue($v);
+                    $list[] = self::decodeToValue($v);
                 }
 
                 return new CypherList($list);

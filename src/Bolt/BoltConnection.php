@@ -105,6 +105,14 @@ class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
+    public function getServerVersion(): string
+    {
+        return explode('/', $this->getServerAgent())[1] ?? '';
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
     public function getServerAddress(): UriInterface
     {
         return $this->config->getServerAddress();
@@ -429,6 +437,32 @@ class BoltConnection implements ConnectionInterface
 
             throw Neo4jException::fromBoltResponse($response);
         }
+    }
+
+    /**
+     * Discard unconsumed results - sends DISCARD to server for each subscribed result.
+     */
+    public function discardUnconsumedResults(): void
+    {
+        $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
+
+        $this->subscribedResults = array_values(array_filter(
+            $this->subscribedResults,
+            static fn (WeakReference $ref): bool => $ref->get() !== null
+        ));
+
+        if (!empty($this->subscribedResults)) {
+            try {
+                $this->discard(null);
+                $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
+            } catch (Throwable $e) {
+                $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
+                    'exception' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $this->subscribedResults = [];
     }
 
     /**
