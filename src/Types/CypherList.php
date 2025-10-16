@@ -42,17 +42,19 @@ class CypherList implements CypherSequence, Iterator, ArrayAccess
      * @use CypherSequenceTrait<TValue>
      */
     use CypherSequenceTrait;
+    private ?int $qid = null;
 
     /**
      * @param iterable<mixed, TValue>|callable():Generator<mixed, TValue> $iterable
      *
      * @psalm-mutation-free
      */
-    public function __construct(iterable|callable $iterable = [])
+    public function __construct(iterable|callable $iterable = [], ?int $qid = null)
     {
         if (is_array($iterable)) {
             $iterable = new ArrayIterator($iterable);
         }
+        $this->qid = $qid;
 
         $this->generator = static function () use ($iterable): Generator {
             $i = 0;
@@ -63,6 +65,11 @@ class CypherList implements CypherSequence, Iterator, ArrayAccess
                 ++$i;
             }
         };
+    }
+
+    public function getQid(): ?int
+    {
+        return $this->qid;
     }
 
     /**

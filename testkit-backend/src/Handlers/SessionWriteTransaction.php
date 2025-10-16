@@ -13,10 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionWriteTransactionRequest;
+use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
 use Symfony\Component\Uid\Uuid;
 
@@ -39,10 +42,38 @@ final class SessionWriteTransaction implements RequestHandlerInterface
     {
         $session = $this->repository->getSession($request->getSessionId());
 
-        $id = Uuid::v4();
+        $config = TransactionConfiguration::default();
 
-        $this->repository->addTransaction($id, $session);
-        $this->repository->bindTransactionToSession($request->getSessionId(), $id);
+        if ($request->getTimeout()) {
+            $config = $config->withTimeout($request->getTimeout());
+        }
+
+        if ($request->getTxMeta()) {
+            $metaData = $request->getTxMeta();
+            $actualMeta = [];
+            if ($metaData !== null) {
+                foreach ($metaData as $key => $meta) {
+                    $actualMeta[$key] = AbstractRunner::decodeToValue($meta);
+                }
+            }
+            $config = $config->withMetaData($actualMeta);
+        }
+
+        $id = Uuid::v4();
+        try {
+            // TODO - Create beginReadTransaction and beginWriteTransaction
+            $transaction = $session->beginTransaction(null, $config);
+
+            $this->repository->addTransaction($id, $transaction);
+            $this->repository->bindTransactionToSession($request->getSessionId(), $id);
+        } catch (Neo4jException $exception) {
+            $this->repository->addRecords($id, new DriverErrorResponse(
+                $id,
+                $exception
+            ));
+
+            return new DriverErrorResponse($id, $exception);
+        }
 
         return new RetryableTryResponse($id);
     }

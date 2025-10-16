@@ -85,7 +85,7 @@ class BoltConnection implements ConnectionInterface
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
     ) {
-        $this->messageFactory = new BoltMessageFactory($this->protocol(), $this->logger);
+        $this->messageFactory = new BoltMessageFactory($this, $this->logger);
     }
 
     public function getEncryptionLevel(): string
@@ -104,17 +104,17 @@ class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
-    public function getServerAddress(): UriInterface
+    public function getServerVersion(): string
     {
-        return $this->config->getServerAddress();
+        return explode('/', $this->getServerAgent())[1] ?? '';
     }
 
     /**
      * @psalm-mutation-free
      */
-    public function getServerVersion(): string
+    public function getServerAddress(): UriInterface
     {
-        return $this->config->getServerVersion();
+        return $this->config->getServerAddress();
     }
 
     /**
@@ -319,7 +319,7 @@ class BoltConnection implements ConnectionInterface
         try {
             if ($this->isOpen()) {
                 if ($this->isStreaming()) {
-                    $this->consumeResults();
+                    $this->discardUnconsumedResults();
                 }
 
                 $message = $this->messageFactory->createGoodbyeMessage();
@@ -392,17 +392,52 @@ class BoltConnection implements ConnectionInterface
         return $this->userAgent;
     }
 
-    private function assertNoFailure(Response $response): void
+    public function assertNoFailure(Response $response): void
     {
         if ($response->signature === Signature::FAILURE) {
             $this->logger?->log(LogLevel::ERROR, 'FAILURE');
             $message = $this->messageFactory->createResetMessage();
-            $resetResponse = $message->send()->getResponse();
+
+            try {
+                $resetResponse = $message->send()->getResponse();
+            } catch (Throwable $e) {
+                $this->subscribedResults = [];
+                throw Neo4jException::fromBoltResponse($response);
+            }
+
             $this->subscribedResults = [];
+
             if ($resetResponse->signature === Signature::FAILURE) {
                 throw new Neo4jException([Neo4jError::fromBoltResponse($resetResponse), Neo4jError::fromBoltResponse($response)]);
             }
+
             throw Neo4jException::fromBoltResponse($response);
         }
+    }
+
+    /**
+     * Discard unconsumed results - sends DISCARD to server for each subscribed result.
+     */
+    public function discardUnconsumedResults(): void
+    {
+        $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
+
+        $this->subscribedResults = array_values(array_filter(
+            $this->subscribedResults,
+            static fn (WeakReference $ref): bool => $ref->get() !== null
+        ));
+
+        if (!empty($this->subscribedResults)) {
+            try {
+                $this->discard(null);
+                $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
+            } catch (Throwable $e) {
+                $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
+                    'exception' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $this->subscribedResults = [];
     }
 }

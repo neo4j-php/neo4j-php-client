@@ -421,6 +421,8 @@ CYPHER
                 'properties' => $result->getProperties(),
                 'startNodeId' => $result->getStartNodeId(),
                 'endNodeId' => $result->getEndNodeId(),
+                'startNodeElementId' => $result->getStartNodeElementId(),
+                'endNodeElementId' => $result->getEndNodeElementId(),
             ], JSON_THROW_ON_ERROR),
             json_encode($result, JSON_THROW_ON_ERROR)
         );
@@ -543,7 +545,7 @@ CYPHER;
                 'constraints-removed' => 0,
                 'contains-updates' => true,
                 'contains-system-updates' => false,
-                'system-updates' => false,
+                'system-updates' => 0,
             ],
         ];
 
@@ -563,9 +565,7 @@ CYPHER;
         $summary = $result->getSummary();
         $counters = $summary->getCounters();
 
-        // For duplicate index creation (IF NOT EXISTS), might not create system updates
         $this->assertGreaterThanOrEqual(0, $counters->systemUpdates());
-        // containsSystemUpdates should be consistent with systemUpdates count
         $this->assertEquals($counters->systemUpdates() > 0, $counters->containsSystemUpdates());
 
         $result2 = $this->getSession()->run('DROP INDEX non_existent_test_index IF EXISTS');
@@ -573,7 +573,6 @@ CYPHER;
         $summary2 = $result2->getSummary();
         $counters2 = $summary2->getCounters();
 
-        // Dropping non-existent index should not create system updates
         $this->assertEquals(0, $counters2->systemUpdates());
         $this->assertFalse($counters2->containsSystemUpdates());
 
@@ -599,7 +598,6 @@ CYPHER;
 
             // Test that system operations properly track system updates
             $this->assertGreaterThanOrEqual(0, $counters->systemUpdates());
-            // Verify consistency between systemUpdates count and containsSystemUpdates flag
             $this->assertEquals($counters->systemUpdates() > 0, $counters->containsSystemUpdates());
         }
     }
@@ -611,7 +609,6 @@ CYPHER;
         $summary = $result->getSummary();
         $counters = $summary->getCounters();
 
-        // Regular data operations should not involve system updates
         $this->assertEquals(0, $counters->systemUpdates());
         $this->assertFalse($counters->containsSystemUpdates());
 

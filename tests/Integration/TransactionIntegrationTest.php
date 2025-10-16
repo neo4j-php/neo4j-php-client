@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Integration;
 
 use Laudis\Neo4j\Databags\Statement;
-use Laudis\Neo4j\Exception\ClientException;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 
@@ -227,15 +227,11 @@ CYPHER
         $exception = null;
         try {
             $tsx->commit();
-        } catch (ClientException|Neo4jException $e) {
+        } catch (TransactionException|Neo4jException $e) {
             $exception = $e;
         }
 
-        if (str_starts_with($_ENV['CONNECTION'] ?? '', 'http')) {
-            self::assertTrue($exception instanceof Neo4jException);
-        } else {
-            self::assertTrue($exception instanceof ClientException);
-        }
+        self::assertTrue($exception instanceof TransactionException);
 
         self::assertTrue($tsx->isFinished());
         self::assertFalse($tsx->isRolledBack());
@@ -265,15 +261,11 @@ CYPHER
         $exception = null;
         try {
             $tsx->rollback();
-        } catch (ClientException|Neo4jException $e) {
+        } catch (TransactionException|Neo4jException $e) {
             $exception = $e;
         }
 
-        if (str_starts_with($_ENV['CONNECTION'] ?? '', 'http')) {
-            self::assertTrue($exception instanceof Neo4jException);
-        } else {
-            self::assertTrue($exception instanceof ClientException);
-        }
+        self::assertTrue($exception instanceof TransactionException);
 
         self::assertTrue($tsx->isFinished());
         self::assertTrue($tsx->isRolledBack());
@@ -322,6 +314,17 @@ CYPHER
         $tsx->run('MATCH (x) RETURN x');
         $tsx->run('MATCH (x) RETURN x');
         $tsx->commit();
+    }
+
+    public function testRunAfterCommit(): void
+    {
+        $tsx = $this->getSession()->beginTransaction([]);
+        $tsx->run('MATCH (x) RETURN x');
+        $tsx->run('MATCH (x) RETURN x');
+        $tsx->commit();
+
+        $this->expectException(TransactionException::class);
+        $tsx->run('MATCH (x) RETURN x');
     }
 
     #[DoesNotPerformAssertions]

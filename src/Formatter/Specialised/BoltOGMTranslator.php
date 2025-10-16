@@ -102,10 +102,13 @@ final class BoltOGMTranslator
             $properties[$name] = $this->mapValueToType($property);
         }
 
-        /** @var ?string|null $elementId */
-        $elementId = null;
-        if ($node instanceof \Bolt\protocol\v5\structures\Node) {
-            $elementId = $node->element_id;
+        /** @var string|null $elementId */
+        if (property_exists($node, 'element_id')) {
+            /** @var string|null $elementIdValue */
+            $elementIdValue = $node->element_id ?? null;
+            $elementId = is_string($elementIdValue) ? $elementIdValue : (string) $node->id;
+        } else {
+            $elementId = (string) $node->id;
         }
 
         /**
@@ -178,14 +181,30 @@ final class BoltOGMTranslator
         foreach ($rel->properties as $key => $property) {
             $map[$key] = $this->mapValueToType($property);
         }
-        /** @var string|null $elementId */
-        $startNodeElementId = null;
-        $endNodeElementId = null;
 
         /** @var string|null $elementId */
-        $elementId = null;
-        if ($rel instanceof \Bolt\protocol\v5\structures\Relationship) {
-            $elementId = $rel->element_id;
+        if (property_exists($rel, 'element_id')) {
+            /** @var string|null $elementIdValue */
+            $elementIdValue = $rel->element_id ?? null;
+            $elementId = is_string($elementIdValue) ? $elementIdValue : (string) $rel->id;
+        } else {
+            $elementId = (string) $rel->id;
+        }
+
+        if (property_exists($rel, 'startNodeElementId')) {
+            /** @var string|null $startNodeElementIdValue */
+            $startNodeElementIdValue = $rel->startNodeElementId ?? null;
+            $startNodeElementId = is_string($startNodeElementIdValue) ? $startNodeElementIdValue : (string) $rel->startNodeId;
+        } else {
+            $startNodeElementId = (string) $rel->startNodeId;
+        }
+
+        if (property_exists($rel, 'endNodeElementId')) {
+            /** @var string|null $endNodeElementIdValue */
+            $endNodeElementIdValue = $rel->endNodeElementId ?? null;
+            $endNodeElementId = is_string($endNodeElementIdValue) ? $endNodeElementIdValue : (string) $rel->endNodeId;
+        } else {
+            $endNodeElementId = (string) $rel->endNodeId;
         }
 
         return new Relationship(
@@ -195,7 +214,7 @@ final class BoltOGMTranslator
             $rel->type,
             new CypherMap($map),
             $elementId,
-            $startNodeElementId,  // Add this parameter
+            $startNodeElementId,
             $endNodeElementId
         );
     }
@@ -212,9 +231,13 @@ final class BoltOGMTranslator
             $map[$key] = $this->mapValueToType($property);
         }
 
-        $elementId = null;
-        if ($rel instanceof \Bolt\protocol\v5\structures\UnboundRelationship) {
-            $elementId = $rel->element_id;
+        /** @var string|null $elementId */
+        if (property_exists($rel, 'element_id')) {
+            /** @var string|null $elementIdValue */
+            $elementIdValue = $rel->element_id ?? null;
+            $elementId = is_string($elementIdValue) ? $elementIdValue : (string) $rel->id;
+        } else {
+            $elementId = (string) $rel->id;
         }
 
         return new UnboundRelationship(

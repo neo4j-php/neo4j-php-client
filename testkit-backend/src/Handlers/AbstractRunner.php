@@ -13,14 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Exception;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\AbstractCypherObject;
@@ -47,7 +50,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
         $this->logger = $logger;
     }
 
-    public function handle($request): ResultResponse
+    public function handle($request): ResultResponse|DriverErrorResponse
     {
         $session = $this->getRunner($request);
         $id = Uuid::v4();
@@ -56,7 +59,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
             $params = [];
             if ($request->getParams() !== null) {
                 foreach ($request->getParams() as $key => $value) {
-                    $params[$key] = $this->decodeToValue($value);
+                    $params[$key] = self::decodeToValue($value);
                 }
             }
 
@@ -65,7 +68,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 $actualMeta = [];
                 if ($metaData !== null) {
                     foreach ($metaData as $key => $meta) {
-                        $actualMeta[$key] = $this->decodeToValue($meta);
+                        $actualMeta[$key] = self::decodeToValue($meta);
                     }
                 }
                 $config = TransactionConfiguration::default()->withMetadata($actualMeta)->withTimeout($request->getTimeout());
@@ -77,16 +80,24 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             $this->repository->addRecords($id, $result);
 
-            return new ResultResponse($id, $result->isEmpty() ? [] : $result->first()->keys());
+            return new ResultResponse($id, $result->keys());
         } catch (Neo4jException $exception) {
-            $this->logger->debug($exception->__toString());
-            $this->repository->addRecords($id, new DriverErrorResponse(
-                $this->getId($request),
-                $exception
-            ));
+            if ($request instanceof SessionRunRequest) {
+                return new DriverErrorResponse($request->getSessionId(), $exception);
+            }
+            if ($request instanceof TransactionRunRequest) {
+                return new DriverErrorResponse($request->getTxId(), $exception);
+            }
 
-            return new ResultResponse($id, []);
-        } // NOTE: all other exceptions will be caught in the Backend
+            throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
+        } catch (TransactionException $exception) {
+            if ($request instanceof TransactionRunRequest) {
+                return new DriverErrorResponse($request->getTxId(), $exception);
+            }
+
+            throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
+        }
+        // NOTE: all other exceptions will be caught in the Backend
     }
 
     /**
@@ -94,7 +105,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
      *
      * @return scalar|AbstractCypherObject|iterable|null
      */
-    private function decodeToValue(array $param)
+    public static function decodeToValue(array $param)
     {
         $value = $param['data']['value'];
         if (is_iterable($value)) {
@@ -107,7 +118,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
                  */
                 foreach ($value as $k => $v) {
                     /** @psalm-suppress MixedArgument */
-                    $map[(string) $k] = $this->decodeToValue($v);
+                    $map[(string) $k] = self::decodeToValue($v);
                 }
 
                 return new CypherMap($map);
@@ -120,7 +131,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
                  */
                 foreach ($value as $v) {
                     /** @psalm-suppress MixedArgument */
-                    $list[] = $this->decodeToValue($v);
+                    $list[] = self::decodeToValue($v);
                 }
 
                 return new CypherList($list);

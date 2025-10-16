@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
-use function explode;
-
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
@@ -64,19 +62,24 @@ class BoltFactory
         );
 
         $connection = $this->connectionFactory->create($uriConfig);
-        [$protocol, $authResponse] = $this->protocolFactory->createProtocol($connection->getIConnection(), $data->getAuth(), $data->getUserAgent());
+        $protocol = $this->protocolFactory->createProtocol($connection->getIConnection());
 
         $config = new ConnectionConfiguration(
-            $authResponse['server'],
+            '',
             $data->getUri(),
-            explode('/', $authResponse['server'])[1] ?? '',
             ConnectionProtocol::determineBoltVersion($protocol),
             $sessionConfig->getAccessMode(),
             $sessionConfig->getDatabase() === null ? null : new DatabaseInfo($sessionConfig->getDatabase()),
             $sslLevel
         );
 
-        return new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger);
+        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger);
+
+        $response = $data->getAuth()->authenticateBolt($connection, $data->getUserAgent());
+
+        $config->setServerAgent($response['server']);
+
+        return $connection;
     }
 
     public function canReuseConnection(ConnectionInterface $connection, SessionConfiguration $config): bool

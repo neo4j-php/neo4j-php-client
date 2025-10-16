@@ -16,13 +16,13 @@ namespace Laudis\Neo4j\Tests\Unit;
 use Bolt\connection\IConnection;
 use Bolt\enum\ServerState;
 use Bolt\protocol\V5;
-use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Uri;
+use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
@@ -46,10 +46,7 @@ final class BoltFactoryTest extends TestCase
                 $protocol = new V5(1, $connection);
                 $protocol->serverState = ServerState::READY;
 
-                return [
-                    $protocol,
-                    ['server' => 'abc', 'connection_id' => 'i'],
-                ];
+                return $protocol;
             });
 
         $this->factory = new BoltFactory(
@@ -61,8 +58,12 @@ final class BoltFactoryTest extends TestCase
 
     public function testCreateBasic(): void
     {
+        $auth = $this->createMock(AuthenticateInterface::class);
+        $auth->method('authenticateBolt')
+            ->willReturn(['server' => 'abc', 'connection_id' => 'i', 'hints' => []]);
+
         $connection = $this->factory->createConnection(
-            new ConnectionRequestData('', Uri::create(''), Authenticate::disabled(), '', SslConfiguration::default()),
+            new ConnectionRequestData('', Uri::create(''), $auth, '', SslConfiguration::default()),
             SessionConfiguration::default()
         );
 

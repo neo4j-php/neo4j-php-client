@@ -17,12 +17,14 @@ use Bolt\enum\Message;
 use Bolt\enum\Signature;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
 use Laudis\Neo4j\Authentication\NoAuth;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
 class NoAuthTest extends TestCase
@@ -35,39 +37,24 @@ class NoAuthTest extends TestCase
         $this->auth = new NoAuth($logger);
     }
 
-    public function testAuthenticateHttpSuccess(): void
-    {
-        $request = $this->createMock(RequestInterface::class);
-        $request->expects($this->once())
-            ->method('withHeader')
-            ->with('User-Agent', 'neo4j-client/1.0')
-            ->willReturnSelf();
-
-        $uri = $this->createMock(UriInterface::class);
-        $uri->method('getHost')->willReturn('localhost');
-        $uri->method('getPort')->willReturn(7687);
-
-        $result = $this->auth->authenticateHttp($request, $uri, 'neo4j-client/1.0');
-        $this->assertSame($request, $result);
-    }
-
     public function testAuthenticateBoltSuccessV5(): void
     {
         $userAgent = 'neo4j-client/1.0';
 
-        $protocol = $this->createMock(V5::class);
-
-        $response = new Response(
+        $mockProtocol = $this->createMock(V5_1::class);
+        $mockProtocol->method('hello');
+        $mockProtocol->method('logon');
+        $mockProtocol->method('getResponse')->willReturn(new Response(
             Message::HELLO,
             Signature::SUCCESS,
             ['server' => 'neo4j-server', 'connection_id' => '12345', 'hints' => []]
-        );
+        ));
 
-        $protocol->expects($this->once())
-            ->method('getResponse')
-            ->willReturn($response);
+        $mockConnection = $this->createMock(BoltConnection::class);
+        $mockConnection->method('protocol')->willReturn($mockProtocol);
+        $mockConnection->method('getProtocol')->willReturn(ConnectionProtocol::BOLT_V5_1());
 
-        $result = $this->auth->authenticateBolt($protocol, $userAgent);
+        $result = $this->auth->authenticateBolt($mockConnection, $userAgent);
         $this->assertArrayHasKey('server', $result);
         $this->assertSame('neo4j-server', $result['server']);
         $this->assertSame('12345', $result['connection_id']);
@@ -77,35 +64,43 @@ class NoAuthTest extends TestCase
     {
         $this->expectException(Neo4jException::class);
 
-        $protocol = $this->createMock(V5::class);
-        $response = new Response(
+        $mockProtocol = $this->createMock(V5_1::class);
+        $mockProtocol->method('hello');
+        $mockProtocol->method('logon');
+        $mockProtocol->method('getResponse')->willReturn(new Response(
             Message::HELLO,
             Signature::FAILURE,
             ['code' => 'Neo.ClientError.Security.Unauthorized', 'message' => 'Invalid credentials']
-        );
+        ));
 
-        $protocol->method('getResponse')->willReturn($response);
+        $mockConnection = $this->createMock(BoltConnection::class);
+        $mockConnection->method('protocol')->willReturn($mockProtocol);
+        $mockConnection->method('getProtocol')->willReturn(ConnectionProtocol::BOLT_V5_1());
 
-        $this->auth->authenticateBolt($protocol, 'neo4j-client/1.0');
+        $error = Neo4jError::fromMessageAndCode('Neo.ClientError.Security.Unauthorized', 'Invalid credentials');
+        $exception = new Neo4jException([$error]);
+        $mockConnection->method('assertNoFailure')->will($this->throwException($exception));
+
+        $this->auth->authenticateBolt($mockConnection, 'neo4j-client/1.0');
     }
 
     public function testAuthenticateBoltSuccessV4(): void
     {
         $userAgent = 'neo4j-client/1.0';
 
-        $protocol = $this->createMock(V4_4::class);
-
-        $response = new Response(
+        $mockProtocol = $this->createMock(V4_4::class);
+        $mockProtocol->method('hello');
+        $mockProtocol->method('getResponse')->willReturn(new Response(
             Message::HELLO,
             Signature::SUCCESS,
             ['server' => 'neo4j-server', 'connection_id' => '12345', 'hints' => []]
-        );
+        ));
 
-        $protocol->expects($this->once())
-            ->method('getResponse')
-            ->willReturn($response);
+        $mockConnection = $this->createMock(BoltConnection::class);
+        $mockConnection->method('protocol')->willReturn($mockProtocol);
+        $mockConnection->method('getProtocol')->willReturn(ConnectionProtocol::BOLT_V44());
 
-        $result = $this->auth->authenticateBolt($protocol, $userAgent);
+        $result = $this->auth->authenticateBolt($mockConnection, $userAgent);
         $this->assertArrayHasKey('server', $result);
         $this->assertSame('neo4j-server', $result['server']);
         $this->assertSame('12345', $result['connection_id']);

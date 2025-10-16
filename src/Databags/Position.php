@@ -13,15 +13,19 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
+use Laudis\Neo4j\Types\AbstractCypherObject;
+
 /**
  * @psalm-immutable
+ *
+ *@template-extends AbstractCypherObject<string, int|float|string|null>
  */
-final class Position
+final class Position extends AbstractCypherObject
 {
     public function __construct(
-        private int $column,
-        private int $offset,
-        private int $line,
+        private readonly int $column,
+        private readonly int $offset,
+        private readonly int $line,
     ) {
     }
 

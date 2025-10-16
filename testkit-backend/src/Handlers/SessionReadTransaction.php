@@ -49,7 +49,14 @@ final class SessionReadTransaction implements RequestHandlerInterface
         }
 
         if ($request->getTxMeta()) {
-            $config = $config->withMetaData($request->getTxMeta());
+            $metaData = $request->getTxMeta();
+            $actualMeta = [];
+            if ($metaData !== null) {
+                foreach ($metaData as $key => $meta) {
+                    $actualMeta[$key] = AbstractRunner::decodeToValue($meta);
+                }
+            }
+            $config = $config->withMetaData($actualMeta);
         }
 
         $id = Uuid::v4();
@@ -70,5 +77,4 @@ final class SessionReadTransaction implements RequestHandlerInterface
 
         return new RetryableTryResponse($id);
     }
-    // f1aa000cede64d6a8879513c97633777
 }

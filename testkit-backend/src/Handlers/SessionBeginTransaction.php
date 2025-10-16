@@ -52,7 +52,14 @@ final class SessionBeginTransaction implements RequestHandlerInterface
         }
 
         if ($request->getTxMeta()) {
-            $config = $config->withMetaData($request->getTxMeta());
+            $metaData = $request->getTxMeta();
+            $actualMeta = [];
+            if ($metaData !== null) {
+                foreach ($metaData as $key => $meta) {
+                    $actualMeta[$key] = AbstractRunner::decodeToValue($meta);
+                }
+            }
+            $config = $config->withMetaData($actualMeta);
         }
 
         // TODO - Create beginReadTransaction and beginWriteTransaction

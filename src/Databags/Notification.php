@@ -14,16 +14,22 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use InvalidArgumentException;
+use Laudis\Neo4j\Types\AbstractCypherObject;
 
-final class Notification
+/**
+ * @psalm-immutable
+ *
+ * @template-extends AbstractCypherObject<string, string|array<string, float|int|null|string>>
+ */
+final class Notification extends AbstractCypherObject
 {
     public function __construct(
-        private string $severity,
-        private string $description,
-        private string $code,
-        private Position $position,
-        private string $title,
-        private string $category,
+        private readonly string $severity,
+        private readonly string $description,
+        private readonly string $code,
+        private readonly Position $position,
+        private readonly string $title,
+        private readonly string $category,
     ) {
     }
 
@@ -51,16 +57,6 @@ final class Notification
         return $this->splitCode()['classification'];
     }
 
-    public function getCodeCategory(): string
-    {
-        return $this->splitCode()['category'];
-    }
-
-    public function getCodeTitle(): string
-    {
-        return $this->splitCode()['title'];
-    }
-
     public function getSeverity(): string
     {
         return $this->severity;
@@ -86,13 +82,10 @@ final class Notification
         return $this->title;
     }
 
-    public function getCategory(): string
-    {
-        return $this->category;
-    }
-
     /**
      * @psalm-external-mutation-free
+     *
+     * @return array<string, string|array<string, float|int|string|null>>
      */
     public function toArray(): array
     {

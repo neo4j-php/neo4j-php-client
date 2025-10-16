@@ -39,9 +39,12 @@ use Psr\Log\LogLevel;
  */
 final class Session implements SessionInterface
 {
+    private const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'TransientError', 'DatabaseError'];
+
+    /** @var list<BoltConnection> */
+    private array $usedConnections = [];
     /** @psalm-readonly */
     private readonly BookmarkHolder $bookmarkHolder;
-    private const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'TransientError', 'DatabaseError'];
 
     /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
@@ -49,7 +52,6 @@ final class Session implements SessionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        /** @psalm-readonly */
         private readonly SessionConfiguration $config,
         private readonly ConnectionPoolInterface $pool,
         /**
@@ -192,7 +194,7 @@ final class Session implements SessionInterface
             $this->config,
             $tsxConfig,
             $this->bookmarkHolder,
-            new BoltMessageFactory($connection->protocol(), $this->getLogger()),
+            new BoltMessageFactory($connection, $this->getLogger()),
         );
     }
 
@@ -217,6 +219,7 @@ final class Session implements SessionInterface
             $timeout = ($timeout < 30) ? 30 : $timeout;
             $connection->setTimeout($timeout + 2);
         }
+        $this->usedConnections[] = $connection;
 
         return $connection;
     }
@@ -242,7 +245,7 @@ final class Session implements SessionInterface
             $this->config,
             $config,
             $this->bookmarkHolder,
-            new BoltMessageFactory($connection->protocol(), $this->getLogger()),
+            new BoltMessageFactory($connection, $this->getLogger()),
         );
     }
 
@@ -254,6 +257,14 @@ final class Session implements SessionInterface
     public function getLastBookmark(): Bookmark
     {
         return $this->bookmarkHolder->getBookmark();
+    }
+
+    public function close(): void
+    {
+        foreach ($this->usedConnections as $connection) {
+            $connection->discardUnconsumedResults();
+        }
+        $this->usedConnections = [];
     }
 
     private function getLogger(): ?Neo4jLogger

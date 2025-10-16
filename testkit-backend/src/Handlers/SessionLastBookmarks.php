@@ -39,7 +39,7 @@ final class SessionLastBookmarks implements RequestHandlerInterface
     {
         $session = $this->repository->getSession($request->getSessionId());
 
-        $bookmarks = $session->getLastBookmark()->values();
+        $bookmarks = $session->getLastBookmark()->values() ?? [];
 
         return new BookmarksResponse($bookmarks);
     }

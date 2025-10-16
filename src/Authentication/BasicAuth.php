@@ -13,16 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Authentication;
 
-use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
-use Bolt\protocol\V5_1;
-use Bolt\protocol\V5_2;
-use Bolt\protocol\V5_3;
-use Bolt\protocol\V5_4;
 use Exception;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltMessageFactory;
 use Laudis\Neo4j\Common\Neo4jLogger;
-use Laudis\Neo4j\Common\ResponseHelper;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -43,15 +37,15 @@ final class BasicAuth implements AuthenticateInterface
      *
      * @return array{server: string, connection_id: string, hints: list}
      */
-    public function authenticateBolt(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol, string $userAgent): array
+    public function authenticateBolt(BoltConnection $connection, string $userAgent): array
     {
-        $factory = $this->createMessageFactory($protocol);
+        $factory = $this->createMessageFactory($connection);
 
+        $protocol = $connection->protocol();
         if (method_exists($protocol, 'logon')) {
             $helloMetadata = ['user_agent' => $userAgent];
 
-            $factory->createHelloMessage($helloMetadata)->send();
-            $response = ResponseHelper::getResponse($protocol);
+            $responseHello = $factory->createHelloMessage($helloMetadata)->send()->getResponse();
 
             $credentials = [
                 'scheme' => 'basic',
@@ -59,11 +53,10 @@ final class BasicAuth implements AuthenticateInterface
                 'credentials' => $this->password,
             ];
 
-            $factory->createLogonMessage($credentials)->send();
-            ResponseHelper::getResponse($protocol);
+            $response = $factory->createLogonMessage($credentials)->send()->getResponse();
 
             /** @var array{server: string, connection_id: string, hints: list} */
-            return $response->content;
+            return array_merge($responseHello->content, $response->content);
         }
 
         $helloMetadata = [
@@ -73,22 +66,15 @@ final class BasicAuth implements AuthenticateInterface
             'credentials' => $this->password,
         ];
 
-        $factory->createHelloMessage($helloMetadata)->send();
+        $response = $factory->createHelloMessage($helloMetadata)->send()->getResponse();
 
         /** @var array{server: string, connection_id: string, hints: list} */
-        return ResponseHelper::getResponse($protocol)->content;
+        return $response->content;
     }
 
     /**
      * @throws Exception
      */
-    public function logoff(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol): void
-    {
-        $factory = $this->createMessageFactory($protocol);
-        $factory->createLogoffMessage()->send();
-        ResponseHelper::getResponse($protocol);
-    }
-
     public function toString(UriInterface $uri): string
     {
         return sprintf('Basic %s:%s@%s:%s', $this->username, '######', $uri->getHost(), $uri->getPort() ?? '');
@@ -97,8 +83,8 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * Helper to create message factory.
      */
-    private function createMessageFactory(V4_4|V5|V5_1|V5_2|V5_3|V5_4 $protocol): BoltMessageFactory
+    private function createMessageFactory(BoltConnection $connection): BoltMessageFactory
     {
-        return new BoltMessageFactory($protocol, $this->logger);
+        return new BoltMessageFactory($connection, $this->logger);
     }
 }

@@ -19,10 +19,11 @@ use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Laudis\Neo4j\Authentication\KerberosAuth;
+use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
 class KerberosAuthTest extends TestCase
@@ -35,53 +36,48 @@ class KerberosAuthTest extends TestCase
         $this->auth = new KerberosAuth('test-token', $logger);
     }
 
-    public function testAuthenticateHttpSuccess(): void
-    {
-        $request = $this->createMock(RequestInterface::class);
-        $request->expects($this->exactly(2))
-            ->method('withHeader')
-            ->willReturnSelf();
-
-        $uri = $this->createMock(UriInterface::class);
-        $uri->method('getHost')->willReturn('localhost');
-        $uri->method('getPort')->willReturn(7687);
-
-        $auth = new KerberosAuth('test-token', null);
-        $result = $auth->authenticateHttp($request, $uri, 'neo4j-client/1.0');
-
-        $this->assertSame($request, $result);
-    }
-
     public function testAuthenticateBoltFailureV5(): void
     {
         $this->expectException(Neo4jException::class);
 
-        $protocol = $this->createMock(V5::class);
-        $response = new Response(
+        $mockProtocol = $this->createMock(V5::class);
+        $mockProtocol->method('hello');
+        $mockProtocol->method('getResponse')->willReturn(new Response(
             Message::HELLO,
             Signature::FAILURE,
             ['code' => 'Neo.ClientError.Security.Unauthorized', 'message' => 'Invalid credentials']
-        );
+        ));
 
-        $protocol->method('getResponse')->willReturn($response);
+        $mockConnection = $this->createMock(BoltConnection::class);
+        $mockConnection->method('protocol')->willReturn($mockProtocol);
 
-        $this->auth->authenticateBolt($protocol, 'neo4j-client/1.0');
+        $error = Neo4jError::fromMessageAndCode('Neo.ClientError.Security.Unauthorized', 'Invalid credentials');
+        $exception = new Neo4jException([$error]);
+        $mockConnection->method('assertNoFailure')->will($this->throwException($exception));
+
+        $this->auth->authenticateBolt($mockConnection, 'neo4j-client/1.0');
     }
 
     public function testAuthenticateBoltFailureV4(): void
     {
         $this->expectException(Neo4jException::class);
 
-        $protocol = $this->createMock(V4_4::class);
-        $response = new Response(
+        $mockProtocol = $this->createMock(V4_4::class);
+        $mockProtocol->method('hello');
+        $mockProtocol->method('getResponse')->willReturn(new Response(
             Message::HELLO,
             Signature::FAILURE,
             ['code' => 'Neo.ClientError.Security.Unauthorized', 'message' => 'Invalid credentials']
-        );
+        ));
 
-        $protocol->method('getResponse')->willReturn($response);
+        $mockConnection = $this->createMock(BoltConnection::class);
+        $mockConnection->method('protocol')->willReturn($mockProtocol);
 
-        $this->auth->authenticateBolt($protocol, 'neo4j-client/1.0');
+        $error = Neo4jError::fromMessageAndCode('Neo.ClientError.Security.Unauthorized', 'Invalid credentials');
+        $exception = new Neo4jException([$error]);
+        $mockConnection->method('assertNoFailure')->will($this->throwException($exception));
+
+        $this->auth->authenticateBolt($mockConnection, 'neo4j-client/1.0');
     }
 
     public function testToString(): void
