@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
-use Bolt\error\ConnectionTimeoutException;
 use Generator;
 
 use function getenv;
@@ -274,8 +273,6 @@ CYPHER
                 ->get('x');
         } catch (Neo4jException $e) {
             self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
-        } catch (ConnectionTimeoutException $e) {
-            self::markTestSkipped('Client connection timed out before transaction timeout could trigger');
         }
     }
 
@@ -351,8 +348,6 @@ CYPHER
             $tsx->run('UNWIND range(1, 10000) AS x MERGE (:Number {value: x})');
         } catch (Neo4jException $e) {
             self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
-        } catch (ConnectionTimeoutException $e) {
-            self::markTestSkipped('Client connection timed out before transaction timeout could trigger');
         }
     }
 

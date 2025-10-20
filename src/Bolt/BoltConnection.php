@@ -64,7 +64,6 @@ class BoltConnection implements ConnectionInterface
      * @var list<WeakReference<CypherList>>
      */
     private array $subscribedResults = [];
-    private bool $inTransaction = false;
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -162,10 +161,6 @@ class BoltConnection implements ConnectionInterface
 
     public function isStreaming(): bool
     {
-        if (!isset($this->boltProtocol)) {
-            return false;
-        }
-
         return in_array(
             $this->protocol()->serverState,
             [ServerState::STREAMING, ServerState::TX_STREAMING],
@@ -211,13 +206,6 @@ class BoltConnection implements ConnectionInterface
         $this->subscribedResults = [];
     }
 
-    private function prepareForBegin(): void
-    {
-        if (in_array($this->getServerState(), ['STREAMING', 'TX_STREAMING'], true)) {
-            $this->discardUnconsumedResults();
-        }
-    }
-
     /**
      * Begins a transaction.
      *
@@ -227,23 +215,12 @@ class BoltConnection implements ConnectionInterface
      */
     public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData): void
     {
-        $this->logger?->log(LogLevel::DEBUG, 'BEGIN transaction');
+        $this->consumeResults();
 
-        // Only consume results if we're actually streaming
-        if ($this->isStreaming()) {
-            $this->logger?->log(LogLevel::DEBUG, 'Consuming results before BEGIN');
-            $this->consumeResults();
-        }
-
-        $extra = $this->buildRunExtra($database, $timeout, $holder, $this->getAccessMode(), $txMetaData);
-        $this->logger?->log(LogLevel::DEBUG, 'BEGIN with extra', $extra);
-
+        $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE(), $txMetaData);
         $message = $this->messageFactory->createBeginMessage($extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
-        $this->inTransaction = true;
-
-        $this->logger?->log(LogLevel::DEBUG, 'BEGIN successful');
     }
 
     /**
@@ -276,11 +253,7 @@ class BoltConnection implements ConnectionInterface
         ?AccessMode $mode,
         ?iterable $tsxMetadata,
     ): array {
-        if ($this->isInTransaction()) {
-            $extra = [];
-        } else {
-            $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
-        }
+        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -296,14 +269,11 @@ class BoltConnection implements ConnectionInterface
      */
     public function rollback(): void
     {
-        if ($this->isStreaming()) {
-            $this->consumeResults();
-        }
+        $this->consumeResults();
 
         $message = $this->messageFactory->createRollbackMessage();
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
-        $this->inTransaction = false;
     }
 
     public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
@@ -361,15 +331,9 @@ class BoltConnection implements ConnectionInterface
         }
     }
 
-    private function buildRunExtra(
-        ?string $database,
-        ?float $timeout,
-        BookmarkHolder $holder,
-        ?AccessMode $mode,
-        ?iterable $metadata,
-    ): array {
+    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
+    {
         $extra = [];
-
         if ($database !== null) {
             $extra['db'] = $database;
         }
@@ -377,14 +341,17 @@ class BoltConnection implements ConnectionInterface
             $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
-        $bookmarks = $holder->getBookmark()->values();
-        if (!empty($bookmarks)) {
-            $extra['bookmarks'] = $bookmarks;
+        if (!$holder->getBookmark()->isEmpty()) {
+            $extra['bookmarks'] = $holder->getBookmark()->values();
+        }
+
+        if ($mode) {
+            $extra['mode'] = AccessMode::WRITE() === $mode ? 'w' : 'r';
         }
 
         if ($metadata !== null) {
             $metadataArray = $metadata instanceof Traversable ? iterator_to_array($metadata) : $metadata;
-            if (!empty($metadataArray)) {
+            if (count($metadataArray) > 0) {
                 $extra['tx_metadata'] = $metadataArray;
             }
         }
@@ -395,13 +362,11 @@ class BoltConnection implements ConnectionInterface
     private function buildResultExtra(?int $fetchSize, ?int $qid): array
     {
         $extra = [];
-        $fetchSize = 1000;
-        /** @psalm-suppress RedundantCondition */
         if ($fetchSize !== null) {
             $extra['n'] = $fetchSize;
         }
 
-        if ($qid !== null && $qid >= 0) {
+        if ($qid !== null) {
             $extra['qid'] = $qid;
         }
 
@@ -462,38 +427,17 @@ class BoltConnection implements ConnectionInterface
             static fn (WeakReference $ref): bool => $ref->get() !== null
         ));
 
-        if (empty($this->subscribedResults)) {
-            $this->logger?->log(LogLevel::DEBUG, 'No unconsumed results to discard');
-
-            return;
-        }
-
-        $state = $this->getServerState();
-        $this->logger?->log(LogLevel::DEBUG, "Server state before discard: {$state}");
-
-        try {
-            if (in_array($state, ['STREAMING', 'TX_STREAMING'], true)) {
+        if (!empty($this->subscribedResults)) {
+            try {
                 $this->discard(null);
                 $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
-            } else {
-                $this->logger?->log(LogLevel::DEBUG, 'Skipping discard - server not in streaming state');
+            } catch (Throwable $e) {
+                $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
+                    'exception' => $e->getMessage(),
+                ]);
             }
-        } catch (Throwable $e) {
-            $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
-                'exception' => $e->getMessage(),
-            ]);
         }
 
         $this->subscribedResults = [];
-    }
-
-    private function isInTransaction(): bool
-    {
-        return $this->inTransaction;
-    }
-
-    public function setTransactionFinished(): void
-    {
-        $this->inTransaction = false;
     }
 }

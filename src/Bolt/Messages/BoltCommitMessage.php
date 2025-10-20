@@ -56,12 +56,10 @@ final class BoltCommitMessage extends BoltMessage
         $bookmark = $content['bookmark'] ?? '';
 
         if (trim($bookmark) !== '') {
-            $this->logger?->log(LogLevel::DEBUG, 'Setting bookmark after commit', ['bookmark' => $bookmark]);
             $this->bookmarks->setBookmark(new Bookmark([$bookmark]));
         }
 
         $this->connection->protocol()->serverState = ServerState::READY;
-        $this->connection->setTransactionFinished();
 
         return $response;
     }

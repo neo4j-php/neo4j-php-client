@@ -116,8 +116,7 @@ python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_client_excep
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_func_configuration  || EXIT_CODE=1
 python3 -m unittest tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout  || EXIT_CODE=1
 
-
-####stub
+#stub
 ####test-basic-query
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_path_element_ids_with_string  || EXIT_CODE=1
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_node_element_id_with_id  || EXIT_CODE=1
@@ -125,15 +124,13 @@ python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_rel_element_id_with_id  || EXIT_CODE=1
 python3 -m unittest tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_path_element_ids_with_long  || EXIT_CODE=1
 
-
-##
-###test-session-run
+#test-session-run
 python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_discard_on_session_close_untouched_result  || EXIT_CODE=1
 python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_discard_on_session_close_unfinished_result  || EXIT_CODE=1
 python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_no_discard_on_session_close_finished_result  || EXIT_CODE=1
 python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_raises_error_on_session_run  || EXIT_CODE=1
 
-TestBookmarksV5
+#TestBookmarksV5
 python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_bookmarks_can_be_set || EXIT_CODE=1
 python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_last_bookmark || EXIT_CODE=1
 python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_bookmarks_write_tx || EXIT_CODE=1
