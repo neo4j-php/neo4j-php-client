@@ -28,11 +28,8 @@ fi
 #fi
 
 cd testkit || (echo 'cannot cd into testkit' && exit 1)
-if [ ! -d venv ]; then
-    python3 -m venv venv
-fi
+python3 -m venv venv
 source venv/bin/activate
-pip install --upgrade pip
 pip install -r requirements.txt
 
 # python3 main.py --tests UNIT_TESTS
@@ -147,6 +144,5 @@ python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_
 python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_bookmarks_on_unused_sessions_are_returned || EXIT_CODE=1
 python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_bookmarks_session_run || EXIT_CODE=1
 python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_sequence_of_writing_and_reading_tx || EXIT_CODE=1
-#python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_bookmarks_tx_run || EXIT_CODE=1
 
 exit $EXIT_CODE
