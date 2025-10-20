@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
@@ -94,8 +95,7 @@ final class SessionBeginTransaction implements RequestHandlerInterface
                 'trace' => $exception->getTraceAsString(),
             ]);
 
-            // Convert to Neo4jException for consistent error handling
-            $neo4jException = new Neo4jException([new \Laudis\Neo4j\Databags\Neo4jError(
+            $neo4jException = new Neo4jException([new Neo4jError(
                 'PHP.ClientError',
                 $exception->getMessage()
             )]);
