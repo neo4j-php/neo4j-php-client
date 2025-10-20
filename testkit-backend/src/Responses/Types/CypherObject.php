@@ -24,11 +24,17 @@ use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use RuntimeException;
 
+/**
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ */
 final class CypherObject implements TestkitResponseInterface
 {
     /** @var CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null */
     private $value;
     private string $name;
+
+    // Store element ID mappings for relationships created from paths
+    private static array $relationshipElementIdMap = [];
 
     /**
      * @param CypherList|CypherMap|int|bool|float|string|Node|Relationship|Path|null $value
@@ -57,13 +63,16 @@ final class CypherObject implements TestkitResponseInterface
                 $tbr = new CypherObject('CypherNull', $value);
                 break;
             case CypherList::class:
+                /** @var CypherList<OGMTypes> $value */
                 $list = [];
                 foreach ($value as $item) {
                     $list[] = self::autoDetect($item);
                 }
+
                 $tbr = new CypherObject('CypherList', new CypherList($list));
                 break;
             case CypherMap::class:
+                /** @var CypherMap<OGMTypes> $value */
                 if ($value->count() === 2 && $value->hasKey('name') && $value->hasKey('data')) {
                     $tbr = new CypherObject('CypherMap', $value);
                 } else {
@@ -71,6 +80,7 @@ final class CypherObject implements TestkitResponseInterface
                     foreach ($value as $key => $item) {
                         $map[$key] = self::autoDetect($item);
                     }
+
                     $tbr = new CypherObject('CypherMap', new CypherMap($map));
                 }
                 break;
@@ -93,12 +103,14 @@ final class CypherObject implements TestkitResponseInterface
                 }
                 $props = [];
                 foreach ($value->getProperties() as $key => $property) {
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     $props[$key] = self::autoDetect($property);
                 }
                 $elementId = $value->getElementId();
                 if ($elementId === null) {
                     $elementId = (string) $value->getId();
                 }
+
                 $tbr = new CypherNode(
                     new CypherObject('CypherInt', $value->getId()),
                     new CypherObject('CypherList', new CypherList($labels)),
@@ -109,8 +121,10 @@ final class CypherObject implements TestkitResponseInterface
             case Relationship::class:
                 $props = [];
                 foreach ($value->getProperties() as $key => $property) {
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     $props[$key] = self::autoDetect($property);
                 }
+
                 $elementId = $value->getElementId();
                 if ($elementId === null) {
                     $elementId = (string) $value->getId();

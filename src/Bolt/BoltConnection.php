@@ -162,6 +162,10 @@ class BoltConnection implements ConnectionInterface
 
     public function isStreaming(): bool
     {
+        if (!isset($this->boltProtocol)) {
+            return false;
+        }
+
         return in_array(
             $this->protocol()->serverState,
             [ServerState::STREAMING, ServerState::TX_STREAMING],
@@ -219,17 +223,27 @@ class BoltConnection implements ConnectionInterface
      *
      * Any of the preconditioned states are: 'READY', 'INTERRUPTED'.
      *
-     * @param array<string, scalar|array|null>|null $txMetaData
+     * @param iterable<string, scalar|array|null>|null $txMetaData
      */
-    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?array $txMetaData): void
+    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData): void
     {
-        $this->consumeResults();
+        $this->logger?->log(LogLevel::DEBUG, 'BEGIN transaction');
+
+        // Only consume results if we're actually streaming
+        if ($this->isStreaming()) {
+            $this->logger?->log(LogLevel::DEBUG, 'Consuming results before BEGIN');
+            $this->consumeResults();
+        }
 
         $extra = $this->buildRunExtra($database, $timeout, $holder, $this->getAccessMode(), $txMetaData);
+        $this->logger?->log(LogLevel::DEBUG, 'BEGIN with extra', $extra);
+
         $message = $this->messageFactory->createBeginMessage($extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
         $this->inTransaction = true;
+
+        $this->logger?->log(LogLevel::DEBUG, 'BEGIN successful');
     }
 
     /**
@@ -265,7 +279,7 @@ class BoltConnection implements ConnectionInterface
         if ($this->isInTransaction()) {
             $extra = [];
         } else {
-            $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata, false);
+            $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
         }
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
@@ -282,11 +296,14 @@ class BoltConnection implements ConnectionInterface
      */
     public function rollback(): void
     {
-        $this->consumeResults();
+        if ($this->isStreaming()) {
+            $this->consumeResults();
+        }
 
         $message = $this->messageFactory->createRollbackMessage();
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
+        $this->inTransaction = false;
     }
 
     public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
@@ -334,6 +351,7 @@ class BoltConnection implements ConnectionInterface
                 if ($this->isStreaming()) {
                     $this->discardUnconsumedResults();
                 }
+
                 $message = $this->messageFactory->createGoodbyeMessage();
                 $message->send();
 
@@ -349,7 +367,6 @@ class BoltConnection implements ConnectionInterface
         BookmarkHolder $holder,
         ?AccessMode $mode,
         ?iterable $metadata,
-        bool $forBegin = false,
     ): array {
         $extra = [];
 
@@ -363,12 +380,6 @@ class BoltConnection implements ConnectionInterface
         $bookmarks = $holder->getBookmark()->values();
         if (!empty($bookmarks)) {
             $extra['bookmarks'] = $bookmarks;
-        }
-
-        if ($forBegin) {
-            if ($mode !== null) {
-                $extra['mode'] = $mode === AccessMode::WRITE() ? 'w' : 'r';
-            }
         }
 
         if ($metadata !== null) {
@@ -451,31 +462,6 @@ class BoltConnection implements ConnectionInterface
             static fn (WeakReference $ref): bool => $ref->get() !== null
         ));
 
-        if (!empty($this->subscribedResults)) {
-            try {
-                $this->discard(null);
-                $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
-            } catch (Throwable $e) {
-                $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
-                    'exception' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        $this->subscribedResults = [];
-    }
-
-    /**
-     * Discard unconsumed results - sends DISCARD to server for each subscribed result.
-     */
-    public function discardUnconsumedResults(): void
-    {
-        $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
-        $this->subscribedResults = array_values(array_filter(
-            $this->subscribedResults,
-            static fn (WeakReference $ref): bool => $ref->get() !== null
-        ));
-
         if (empty($this->subscribedResults)) {
             $this->logger?->log(LogLevel::DEBUG, 'No unconsumed results to discard');
 
@@ -504,5 +490,10 @@ class BoltConnection implements ConnectionInterface
     private function isInTransaction(): bool
     {
         return $this->inTransaction;
+    }
+
+    public function setTransactionFinished(): void
+    {
+        $this->inTransaction = false;
     }
 }

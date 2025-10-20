@@ -13,6 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use Bolt\enum\Message;
+use Bolt\enum\Signature;
+use Bolt\protocol\Response;
+use Bolt\protocol\V5;
 use Laudis\Neo4j\Authentication\BasicAuth;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;

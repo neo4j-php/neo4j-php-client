@@ -83,7 +83,7 @@ final class RequestFactory
             return new AuthorizationTokenRequest(
                 $data['scheme'],
                 $data['realm'] ?? '',
-                $data['principal'] ?? '',
+                $data['principal'],
                 $data['credentials']
             );
         }

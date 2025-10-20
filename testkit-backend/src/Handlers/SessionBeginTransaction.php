@@ -23,6 +23,7 @@ use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\TransactionResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 /**
  * @implements RequestHandlerInterface<SessionBeginTransactionRequest>
@@ -43,38 +44,63 @@ final class SessionBeginTransaction implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        $session = $this->repository->getSession($request->getSessionId());
+        $this->logger->debug('SessionBeginTransaction: Starting', ['sessionId' => $request->getSessionId()]);
 
-        $config = TransactionConfiguration::default();
-
-        if ($request->getTimeout()) {
-            $config = $config->withTimeout($request->getTimeout());
-        }
-
-        if ($request->getTxMeta()) {
-            $metaData = $request->getTxMeta();
-            $actualMeta = [];
-            if ($metaData !== null) {
-                foreach ($metaData as $key => $meta) {
-                    $actualMeta[$key] = AbstractRunner::decodeToValue($meta);
-                }
-            }
-            $config = $config->withMetaData($actualMeta);
-        }
-
-        // TODO - Create beginReadTransaction and beginWriteTransaction
         try {
+            $session = $this->repository->getSession($request->getSessionId());
+            $this->logger->debug('SessionBeginTransaction: Got session');
+
+            $config = TransactionConfiguration::default();
+
+            if ($request->getTimeout()) {
+                $config = $config->withTimeout($request->getTimeout());
+            }
+
+            if ($request->getTxMeta()) {
+                $metaData = $request->getTxMeta();
+                $actualMeta = [];
+                if ($metaData !== null) {
+                    foreach ($metaData as $key => $meta) {
+                        $actualMeta[$key] = AbstractRunner::decodeToValue($meta);
+                    }
+                }
+                $config = $config->withMetaData($actualMeta);
+            }
+
+            $this->logger->debug('SessionBeginTransaction: About to call beginTransaction');
+            // TODO - Create beginReadTransaction and beginWriteTransaction
             $transaction = $session->beginTransaction(null, $config);
+            $this->logger->debug('SessionBeginTransaction: beginTransaction returned successfully');
+
+            $id = Uuid::v4();
+
+            $this->repository->addTransaction($id, $transaction);
+            $this->repository->bindTransactionToSession($request->getSessionId(), $id);
+
+            $this->logger->debug('SessionBeginTransaction: Returning TransactionResponse', ['id' => $id]);
+
+            return new TransactionResponse($id);
         } catch (Neo4jException $exception) {
-            $this->logger->debug($exception->__toString());
+            $this->logger->error('SessionBeginTransaction: Neo4jException', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
 
             return new DriverErrorResponse($request->getSessionId(), $exception);
+        } catch (Throwable $exception) {
+            $this->logger->error('SessionBeginTransaction: Unexpected exception', [
+                'type' => get_class($exception),
+                'message' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            // Convert to Neo4jException for consistent error handling
+            $neo4jException = new Neo4jException([new \Laudis\Neo4j\Databags\Neo4jError(
+                'PHP.ClientError',
+                $exception->getMessage()
+            )]);
+
+            return new DriverErrorResponse($request->getSessionId(), $neo4jException);
         }
-        $id = Uuid::v4();
-
-        $this->repository->addTransaction($id, $transaction);
-        $this->repository->bindTransactionToSession($request->getSessionId(), $id);
-
-        return new TransactionResponse($id);
     }
 }

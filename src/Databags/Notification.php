@@ -84,6 +84,8 @@ final class Notification extends AbstractCypherObject
 
     /**
      * @psalm-external-mutation-free
+     *
+     * @return array<string, string|array<string, float|int|string|null>>
      */
     public function toArray(): array
     {

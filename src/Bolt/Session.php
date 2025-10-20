@@ -17,6 +17,7 @@ use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
+use Laudis\Neo4j\Contracts\CypherSequence;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -32,6 +33,7 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Log\LogLevel;
+use Throwable;
 
 /**
  * A session using bolt connections.
@@ -167,11 +169,14 @@ final class Session implements SessionInterface
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
+        $this->getLogger()?->log(LogLevel::DEBUG, 'Session::beginTransaction - START');
         $config = $this->mergeTsxConfig($config);
+        $this->getLogger()?->log(LogLevel::DEBUG, 'Session::beginTransaction - Calling startTransaction');
         $tsx = $this->startTransaction($config, $this->config);
+        $this->getLogger()?->log(LogLevel::DEBUG, 'Session::beginTransaction - startTransaction returned');
 
         $tsx->runStatements($statements ?? []);
+        $this->getLogger()?->log(LogLevel::DEBUG, 'Session::beginTransaction - DONE');
 
         return $tsx;
     }
@@ -225,18 +230,31 @@ final class Session implements SessionInterface
 
     private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig): UnmanagedTransactionInterface
     {
-        $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
+        $this->getLogger()?->log(LogLevel::DEBUG, 'Session::startTransaction - START');
         try {
+            $this->getLogger()?->log(LogLevel::DEBUG, 'Session::startTransaction - Acquiring connection');
             $connection = $this->acquireConnection($config, $sessionConfig);
-            $connection->discardUnconsumedResults();
+            $this->getLogger()?->log(LogLevel::DEBUG, 'Session::startTransaction - Connection acquired');
+
+            $this->getLogger()?->log(LogLevel::DEBUG, 'Session::startTransaction - Calling connection->begin()');
             $connection->begin($this->config->getDatabase(), $config->getTimeout(), $this->bookmarkHolder, $config->getMetaData());
+            $this->getLogger()?->log(LogLevel::DEBUG, 'Session::startTransaction - connection->begin() returned');
         } catch (Neo4jException $e) {
+            $this->getLogger()?->log(LogLevel::ERROR, 'Session::startTransaction - Neo4jException', ['message' => $e->getMessage()]);
             if (isset($connection) && $connection->getServerState() === 'FAILED') {
                 $connection->reset();
             }
             throw $e;
+        } catch (Throwable $e) {
+            $this->getLogger()?->log(LogLevel::ERROR, 'Session::startTransaction - Throwable', [
+                'type' => get_class($e),
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
         }
-        error_log('>>> EXIT startTransaction()');
+
+        $this->getLogger()?->log(LogLevel::DEBUG, 'Session::startTransaction - Creating BoltUnmanagedTransaction');
 
         return new BoltUnmanagedTransaction(
             $this->config->getDatabase(),

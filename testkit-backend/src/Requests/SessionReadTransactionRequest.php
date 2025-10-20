@@ -21,7 +21,6 @@ final class SessionReadTransactionRequest
     /** @var iterable<string, array|scalar|null> */
     private iterable $txMeta;
     private ?int $timeout;
-    private array $bookmarks; // ADD THIS
 
     /**
      * @param iterable<string, array|scalar|null>|null $txMeta
@@ -30,12 +29,10 @@ final class SessionReadTransactionRequest
         Uuid $sessionId,
         ?iterable $txMeta = null,
         ?int $timeout = null,
-        array $bookmarks = [], // ADD THIS
     ) {
         $this->sessionId = $sessionId;
         $this->txMeta = $txMeta ?? [];
         $this->timeout = $timeout;
-        $this->bookmarks = $bookmarks; // ADD THIS
     }
 
     public function getSessionId(): Uuid
@@ -54,10 +51,5 @@ final class SessionReadTransactionRequest
     public function getTimeout(): ?int
     {
         return $this->timeout;
-    }
-
-    public function getBookmarks(): array // ADD THIS
-    {
-        return $this->bookmarks;
     }
 }

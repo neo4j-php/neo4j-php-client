@@ -28,8 +28,11 @@ fi
 #fi
 
 cd testkit || (echo 'cannot cd into testkit' && exit 1)
-python3 -m venv venv
+if [ ! -d venv ]; then
+    python3 -m venv venv
+fi
 source venv/bin/activate
+pip install --upgrade pip
 pip install -r requirements.txt
 
 # python3 main.py --tests UNIT_TESTS
@@ -37,8 +40,8 @@ pip install -r requirements.txt
 echo "Starting tests..."
 
 EXIT_CODE=0
-##neo4j
-#test_authentication
+###neo4j
+##test_authentication
 python3 -m unittest tests.neo4j.test_authentication.TestAuthenticationBasic|| EXIT_CODE=1
 
 #test_bookmarks
@@ -133,5 +136,17 @@ python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_
 python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_no_discard_on_session_close_finished_result  || EXIT_CODE=1
 python3 -m unittest tests.stub.session_run.test_session_run.TestSessionRun.test_raises_error_on_session_run  || EXIT_CODE=1
 
+TestBookmarksV5
+python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_bookmarks_can_be_set || EXIT_CODE=1
+python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_last_bookmark || EXIT_CODE=1
+python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_bookmarks_write_tx || EXIT_CODE=1
+python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_sequence_of_writing_and_reading_tx || EXIT_CODE=1
+python3 -m unittest tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_multiple_bookmarks_write_tx || EXIT_CODE=1
+#
+##TestBookmarksV4
+python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_bookmarks_on_unused_sessions_are_returned || EXIT_CODE=1
+python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_bookmarks_session_run || EXIT_CODE=1
+python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_sequence_of_writing_and_reading_tx || EXIT_CODE=1
+#python3 -m unittest tests.stub.bookmarks.test_bookmarks_v4.TestBookmarksV4.test_bookmarks_tx_run || EXIT_CODE=1
 
 exit $EXIT_CODE

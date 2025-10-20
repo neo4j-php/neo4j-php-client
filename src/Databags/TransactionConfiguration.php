@@ -24,12 +24,12 @@ final class TransactionConfiguration
     public const DEFAULT_METADATA = '[]';
 
     /**
-     * @param float|null                   $timeout  timeout in seconds
-     * @param array<array-key, mixed>|null $metaData
+     * @param float|null                               $timeout  timeout in seconds
+     * @param iterable<string, scalar|array|null>|null $metaData
      */
     public function __construct(
         private ?float $timeout = null,
-        private ?array $metaData = null,
+        private ?iterable $metaData = null,
     ) {
     }
 
@@ -41,7 +41,7 @@ final class TransactionConfiguration
      */
     public static function create(?float $timeout = null, ?iterable $metaData = null): self
     {
-        return new self($timeout, $metaData !== null ? (array) $metaData : null);
+        return new self($timeout, $metaData);
     }
 
     /**
@@ -53,11 +53,11 @@ final class TransactionConfiguration
     }
 
     /**
-     * @return array<string, scalar|array|null>|null
+     * Get the configured transaction metadata.
      *
-     *  @psalm-suppress MixedReturnTypeCoercion
+     * @return iterable<string, scalar|array|null>|null
      */
-    public function getMetaData(): ?array
+    public function getMetaData(): ?iterable
     {
         return $this->metaData;
     }
@@ -87,7 +87,7 @@ final class TransactionConfiguration
      */
     public function withMetaData(?iterable $metaData): self
     {
-        return new self($this->timeout, $metaData !== null ? (array) $metaData : null);
+        return new self($this->timeout, $metaData);
     }
 
     /**
@@ -101,7 +101,6 @@ final class TransactionConfiguration
 
         $metaData = $config->metaData;
         if ($metaData !== null) {
-            /** @psalm-suppress PossiblyInvalidArgument */
             $tsxConfig = $tsxConfig->withMetaData($metaData);
         }
         $timeout = $config->timeout;
