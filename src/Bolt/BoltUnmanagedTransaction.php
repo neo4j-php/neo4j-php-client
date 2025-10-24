@@ -52,6 +52,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly TransactionConfiguration $tsxConfig,
         private readonly BookmarkHolder $bookmarkHolder,
         private readonly BoltMessageFactory $messageFactory,
+        private readonly bool $isInstantTransaction,
     ) {
     }
 
@@ -147,8 +148,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $parameters->toArray(),
                 $this->database,
                 $this->tsxConfig->getTimeout(),
-                $this->bookmarkHolder,
-                $this->config->getAccessMode(),
+                $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
+                $this->isInstantTransaction ? $this->config->getAccessMode() : null, // let the begin transaction decide if it is a managed transaction
                 $this->tsxConfig->getMetaData()
             );
         } catch (Throwable $e) {

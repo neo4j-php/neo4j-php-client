@@ -117,9 +117,9 @@ final class SessionConfiguration
      *
      * @psalm-suppress ImpureMethodCall
      */
-    public function getAccessMode(): AccessMode
+    public function getAccessMode(): ?AccessMode
     {
-        return $this->accessMode ?? AccessMode::WRITE();
+        return $this->accessMode;
     }
 
     /**

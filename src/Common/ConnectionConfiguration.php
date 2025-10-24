@@ -27,7 +27,7 @@ final class ConnectionConfiguration
         private string $serverAgent,
         private readonly UriInterface $serverAddress,
         private readonly ConnectionProtocol $protocol,
-        private readonly AccessMode $accessMode,
+        private readonly ?AccessMode $accessMode,
         private readonly ?DatabaseInfo $databaseInfo,
         private readonly string $encryptionLevel,
     ) {
@@ -54,7 +54,7 @@ final class ConnectionConfiguration
         return $this->protocol;
     }
 
-    public function getAccessMode(): AccessMode
+    public function getAccessMode(): ?AccessMode
     {
         return $this->accessMode;
     }

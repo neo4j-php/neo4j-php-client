@@ -62,7 +62,7 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
         $expectedDebug = [
             ['HELLO',   ['user_agent' => 'neo4j-php-client/2']],
             ['LOGON',   ['scheme' => 'basic', 'principal' => 'neo4j']],
-            ['RUN',     ['text' => 'RETURN 1 as test', 'parameters' => [], 'extra' => ['mode' => 'w']]],
+            ['RUN',     ['text' => 'RETURN 1 as test', 'parameters' => [], 'extra' => []]],
             ['DISCARD', []],
         ];
         if ($this->getUri()->getScheme() === 'neo4j') {
@@ -70,6 +70,7 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
                 ['HELLO',   ['user_agent' => 'neo4j-php-client/2']],
                 ['LOGON',   ['scheme' => 'basic', 'principal' => 'neo4j']],
                 ['ROUTE',   ['db' => null]],
+                ['DISCARD', []],
                 ['GOODBYE', []],
             ]);
         }

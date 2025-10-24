@@ -75,7 +75,7 @@ interface ConnectionInterface
      *
      * @psalm-mutation-free
      */
-    public function getAccessMode(): AccessMode;
+    public function getAccessMode(): ?AccessMode;
 
     /**
      * Returns the information about the database the connection reaches.
