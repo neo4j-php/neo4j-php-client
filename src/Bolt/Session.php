@@ -195,6 +195,7 @@ final class Session implements SessionInterface
             $tsxConfig,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
+            true,
         );
     }
 
@@ -246,6 +247,7 @@ final class Session implements SessionInterface
             $config,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
+            false
         );
     }
 

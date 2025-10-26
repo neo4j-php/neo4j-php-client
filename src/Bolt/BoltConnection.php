@@ -128,7 +128,7 @@ class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
-    public function getAccessMode(): AccessMode
+    public function getAccessMode(): ?AccessMode
     {
         return $this->config->getAccessMode();
     }
@@ -217,7 +217,7 @@ class BoltConnection implements ConnectionInterface
     {
         $this->consumeResults();
 
-        $extra = $this->buildRunExtra($database, $timeout, $holder, AccessMode::WRITE(), $txMetaData);
+        $extra = $this->buildRunExtra($database, $timeout, $holder, null, $txMetaData);
         $message = $this->messageFactory->createBeginMessage($extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -249,7 +249,7 @@ class BoltConnection implements ConnectionInterface
         array $parameters,
         ?string $database,
         ?float $timeout,
-        BookmarkHolder $holder,
+        ?BookmarkHolder $holder,
         ?AccessMode $mode,
         ?iterable $tsxMetadata,
     ): array {
@@ -295,7 +295,6 @@ class BoltConnection implements ConnectionInterface
     public function pull(?int $qid, ?int $fetchSize): array
     {
         $extra = $this->buildResultExtra($fetchSize, $qid);
-        $this->logger?->log(LogLevel::DEBUG, 'PULL', $extra);
 
         $tbr = [];
         $message = $this->messageFactory->createPullMessage($extra);
@@ -331,7 +330,7 @@ class BoltConnection implements ConnectionInterface
         }
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout, BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
+    private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
     {
         $extra = [];
         if ($database !== null) {
@@ -341,7 +340,7 @@ class BoltConnection implements ConnectionInterface
             $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
-        if (!$holder->getBookmark()->isEmpty()) {
+        if ($holder && !$holder->getBookmark()->isEmpty()) {
             $extra['bookmarks'] = $holder->getBookmark()->values();
         }
 
@@ -366,7 +365,7 @@ class BoltConnection implements ConnectionInterface
             $extra['n'] = $fetchSize;
         }
 
-        if ($qid !== null) {
+        if ($qid !== null && $qid >= 0) {
             $extra['qid'] = $qid;
         }
 
@@ -420,6 +419,10 @@ class BoltConnection implements ConnectionInterface
      */
     public function discardUnconsumedResults(): void
     {
+        if (!in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
+            return;
+        }
+
         $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
 
         $this->subscribedResults = array_values(array_filter(

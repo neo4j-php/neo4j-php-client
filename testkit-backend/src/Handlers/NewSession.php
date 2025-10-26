@@ -41,8 +41,13 @@ final class NewSession implements RequestHandlerInterface
     {
         $driver = $this->repository->getDriver($request->driverId);
 
-        $config = SessionConfiguration::default()
-            ->withAccessMode($request->accessMode === 'r' ? AccessMode::READ() : AccessMode::WRITE());
+        $config = SessionConfiguration::default();
+
+        if ($request->accessMode === 'r') {
+            $config = $config->withAccessMode(AccessMode::READ());
+        } elseif ($request->accessMode === 'w') {
+            $config = $config->withAccessMode(AccessMode::WRITE());
+        }
 
         if ($request->bookmarks !== null) {
             $config = $config->withBookmarks([new Bookmark($request->bookmarks)]);
@@ -52,7 +57,9 @@ final class NewSession implements RequestHandlerInterface
             $config = $config->withDatabase($request->database);
         }
 
-        $config = $config->withFetchSize($request->fetchSize ?? 1);
+        if ($request->fetchSize !== null) {
+            $config = $config->withFetchSize($request->fetchSize);
+        }
 
         $session = $driver->createSession($config);
         $id = Uuid::v4();

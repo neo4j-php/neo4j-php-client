@@ -185,9 +185,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     /**
      * @throws Exception
      */
-    private function getNextServer(RoutingTable $table, AccessMode $mode): Uri
+    private function getNextServer(RoutingTable $table, ?AccessMode $mode): Uri
     {
-        if (AccessMode::WRITE() === $mode) {
+        if ($mode === null || AccessMode::WRITE() === $mode) {
             $servers = $table->getWithRole(RoutingRoles::LEADER());
         } else {
             $servers = $table->getWithRole(RoutingRoles::FOLLOWER());

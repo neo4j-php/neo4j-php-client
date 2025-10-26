@@ -130,7 +130,8 @@ final class Client implements ClientInterface
 
     public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
     {
-        if ($this->defaultSessionConfiguration->getAccessMode() === AccessMode::WRITE()) {
+        $accessMode = $this->defaultSessionConfiguration->getAccessMode();
+        if ($accessMode === null || $accessMode === AccessMode::WRITE()) {
             $session = $this->getSession($alias);
         } else {
             $sessionConfig = $this->defaultSessionConfiguration->withAccessMode(AccessMode::WRITE());
