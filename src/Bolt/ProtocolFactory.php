@@ -33,6 +33,7 @@ class ProtocolFactory
         }
 
         $bolt = new Bolt($connection);
+        // Offer protocol versions from newest to oldest (only 4.4 and above are supported)
         $bolt->setProtocolVersions('5.4.4', 4.4);
         $protocol = $bolt->build();
 

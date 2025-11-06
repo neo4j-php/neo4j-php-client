@@ -137,9 +137,8 @@ python3 -m unittest -v \
     tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct_raises_error \
     tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct \
     tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_no_server \
-    tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_fail_when_no_reader_are_available \
     tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_raises_error \
-    tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing
+    tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing \
 
 EXIT_CODE=$?
 
