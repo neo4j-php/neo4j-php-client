@@ -28,7 +28,9 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
@@ -97,6 +99,28 @@ final class Neo4jDriver implements DriverInterface
         }
 
         return true;
+    }
+
+    public function getServerInfo(?SessionConfiguration $config = null): ServerInfo
+    {
+        $config ??= SessionConfiguration::default();
+
+        // Use READ access mode to connect to a follower (read server)
+        if ($config->getAccessMode() === null) {
+            $config = $config->withAccessMode(AccessMode::READ());
+        }
+
+        $connection = GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
+
+        $serverInfo = new ServerInfo(
+            $connection->getServerAddress(),
+            $connection->getProtocol(),
+            $connection->getServerAgent()
+        );
+
+        $this->pool->release($connection);
+
+        return $serverInfo;
     }
 
     public function closeConnections(): void

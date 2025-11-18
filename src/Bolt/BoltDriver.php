@@ -25,6 +25,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Psr\Http\Message\UriInterface;
@@ -95,6 +96,23 @@ final class BoltDriver implements DriverInterface
         }
 
         return true;
+    }
+
+    public function getServerInfo(?SessionConfiguration $config = null): ServerInfo
+    {
+        $config ??= SessionConfiguration::default();
+
+        $connection = GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
+
+        $serverInfo = new ServerInfo(
+            $connection->getServerAddress(),
+            $connection->getProtocol(),
+            $connection->getServerAgent()
+        );
+
+        $this->pool->release($connection);
+
+        return $serverInfo;
     }
 
     public function closeConnections(): void

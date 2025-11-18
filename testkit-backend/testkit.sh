@@ -131,7 +131,14 @@ python3 -m unittest -v \
     tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_last_bookmark \
     tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_sequence_of_writing_and_reading_tx \
     tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_bookmarks_write_tx \
-    tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_multiple_bookmarks_write_tx
+    tests.stub.bookmarks.test_bookmarks_v5.TestBookmarksV5.test_send_and_receive_multiple_bookmarks_write_tx \
+\
+    tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct_no_server \
+    tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct_raises_error \
+    tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_direct \
+    tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_no_server \
+    tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_raises_error \
+    tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing \
 
 EXIT_CODE=$?
 

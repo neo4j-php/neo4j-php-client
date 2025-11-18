@@ -68,6 +68,10 @@ final class MainRepository
 
     public function removeDriver(Uuid $id): void
     {
+        $driver = $this->drivers[$id->toRfc4122()] ?? null;
+        if ($driver !== null) {
+            $driver->closeConnections();
+        }
         unset($this->drivers[$id->toRfc4122()]);
     }
 
