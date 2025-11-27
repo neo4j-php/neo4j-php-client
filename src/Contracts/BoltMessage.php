@@ -16,6 +16,9 @@ namespace Laudis\Neo4j\Contracts;
 use Bolt\protocol\Response;
 use Iterator;
 use Laudis\Neo4j\Bolt\BoltConnection;
+use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Exception\Neo4jException;
+use Throwable;
 
 abstract class BoltMessage
 {
@@ -31,11 +34,60 @@ abstract class BoltMessage
 
     public function getResponse(): Response
     {
-        $response = $this->connection->protocol()->getResponse();
+        try {
+            $response = $this->connection->protocol()->getResponse();
+        } catch (Throwable $e) {
+            // Convert socket timeout and I/O exceptions to Neo4jException
+            $message = strtolower($e->getMessage());
+
+            if ($this->isTimeoutException($e)) {
+                // Extract timeout value from the exception message if available
+                $timeoutMsg = 'Connection timeout reached';
+                if (preg_match('/(\d+)\s*(?:milliseconds?|ms|seconds?|s)/', $e->getMessage(), $matches)) {
+                    $timeoutMsg = 'Connection timeout reached after '.$matches[1].' seconds';
+                }
+                // Close the connection to mark it as unusable
+                try {
+                    $this->connection->close();
+                } catch (Throwable) {
+                    // Ignore errors when closing a broken connection
+                }
+                // Use DriverError so the driver treats this as a failure
+                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', $timeoutMsg)], $e);
+            } elseif ($this->isSocketException($e)) {
+                // Handle socket errors (broken pipe, connection reset, etc.)
+                try {
+                    $this->connection->close();
+                } catch (Throwable) {
+                    // Ignore errors when closing a broken connection
+                }
+                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+            }
+
+            throw $e;
+        }
 
         $this->connection->assertNoFailure($response);
 
         return $response;
+    }
+
+    private function isTimeoutException(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'timeout') || str_contains($message, 'time out');
+    }
+
+    private function isSocketException(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'broken pipe')
+            || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection refused')
+            || str_contains($message, 'interrupted system call')
+            || str_contains($message, 'i/o error');
     }
 
     /**

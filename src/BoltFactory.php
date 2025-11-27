@@ -79,6 +79,11 @@ class BoltFactory
 
         $config->setServerAgent($response['server']);
 
+        // Apply recv_timeout hint if present
+        if (array_key_exists('connection.recv_timeout_seconds', $response['hints'])) {
+            $connection->setTimeout((float) $response['hints']['connection.recv_timeout_seconds']);
+        }
+
         return $connection;
     }
 
