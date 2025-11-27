@@ -419,6 +419,10 @@ class BoltConnection implements ConnectionInterface
      */
     public function discardUnconsumedResults(): void
     {
+        if (!$this->isOpen()) {
+            return;
+        }
+
         if (!in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
             return;
         }
