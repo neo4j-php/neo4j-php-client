@@ -37,29 +37,21 @@ abstract class BoltMessage
         try {
             $response = $this->connection->protocol()->getResponse();
         } catch (Throwable $e) {
-            // Convert socket timeout and I/O exceptions to Neo4jException
-            $message = strtolower($e->getMessage());
-
             if ($this->isTimeoutException($e)) {
-                // Extract timeout value from the exception message if available
                 $timeoutMsg = 'Connection timeout reached';
-                if (preg_match('/(\d+)\s*(?:milliseconds?|ms|seconds?|s)/', $e->getMessage(), $matches)) {
+                if (preg_match('/(\d+)\s*(?:milliseconds?|ms|seconds?|s)/', $e->getMessage(), $matches) && array_key_exists(1, $matches)) {
                     $timeoutMsg = 'Connection timeout reached after '.$matches[1].' seconds';
                 }
-                // Close the connection to mark it as unusable
                 try {
                     $this->connection->close();
                 } catch (Throwable) {
-                    // Ignore errors when closing a broken connection
                 }
                 // Use DriverError so the driver treats this as a failure
                 throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', $timeoutMsg)], $e);
             } elseif ($this->isSocketException($e)) {
-                // Handle socket errors (broken pipe, connection reset, etc.)
                 try {
                     $this->connection->close();
                 } catch (Throwable) {
-                    // Ignore errors when closing a broken connection
                 }
                 throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
             }
