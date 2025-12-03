@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use function array_splice;
+
+use Bolt\error\ConnectException as BoltConnectException;
+
 use function count;
 
 use Generator;
@@ -21,7 +24,10 @@ use Generator;
 use function in_array;
 
 use Iterator;
+use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Throwable;
 
 /**
  * @psalm-import-type BoltCypherStats from SummarizedResultFormatter
@@ -100,7 +106,17 @@ final class BoltResult implements Iterator
 
     private function fetchResults(): void
     {
-        $meta = $this->connection->pull($this->qid, $this->fetchSize);
+        try {
+            $meta = $this->connection->pull($this->qid, $this->fetchSize);
+        } catch (BoltConnectException $e) {
+            // Close connection on socket errors
+            try {
+                $this->connection->close();
+            } catch (Throwable) {
+                // Ignore errors when closing
+            }
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+        }
 
         /** @var list<list> $rows */
         $rows = array_splice($meta, 0, count($meta) - 1);
@@ -154,6 +170,11 @@ final class BoltResult implements Iterator
 
     public function discard(): void
     {
-        $this->connection->discard($this->qid === -1 ? null : $this->qid);
+        try {
+            $this->connection->discard($this->qid === -1 ? null : $this->qid);
+        } catch (BoltConnectException $e) {
+            // Ignore connection errors during discard - connection is already broken
+            // The Neo4jException will be thrown when the next operation is attempted
+        }
     }
 }
