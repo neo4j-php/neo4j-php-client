@@ -27,6 +27,7 @@ use Iterator;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Throwable;
 
 /**
  * @psalm-import-type BoltCypherStats from SummarizedResultFormatter

@@ -80,7 +80,7 @@ class BoltFactory
         $config->setServerAgent($response['server']);
 
         // Apply recv_timeout hint if present
-        if (array_key_exists('connection.recv_timeout_seconds', $response['hints'])) {
+        if (array_key_exists('hints', $response) && array_key_exists('connection.recv_timeout_seconds', $response['hints'])) {
             $connection->setTimeout((float) $response['hints']['connection.recv_timeout_seconds']);
         }
 
@@ -97,7 +97,7 @@ class BoltFactory
         $database = $databaseInfo?->getName();
 
         return $connection->getAccessMode() === $config->getAccessMode()
-               && $database === $config->getDatabase();
+            && $database === $config->getDatabase();
     }
 
     public function reuseConnection(BoltConnection $connection, SessionConfiguration $sessionConfig): BoltConnection
