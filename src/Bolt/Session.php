@@ -29,6 +29,7 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TimeoutException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Types\CypherList;
@@ -74,10 +75,78 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Running statements', ['statements' => $statements]);
         $config = $this->mergeTsxConfig($config);
         foreach ($statements as $statement) {
-            $tbr[] = $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+            $tbr[] = $this->runStatementWithRetry($statement, $config);
         }
 
         return new CypherList($tbr);
+    }
+
+    /**
+     * Runs a single statement with retry logic to handle socket timeouts and routing errors.
+     * For routing drivers, this is essential to refresh the routing table on timeout.
+     *
+     * @throws Exception
+     */
+    private function runStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
+    {
+        while (true) {
+            $transaction = null;
+            try {
+                $transaction = $this->beginInstantTransaction($this->config, $config);
+                $result = $transaction->runStatement($statement);
+                // Trigger lazy loading of results to catch any timeout during result iteration
+                self::triggerLazyResult($result);
+
+                return $result;
+            } catch (TimeoutException $e) {
+                // Socket timeout - clear routing table and retry
+                if ($transaction) {
+                    try {
+                        $transaction->rollback();
+                    } catch (Exception $rollbackException) {
+                        // Ignore rollback errors during timeout
+                    }
+                }
+
+                // Close broken connection so it won't be reused
+                foreach ($this->usedConnections as $i => $usedConnection) {
+                    try {
+                        $usedConnection->close();
+                        array_splice($this->usedConnections, $i, 1);
+                    } catch (Exception $closeException) {
+                        // Ignore close errors
+                    }
+                }
+
+                if ($this->pool instanceof Neo4jConnectionPool) {
+                    $this->pool->clearRoutingTable();
+                }
+                // Continue retry loop
+            } catch (Neo4jException $e) {
+                if ($transaction && !in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS)) {
+                    try {
+                        $transaction->rollback();
+                    } catch (Exception $rollbackException) {
+                        // Ignore rollback errors
+                    }
+                }
+
+                if ($this->isSocketTimeoutError($e)) {
+                    // When socket timeout occurs, clear routing table to force re-fetch with fresh server list
+                    if ($this->pool instanceof Neo4jConnectionPool) {
+                        $this->pool->clearRoutingTable();
+                    }
+                    // Continue retry loop
+                } elseif ($e->getTitle() === 'NotALeader') {
+                    // By closing the pool, we force the connection to be re-acquired and the routing table to be refetched
+                    $this->pool->close();
+                    // Continue retry loop
+                } elseif ($e->getClassification() !== 'TransientError') {
+                    throw $e;
+                }
+                // For other transient errors, continue retry loop
+            }
+        }
     }
 
     /**
@@ -136,12 +205,41 @@ final class Session implements SessionInterface
                 $transaction->commit();
 
                 return $tbr;
+            } catch (TimeoutException $e) {
+                // Socket timeout - clear routing table and retry
+                if ($transaction) {
+                    try {
+                        $transaction->rollback();
+                    } catch (Exception $rollbackException) {
+                        // Ignore rollback errors during timeout
+                    }
+                }
+
+                // Close broken connection so it won't be reused
+                foreach ($this->usedConnections as $i => $usedConnection) {
+                    try {
+                        $usedConnection->close();
+                        array_splice($this->usedConnections, $i, 1);
+                    } catch (Exception $closeException) {
+                        // Ignore close errors
+                    }
+                }
+
+                if ($this->pool instanceof Neo4jConnectionPool) {
+                    $this->pool->clearRoutingTable();
+                }
+                // Continue retry loop
             } catch (Neo4jException $e) {
                 if ($transaction && !in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS)) {
                     $transaction->rollback();
                 }
 
-                if ($e->getTitle() === 'NotALeader') {
+                if ($this->isSocketTimeoutError($e)) {
+                    // When socket timeout occurs, clear routing table to force re-fetch with fresh server list
+                    if ($this->pool instanceof Neo4jConnectionPool) {
+                        $this->pool->clearRoutingTable();
+                    }
+                } elseif ($e->getTitle() === 'NotALeader') {
                     // By closing the pool, we force the connection to be re-acquired and the routing table to be refetched
                     $this->pool->close();
                 } elseif ($e->getClassification() !== 'TransientError') {
@@ -149,6 +247,37 @@ final class Session implements SessionInterface
                 }
             }
         }
+    }
+
+    /**
+     * Checks if an exception represents a socket timeout or connection-related failure
+     * that requires routing table refresh.
+     *
+     * @param Neo4jException $e The exception to check
+     *
+     * @return bool True if this is a socket timeout or connection failure
+     */
+    private function isSocketTimeoutError(Neo4jException $e): bool
+    {
+        $title = $e->getTitle();
+        $classification = $e->getClassification();
+
+        // Check if this was caused by a timeout exception in the bolt library
+        // Timeout exceptions are wrapped in Neo4jException with NotALeader title,
+        // but we can detect them by checking the previous exception message
+        $previous = $e->getPrevious();
+        if ($previous !== null) {
+            $prevMessage = strtolower($previous->getMessage());
+            if (str_contains($prevMessage, 'timeout') || str_contains($prevMessage, 'time out')) {
+                return true;
+            }
+        }
+
+        // Socket timeout errors should be treated as transient and trigger routing table refresh
+        return in_array($title, [
+            'ServiceUnavailable',
+            'FailedToRoute',
+        ], true) || $classification === 'TransientError';
     }
 
     private static function triggerLazyResult(mixed $tbr): void

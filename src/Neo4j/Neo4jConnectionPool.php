@@ -65,6 +65,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     private static array $pools = [];
 
     /**
+     * Registry of routing tables per database.
+     * Maps database name -> RoutingTable.
+     *
+     * @var array<string, RoutingTable>
+     */
+    private array $routingTableRegistry = [];
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(
@@ -183,6 +191,50 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
+     * Returns the routing table for a specific database, or null if not yet initialized.
+     * This method is intended for testkit backend access to routing table information.
+     *
+     * @param string $database The database name to retrieve routing table for
+     *
+     * @return RoutingTable|null The routing table if available, null otherwise
+     */
+    public function getRoutingTable(string $database = 'neo4j'): ?RoutingTable
+    {
+        return $this->routingTableRegistry[$database] ?? null;
+    }
+
+    /**
+     * Returns the complete routing table registry for all databases.
+     * This method is intended for testkit backend access to routing information.
+     *
+     * @return array<string, RoutingTable> Map of database name to RoutingTable
+     */
+    public function getRoutingTableRegistry(): array
+    {
+        return $this->routingTableRegistry;
+    }
+
+    /**
+     * Clears the routing table registry for a specific database or all databases.
+     * This is used to force a routing table refresh on the next session.
+     *
+     * @param string|null $database Database to clear, or null to clear all
+     */
+    public function clearRoutingTable(?string $database = null): void
+    {
+        if ($database === null) {
+            $this->routingTableRegistry = [];
+            // Also clear the entire cache to force routing table refresh
+            $this->cache->clear();
+        } else {
+            unset($this->routingTableRegistry[$database]);
+            // Also clear the specific cache key for this database
+            $key = $this->createKey($this->data, new SessionConfiguration(database: $database));
+            $this->cache->delete($key);
+        }
+    }
+
+    /**
      * @throws Exception
      */
     private function getNextServer(RoutingTable $table, ?AccessMode $mode): Uri
@@ -212,7 +264,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();
 
-        return new RoutingTable($servers, $ttl);
+        $table = new RoutingTable($servers, $ttl);
+
+        // Store in routing table registry for testkit access
+        $database = $config->getDatabase() ?? 'neo4j';
+        $this->routingTableRegistry[$database] = $table;
+
+        return $table;
     }
 
     public function release(ConnectionInterface $connection): void
