@@ -17,7 +17,6 @@ use Exception;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
-use Laudis\Neo4j\Neo4j\RoutingTable;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -55,13 +54,19 @@ final class GetRoutingTable implements RequestHandlerInterface
             /** @var Neo4jConnectionPool $pool */
             $pool = $poolProperty->getValue($driver);
 
-            $tableProperty = (new ReflectionClass(Neo4jConnectionPool::class))->getProperty('table');
-            $tableProperty->setAccessible(true);
-            /** @var RoutingTable $table */
-            $table = $tableProperty->getValue($pool);
+            // Use public getter to access routing table registry
+            $database = $request->getDatabase() ?? 'neo4j';
+            $table = $pool->getRoutingTable($database);
+
+            if ($table === null) {
+                return new FrontendErrorResponse(sprintf(
+                    'There is no routing table for database "%s". (It might not have been initialized yet)',
+                    $database
+                ));
+            }
 
             return new RoutingTableResponse(
-                $request->getDatabase(),
+                $database,
                 $table->getTtl(),
                 $table->getWithRole(RoutingRoles::ROUTE()),
                 $table->getWithRole(RoutingRoles::FOLLOWER()),

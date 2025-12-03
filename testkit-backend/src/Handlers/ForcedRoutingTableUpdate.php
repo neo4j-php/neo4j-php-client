@@ -53,9 +53,10 @@ final class ForcedRoutingTableUpdate implements RequestHandlerInterface
             /** @var ConnectionPoolInterface $pool */
             $pool = $poolProperty->getValue($driver);
 
-            $tableProperty = (new ReflectionClass(Neo4jConnectionPool::class))->getProperty('table');
-            $tableProperty->setAccessible(true);
-            $tableProperty->setValue($pool, null);
+            // Clear routing table registry to force refresh on next session
+            if ($pool instanceof Neo4jConnectionPool) {
+                $pool->clearRoutingTable();
+            }
         }
 
         $driver->createSession()->run('RETURN 1 AS x');
