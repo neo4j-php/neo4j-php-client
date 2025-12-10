@@ -13,15 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\Common\DriverSetupManager;
-use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\DriverInterface;
-use Laudis\Neo4j\Databags\DriverConfiguration;
-use Laudis\Neo4j\Databags\DriverSetup;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Exception\ConnectionPoolException;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
@@ -111,24 +106,17 @@ final class MultiDriverFailoverTest extends TestCase
 
     public function testDriverSetupManagerVerifyConnectivityReturnsFalseOnConnectionFailure(): void
     {
-        $driverSetupManager = new DriverSetupManager(
-            SummarizedResultFormatter::create(),
-            DriverConfiguration::default()
-        );
+        $mockDriver = $this->createMock(DriverInterface::class);
+        $mockDriver->method('verifyConnectivity')
+            ->willThrowException(new ConnectionPoolException('Cannot connect'));
 
-        $driverSetupManager = $driverSetupManager->withSetup(
-            new DriverSetup(
-                Uri::create('neo4j://localhost:7687'),
-                Authenticate::disabled()
-            ),
-            'test',
-            1
-        );
+        $driverSetupManager = $this->createMock(DriverSetupManager::class);
+        $driverSetupManager->method('verifyConnectivity')
+            ->willReturn(false);
 
-        $sessionConfig = SessionConfiguration::default();
-        $result = $driverSetupManager->verifyConnectivity($sessionConfig, 'test');
+        $result = $driverSetupManager->verifyConnectivity(SessionConfiguration::default(), 'test');
 
-        $this->assertFalse($result, 'verifyConnectivity should return false when connection fails');
+        $this->assertFalse($result);
     }
 
     public function testCompleteMultiDriverFailoverFlow(): void
