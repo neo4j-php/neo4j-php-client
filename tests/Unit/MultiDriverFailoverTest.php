@@ -65,10 +65,10 @@ final class MultiDriverFailoverTest extends TestCase
         $this->assertSame($driver3, $selectedDriver, 'Should fall back to lowest-priority driver');
 
         // Safe access after count assertion
-        if (isset($failedDrivers[0])) {
+        if (array_key_exists(0, $failedDrivers)) {
             $this->assertInstanceOf(ConnectionPoolException::class, $failedDrivers[0], 'First driver threw ConnectionPoolException');
         }
-        if (isset($failedDrivers[1])) {
+        if (array_key_exists(1, $failedDrivers)) {
             $this->assertInstanceOf(RuntimeException::class, $failedDrivers[1], 'Second driver threw RuntimeException');
         }
     }
