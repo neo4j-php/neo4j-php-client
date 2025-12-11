@@ -40,14 +40,12 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
+use Laudis\Neo4j\Exception\ConnectionPoolException;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
 
 use function random_int;
-
-use RuntimeException;
-
 use function sprintf;
 use function str_replace;
 use function time;
@@ -165,7 +163,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
 
         if ($table === null) {
-            throw new RuntimeException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $this->data->getUri()->getHost(), implode('", "', $triedAddresses)), previous: $latestError);
+            throw new ConnectionPoolException(sprintf('Cannot connect to host: "%s". Hosts tried: "%s"', $this->data->getUri()->getHost(), implode('", "', $triedAddresses)), previous: $latestError);
         }
 
         $server = $this->getNextServer($table, $config->getAccessMode());
