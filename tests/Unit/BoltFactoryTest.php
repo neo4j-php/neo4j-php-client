@@ -107,4 +107,34 @@ final class BoltFactoryTest extends TestCase
         $factory = BoltFactory::create(null, SocketType::STREAM());
         self::assertInstanceOf(BoltFactory::class, $factory);
     }
+
+    public function testCreateConnectionWithNullServerAgent(): void
+    {
+        // This test reproduces issue #285 where authenticateBolt returns null for server
+        $auth = $this->createMock(AuthenticateInterface::class);
+        $auth->method('authenticateBolt')
+            ->willReturn(['server' => null, 'connection_id' => 'i', 'hints' => []]);
+
+        $connection = $this->factory->createConnection(
+            new ConnectionRequestData('', Uri::create(''), $auth, '', SslConfiguration::default()),
+            SessionConfiguration::default()
+        );
+
+        self::assertInstanceOf(BoltConnection::class, $connection);
+    }
+
+    public function testCreateConnectionWithMissingServerKey(): void
+    {
+        // This test reproduces issue #285 where authenticateBolt returns response without server key
+        $auth = $this->createMock(AuthenticateInterface::class);
+        $auth->method('authenticateBolt')
+            ->willReturn(['connection_id' => 'i', 'hints' => []]);
+
+        $connection = $this->factory->createConnection(
+            new ConnectionRequestData('', Uri::create(''), $auth, '', SslConfiguration::default()),
+            SessionConfiguration::default()
+        );
+
+        self::assertInstanceOf(BoltConnection::class, $connection);
+    }
 }
