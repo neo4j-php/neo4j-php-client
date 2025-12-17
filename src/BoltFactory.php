@@ -78,7 +78,7 @@ class BoltFactory
 
         $response = $data->getAuth()->authenticateBolt($connection, $data->getUserAgent());
 
-        $config->setServerAgent($response['server']);
+        $config->setServerAgent($response['server'] ?? '');
 
         return $connection;
     }
