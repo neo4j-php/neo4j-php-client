@@ -27,6 +27,7 @@ use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Enum\SocketType;
 
 /**
  * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.
@@ -44,7 +45,7 @@ class BoltFactory
     ) {
     }
 
-    public static function create(?Neo4jLogger $logger, ?string $socketType = null): self
+    public static function create(?Neo4jLogger $logger, ?SocketType $socketType = null): self
     {
         return new self(SystemWideConnectionFactory::getInstance($socketType), new ProtocolFactory(), new SslConfigurationFactory(), $logger);
     }

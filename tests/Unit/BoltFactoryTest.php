@@ -29,6 +29,7 @@ use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SslConfiguration;
+use Laudis\Neo4j\Enum\SocketType;
 use PHPUnit\Framework\TestCase;
 
 final class BoltFactoryTest extends TestCase
@@ -78,7 +79,7 @@ final class BoltFactoryTest extends TestCase
 
     public function testSystemWideConnectionFactoryStreamOverride(): void
     {
-        $factory = SystemWideConnectionFactory::getInstance('stream');
+        $factory = SystemWideConnectionFactory::getInstance(SocketType::STREAM());
         self::assertInstanceOf(SystemWideConnectionFactory::class, $factory);
     }
 
@@ -88,21 +89,22 @@ final class BoltFactoryTest extends TestCase
             self::markTestSkipped('sockets extension not loaded');
         }
 
-        $factory = SystemWideConnectionFactory::getInstance('sockets');
+        $factory = SystemWideConnectionFactory::getInstance(SocketType::SOCKETS());
         self::assertInstanceOf(SystemWideConnectionFactory::class, $factory);
     }
 
     public function testDriverConfigurationWithSocketType(): void
     {
+        $socketType = SocketType::STREAM();
         $config = DriverConfiguration::default()
-            ->withSocketType('stream');
+            ->withSocketType($socketType);
 
-        self::assertEquals('stream', $config->getSocketType());
+        self::assertEquals($socketType, $config->getSocketType());
     }
 
     public function testBoltFactoryWithSocketTypeOverride(): void
     {
-        $factory = BoltFactory::create(null, 'stream');
+        $factory = BoltFactory::create(null, SocketType::STREAM());
         self::assertInstanceOf(BoltFactory::class, $factory);
     }
 }

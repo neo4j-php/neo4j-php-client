@@ -24,6 +24,7 @@ use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Contracts\SemaphoreFactoryInterface;
+use Laudis\Neo4j\Enum\SocketType;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
@@ -44,13 +45,13 @@ final class DriverConfiguration
     /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
     private $semaphoreFactory;
     private ?Neo4jLogger $logger;
-    private ?string $socketType;
+    private ?SocketType $socketType;
 
     /**
      * @param callable():(CacheInterface|null)|CacheInterface|null                       $cache
      * @param callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null $semaphore
      * @param string|null                                                                $logLevel   The log level to use. If null, LogLevel::INFO is used.
-     * @param string|null                                                                $socketType the socket type to use ('sockets', 'stream', or null for auto-detect)
+     * @param SocketType|null                                                            $socketType the socket type to use (SocketType::SOCKETS(), SocketType::STREAM(), or null for auto-detect)
      *
      * @psalm-external-mutation-free
      */
@@ -63,7 +64,7 @@ final class DriverConfiguration
         callable|SemaphoreFactoryInterface|null $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
-        ?string $socketType = null,
+        ?SocketType $socketType = null,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
@@ -87,7 +88,7 @@ final class DriverConfiguration
         SemaphoreFactoryInterface $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
-        ?string $socketType = null,
+        ?SocketType $socketType = null,
     ): self {
         return new self(
             $userAgent,
@@ -271,7 +272,7 @@ final class DriverConfiguration
     /**
      * @psalm-immutable
      */
-    public function getSocketType(): ?string
+    public function getSocketType(): ?SocketType
     {
         return $this->socketType;
     }
@@ -279,7 +280,7 @@ final class DriverConfiguration
     /**
      * @psalm-immutable
      */
-    public function withSocketType(?string $socketType): self
+    public function withSocketType(?SocketType $socketType): self
     {
         $tbr = clone $this;
         $tbr->socketType = $socketType;
