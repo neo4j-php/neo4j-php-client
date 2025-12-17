@@ -20,6 +20,8 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Exception\ConnectionPoolException;
+use Laudis\Neo4j\Types\CypherList;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -250,5 +252,50 @@ final class ClientSessionExceptionHandlingTest extends TestCase
         $this->expectExceptionMessage('Session connection lost');
 
         $client->run('RETURN 1 as n');
+    }
+
+    public function testClientRetriesOnAnotherDriverWhenConnectionPoolExceptionOccursDuringStatementExecution(): void
+    {
+        $failingSessionMock = $this->createMock(SessionInterface::class);
+        $successfulSessionMock = $this->createMock(SessionInterface::class);
+
+        $firstDriverMock = $this->createMock(DriverInterface::class);
+        $secondDriverMock = $this->createMock(DriverInterface::class);
+
+        $driverSetupManager = $this->createMock(DriverSetupManager::class);
+
+        $sessionConfig = SessionConfiguration::default();
+        $transactionConfig = TransactionConfiguration::default();
+
+        $firstDriverMock->method('createSession')
+            ->willReturn($failingSessionMock);
+
+        $failingSessionMock->method('runStatements')
+            ->willThrowException(new ConnectionPoolException(
+                'Connection pool exhausted: No available connections after 30000ms wait'
+            ));
+
+        $secondDriverMock->method('createSession')
+            ->willReturn($successfulSessionMock);
+
+        $expectedResult = $this->createMock(CypherList::class);
+        $successfulSessionMock->method('runStatements')
+            ->willReturn($expectedResult);
+
+        $driverSetupManager->expects($this->exactly(2))
+            ->method('getDriver')
+            ->willReturnOnConsecutiveCalls($firstDriverMock, $secondDriverMock);
+
+        $driverSetupManager->method('getDefaultAlias')
+            ->willReturn('default');
+
+        $client = new Client($driverSetupManager, $sessionConfig, $transactionConfig);
+
+        $result = $client->runStatements([
+            Statement::create('RETURN 1'),
+            Statement::create('RETURN 2'),
+        ]);
+
+        $this->assertSame($expectedResult, $result);
     }
 }
