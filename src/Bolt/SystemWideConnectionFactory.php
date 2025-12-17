@@ -35,8 +35,17 @@ class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
     /**
      * @psalm-suppress InvalidNullableReturnType
      */
-    public static function getInstance(): SystemWideConnectionFactory
+    public static function getInstance(?string $preferredSocket = null): SystemWideConnectionFactory
     {
+        // If a specific socket type is requested, create a new instance without caching
+        if ($preferredSocket === 'sockets' && extension_loaded('sockets')) {
+            return new self(new SocketConnectionFactory(new StreamConnectionFactory()));
+        }
+
+        if ($preferredSocket === 'stream') {
+            return new self(new StreamConnectionFactory());
+        }
+
         if (self::$instance === null) {
             $factory = new StreamConnectionFactory();
             if (extension_loaded('sockets')) {

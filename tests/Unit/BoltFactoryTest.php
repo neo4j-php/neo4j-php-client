@@ -20,11 +20,13 @@ use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\Connection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use Laudis\Neo4j\Bolt\SslConfigurationFactory;
+use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Uri;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SslConfiguration;
 use PHPUnit\Framework\TestCase;
@@ -72,5 +74,35 @@ final class BoltFactoryTest extends TestCase
         self::assertInstanceOf(V5::class, $connection->getImplementation()[0]);
         self::assertInstanceOf(Connection::class,
             $connection->getImplementation()[1]);
+    }
+
+    public function testSystemWideConnectionFactoryStreamOverride(): void
+    {
+        $factory = SystemWideConnectionFactory::getInstance('stream');
+        self::assertInstanceOf(SystemWideConnectionFactory::class, $factory);
+    }
+
+    public function testSystemWideConnectionFactorySocketOverride(): void
+    {
+        if (!extension_loaded('sockets')) {
+            self::markTestSkipped('sockets extension not loaded');
+        }
+
+        $factory = SystemWideConnectionFactory::getInstance('sockets');
+        self::assertInstanceOf(SystemWideConnectionFactory::class, $factory);
+    }
+
+    public function testDriverConfigurationWithSocketType(): void
+    {
+        $config = DriverConfiguration::default()
+            ->withSocketType('stream');
+
+        self::assertEquals('stream', $config->getSocketType());
+    }
+
+    public function testBoltFactoryWithSocketTypeOverride(): void
+    {
+        $factory = BoltFactory::create(null, 'stream');
+        self::assertInstanceOf(BoltFactory::class, $factory);
     }
 }

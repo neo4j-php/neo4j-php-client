@@ -44,11 +44,13 @@ final class DriverConfiguration
     /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
     private $semaphoreFactory;
     private ?Neo4jLogger $logger;
+    private ?string $socketType;
 
     /**
      * @param callable():(CacheInterface|null)|CacheInterface|null                       $cache
      * @param callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null $semaphore
-     * @param string|null                                                                $logLevel  The log level to use. If null, LogLevel::INFO is used.
+     * @param string|null                                                                $logLevel   The log level to use. If null, LogLevel::INFO is used.
+     * @param string|null                                                                $socketType the socket type to use ('sockets', 'stream', or null for auto-detect)
      *
      * @psalm-external-mutation-free
      */
@@ -61,6 +63,7 @@ final class DriverConfiguration
         callable|SemaphoreFactoryInterface|null $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
+        ?string $socketType = null,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
@@ -69,6 +72,7 @@ final class DriverConfiguration
         } else {
             $this->logger = null;
         }
+        $this->socketType = $socketType;
     }
 
     /**
@@ -83,6 +87,7 @@ final class DriverConfiguration
         SemaphoreFactoryInterface $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
+        ?string $socketType = null,
     ): self {
         return new self(
             $userAgent,
@@ -92,7 +97,8 @@ final class DriverConfiguration
             $acquireConnectionTimeout,
             $semaphore,
             $logLevel,
-            $logger
+            $logger,
+            $socketType
         );
     }
 
@@ -258,6 +264,25 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->logger = new Neo4jLogger($logLevel ?? LogLevel::INFO, $logger);
+
+        return $tbr;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function getSocketType(): ?string
+    {
+        return $this->socketType;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function withSocketType(?string $socketType): self
+    {
+        $tbr = clone $this;
+        $tbr->socketType = $socketType;
 
         return $tbr;
     }

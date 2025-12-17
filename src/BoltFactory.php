@@ -44,9 +44,9 @@ class BoltFactory
     ) {
     }
 
-    public static function create(?Neo4jLogger $logger): self
+    public static function create(?Neo4jLogger $logger, ?string $socketType = null): self
     {
-        return new self(SystemWideConnectionFactory::getInstance(), new ProtocolFactory(), new SslConfigurationFactory(), $logger);
+        return new self(SystemWideConnectionFactory::getInstance($socketType), new ProtocolFactory(), new SslConfigurationFactory(), $logger);
     }
 
     public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig): BoltConnection
