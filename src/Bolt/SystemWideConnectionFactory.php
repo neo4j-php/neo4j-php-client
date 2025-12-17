@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Bolt;
 use function extension_loaded;
 
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
+use Laudis\Neo4j\Enum\SocketType;
 
 /**
  * Singleton connection factory based on the installed extensions.
@@ -35,8 +36,17 @@ class SystemWideConnectionFactory implements BasicConnectionFactoryInterface
     /**
      * @psalm-suppress InvalidNullableReturnType
      */
-    public static function getInstance(): SystemWideConnectionFactory
+    public static function getInstance(?SocketType $preferredSocket = null): SystemWideConnectionFactory
     {
+        // If a specific socket type is requested, create a new instance without caching
+        if ($preferredSocket === SocketType::SOCKETS() && extension_loaded('sockets')) {
+            return new self(new SocketConnectionFactory(new StreamConnectionFactory()));
+        }
+
+        if ($preferredSocket === SocketType::STREAM()) {
+            return new self(new StreamConnectionFactory());
+        }
+
         if (self::$instance === null) {
             $factory = new StreamConnectionFactory();
             if (extension_loaded('sockets')) {
