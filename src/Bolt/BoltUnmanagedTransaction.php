@@ -149,7 +149,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->database,
                 $this->tsxConfig->getTimeout(),
                 $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
-                $this->isInstantTransaction ? $this->config->getAccessMode() : null, // let the begin transaction decide if it is a managed transaction
+                null, // mode is never sent in RUN messages - it comes from session configuration
                 $this->tsxConfig->getMetaData()
             );
         } catch (Throwable $e) {
