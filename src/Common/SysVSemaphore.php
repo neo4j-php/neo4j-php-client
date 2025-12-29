@@ -29,8 +29,11 @@ use function sem_release;
 
 class SysVSemaphore implements SemaphoreInterface
 {
+    /**
+     * @psalm-suppress UndefinedClass
+     */
     private function __construct(
-        private readonly \SysvSemaphore $semaphore,
+        private readonly mixed $semaphore,
     ) {
     }
 

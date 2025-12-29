@@ -33,6 +33,7 @@ use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Log\LogLevel;
+use Throwable;
 
 /**
  * A session using bolt connections.
@@ -73,8 +74,56 @@ final class Session implements SessionInterface
 
         $this->getLogger()?->log(LogLevel::INFO, 'Running statements', ['statements' => $statements]);
         $config = $this->mergeTsxConfig($config);
+
         foreach ($statements as $statement) {
-            $tbr[] = $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+            // Wrap in retry logic for connection errors
+            $retries = 0;
+            $maxRetries = 3;
+
+            while ($retries < $maxRetries) {
+                try {
+                    $tbr[] = $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+                    break; // Success, exit retry loop
+                } catch (Neo4jException $e) {
+                    if ($this->shouldClearRoutingTable($e)) {
+                        $this->getLogger()?->log(LogLevel::WARNING, 'Connection error in instant transaction, retrying', [
+                            'error' => $e->getMessage(),
+                            'retry' => $retries + 1,
+                        ]);
+
+                        if ($this->pool instanceof Neo4jConnectionPool) {
+                            $this->pool->clearRoutingTable($this->config);
+                        }
+                        $this->pool->close();
+
+                        ++$retries;
+                        if ($retries >= $maxRetries) {
+                            throw $e;
+                        }
+                    } else {
+                        throw $e;
+                    }
+                } catch (Throwable $e) {
+                    if ($this->isConnectionError($e)) {
+                        $this->getLogger()?->log(LogLevel::WARNING, 'Connection error in instant transaction, retrying', [
+                            'error' => $e->getMessage(),
+                            'retry' => $retries + 1,
+                        ]);
+
+                        if ($this->pool instanceof Neo4jConnectionPool) {
+                            $this->pool->clearRoutingTable($this->config);
+                        }
+                        $this->pool->close();
+
+                        ++$retries;
+                        if ($retries >= $maxRetries) {
+                            throw $e;
+                        }
+                    } else {
+                        throw $e;
+                    }
+                }
+            }
         }
 
         return new CypherList($tbr);
@@ -141,14 +190,72 @@ final class Session implements SessionInterface
                     $transaction->rollback();
                 }
 
-                if ($e->getTitle() === 'NotALeader') {
+                // ADD THIS SECTION - Handle connection timeouts and routing failures
+                if ($e->getTitle() === 'NotALeader'
+                    || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader'
+                    || $this->isConnectionError($e)) {
+                    // Clear routing table before closing pool to force fresh ROUTE request on retry
+                    if ($this->pool instanceof Neo4jConnectionPool) {
+                        $this->pool->clearRoutingTable($this->config);
+                    }
                     // By closing the pool, we force the connection to be re-acquired and the routing table to be refetched
                     $this->pool->close();
                 } elseif ($e->getClassification() !== 'TransientError') {
                     throw $e;
                 }
+            } catch (Exception $e) {
+                if ($this->isConnectionError($e)) {
+                    if ($this->pool instanceof Neo4jConnectionPool) {
+                        $this->pool->clearRoutingTable($this->config);
+                    }
+                    $this->pool->close();
+                } else {
+                    throw $e;
+                }
             }
         }
+    }
+
+    /**
+     * Check if the exception is a connection-related error.
+     */
+    private function isConnectionError(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        // Check for common connection error messages
+        if (str_contains($message, 'interrupted system call')
+            || str_contains($message, 'broken pipe')
+            || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection timeout')
+            || str_contains($message, 'connection closed')) {
+            return true;
+        }
+
+        // Check for Neo4jException-specific codes
+        if ($e instanceof Neo4jException) {
+            return $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader';
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the exception should trigger a routing table clear.
+     */
+    private function shouldClearRoutingTable(Neo4jException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+        $title = $e->getTitle();
+
+        // Clear routing table for timeout, connection, and cluster errors
+        return str_contains($message, 'interrupted system call')
+            || str_contains($message, 'broken pipe')
+            || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection timeout')
+            || str_contains($message, 'connection closed')
+            || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader'
+            || $title === 'NotALeader';
     }
 
     private static function triggerLazyResult(mixed $tbr): void
