@@ -134,6 +134,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $latestError = null;
 
         if ($table == null) {
+            $this->getLogger()?->log(LogLevel::DEBUG, 'Routing table not found in cache, fetching new routing table');
+
             $addresses = $this->getAddresses($this->data->getUri()->getHost());
             foreach ($addresses as $address) {
                 $triedAddresses[] = $address;
@@ -150,8 +152,18 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                      */
                     $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
                     $table = $this->routingTable($connection, $config);
+
+                    $this->getLogger()?->log(LogLevel::DEBUG, 'Successfully fetched routing table', [
+                        'ttl' => $table->getTtl(),
+                        'leaders' => $table->getWithRole(RoutingRoles::LEADER()),
+                        'followers' => $table->getWithRole(RoutingRoles::FOLLOWER()),
+                        'routers' => $table->getWithRole(RoutingRoles::ROUTE()),
+                    ]);
                 } catch (ConnectException $e) {
-                    // todo - once client side logging is implemented it must be conveyed here.
+                    $this->getLogger()?->log(LogLevel::WARNING, 'Failed to connect to address', [
+                        'address' => $address,
+                        'error' => $e->getMessage(),
+                    ]);
                     $latestError = $e;
                     continue; // We continue if something is wrong with the current server
                 }
@@ -174,12 +186,100 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $server = $server->withScheme($this->data->getUri()->getScheme());
         }
 
+        $this->getLogger()?->log(LogLevel::DEBUG, 'Acquiring connection from server', [
+            'server' => (string) $server,
+            'access_mode' => $config->getAccessMode()?->getValue(),
+        ]);
+
         return $this->createOrGetPool($this->data->getUri()->getHost(), $server)->acquire($config);
     }
 
     public function getLogger(): ?Neo4jLogger
     {
         return $this->logger;
+    }
+
+    /**
+     * Get the current routing table from cache for the given session configuration.
+     *
+     * @return RoutingTable|null The cached routing table, or null if not yet initialized
+     */
+    public function getRoutingTable(SessionConfiguration $config): ?RoutingTable
+    {
+        $key = $this->createKey($this->data, $config);
+        /** @var RoutingTable|null $table */
+        $table = $this->cache->get($key);
+
+        return $table;
+    }
+
+    /**
+     * Clear the cached routing table for the given session configuration.
+     * This forces a new routing table to be fetched on the next acquire() call.
+     */
+    public function clearRoutingTable(SessionConfiguration $config): void
+    {
+        $key = $this->createKey($this->data, $config);
+        $deleted = $this->cache->delete($key);
+
+        $this->getLogger()?->log(LogLevel::INFO, 'Cleared routing table from cache', [
+            'key' => $key,
+            'deleted' => $deleted,
+        ]);
+    }
+
+    /**
+     * Remove a failed server from the routing table.
+     * This removes the server from all roles (leader, follower, router) and updates the cache.
+     *
+     * @param SessionConfiguration $config        The session configuration
+     * @param string               $serverAddress The address of the failed server (e.g., "172.18.0.3:9010")
+     */
+    public function removeFailedServer(SessionConfiguration $config, string $serverAddress): void
+    {
+        $key = $this->createKey($this->data, $config);
+        /** @var RoutingTable|null $table */
+        $table = $this->cache->get($key);
+
+        if ($table !== null) {
+            $this->getLogger()?->log(LogLevel::WARNING, 'Removing failed server from routing table', [
+                'server' => $serverAddress,
+            ]);
+
+            // Remove the server and update cache
+            $updatedTable = $table->removeServer($serverAddress);
+
+            // Only update cache if the table actually changed
+            if ($updatedTable !== $table) {
+                $this->cache->set($key, $updatedTable, $updatedTable->getTtl());
+
+                $this->getLogger()?->log(LogLevel::INFO, 'Updated routing table after removing failed server', [
+                    'server' => $serverAddress,
+                    'remaining_leaders' => $updatedTable->getWithRole(RoutingRoles::LEADER()),
+                    'remaining_followers' => $updatedTable->getWithRole(RoutingRoles::FOLLOWER()),
+                    'remaining_routers' => $updatedTable->getWithRole(RoutingRoles::ROUTE()),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Check if a server exists in the routing table.
+     *
+     * @param SessionConfiguration $config        The session configuration
+     * @param string               $serverAddress The address of the server to check
+     *
+     * @return bool True if the server exists in the routing table, false otherwise
+     */
+    public function hasServer(SessionConfiguration $config, string $serverAddress): bool
+    {
+        $table = $this->getRoutingTable($config);
+
+        if ($table === null) {
+            return false;
+        }
+
+        return $table->hasServer($serverAddress);
     }
 
     /**
@@ -191,6 +291,10 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $servers = $table->getWithRole(RoutingRoles::LEADER());
         } else {
             $servers = $table->getWithRole(RoutingRoles::FOLLOWER());
+        }
+
+        if (count($servers) === 0) {
+            throw new RuntimeException(sprintf('No servers available for access mode: %s', $mode?->getValue() ?? 'WRITE'));
         }
 
         return Uri::create($servers[random_int(0, count($servers) - 1)]);
@@ -252,6 +356,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
     public function close(): void
     {
+        $this->getLogger()?->log(LogLevel::INFO, 'Closing all connection pools');
+
         foreach (self::$pools as $pool) {
             $pool->close();
         }
