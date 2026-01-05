@@ -14,5 +14,6 @@ composer.lock
 /docs/_build
 cachegrind.out.*
 .phpunit.cache/
+# Note: /testkit/ is tracked as a Git submodule, not ignored
+# /testkit-backend/testkit/ is used for temporary test runs and should be ignored
 /testkit-backend/testkit/
-/testkit/

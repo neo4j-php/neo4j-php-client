@@ -1,0 +1,5 @@
+[submodule "testkit"]
+	path = testkit
+	url = https://github.com/neo4j-drivers/testkit.git
+	branch = 5.0
+

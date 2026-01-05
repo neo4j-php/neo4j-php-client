@@ -17,19 +17,23 @@ if [ "$1" == "--clean" ]; then
     fi
 fi
 
-if [ ! -d testkit ]; then
-    git clone https://github.com/neo4j-drivers/testkit.git
-    if [ "$(cd testkit && git branch --show-current)" != "${TESTKIT_VERSION}" ]; then
-        (cd testkit && git checkout ${TESTKIT_VERSION})
-    fi
+# Initialize and update the testkit submodule
+if [ ! -d testkit/.git ]; then
+    # Initialize submodules (handles .gitmodules configuration)
+    git submodule init
+    git submodule update
 fi
-#else
-#    (cd testkit && git pull)
-#fi
+
+# Verify testkit is at the correct commit (in CI this happens automatically)
+# In local dev, this will fail if submodule is out of sync, guiding user to update
+if [ ! -d testkit ]; then
+    echo " ERROR: testkit submodule not initialized"
+    echo "   Run: git submodule init && git submodule update"
+    exit 1
+fi
 
 # Validate testkit version before proceeding
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-chmod +x "$SCRIPT_DIR/validate-testkit-version.sh"
 "$SCRIPT_DIR/validate-testkit-version.sh" || exit 1
 echo ""
 
