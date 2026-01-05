@@ -27,6 +27,12 @@ fi
 #    (cd testkit && git pull)
 #fi
 
+# Validate testkit version before proceeding
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+chmod +x "$SCRIPT_DIR/validate-testkit-version.sh"
+"$SCRIPT_DIR/validate-testkit-version.sh" || exit 1
+echo ""
+
 cd testkit || (echo 'cannot cd into testkit' && exit 1)
 python3 -m venv venv
 source venv/bin/activate

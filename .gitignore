@@ -15,3 +15,4 @@ composer.lock
 cachegrind.out.*
 .phpunit.cache/
 /testkit-backend/testkit/
+/testkit/
