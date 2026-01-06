@@ -11,6 +11,14 @@ TESTKIT_VERSION=5.0
 
 [ -z "$TEST_DRIVER_REPO" ] && TEST_DRIVER_REPO=$(realpath ..) && export TEST_DRIVER_REPO
 
+# Handle Docker environment: configure git safe directory before any git operations
+if [ -f "/.dockerenv" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$SCRIPT_DIR/.."
+    git config --global --add safe.directory "$PROJECT_ROOT" 2>/dev/null || true
+    git config --global --add safe.directory "$PROJECT_ROOT/testkit" 2>/dev/null || true
+fi
+
 if [ "$1" == "--clean" ]; then
     if [ -d testkit ]; then
         rm -rf testkit
