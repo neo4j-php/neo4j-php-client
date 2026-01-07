@@ -26,17 +26,20 @@ if [ "$1" == "--clean" ]; then
 fi
 
 # Initialize and update the testkit submodule
-if [ ! -d testkit/.git ]; then
-    # Initialize submodules (handles .gitmodules configuration)
-    git submodule init
-    git submodule update
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR/.."
+
+if [ ! -d "$PROJECT_ROOT/testkit/.git" ]; then
+    # Initialize submodules from project root (handles .gitmodules configuration)
+    git -C "$PROJECT_ROOT" submodule init
+    git -C "$PROJECT_ROOT" submodule update
 fi
 
 # Verify testkit is at the correct commit (in CI this happens automatically)
 # In local dev, this will fail if submodule is out of sync, guiding user to update
-if [ ! -d testkit ]; then
-    echo " ERROR: testkit submodule not initialized"
-    echo "   Run: git submodule init && git submodule update"
+if [ ! -d "$PROJECT_ROOT/testkit" ]; then
+    echo "❌ ERROR: testkit submodule not initialized"
+    echo "   Run: cd $PROJECT_ROOT && git submodule init && git submodule update"
     exit 1
 fi
 
@@ -45,7 +48,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 "$SCRIPT_DIR/validate-testkit-version.sh" || exit 1
 echo ""
 
-cd testkit || (echo 'cannot cd into testkit' && exit 1)
+cd "$SCRIPT_DIR/../testkit" || (echo 'cannot cd into testkit' && exit 1)
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt > /dev/null 2>&1
