@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\enum\ServerState;
+use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
@@ -53,6 +54,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly BookmarkHolder $bookmarkHolder,
         private readonly BoltMessageFactory $messageFactory,
         private readonly bool $isInstantTransaction,
+        private readonly ?ConnectionPoolInterface $pool = null,
     ) {
     }
 
@@ -154,6 +156,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             );
         } catch (Throwable $e) {
             $this->state = TransactionState::TERMINATED;
+            if ($this->pool !== null) {
+                $this->pool->release($this->connection);
+            }
             throw $e;
         }
         $run = microtime(true);

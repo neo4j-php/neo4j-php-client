@@ -1,0 +1,7 @@
+#!/opt/project/testkit/venv/bin/python3
+import sys
+from nose import run_exit
+if __name__ == '__main__':
+    if sys.argv[0].endswith('.exe'):
+        sys.argv[0] = sys.argv[0][:-4]
+    sys.exit(run_exit())

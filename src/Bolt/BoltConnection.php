@@ -330,6 +330,30 @@ class BoltConnection implements ConnectionInterface
         }
     }
 
+    /**
+     * Invalidates the connection without sending GOODBYE message.
+     *
+     * This method closes the Bolt protocol and socket connection WITHOUT
+     * sending a GOODBYE message, which is essential when handling timeout
+     * exceptions or when the connection is already broken. Sending GOODBYE
+     * on a broken connection can interfere with the server's expected
+     * message sequence.
+     */
+    public function invalidate(): void
+    {
+        try {
+            $this->subscribedResults = [];
+
+            try {
+                $this->connection->disconnect();
+            } catch (Throwable) {
+            }
+
+            unset($this->boltProtocol);
+        } catch (Throwable) {
+        }
+    }
+
     private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
     {
         $extra = [];

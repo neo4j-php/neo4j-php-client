@@ -43,14 +43,16 @@ abstract class BoltMessage
                     $timeoutMsg = 'Connection timeout reached after '.$matches[1].' seconds';
                 }
                 try {
-                    $this->connection->close();
+                    // Use invalidate() instead of close() to avoid sending GOODBYE on timeout
+                    $this->connection->invalidate();
                 } catch (Throwable) {
                 }
                 // Use DriverError so the driver treats this as a failure
                 throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', $timeoutMsg)], $e);
             } elseif ($this->isSocketException($e)) {
                 try {
-                    $this->connection->close();
+                    // Use invalidate() instead of close() to avoid sending GOODBYE on socket errors
+                    $this->connection->invalidate();
                 } catch (Throwable) {
                 }
                 throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);

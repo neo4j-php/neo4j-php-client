@@ -111,9 +111,9 @@ final class BoltResult implements Iterator
         } catch (BoltConnectException $e) {
             // Close connection on socket errors
             try {
-                $this->connection->close();
+                $this->connection->invalidate();
             } catch (Throwable) {
-                // Ignore errors when closing
+                // Ignore errors when invalidating
             }
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
         }

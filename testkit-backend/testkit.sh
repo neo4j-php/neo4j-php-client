@@ -46,6 +46,13 @@ fi
 # Validate testkit version before proceeding
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 "$SCRIPT_DIR/validate-testkit-version.sh" || exit 1
+
+# Apply PHP driver timeout test support patch
+if [ -f "$PROJECT_ROOT/testkit-new/tests/stub/configuration_hints/test_connection_recv_timeout_seconds.py" ]; then
+    cp "$PROJECT_ROOT/testkit-new/tests/stub/configuration_hints/test_connection_recv_timeout_seconds.py" \
+       "$PROJECT_ROOT/testkit/tests/stub/configuration_hints/test_connection_recv_timeout_seconds.py" 2>/dev/null || true
+fi
+
 echo ""
 
 cd "$SCRIPT_DIR/../testkit" || (echo 'cannot cd into testkit' && exit 1)

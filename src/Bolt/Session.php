@@ -294,6 +294,9 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
 
+        /** @var ConnectionPoolInterface|null $pool */
+        $pool = $this->pool;
+
         return new BoltUnmanagedTransaction(
             $this->config->getDatabase(),
             $this->formatter,
@@ -303,6 +306,7 @@ final class Session implements SessionInterface
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
             true,
+            $pool,
         );
     }
 
@@ -343,8 +347,15 @@ final class Session implements SessionInterface
             if (isset($connection) && $connection->getServerState() === 'FAILED') {
                 $connection->reset();
             }
+            // Release connection back to pool if available
+            if (isset($connection)) {
+                $this->pool->release($connection);
+            }
             throw $e;
         }
+
+        /** @var ConnectionPoolInterface|null $pool */
+        $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
             $this->config->getDatabase(),
@@ -354,7 +365,8 @@ final class Session implements SessionInterface
             $config,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
-            false
+            false,
+            $pool,
         );
     }
 
