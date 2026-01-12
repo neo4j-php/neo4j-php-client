@@ -11,51 +11,23 @@ TESTKIT_VERSION=5.0
 
 [ -z "$TEST_DRIVER_REPO" ] && TEST_DRIVER_REPO=$(realpath ..) && export TEST_DRIVER_REPO
 
-# Handle Docker environment: configure git safe directory before any git operations
-if [ -f "/.dockerenv" ]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    PROJECT_ROOT="$SCRIPT_DIR/.."
-    git config --global --add safe.directory "$PROJECT_ROOT" 2>/dev/null || true
-    git config --global --add safe.directory "$PROJECT_ROOT/testkit" 2>/dev/null || true
-fi
-
 if [ "$1" == "--clean" ]; then
     if [ -d testkit ]; then
         rm -rf testkit
     fi
 fi
 
-# Initialize and update the testkit submodule
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$SCRIPT_DIR/.."
-
-if [ ! -d "$PROJECT_ROOT/testkit/.git" ]; then
-    # Initialize submodules from project root (handles .gitmodules configuration)
-    git -C "$PROJECT_ROOT" submodule init
-    git -C "$PROJECT_ROOT" submodule update
+if [ ! -d testkit ]; then
+    git clone https://github.com/neo4j-drivers/testkit.git
+    if [ "$(cd testkit && git branch --show-current)" != "${TESTKIT_VERSION}" ]; then
+        (cd testkit && git checkout ${TESTKIT_VERSION})
+    fi
 fi
+#else
+#    (cd testkit && git pull)
+#fi
 
-# Verify testkit is at the correct commit (in CI this happens automatically)
-# In local dev, this will fail if submodule is out of sync, guiding user to update
-if [ ! -d "$PROJECT_ROOT/testkit" ]; then
-    echo "❌ ERROR: testkit submodule not initialized"
-    echo "   Run: cd $PROJECT_ROOT && git submodule init && git submodule update"
-    exit 1
-fi
-
-# Validate testkit version before proceeding
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-"$SCRIPT_DIR/validate-testkit-version.sh" || exit 1
-
-# Apply PHP driver timeout test support patch
-if [ -f "$PROJECT_ROOT/testkit-new/tests/stub/configuration_hints/test_connection_recv_timeout_seconds.py" ]; then
-    cp "$PROJECT_ROOT/testkit-new/tests/stub/configuration_hints/test_connection_recv_timeout_seconds.py" \
-       "$PROJECT_ROOT/testkit/tests/stub/configuration_hints/test_connection_recv_timeout_seconds.py" 2>/dev/null || true
-fi
-
-echo ""
-
-cd "$SCRIPT_DIR/../testkit" || (echo 'cannot cd into testkit' && exit 1)
+cd testkit || (echo 'cannot cd into testkit' && exit 1)
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt > /dev/null 2>&1
