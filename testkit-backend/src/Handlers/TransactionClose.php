@@ -48,4 +48,3 @@ final class TransactionClose implements RequestHandlerInterface
         return new TransactionResponse($request->getTxId());
     }
 }
-

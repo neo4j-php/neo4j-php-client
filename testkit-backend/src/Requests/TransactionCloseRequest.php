@@ -29,4 +29,3 @@ final class TransactionCloseRequest
         return $this->txId;
     }
 }
-
