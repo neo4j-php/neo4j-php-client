@@ -9,10 +9,28 @@
 
 [ -z "$TEST_DRIVER_REPO" ] && TEST_DRIVER_REPO=$(realpath ..) && export TEST_DRIVER_REPO
 
-cd ../testkit || (echo 'cannot cd into testkit' && exit 1)
+# Use realpath for robustness instead of relative paths
+TESTKIT_DIR=$(realpath ../testkit)
+if [ ! -d "$TESTKIT_DIR" ]; then
+    echo "ERROR: testkit directory not found at $TESTKIT_DIR"
+    exit 1
+fi
+
+cd "$TESTKIT_DIR" || (echo 'cannot cd into testkit' && exit 1)
+
+# Verify tests directory exists
+if [ ! -d "$TESTKIT_DIR/tests" ]; then
+    echo "ERROR: tests directory not found at $TESTKIT_DIR/tests"
+    exit 1
+fi
+
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt > /dev/null 2>&1
+
+# Explicitly set PYTHONPATH to ensure module discovery
+export PYTHONPATH="${PYTHONPATH}:${TESTKIT_DIR}"
+
+pip install -r requirements.txt
 
 echo ""
 echo "╔════════════════════════════════════════════════════════════════════════════╗"
