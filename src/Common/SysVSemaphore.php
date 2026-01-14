@@ -33,7 +33,7 @@ class SysVSemaphore implements SemaphoreInterface
      * @psalm-suppress UndefinedClass
      */
     private function __construct(
-        private readonly mixed $semaphore,
+        private readonly \SysvSemaphore $semaphore,
     ) {
     }
 

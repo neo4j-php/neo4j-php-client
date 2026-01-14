@@ -27,7 +27,6 @@ use Iterator;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use Throwable;
 
 /**
  * @psalm-import-type BoltCypherStats from SummarizedResultFormatter
@@ -110,11 +109,7 @@ final class BoltResult implements Iterator
             $meta = $this->connection->pull($this->qid, $this->fetchSize);
         } catch (BoltConnectException $e) {
             // Close connection on socket errors
-            try {
-                $this->connection->invalidate();
-            } catch (Throwable) {
-                // Ignore errors when invalidating
-            }
+            $this->connection->invalidate();
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
         }
 
@@ -173,6 +168,7 @@ final class BoltResult implements Iterator
         try {
             $this->connection->discard($this->qid === -1 ? null : $this->qid);
         } catch (BoltConnectException $e) {
+            $this->connection->invalidate();
             // Ignore connection errors during discard - connection is already broken
             // The Neo4jException will be thrown when the next operation is attempted
         }

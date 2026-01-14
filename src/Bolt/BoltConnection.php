@@ -346,11 +346,19 @@ class BoltConnection implements ConnectionInterface
 
             try {
                 $this->connection->disconnect();
-            } catch (Throwable) {
+            } catch (Throwable $e) {
+                $this->logger?->log(LogLevel::WARNING, 'Failed to disconnect during invalidation', [
+                    'exception' => $e->getMessage(),
+                    'type' => $e::class,
+                ]);
             }
 
             unset($this->boltProtocol);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            $this->logger?->log(LogLevel::WARNING, 'Error during connection invalidation', [
+                'exception' => $e->getMessage(),
+                'type' => $e::class,
+            ]);
         }
     }
 
