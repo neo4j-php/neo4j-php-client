@@ -1,3 +1,0 @@
-[submodule "testkit"]
-	path = testkit
-	url = git@github.com:nagels-tech/testkit.git
