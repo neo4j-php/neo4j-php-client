@@ -451,32 +451,26 @@ class BoltConnection implements ConnectionInterface
      */
     public function discardUnconsumedResults(): void
     {
-        if (!$this->isOpen()) {
-            return;
-        }
+        if ($this->isOpen() && in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
+            $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
 
-        if (!in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
-            return;
-        }
+            $this->subscribedResults = array_values(array_filter(
+                $this->subscribedResults,
+                static fn (WeakReference $ref): bool => $ref->get() !== null
+            ));
 
-        $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
-
-        $this->subscribedResults = array_values(array_filter(
-            $this->subscribedResults,
-            static fn (WeakReference $ref): bool => $ref->get() !== null
-        ));
-
-        if (!empty($this->subscribedResults)) {
-            try {
-                $this->discard(null);
-                $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
-            } catch (Throwable $e) {
-                $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
-                    'exception' => $e->getMessage(),
-                ]);
+            if (!empty($this->subscribedResults)) {
+                try {
+                    $this->discard(null);
+                    $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
+                } catch (Throwable $e) {
+                    $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
+                        'exception' => $e->getMessage(),
+                    ]);
+                }
             }
-        }
 
-        $this->subscribedResults = [];
+            $this->subscribedResults = [];
+        }
     }
 }
