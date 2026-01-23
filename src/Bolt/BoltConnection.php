@@ -326,7 +326,11 @@ class BoltConnection implements ConnectionInterface
 
                 unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            $this->logger?->log(LogLevel::WARNING, 'Failed to close connection gracefully', [
+                'exception' => $e->getMessage(),
+                'type' => $e::class,
+            ]);
         }
     }
 
@@ -341,25 +345,17 @@ class BoltConnection implements ConnectionInterface
      */
     public function invalidate(): void
     {
+        $this->subscribedResults = [];
         try {
-            $this->subscribedResults = [];
-
-            try {
-                $this->connection->disconnect();
-            } catch (Throwable $e) {
-                $this->logger?->log(LogLevel::WARNING, 'Failed to disconnect during invalidation', [
-                    'exception' => $e->getMessage(),
-                    'type' => $e::class,
-                ]);
-            }
-
-            unset($this->boltProtocol);
+            $this->connection->disconnect();
         } catch (Throwable $e) {
-            $this->logger?->log(LogLevel::WARNING, 'Error during connection invalidation', [
+            $this->logger?->log(LogLevel::WARNING, 'Failed to disconnect during invalidation', [
                 'exception' => $e->getMessage(),
                 'type' => $e::class,
             ]);
         }
+
+        unset($this->boltProtocol);
     }
 
     private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
