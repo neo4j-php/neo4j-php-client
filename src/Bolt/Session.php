@@ -248,8 +248,29 @@ final class Session implements SessionInterface
      *
      * @return SummarizedResult The result of the statement
      */
+
+    /**
+     * Execute instant transaction (session.run) with automatic retry on connection/routing errors.
+     *
+     * PURPOSE:
+     * - Handles transient failures transparently to user: connection timeouts, server unavailable, etc.
+     * - Supports cluster failover: when server goes down, clears routing table and retries on different node
+     * - Distinguishes errors: retries on connection/routing issues but fails immediately on client errors (syntax, auth)
+     * - Improves reliability: 3 retry attempts with fresh routing table each time = high availability
+     *
+     * EXAMPLE: User calls session.run("CREATE (n)") during cluster failover:
+     *   Attempt 1: Node A is leader → "NotALeader" (stepping down) → Clear routing table
+     *   Attempt 2: Node B elected leader → "Connection timeout" (election in progress) → Retry
+     *   Attempt 3: Cluster stable → Query succeeds
+     *   User sees: Query succeeded transparently (no exception, no manual retry needed)
+     *
+     * WHY THIS IS CRITICAL FOR DRIVERS:
+     * - All Neo4j drivers (Java, Python, JavaScript) have this pattern
+     * - Without it: user must manually retry or wrap every session.run() in try-catch
+     * - With it: driver handles recovery automatically = better UX and reliability
+     */
     private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
-    {
+    {    // Retry instant transactions up to 3 times on connection/routing errors; catch distinguishes retryable errors from client errors (syntax, auth) and clears routing table for cluster failover.
         $maxRetries = 3;
         $retries = 0;
 

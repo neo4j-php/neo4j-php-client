@@ -105,11 +105,15 @@ final class BoltResult implements Iterator
 
     private function fetchResults(): void
     {
+        // Catch socket/connection errors during PULL. Convert BoltConnectException to Neo4jException
+        // so Session retry logic can detect and handle connection failures (triggers routing table refresh).
         try {
             $meta = $this->connection->pull($this->qid, $this->fetchSize);
         } catch (BoltConnectException $e) {
             // Close connection on socket errors
             $this->connection->invalidate();
+            // Convert to Neo4jException with NotALeader code so Session.executeStatementWithRetry()
+            // and Session.retry() can catch it and clear routing table for automatic failover recovery.
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
         }
 
@@ -168,9 +172,10 @@ final class BoltResult implements Iterator
         try {
             $this->connection->discard($this->qid === -1 ? null : $this->qid);
         } catch (BoltConnectException $e) {
+            // Connection already broken if DISCARD fails. Invalidate to prevent pool from reusing it.
+            // Don't rethrow: this is called from __destruct() where exceptions don't propagate properly.
+            // Connection will be detected as broken on next operation when pool tries to reuse it.
             $this->connection->invalidate();
-            // Ignore connection errors during discard - connection is already broken
-            // The Neo4jException will be thrown when the next operation is attempted
         }
     }
 }

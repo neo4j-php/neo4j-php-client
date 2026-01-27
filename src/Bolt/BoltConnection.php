@@ -315,6 +315,9 @@ class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
+        // Graceful cleanup: GOODBYE/DISCARD may fail if connection already broken.
+        // Must catch to ensure unset($this->boltProtocol) executes,
+        // preventing pool from reusing broken connections.
         try {
             if ($this->isOpen()) {
                 if ($this->isStreaming()) {
@@ -346,15 +349,7 @@ class BoltConnection implements ConnectionInterface
     public function invalidate(): void
     {
         $this->subscribedResults = [];
-        try {
-            $this->connection->disconnect();
-        } catch (Throwable $e) {
-            $this->logger?->log(LogLevel::WARNING, 'Failed to disconnect during invalidation', [
-                'exception' => $e->getMessage(),
-                'type' => $e::class,
-            ]);
-        }
-
+        $this->connection->disconnect();
         unset($this->boltProtocol);
     }
 
@@ -444,6 +439,7 @@ class BoltConnection implements ConnectionInterface
 
     /**
      * Discard unconsumed results - sends DISCARD to server for each subscribed result.
+     * Try-catch prevents DISCARD failures from breaking cleanup chain in Session.close().
      */
     public function discardUnconsumedResults(): void
     {
