@@ -197,7 +197,11 @@ final class SummarizedResultFormatter
 
         /** @var SummarizedResult */
         $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
-        $keys = $meta['fields'];
+        // Safely get fields from metadata, defaulting to empty array if missing (indicates connection loss)
+        $keys = [];
+        if (isset($meta['fields']) && is_array($meta['fields'])) {
+            $keys = $meta['fields'];
+        }
 
         return new SummarizedResult($summary, $result, $keys);
     }

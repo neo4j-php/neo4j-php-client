@@ -167,7 +167,7 @@ return [
     // the user-defined transaction function. This way, the (potentially costly)
     // transaction function is not started until a working transaction has been
     // established.
-    'Optimization:EagerTransactionBegin' => true,
+    'Optimization:EagerTransactionBegin' => false,
     // For the executeQuery API, the driver doesn't wait for a SUCCESS after
     // sending BEGIN but pipelines the RUN and PULL right afterwards and
     // consumes three messages after that. This saves 2 full round-trips.

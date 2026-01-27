@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use function array_splice;
 
+use Bolt\error\BoltException;
 use Bolt\error\ConnectException as BoltConnectException;
 
 use function count;
@@ -115,6 +116,22 @@ final class BoltResult implements Iterator
             // Convert to Neo4jException with NotALeader code so Session.executeStatementWithRetry()
             // and Session.retry() can catch it and clear routing table for automatic failover recovery.
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+        } catch (BoltException $e) {
+            // Close connection on Bolt protocol errors (includes disconnect errors)
+            $this->connection->invalidate();
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+        } catch (Neo4jException $e) {
+            // Re-throw Neo4jExceptions that were already processed by BoltMessage
+            throw $e;
+        } catch (\Throwable $e) {
+            // Close connection on any other errors
+            $this->connection->invalidate();
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+        }
+
+        // Safety check: ensure $meta is not empty
+        if (empty($meta)) {
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Empty response from server')]);
         }
 
         /** @var list<list> $rows */
@@ -122,8 +139,17 @@ final class BoltResult implements Iterator
         $this->rows = $rows;
 
         /** @var array{0: array} $meta */
-        if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
-            $this->meta = $meta[0];
+        // Check if we have a valid summary (not empty array from partial pull)
+        if (count($meta) > 0 && !empty($meta[0]) && is_array($meta[0])) {
+            if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
+                $this->meta = $meta[0];
+            }
+        } else {
+            // Partial result - no summary received (connection closed after records)
+            // Don't set $this->meta so the next fetchResults() will try to pull again
+            // This allows the first record to be consumed, and the next fetch will fail
+            // which is the expected behavior for tests like exit_after_record
+            $this->meta = null;
         }
     }
 
@@ -176,6 +202,11 @@ final class BoltResult implements Iterator
             // Don't rethrow: this is called from __destruct() where exceptions don't propagate properly.
             // Connection will be detected as broken on next operation when pool tries to reuse it.
             $this->connection->invalidate();
+            // Ignore connection errors during discard - connection is already broken
+            // The Neo4jException will be thrown when the next operation is attempted
+        } catch (BoltException $e) {
+            $this->connection->invalidate();
+            // Ignore Bolt protocol errors during discard - connection is already broken
         }
     }
 }

@@ -22,6 +22,7 @@ use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\NullRecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
+use Throwable;
 
 /**
  * @implements RequestHandlerInterface<ResultNextRequest>
@@ -48,14 +49,18 @@ final class ResultNext implements RequestHandlerInterface
 
             $iterator = $this->repository->getIterator($request->getResultId());
 
+            // If we've already fetched the first record, advance to the next one
             if ($this->repository->getIteratorFetchedFirst($request->getResultId()) === true) {
                 $iterator->next();
             }
 
+            // Check if iterator is valid - this may trigger generator to start and fetch results
+            // If the connection is closed, this will throw an exception which we catch below
             if (!$iterator->valid()) {
                 return new NullRecordResponse();
             }
 
+            // Get the current record
             $current = $iterator->current();
             $this->repository->setIteratorFetchedFirst($request->getResultId(), true);
 
@@ -69,6 +74,12 @@ final class ResultNext implements RequestHandlerInterface
             $this->repository->removeRecords($request->getResultId());
 
             return new DriverErrorResponse($request->getResultId(), $e);
+        } catch (Throwable $e) {
+            // Convert any other throwable (including unhandled exceptions) to Neo4jException format
+            $this->repository->removeRecords($request->getResultId());
+            $neo4jException = new Neo4jException([], $e);
+
+            return new DriverErrorResponse($request->getResultId(), $neo4jException);
         }
     }
 }

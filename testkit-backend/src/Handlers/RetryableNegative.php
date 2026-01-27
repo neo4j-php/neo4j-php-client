@@ -28,6 +28,10 @@ final class RetryableNegative implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        return new FrontendErrorResponse('Retryable negative not implemented yet'); // TODO
+        // RetryableNegative tests negative scenarios with retryable errors
+        // This is used to test that the driver properly handles retryable exceptions
+        // For now, we return a frontend error to indicate this test scenario is not supported
+        // In practice, this would need to throw a retryable Neo4j error
+        return new FrontendErrorResponse('Retryable negative test scenarios not yet implemented');
     }
 }
