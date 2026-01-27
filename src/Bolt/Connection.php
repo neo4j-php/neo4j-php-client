@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\IConnection;
+use Bolt\error\BoltException;
 
 class Connection
 {
@@ -38,7 +39,14 @@ class Connection
 
     public function read(int $length = 2048): string
     {
-        return $this->connection->read($length);
+        $data = $this->connection->read($length);
+        
+        // Detect EOF - empty read from blocking socket indicates connection closed
+        if ($data === '' && $length > 0) {
+            throw new BoltException('Connection closed by remote host');
+        }
+        
+        return $data;
     }
 
     public function disconnect(): void

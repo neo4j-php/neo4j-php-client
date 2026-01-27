@@ -31,6 +31,7 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -96,8 +97,18 @@ abstract class AbstractRunner implements RequestHandlerInterface
             }
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
+        } catch (Throwable $exception) {
+            // Convert any other throwable to Neo4jException format for driver error response
+            $neo4jException = new Neo4jException([], $exception);
+            if ($request instanceof SessionRunRequest) {
+                return new DriverErrorResponse($request->getSessionId(), $neo4jException);
+            }
+            if ($request instanceof TransactionRunRequest) {
+                return new DriverErrorResponse($request->getTxId(), $neo4jException);
+            }
+
+            throw new Exception('Unhandled exception for run request of type: '.get_class($request));
         }
-        // NOTE: all other exceptions will be caught in the Backend
     }
 
     /**

@@ -39,6 +39,7 @@ use Throwable;
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
     private TransactionState $state = TransactionState::ACTIVE;
+    private bool $beginSent = false;
 
     public function __construct(
         /** @psalm-readonly */
@@ -81,6 +82,20 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         }
 
+        // For managed transactions, send BEGIN if not yet sent
+        if (!$this->isInstantTransaction && !$this->beginSent) {
+            try {
+                $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
+                $this->beginSent = true;
+            } catch (Throwable $e) {
+                $this->state = TransactionState::TERMINATED;
+                if ($this->pool !== null) {
+                    $this->pool->release($this->connection);
+                }
+                throw $e;
+            }
+        }
+
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
         $tbr = $this->runStatements($statements)->each(static function (CypherList $list) {
@@ -102,6 +117,20 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
             if ($this->state === TransactionState::ROLLED_BACK) {
                 throw new TransactionException("Can't rollback a rolled back transaction.");
+            }
+        }
+
+        // For managed transactions, send BEGIN if not yet sent
+        if (!$this->isInstantTransaction && !$this->beginSent) {
+            try {
+                $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
+                $this->beginSent = true;
+            } catch (Throwable $e) {
+                $this->state = TransactionState::TERMINATED;
+                if ($this->pool !== null) {
+                    $this->pool->release($this->connection);
+                }
+                throw $e;
             }
         }
 
@@ -142,6 +171,20 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $serverState = $this->connection->protocol()->serverState;
         if ($serverState === ServerState::STREAMING) {
             $this->connection->consumeResults();
+        }
+
+        // For managed transactions, send BEGIN before first query if not yet sent
+        if (!$this->isInstantTransaction && !$this->beginSent) {
+            try {
+                $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
+                $this->beginSent = true;
+            } catch (Throwable $e) {
+                $this->state = TransactionState::TERMINATED;
+                if ($this->pool !== null) {
+                    $this->pool->release($this->connection);
+                }
+                throw $e;
+            }
         }
 
         try {

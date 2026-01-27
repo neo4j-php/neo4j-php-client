@@ -341,8 +341,9 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         try {
             $connection = $this->acquireConnection($config, $sessionConfig);
-
-            $connection->begin($this->config->getDatabase(), $config->getTimeout(), $this->bookmarkHolder, $config->getMetaData());
+            
+            // Note: BEGIN is NOT sent immediately. It's deferred to the first run() call.
+            // This is why the PHP driver doesn't support OPT_EAGER_TX_BEGIN feature.
         } catch (Neo4jException $e) {
             if (isset($connection) && $connection->getServerState() === 'FAILED') {
                 $connection->reset();
