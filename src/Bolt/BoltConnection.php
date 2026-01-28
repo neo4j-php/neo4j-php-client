@@ -174,7 +174,19 @@ class BoltConnection implements ConnectionInterface
 
     public function setTimeout(float $timeout): void
     {
-        $this->connection->setTimeout($timeout);
+        // Only set timeout if connection is still open
+        // This prevents errors when trying to set timeout on a closed socket
+        if ($this->isOpen()) {
+            try {
+                $this->connection->setTimeout($timeout);
+            } catch (Throwable $e) {
+                // Ignore errors when setting timeout on a closed connection
+                // This can happen during cleanup or error handling
+                $this->logger?->log(LogLevel::DEBUG, 'Failed to set timeout, connection may be closed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     public function getTimeout(): float

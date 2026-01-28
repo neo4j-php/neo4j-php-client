@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 use Exception;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -87,24 +88,34 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 return new DriverErrorResponse($request->getSessionId(), $exception);
             }
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $exception);
+                $response = new DriverErrorResponse($request->getTxId(), $exception);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
         } catch (TransactionException $exception) {
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $exception);
+                $response = new DriverErrorResponse($request->getTxId(), $exception);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
         } catch (Throwable $exception) {
             // Convert any other throwable to Neo4jException format for driver error response
-            $neo4jException = new Neo4jException([], $exception);
+            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.UnknownError', $exception->getMessage());
+            $neo4jException = new Neo4jException([$neo4jError], $exception);
             if ($request instanceof SessionRunRequest) {
                 return new DriverErrorResponse($request->getSessionId(), $neo4jException);
             }
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $neo4jException);
+                $response = new DriverErrorResponse($request->getTxId(), $neo4jException);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled exception for run request of type: '.get_class($request));

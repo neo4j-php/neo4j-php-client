@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
@@ -77,7 +78,8 @@ final class ResultNext implements RequestHandlerInterface
         } catch (Throwable $e) {
             // Convert any other throwable (including unhandled exceptions) to Neo4jException format
             $this->repository->removeRecords($request->getResultId());
-            $neo4jException = new Neo4jException([], $e);
+            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.UnknownError', $e->getMessage());
+            $neo4jException = new Neo4jException([$neo4jError], $e);
 
             return new DriverErrorResponse($request->getResultId(), $neo4jException);
         }

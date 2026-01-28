@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\IConnection;
 use Bolt\error\BoltException;
+use Throwable;
 
 class Connection
 {
@@ -71,7 +72,13 @@ class Connection
 
     public function setTimeout(float $timeout): void
     {
-        $this->connection->setTimeout($timeout);
+        try {
+            $this->connection->setTimeout($timeout);
+        } catch (Throwable $e) {
+            // Ignore errors when setting timeout on a closed connection
+            // This can happen during cleanup or error handling
+            // The underlying IConnection may have already closed the socket
+        }
     }
 
     /**

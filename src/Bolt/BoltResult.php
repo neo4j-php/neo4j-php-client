@@ -88,6 +88,10 @@ final class BoltResult implements Iterator
                 yield $i => $row;
                 ++$i;
             }
+            // If meta is set to empty array (normal completion with no records), exit immediately
+            if ($this->meta === []) {
+                break;
+            }
         }
 
         foreach ($this->finishedCallbacks as $finishedCallback) {
@@ -139,16 +143,28 @@ final class BoltResult implements Iterator
         $this->rows = $rows;
 
         /** @var array{0: array} $meta */
-        // Check if we have a valid summary (not empty array from partial pull)
-        if (count($meta) > 0 && !empty($meta[0]) && is_array($meta[0])) {
-            if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
-                $this->meta = $meta[0];
+        // Check if we have a valid summary
+        if (count($meta) > 0 && is_array($meta[0])) {
+            // If summary is empty array and we have no rows, it's a normal completion (no records)
+            // If summary is empty array but we have rows, it's a partial pull from disconnect
+            if (empty($meta[0]) && empty($rows)) {
+                // Normal completion with no records - mark as complete
+                $this->meta = [];
+            } elseif (!empty($meta[0])) {
+                // Valid summary with data
+                if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
+                    $this->meta = $meta[0];
+                }
+            } else {
+                // Empty summary but we have rows - partial result from disconnect
+                // Don't set $this->meta so the next fetchResults() will try to pull again
+                // This allows the first record to be consumed, and the next fetch will fail
+                // which is the expected behavior for tests like exit_after_record
+                $this->meta = null;
             }
         } else {
-            // Partial result - no summary received (connection closed after records)
+            // No summary received (connection closed before summary)
             // Don't set $this->meta so the next fetchResults() will try to pull again
-            // This allows the first record to be consumed, and the next fetch will fail
-            // which is the expected behavior for tests like exit_after_record
             $this->meta = null;
         }
     }
