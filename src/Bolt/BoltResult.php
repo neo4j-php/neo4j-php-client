@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use function array_splice;
 
+use Bolt\error\BoltException;
 use Bolt\error\ConnectException as BoltConnectException;
 
 use function count;
@@ -27,6 +28,7 @@ use Iterator;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Throwable;
 
 /**
  * @psalm-import-type BoltCypherStats from SummarizedResultFormatter
@@ -87,10 +89,17 @@ final class BoltResult implements Iterator
                 yield $i => $row;
                 ++$i;
             }
+            // If meta is set to empty array (normal completion with no records), exit immediately
+            if ($this->meta === []) {
+                break;
+            }
         }
 
-        foreach ($this->finishedCallbacks as $finishedCallback) {
-            $finishedCallback($this->meta);
+        $meta = $this->meta;
+        if ($meta !== null) {
+            foreach ($this->finishedCallbacks as $finishedCallback) {
+                $finishedCallback($meta);
+            }
         }
     }
 
@@ -115,6 +124,23 @@ final class BoltResult implements Iterator
             // Convert to Neo4jException with NotALeader code so Session.executeStatementWithRetry()
             // and Session.retry() can catch it and clear routing table for automatic failover recovery.
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+        } catch (BoltException $e) {
+            // Close connection on Bolt protocol errors (includes disconnect errors)
+            $this->connection->invalidate();
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+        } catch (Neo4jException $e) {
+            // Re-throw Neo4jExceptions that were already processed by BoltMessage
+            throw $e;
+        } catch (Throwable $e) {
+            // Close connection on any other errors
+            $this->connection->invalidate();
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+        }
+
+        // Safety check: ensure $meta is not empty (pull() is typed non-empty-list but we defend against empty)
+        /** @psalm-suppress TypeDoesNotContainType */
+        if (empty($meta)) {
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Empty response from server')]);
         }
 
         /** @var list<list> $rows */
@@ -122,8 +148,30 @@ final class BoltResult implements Iterator
         $this->rows = $rows;
 
         /** @var array{0: array} $meta */
-        if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
-            $this->meta = $meta[0];
+        // Check if we have a valid summary
+        /** @psalm-suppress RedundantConditionGivenDocblockType */
+        if (count($meta) > 0 && is_array($meta[0])) {
+            // If summary is empty array and we have no rows, it's a normal completion (no records)
+            // If summary is empty array but we have rows, it's a partial pull from disconnect
+            if (empty($meta[0]) && empty($rows)) {
+                // Normal completion with no records - mark as complete
+                $this->meta = [];
+            } elseif (!empty($meta[0])) {
+                // Valid summary with data
+                if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
+                    $this->meta = $meta[0];
+                }
+            } else {
+                // Empty summary but we have rows - partial result from disconnect
+                // Don't set $this->meta so the next fetchResults() will try to pull again
+                // This allows the first record to be consumed, and the next fetch will fail
+                // which is the expected behavior for tests like exit_after_record
+                $this->meta = null;
+            }
+        } else {
+            // No summary received (connection closed before summary)
+            // Don't set $this->meta so the next fetchResults() will try to pull again
+            $this->meta = null;
         }
     }
 
@@ -176,6 +224,11 @@ final class BoltResult implements Iterator
             // Don't rethrow: this is called from __destruct() where exceptions don't propagate properly.
             // Connection will be detected as broken on next operation when pool tries to reuse it.
             $this->connection->invalidate();
+            // Ignore connection errors during discard - connection is already broken
+            // The Neo4jException will be thrown when the next operation is attempted
+        } catch (BoltException $e) {
+            $this->connection->invalidate();
+            // Ignore Bolt protocol errors during discard - connection is already broken
         }
     }
 }

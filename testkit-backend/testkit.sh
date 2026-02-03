@@ -148,8 +148,17 @@ python3 -m unittest -v \
 \
     tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestRoutingConnectionRecvTimeout.test_in_time \
     tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestRoutingConnectionRecvTimeout.test_in_time_unmanaged_tx \
-    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestRoutingConnectionRecvTimeout.test_in_time_managed_tx_retry
-
+    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestRoutingConnectionRecvTimeout.test_in_time_managed_tx_retry \
+\
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_on_pull \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_on_tx_run \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_on_tx_pull \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_session_on_tx_commit \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_client_says_goodbye \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_session_on_pull_after_record \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_on_tx_begin \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_session_on_tx_pull_after_record \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_fail_on_reset \
 
 EXIT_CODE=$?
 

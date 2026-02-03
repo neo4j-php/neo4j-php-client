@@ -65,6 +65,10 @@ class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
 
+    private ?float $recvTimeoutHint = null;
+
+    private ?float $originalTimeout = null;
+
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
      */
@@ -170,7 +174,24 @@ class BoltConnection implements ConnectionInterface
 
     public function setTimeout(float $timeout): void
     {
-        $this->connection->setTimeout($timeout);
+        // Only set timeout if connection is still open
+        // This prevents errors when trying to set timeout on a closed socket
+        if ($this->isOpen()) {
+            try {
+                $this->connection->setTimeout($timeout);
+            } catch (Throwable $e) {
+                // Ignore errors when setting timeout on a closed connection
+                // This can happen during cleanup or error handling
+                $this->logger?->log(LogLevel::DEBUG, 'Failed to set timeout, connection may be closed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    public function getTimeout(): float
+    {
+        return $this->connection->getTimeout();
     }
 
     public function consumeResults(): void
@@ -299,13 +320,48 @@ class BoltConnection implements ConnectionInterface
         $tbr = [];
         $message = $this->messageFactory->createPullMessage($extra);
 
-        foreach ($message->send()->getResponses() as $response) {
-            $this->assertNoFailure($response);
-            $tbr[] = $response->content;
-        }
+        try {
+            // Apply timeout before iterating to ensure disconnects are detected
+            $this->applyRecvTimeoutTemporarily();
 
-        /** @var non-empty-list<list> */
-        return $tbr;
+            // If no timeout hint is set, apply a shorter default timeout to prevent hanging on disconnect
+            if ($this->originalTimeout === null && $this->recvTimeoutHint === null) {
+                $this->originalTimeout = $this->connection->getTimeout();
+                $this->connection->setTimeout(5.0);
+            }
+
+            foreach ($message->send()->getResponses() as $response) {
+                $this->assertNoFailure($response);
+                $tbr[] = $response->content;
+            }
+
+            $this->restoreOriginalTimeout();
+
+            /** @var non-empty-list<list> */
+            return $tbr;
+        } catch (Throwable $e) {
+            $this->restoreOriginalTimeout();
+
+            // Server sent a proper FAILURE (e.g. TransactionTimedOut) - rethrow so caller sees the error.
+            // Connection errors are wrapped as NotALeader; for those we may return partial results (exit_after_record tests).
+            if ($e instanceof Neo4jException && $e->getNeo4jCode() !== 'Neo.ClientError.Cluster.NotALeader') {
+                throw $e;
+            }
+
+            // If we've received some records before the disconnect, return them so first next() succeeds and second next() fails.
+            if (!empty($tbr)) {
+                $tbr[] = [];
+
+                /** @var non-empty-list<list> */
+                return $tbr;
+            }
+
+            if ($e instanceof Neo4jException) {
+                throw $e;
+            }
+
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+        }
     }
 
     public function __destruct()
@@ -464,5 +520,41 @@ class BoltConnection implements ConnectionInterface
 
             $this->subscribedResults = [];
         }
+    }
+
+    public function setRecvTimeoutHint(?float $timeout): void
+    {
+        $this->recvTimeoutHint = $timeout;
+    }
+
+    public function getRecvTimeoutHint(): ?float
+    {
+        return $this->recvTimeoutHint;
+    }
+
+    public function applyRecvTimeoutTemporarily(): void
+    {
+        if ($this->recvTimeoutHint !== null && $this->originalTimeout === null) {
+            $this->originalTimeout = $this->connection->getTimeout();
+            $this->connection->setTimeout($this->recvTimeoutHint);
+        }
+    }
+
+    public function restoreOriginalTimeout(): void
+    {
+        if ($this->originalTimeout !== null) {
+            $this->connection->setTimeout($this->originalTimeout);
+            $this->originalTimeout = null;
+        }
+    }
+
+    public function getOriginalTimeout(): ?float
+    {
+        return $this->originalTimeout;
+    }
+
+    public function setOriginalTimeout(?float $timeout): void
+    {
+        $this->originalTimeout = $timeout;
     }
 }

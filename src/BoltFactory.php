@@ -80,9 +80,10 @@ class BoltFactory
 
         $config->setServerAgent($response['server'] ?? '');
 
-        // Apply recv_timeout hint if present
+        // Store recv_timeout hint in connection but don't apply it globally
+        // It will only be applied during result fetching (PULL operations)
         if (array_key_exists('hints', $response) && array_key_exists('connection.recv_timeout_seconds', $response['hints'])) {
-            $connection->setTimeout((float) $response['hints']['connection.recv_timeout_seconds']);
+            $connection->setRecvTimeoutHint((float) $response['hints']['connection.recv_timeout_seconds']);
         }
 
         return $connection;
