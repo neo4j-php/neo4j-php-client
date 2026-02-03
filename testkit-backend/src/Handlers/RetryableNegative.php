@@ -75,6 +75,7 @@ final class RetryableNegative implements RequestHandlerInterface
                         // If the original error was retryable, signal for retry
                         return new RetryableTryResponse($transactionId);
                     }
+
                     // Otherwise, return the original error to the frontend
                     return new DriverErrorResponse($transactionId, $exception);
                 }

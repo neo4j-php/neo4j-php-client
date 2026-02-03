@@ -395,18 +395,8 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         $connection = $this->acquireConnection($config, $sessionConfig);
 
-        try {
-            $connection->begin($this->config->getDatabase(), $config->getTimeout(), $this->bookmarkHolder, $config->getMetaData());
-        try {
-            $connection = $this->acquireConnection($config, $sessionConfig);
-
-            // Note: BEGIN is NOT sent immediately. It's deferred to the first run() call.
-            // This is why the PHP driver doesn't support OPT_EAGER_TX_BEGIN feature.
-        } catch (Neo4jException $e) {
-            // BEGIN failed - clean up connection before rethrowing
-            $this->cleanupFailedConnection($connection);
-            throw $e;
-        }
+        // Defer BEGIN to first run/commit/rollback so driver does not advertise OPT_EAGER_TX_BEGIN.
+        // This allows test_disconnect_on_tx_begin to expect error at "after run" when stub disconnects on BEGIN.
 
         /** @var ConnectionPoolInterface|null $pool */
         $pool = $this->pool;
@@ -421,6 +411,7 @@ final class Session implements SessionInterface
             new BoltMessageFactory($connection, $this->getLogger()),
             false,
             $pool,
+            false, // BEGIN sent on first run/commit/rollback
         );
     }
 

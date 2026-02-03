@@ -28,6 +28,7 @@ use Iterator;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Throwable;
 
 /**
  * @psalm-import-type BoltCypherStats from SummarizedResultFormatter
@@ -94,8 +95,11 @@ final class BoltResult implements Iterator
             }
         }
 
-        foreach ($this->finishedCallbacks as $finishedCallback) {
-            $finishedCallback($this->meta);
+        $meta = $this->meta;
+        if ($meta !== null) {
+            foreach ($this->finishedCallbacks as $finishedCallback) {
+                $finishedCallback($meta);
+            }
         }
     }
 
@@ -127,13 +131,14 @@ final class BoltResult implements Iterator
         } catch (Neo4jException $e) {
             // Re-throw Neo4jExceptions that were already processed by BoltMessage
             throw $e;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Close connection on any other errors
             $this->connection->invalidate();
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
         }
 
-        // Safety check: ensure $meta is not empty
+        // Safety check: ensure $meta is not empty (pull() is typed non-empty-list but we defend against empty)
+        /** @psalm-suppress TypeDoesNotContainType */
         if (empty($meta)) {
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Empty response from server')]);
         }
@@ -144,6 +149,7 @@ final class BoltResult implements Iterator
 
         /** @var array{0: array} $meta */
         // Check if we have a valid summary
+        /** @psalm-suppress RedundantConditionGivenDocblockType */
         if (count($meta) > 0 && is_array($meta[0])) {
             // If summary is empty array and we have no rows, it's a normal completion (no records)
             // If summary is empty array but we have rows, it's a partial pull from disconnect

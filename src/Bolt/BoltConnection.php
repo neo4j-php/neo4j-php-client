@@ -323,59 +323,45 @@ class BoltConnection implements ConnectionInterface
         try {
             // Apply timeout before iterating to ensure disconnects are detected
             $this->applyRecvTimeoutTemporarily();
-            
+
             // If no timeout hint is set, apply a shorter default timeout to prevent hanging on disconnect
-            // This is especially important for disconnect tests where the server closes the connection
             if ($this->originalTimeout === null && $this->recvTimeoutHint === null) {
-                $currentTimeout = $this->connection->getTimeout();
-                // Use a shorter timeout (5 seconds) for disconnect detection
-                // This ensures we detect disconnects quickly rather than waiting indefinitely
-                $this->originalTimeout = $currentTimeout;
+                $this->originalTimeout = $this->connection->getTimeout();
                 $this->connection->setTimeout(5.0);
             }
-            
-            try {
-                foreach ($message->send()->getResponses() as $response) {
-                    $this->assertNoFailure($response);
-                    $tbr[] = $response->content;
-                }
-            } catch (Throwable $e) {
-                // If we've received some records before the disconnect, return them
-                // This allows the first record to be consumed before the disconnect is detected
-                // This is important for tests like exit_after_record where a RECORD is sent before <EXIT>
-                if (!empty($tbr)) {
-                    // Add an empty summary to indicate the result is incomplete
-                    // The last element should be the summary, but since we disconnected, we add an empty one
-                    $tbr[] = [];
-                    
-                    // Restore timeout before returning partial results
-                    $this->restoreOriginalTimeout();
-                    
-                    /** @var non-empty-list<list> */
-                    return $tbr;
-                }
-                
-                // No records received, re-throw the exception to be handled by outer catch
+
+            foreach ($message->send()->getResponses() as $response) {
+                $this->assertNoFailure($response);
+                $tbr[] = $response->content;
+            }
+
+            $this->restoreOriginalTimeout();
+
+            /** @var non-empty-list<list> */
+            return $tbr;
+        } catch (Throwable $e) {
+            $this->restoreOriginalTimeout();
+
+            // Server sent a proper FAILURE (e.g. TransactionTimedOut) - rethrow so caller sees the error.
+            // Connection errors are wrapped as NotALeader; for those we may return partial results (exit_after_record tests).
+            if ($e instanceof Neo4jException && $e->getNeo4jCode() !== 'Neo.ClientError.Cluster.NotALeader') {
                 throw $e;
             }
-            
-            // Restore timeout after successful iteration
-            $this->restoreOriginalTimeout();
-        } catch (Throwable $e) {
-            // Always restore timeout before handling exception
-            $this->restoreOriginalTimeout();
-            
-            // Re-throw Neo4jExceptions (already handled by getResponses wrapper)
+
+            // If we've received some records before the disconnect, return them so first next() succeeds and second next() fails.
+            if (!empty($tbr)) {
+                $tbr[] = [];
+
+                /** @var non-empty-list<list> */
+                return $tbr;
+            }
+
             if ($e instanceof Neo4jException) {
                 throw $e;
             }
-            
-            // Convert other exceptions to Neo4jException
+
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
         }
-
-        /** @var non-empty-list<list> */
-        return $tbr;
     }
 
     public function __destruct()
