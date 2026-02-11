@@ -272,7 +272,7 @@ final class BoltOGMTranslator
 
     private function makeFromBoltVector(BoltVector $value): CypherList
     {
-        /** @var list<int|float> $decoded */
+        /** @psalm-suppress ImpureMethodCall — Vector::decode() only reads protocol data but Psalm treats Bolt structures as potentially stateful */
         $decoded = $value->decode();
 
         return new CypherList($decoded);
