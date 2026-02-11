@@ -142,6 +142,29 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         self::assertEquals(json_encode(range(16, 35), JSON_THROW_ON_ERROR), json_encode($list2, JSON_THROW_ON_ERROR));
     }
 
+    public function testVectorAsReturnValue(): void
+    {
+        $results = $this->getSession()->transaction(
+            static fn (TransactionInterface $tsx) => $tsx->run('RETURN [0.1, 0.2, 0.3] AS embedding')
+        );
+        $row = $results->first();
+        $embedding = $row->get('embedding');
+        self::assertInstanceOf(CypherList::class, $embedding);
+        self::assertEquals([0.1, 0.2, 0.3], $embedding->toArray());
+    }
+
+    public function testVectorAsParameterRoundTrip(): void
+    {
+        $vec = [0.1, 0.2, 0.3];
+        $results = $this->getSession()->transaction(
+            static fn (TransactionInterface $tsx) => $tsx->run('WITH $vec AS v RETURN v', ['vec' => $vec])
+        );
+        $row = $results->first();
+        $v = $row->get('v');
+        self::assertInstanceOf(CypherList::class, $v);
+        self::assertEquals($vec, $v->toArray());
+    }
+
     public function testMap(): void
     {
         $map = $this->getSession()->transaction(static fn (TransactionInterface $tsx): mixed => $tsx->run('RETURN {a: "b", c: "d"} as map')->first()->get('map'));

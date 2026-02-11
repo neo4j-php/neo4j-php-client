@@ -26,6 +26,7 @@ use Bolt\protocol\v1\structures\Point3D as BoltPoint3D;
 use Bolt\protocol\v1\structures\Relationship as BoltRelationship;
 use Bolt\protocol\v1\structures\Time as BoltTime;
 use Bolt\protocol\v1\structures\UnboundRelationship as BoltUnboundRelationship;
+use Bolt\protocol\v6\structures\Vector as BoltVector;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
@@ -81,6 +82,7 @@ final class BoltOGMTranslator
             BoltPoint2D::class => $this->makeFromBoltPoint2D(...),
             BoltPoint3D::class => $this->makeFromBoltPoint3D(...),
             BoltDateTimeZoneId::class => $this->makeBoltTimezoneIdentifier(...),
+            BoltVector::class => $this->makeFromBoltVector(...),
             'array' => $this->mapArray(...),
             'int' => static fn (int $x): int => $x,
             'null' => static fn (): ?object => null,
@@ -266,6 +268,14 @@ final class BoltOGMTranslator
             return new WGS843DPoint($x->x, $x->y, $x->z);
         }
         throw new UnexpectedValueException('An srid of '.$x->srid.' has been returned, which has not been implemented.');
+    }
+
+    private function makeFromBoltVector(BoltVector $value): CypherList
+    {
+        /** @var list<int|float> $decoded */
+        $decoded = $value->decode();
+
+        return new CypherList($decoded);
     }
 
     private function makeFromBoltPath(BoltPath $path): Path
