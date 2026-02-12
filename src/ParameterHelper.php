@@ -41,6 +41,10 @@ use stdClass;
 /**
  * Parameter helper class providing convenient functions for converting php objects to cypher parameters.
  *
+ * For Neo4j Vector (e.g. embedding) parameters: a plain array is not sent as a Vector by the Bolt
+ * protocol. Use {@see ParameterHelper::asVector()} or \Bolt\protocol\v6\structures\Vector::encode()
+ * to obtain a Vector structure instance to pass as a query parameter.
+ *
  * @psalm-immutable
  */
 final class ParameterHelper
@@ -77,19 +81,44 @@ final class ParameterHelper
     }
 
     /**
+     * Wrap a list of numbers as a Bolt Vector structure for use as a query parameter.
+     *
+     * Use this when you need to pass a Neo4j Vector (e.g. embedding) in a query. A plain array
+     * is sent as a list, not a Vector; the server expects a Vector structure for vector parameters.
+     *
+     * @param int[]|float[] $numbers
+     *
+     * @throws InvalidArgumentException if any element is not numeric
+     */
+    public static function asVector(array $numbers): \Bolt\protocol\v6\structures\Vector
+    {
+        return \Bolt\protocol\v6\structures\Vector::encode($numbers);
+    }
+
+    /**
      * @return iterable|scalar|stdClass|IStructure|null
      */
     public static function asParameter(
         mixed $value,
         ConnectionProtocol $protocol,
     ): iterable|int|float|bool|string|stdClass|IStructure|null {
-        return self::cypherMapToStdClass($value) ??
+        return self::passThroughBoltStructure($value) ??
+            self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
             self::convertBoltConvertibles($value) ??
             self::convertTemporalTypes($value, $protocol) ??
             self::filledIterableToArray($value, $protocol) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
+    }
+
+    private static function passThroughBoltStructure(mixed $value): ?IStructure
+    {
+        if ($value instanceof IStructure) {
+            return $value;
+        }
+
+        return null;
     }
 
     /**

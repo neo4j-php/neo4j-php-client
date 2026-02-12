@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use Bolt\protocol\v1\structures\DateTimeZoneId;
+use Bolt\protocol\v6\structures\Vector as BoltVector;
 use DateTime;
 use DateTimeZone;
 use InvalidArgumentException;
@@ -174,5 +175,36 @@ final class ParameterHelperTest extends TestCase
         $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), ConnectionProtocol::BOLT_V5());
 
         self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTimeZoneId::class, $date);
+    }
+
+    public function testAsVectorReturnsBoltVector(): void
+    {
+        $vec = [1, 2, 3];
+        $result = ParameterHelper::asVector($vec);
+
+        self::assertInstanceOf(BoltVector::class, $result);
+        self::assertEquals($vec, $result->decode());
+    }
+
+    public function testAsParameterPassesThroughVectorStructure(): void
+    {
+        $vector = ParameterHelper::asVector([1, 2, 3]);
+        $result = ParameterHelper::asParameter($vector, ConnectionProtocol::BOLT_V44());
+
+        self::assertInstanceOf(BoltVector::class, $result);
+        self::assertSame($vector, $result);
+        self::assertEquals([1, 2, 3], $result->decode());
+    }
+
+    public function testFormatParametersPassesThroughVectorStructure(): void
+    {
+        $vector = ParameterHelper::asVector([1, 2]);
+        $formatted = ParameterHelper::formatParameters(['embedding' => $vector], ConnectionProtocol::BOLT_V44());
+
+        self::assertCount(1, $formatted);
+        $value = $formatted->get('embedding');
+        self::assertInstanceOf(BoltVector::class, $value);
+        self::assertSame($vector, $value);
+        self::assertEquals([1, 2], $value->decode());
     }
 }
