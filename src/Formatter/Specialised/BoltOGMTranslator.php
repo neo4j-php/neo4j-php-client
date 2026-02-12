@@ -45,6 +45,7 @@ use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
+use Laudis\Neo4j\Types\Vector;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 use UnexpectedValueException;
@@ -270,12 +271,12 @@ final class BoltOGMTranslator
         throw new UnexpectedValueException('An srid of '.$x->srid.' has been returned, which has not been implemented.');
     }
 
-    private function makeFromBoltVector(BoltVector $value): CypherList
+    private function makeFromBoltVector(BoltVector $value): Vector
     {
-        /** @psalm-suppress ImpureMethodCall — Vector::decode() only reads protocol data but Psalm treats Bolt structures as potentially stateful */
+        /** @psalm-suppress ImpureMethodCall Vector::decode() only reads protocol data but Psalm treats Bolt structures as potentially stateful */
         $decoded = $value->decode();
 
-        return new CypherList($decoded);
+        return new Vector(array_values($decoded));
     }
 
     private function makeFromBoltPath(BoltPath $path): Path

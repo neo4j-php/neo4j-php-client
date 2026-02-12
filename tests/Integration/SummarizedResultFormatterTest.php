@@ -40,6 +40,7 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\Vector;
 
 use function random_bytes;
 use function serialize;
@@ -149,7 +150,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         );
         $row = $results->first();
         $embedding = $row->get('embedding');
-        self::assertInstanceOf(CypherList::class, $embedding);
+        self::assertTrue($embedding instanceof CypherList || $embedding instanceof Vector);
         self::assertEquals([0.1, 0.2, 0.3], $embedding->toArray());
     }
 
@@ -161,7 +162,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         );
         $row = $results->first();
         $v = $row->get('v');
-        self::assertInstanceOf(CypherList::class, $v);
+        self::assertTrue($v instanceof CypherList || $v instanceof Vector);
         self::assertEquals($vec, $v->toArray());
     }
 

@@ -22,6 +22,7 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\UnboundRelationship;
+use Laudis\Neo4j\Types\Vector;
 use RuntimeException;
 
 /**
@@ -83,6 +84,14 @@ final class CypherObject implements TestkitResponseInterface
 
                     $tbr = new CypherObject('CypherMap', new CypherMap($map));
                 }
+                break;
+            case Vector::class:
+                /** @var Vector $value */
+                $list = [];
+                foreach ($value->toArray() as $item) {
+                    $list[] = self::autoDetect($item);
+                }
+                $tbr = new CypherObject('CypherList', new CypherList($list));
                 break;
             case 'int':
                 $tbr = new CypherObject('CypherInt', $value);

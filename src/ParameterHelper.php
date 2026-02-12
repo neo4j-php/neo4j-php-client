@@ -36,14 +36,15 @@ use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Vector;
 use stdClass;
 
 /**
  * Parameter helper class providing convenient functions for converting php objects to cypher parameters.
  *
  * For Neo4j Vector (e.g. embedding) parameters: a plain array is not sent as a Vector by the Bolt
- * protocol. Use {@see ParameterHelper::asVector()} or \Bolt\protocol\v6\structures\Vector::encode()
- * to obtain a Vector structure instance to pass as a query parameter.
+ * protocol. Use {@see ParameterHelper::asVector()} to get a driver Vector (converts to Bolt when
+ * sent), or \Bolt\protocol\v6\structures\Vector::encode() for the Bolt structure directly.
  *
  * @psalm-immutable
  */
@@ -81,18 +82,21 @@ final class ParameterHelper
     }
 
     /**
-     * Wrap a list of numbers as a Bolt Vector structure for use as a query parameter.
+     * Wrap a list of numbers as a driver Vector for use as a query parameter.
      *
      * Use this when you need to pass a Neo4j Vector (e.g. embedding) in a query. A plain array
-     * is sent as a list, not a Vector; the server expects a Vector structure for vector parameters.
+     * is sent as a list, not a Vector; the server expects a Vector structure. This returns a
+     * driver Vector which is converted to the Bolt structure when sent.
      *
      * @param int[]|float[] $numbers
      *
+     * @return Vector
+     *
      * @throws InvalidArgumentException if any element is not numeric
      */
-    public static function asVector(array $numbers): \Bolt\protocol\v6\structures\Vector
+    public static function asVector(array $numbers): Vector
     {
-        return \Bolt\protocol\v6\structures\Vector::encode($numbers);
+        return new Vector(array_values($numbers));
     }
 
     /**
