@@ -90,8 +90,6 @@ final class ParameterHelper
      *
      * @param int[]|float[] $numbers
      *
-     * @return Vector
-     *
      * @throws InvalidArgumentException if any element is not numeric
      */
     public static function asVector(array $numbers): Vector
