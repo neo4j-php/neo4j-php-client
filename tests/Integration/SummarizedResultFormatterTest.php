@@ -24,6 +24,7 @@ use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
@@ -145,13 +146,17 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
 
     public function testVectorAsReturnValue(): void
     {
-        $results = $this->getSession()->transaction(
-            static fn (TransactionInterface $tsx) => $tsx->run('RETURN [0.1, 0.2, 0.3] AS embedding')
-        );
+        try {
+            $results = $this->getSession()->transaction(
+                static fn (TransactionInterface $tsx) => $tsx->run('RETURN vector([0.1, 0.2, 0.3], 3, FLOAT) AS embedding')
+            );
+        } catch (Neo4jException $e) {
+            self::markTestSkipped('vector() requires Neo4j 5.11+ with vector index support: ' . $e->getMessage());
+        }
         $row = $results->first();
         $embedding = $row->get('embedding');
-        self::assertTrue($embedding instanceof CypherList || $embedding instanceof Vector);
-        self::assertEquals([0.1, 0.2, 0.3], $embedding->toArray());
+        self::assertInstanceOf(Vector::class, $embedding);
+        self::assertEqualsWithDelta([0.1, 0.2, 0.3], $embedding->toArray(), 0.0001);
     }
 
     public function testVectorAsParameterRoundTrip(): void
