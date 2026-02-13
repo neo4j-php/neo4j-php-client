@@ -151,7 +151,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
                 static fn (TransactionInterface $tsx) => $tsx->run('RETURN vector([0.1, 0.2, 0.3], 3, FLOAT) AS embedding')
             );
         } catch (Neo4jException $e) {
-            self::markTestSkipped('vector() requires Neo4j 5.11+ with vector index support: ' . $e->getMessage());
+            self::markTestSkipped('vector() requires Neo4j 5.11+ with vector index support: '.$e->getMessage());
         }
         $row = $results->first();
         $embedding = $row->get('embedding');
