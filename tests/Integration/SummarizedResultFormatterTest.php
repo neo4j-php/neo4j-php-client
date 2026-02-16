@@ -24,6 +24,7 @@ use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
+use Laudis\Neo4j\Enum\VectorTypeMarker;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
@@ -156,7 +157,9 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         $row = $results->first();
         $embedding = $row->get('embedding');
         self::assertInstanceOf(Vector::class, $embedding);
-        self::assertEqualsWithDelta([0.1, 0.2, 0.3], $embedding->toArray(), 0.0001);
+        self::assertEqualsWithDelta([0.1, 0.2, 0.3], $embedding->getValues(), 0.0001);
+        self::assertNotNull($embedding->getTypeMarker(), 'Vector from server should have type marker set');
+        self::assertSame(VectorTypeMarker::FLOAT_64, $embedding->getTypeMarker(), 'vector(..., FLOAT) is FLOAT_64');
     }
 
     public function testVectorAsParameterRoundTrip(): void
@@ -168,7 +171,7 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         $row = $results->first();
         $v = $row->get('v');
         self::assertTrue($v instanceof CypherList || $v instanceof Vector);
-        self::assertEquals($vec, $v->toArray());
+        self::assertEquals($vec, $v instanceof Vector ? $v->getValues() : $v->toArray());
     }
 
     public function testMap(): void

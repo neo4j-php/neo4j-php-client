@@ -34,6 +34,7 @@ use function is_string;
 
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Enum\VectorTypeMarker;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Vector;
@@ -88,13 +89,14 @@ final class ParameterHelper
      * is sent as a list, not a Vector; the server expects a Vector structure. This returns a
      * driver Vector which is converted to the Bolt structure when sent.
      *
-     * @param int[]|float[] $numbers
+     * @param int[]|float[]         $numbers
+     * @param VectorTypeMarker|null $typeMarker Optional type marker to force encoding (e.g. FLOAT_32); null = auto-detect
      *
      * @throws InvalidArgumentException if any element is not numeric
      */
-    public static function asVector(array $numbers): Vector
+    public static function asVector(array $numbers, ?VectorTypeMarker $typeMarker = null): Vector
     {
-        return new Vector(array_values($numbers));
+        return new Vector(array_values($numbers), $typeMarker);
     }
 
     /**

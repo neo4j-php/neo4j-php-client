@@ -88,7 +88,7 @@ final class CypherObject implements TestkitResponseInterface
             case Vector::class:
                 /** @var Vector $value */
                 $list = [];
-                foreach ($value->toArray() as $item) {
+                foreach ($value->getValues() as $item) {
                     $list[] = self::autoDetect($item);
                 }
                 $tbr = new CypherObject('CypherList', new CypherList($list));

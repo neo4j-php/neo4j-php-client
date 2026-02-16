@@ -20,6 +20,7 @@ use DateTimeZone;
 use InvalidArgumentException;
 use Iterator;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Enum\VectorTypeMarker;
 use Laudis\Neo4j\ParameterHelper;
 use Laudis\Neo4j\Types\Vector as DriverVector;
 use PHPUnit\Framework\TestCase;
@@ -184,7 +185,21 @@ final class ParameterHelperTest extends TestCase
         $result = ParameterHelper::asVector($vec);
 
         self::assertInstanceOf(DriverVector::class, $result);
-        self::assertEquals($vec, $result->toArray());
+        self::assertEquals($vec, $result->getValues());
+        self::assertNull($result->getTypeMarker());
+    }
+
+    public function testAsVectorWithTypeMarker(): void
+    {
+        $vec = [1.0, 2.0, 3.0];
+        $result = ParameterHelper::asVector($vec, VectorTypeMarker::FLOAT_32);
+
+        self::assertInstanceOf(DriverVector::class, $result);
+        self::assertEquals($vec, $result->getValues());
+        self::assertSame(VectorTypeMarker::FLOAT_32, $result->getTypeMarker());
+        $bolt = $result->convertToBolt();
+        self::assertInstanceOf(BoltVector::class, $bolt);
+        self::assertEqualsWithDelta($vec, $bolt->decode(), 0.0001);
     }
 
     public function testAsParameterConvertsDriverVectorToBolt(): void

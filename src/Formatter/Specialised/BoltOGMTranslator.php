@@ -27,6 +27,7 @@ use Bolt\protocol\v1\structures\Relationship as BoltRelationship;
 use Bolt\protocol\v1\structures\Time as BoltTime;
 use Bolt\protocol\v1\structures\UnboundRelationship as BoltUnboundRelationship;
 use Bolt\protocol\v6\structures\Vector as BoltVector;
+use Laudis\Neo4j\Enum\VectorTypeMarker;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
@@ -275,8 +276,12 @@ final class BoltOGMTranslator
     {
         /** @psalm-suppress ImpureMethodCall Vector::decode() only reads protocol data but Psalm treats Bolt structures as potentially stateful */
         $decoded = $value->decode();
+        // Cast to string then read first byte to avoid Bytes::offsetGet (ImpureMethodCall) and to satisfy Psalm that ord() never receives null
+        $bytesStr = (string) $value->type_marker;
+        $markerByte = $bytesStr !== '' ? ord($bytesStr[0]) : null;
+        $typeMarker = $markerByte !== null ? VectorTypeMarker::tryFrom($markerByte) : null;
 
-        return new Vector(array_values($decoded));
+        return new Vector(array_values($decoded), $typeMarker);
     }
 
     private function makeFromBoltPath(BoltPath $path): Path
