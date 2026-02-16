@@ -91,7 +91,7 @@ final class CypherObject implements TestkitResponseInterface
                 foreach ($value->getValues() as $item) {
                     $list[] = self::autoDetect($item);
                 }
-                $tbr = new CypherObject('CypherList', new CypherList($list));
+                $tbr = new CypherObject('Vector', new CypherList($list));
                 break;
             case 'int':
                 $tbr = new CypherObject('CypherInt', $value);
