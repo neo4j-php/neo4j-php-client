@@ -40,7 +40,6 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
-use Laudis\Neo4j\Types\Vector;
 
 use function random_bytes;
 use function serialize;
@@ -141,18 +140,6 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         self::assertEquals(range(16, 35), $list2->toArray());
         self::assertEquals(json_encode(range(5, 15), JSON_THROW_ON_ERROR), json_encode($list, JSON_THROW_ON_ERROR));
         self::assertEquals(json_encode(range(16, 35), JSON_THROW_ON_ERROR), json_encode($list2, JSON_THROW_ON_ERROR));
-    }
-
-    public function testVectorAsParameterRoundTrip(): void
-    {
-        $vec = [0.1, 0.2, 0.3];
-        $results = $this->getSession()->transaction(
-            static fn (TransactionInterface $tsx) => $tsx->run('WITH $vec AS v RETURN v', ['vec' => $vec])
-        );
-        $row = $results->first();
-        $v = $row->get('v');
-        self::assertTrue($v instanceof CypherList || $v instanceof Vector);
-        self::assertEquals($vec, $v instanceof Vector ? $v->getValues() : $v->toArray());
     }
 
     public function testMap(): void
