@@ -13,23 +13,23 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Types;
 
-use Bolt\protocol\IStructure;
-use Bolt\protocol\v6\structures\TypeMarker;
-use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Enum\VectorTypeMarker;
 
 /**
  * Neo4j Vector type (e.g. embedding). Holds a list of numbers.
  *
+ * This type is only produced when decoding results from the server (Bolt). It is not supported
+ * as a query parameter; use a plain list of numbers if you need to pass vector-like data.
+ *
  * @psalm-immutable
  *
  * @extends AbstractPropertyObject<list<int|float>, list<int|float>>
  */
-final class Vector extends AbstractPropertyObject implements BoltConvertibleInterface
+final class Vector extends AbstractPropertyObject
 {
     /**
      * @param list<int|float>       $values
-     * @param VectorTypeMarker|null $typeMarker Bolt type marker (how values are encoded); set when received from server, optional when creating for send
+     * @param VectorTypeMarker|null $typeMarker Bolt type marker (how values were encoded); set when received from server
      */
     public function __construct(
         private readonly array $values,
@@ -47,7 +47,7 @@ final class Vector extends AbstractPropertyObject implements BoltConvertibleInte
 
     /**
      * Bolt type marker indicating how the vector payload is encoded (e.g. FLOAT_64, INT_32).
-     * Set when the vector was received from the server; null when created for send (Bolt will auto-detect).
+     * Set when the vector was received from the server.
      */
     public function getTypeMarker(): ?VectorTypeMarker
     {
@@ -70,15 +70,5 @@ final class Vector extends AbstractPropertyObject implements BoltConvertibleInte
     public function getProperties(): CypherMap
     {
         return new CypherMap($this);
-    }
-
-    public function convertToBolt(): IStructure
-    {
-        $boltType = $this->typeMarker !== null
-            ? TypeMarker::from($this->typeMarker->value)
-            : null;
-
-        /** @psalm-suppress ImpureMethodCall Bolt Vector::encode() is not annotated pure in vendor */
-        return \Bolt\protocol\v6\structures\Vector::encode($this->values, $boltType);
     }
 }

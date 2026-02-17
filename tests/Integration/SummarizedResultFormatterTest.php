@@ -15,7 +15,6 @@ namespace Laudis\Neo4j\Tests\Integration;
 
 use function bin2hex;
 
-use Bolt\error\PackException;
 use DateInterval;
 use DateTimeImmutable;
 
@@ -25,7 +24,6 @@ use Laudis\Neo4j\Contracts\PointInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
-use Laudis\Neo4j\Enum\VectorTypeMarker;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
@@ -143,68 +141,6 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
         self::assertEquals(range(16, 35), $list2->toArray());
         self::assertEquals(json_encode(range(5, 15), JSON_THROW_ON_ERROR), json_encode($list, JSON_THROW_ON_ERROR));
         self::assertEquals(json_encode(range(16, 35), JSON_THROW_ON_ERROR), json_encode($list2, JSON_THROW_ON_ERROR));
-    }
-
-    /**
-     * Cypher cannot create vectors (no vector() function, no vector literal). Vectors are transported
-     * by Bolt. This test sends a Vector as a parameter and asserts the round-trip via the formatter.
-     *
-     * @return iterable<string, array{values: list<int|float>, typeMarker: VectorTypeMarker|null, useDelta: bool}>
-     */
-    public static function vectorAsParameterProvider(): iterable
-    {
-        yield 'float vector (FLOAT_64)' => [
-            'values' => [0.1, 0.2, 0.3],
-            'typeMarker' => VectorTypeMarker::FLOAT_64,
-            'useDelta' => true,
-        ];
-        yield 'float vector (FLOAT_32)' => [
-            'values' => [0.1, 0.2, 0.3],
-            'typeMarker' => VectorTypeMarker::FLOAT_32,
-            'useDelta' => true,
-        ];
-        yield 'integer vector (INT_64)' => [
-            'values' => [1, 2, 3],
-            'typeMarker' => VectorTypeMarker::INT_64,
-            'useDelta' => false,
-        ];
-        yield 'integer vector (INT_32)' => [
-            'values' => [1, 2, 3],
-            'typeMarker' => VectorTypeMarker::INT_32,
-            'useDelta' => false,
-        ];
-    }
-
-    /**
-     * Vector round-trip via parameter: driver encodes Vector with Bolt, Neo4j echoes it, formatter maps to Vector.
-     * Skipped when the negotiated Bolt protocol does not support Vector as parameter (Vector is Bolt 6 only).
-     *
-     * @dataProvider vectorAsParameterProvider
-     *
-     * @param list<int|float> $values
-     */
-    public function testVectorAsReturnValue(array $values, ?VectorTypeMarker $typeMarker, bool $useDelta): void
-    {
-        $embeddingParam = new Vector($values, $typeMarker);
-        try {
-            $results = $this->getSession()->transaction(
-                static fn (TransactionInterface $tsx) => $tsx->run('RETURN $embedding AS embedding', ['embedding' => $embeddingParam])
-            );
-        } catch (PackException $e) {
-            if (str_contains($e->getMessage(), 'structure as parameter is not supported')) {
-                self::markTestSkipped('Bolt protocol in use does not support Vector as parameter (Bolt 6 required).');
-            }
-            throw $e;
-        }
-
-        $row = $results->first();
-        $embedding = $row->get('embedding');
-        self::assertInstanceOf(Vector::class, $embedding);
-        if ($useDelta) {
-            self::assertEqualsWithDelta($values, $embedding->getValues(), 0.0001);
-        } else {
-            self::assertEquals($values, $embedding->getValues());
-        }
     }
 
     public function testVectorAsParameterRoundTrip(): void

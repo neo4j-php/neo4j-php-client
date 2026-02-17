@@ -14,15 +14,12 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use Bolt\protocol\v1\structures\DateTimeZoneId;
-use Bolt\protocol\v6\structures\Vector as BoltVector;
 use DateTime;
 use DateTimeZone;
 use InvalidArgumentException;
 use Iterator;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
-use Laudis\Neo4j\Enum\VectorTypeMarker;
 use Laudis\Neo4j\ParameterHelper;
-use Laudis\Neo4j\Types\Vector as DriverVector;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use Stringable;
@@ -177,48 +174,5 @@ final class ParameterHelperTest extends TestCase
         $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), ConnectionProtocol::BOLT_V5());
 
         self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTimeZoneId::class, $date);
-    }
-
-    public function testAsVectorReturnsDriverVector(): void
-    {
-        $vec = [1, 2, 3];
-        $result = ParameterHelper::asVector($vec);
-
-        self::assertInstanceOf(DriverVector::class, $result);
-        self::assertEquals($vec, $result->getValues());
-        self::assertNull($result->getTypeMarker());
-    }
-
-    public function testAsVectorWithTypeMarker(): void
-    {
-        $vec = [1.0, 2.0, 3.0];
-        $result = ParameterHelper::asVector($vec, VectorTypeMarker::FLOAT_32);
-
-        self::assertInstanceOf(DriverVector::class, $result);
-        self::assertEquals($vec, $result->getValues());
-        self::assertSame(VectorTypeMarker::FLOAT_32, $result->getTypeMarker());
-        $bolt = $result->convertToBolt();
-        self::assertInstanceOf(BoltVector::class, $bolt);
-        self::assertEqualsWithDelta($vec, $bolt->decode(), 0.0001);
-    }
-
-    public function testAsParameterConvertsDriverVectorToBolt(): void
-    {
-        $vector = ParameterHelper::asVector([1, 2, 3]);
-        $result = ParameterHelper::asParameter($vector, ConnectionProtocol::BOLT_V44());
-
-        self::assertInstanceOf(BoltVector::class, $result);
-        self::assertEquals([1, 2, 3], $result->decode());
-    }
-
-    public function testFormatParametersConvertsDriverVectorToBolt(): void
-    {
-        $vector = ParameterHelper::asVector([1, 2]);
-        $formatted = ParameterHelper::formatParameters(['embedding' => $vector], ConnectionProtocol::BOLT_V44());
-
-        self::assertCount(1, $formatted);
-        $value = $formatted->get('embedding');
-        self::assertInstanceOf(BoltVector::class, $value);
-        self::assertEquals([1, 2], $value->decode());
     }
 }

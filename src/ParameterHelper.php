@@ -34,18 +34,12 @@ use function is_string;
 
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
-use Laudis\Neo4j\Enum\VectorTypeMarker;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-use Laudis\Neo4j\Types\Vector;
 use stdClass;
 
 /**
  * Parameter helper class providing convenient functions for converting php objects to cypher parameters.
- *
- * For Neo4j Vector (e.g. embedding) parameters: a plain array is not sent as a Vector by the Bolt
- * protocol. Use {@see ParameterHelper::asVector()} to get a driver Vector (converts to Bolt when
- * sent), or \Bolt\protocol\v6\structures\Vector::encode() for the Bolt structure directly.
  *
  * @psalm-immutable
  */
@@ -80,23 +74,6 @@ final class ParameterHelper
         }
 
         return new CypherMap($tbr);
-    }
-
-    /**
-     * Wrap a list of numbers as a driver Vector for use as a query parameter.
-     *
-     * Use this when you need to pass a Neo4j Vector (e.g. embedding) in a query. A plain array
-     * is sent as a list, not a Vector; the server expects a Vector structure. This returns a
-     * driver Vector which is converted to the Bolt structure when sent.
-     *
-     * @param int[]|float[]         $numbers
-     * @param VectorTypeMarker|null $typeMarker Optional type marker to force encoding (e.g. FLOAT_32); null = auto-detect
-     *
-     * @throws InvalidArgumentException if any element is not numeric
-     */
-    public static function asVector(array $numbers, ?VectorTypeMarker $typeMarker = null): Vector
-    {
-        return new Vector(array_values($numbers), $typeMarker);
     }
 
     /**
