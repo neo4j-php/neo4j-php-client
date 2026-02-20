@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\error\ConnectException as BoltConnectException;
 use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Neo4jLogger;
@@ -205,18 +206,22 @@ final class Session implements SessionInterface
      */
     private function isConnectionError(Throwable $e): bool
     {
+        if ($e instanceof BoltConnectException) {
+            return true;
+        }
+
         $message = strtolower($e->getMessage());
 
         if (str_contains($message, 'interrupted system call')
             || str_contains($message, 'broken pipe')
             || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection refused')
             || str_contains($message, 'connection timeout')
-            || str_contains($message, 'connection closed')) {
+            || str_contains($message, 'connection closed')
+            || str_contains($message, 'i/o error')
+            || str_contains($message, 'timeout')
+            || str_contains($message, 'time out')) {
             return true;
-        }
-
-        if ($e instanceof Neo4jException) {
-            return $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader';
         }
 
         return false;

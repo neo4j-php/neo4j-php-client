@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
+use Bolt\error\ConnectException;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
@@ -329,7 +330,9 @@ class BoltConnection implements ConnectionInterface
 
                 unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
-        } catch (Throwable $e) {
+        } catch (ConnectException $e) {
+            // Connection already broken (timeout, reset, closed socket). Cannot send GOODBYE/DISCARD.
+            // Swallow to allow unset($this->boltProtocol); rethrowing would leave pool with broken connection.
             $this->logger?->log(LogLevel::WARNING, 'Failed to close connection gracefully', [
                 'exception' => $e->getMessage(),
                 'type' => $e::class,
@@ -455,7 +458,9 @@ class BoltConnection implements ConnectionInterface
                 try {
                     $this->discard(null);
                     $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
-                } catch (Throwable $e) {
+                } catch (ConnectException $e) {
+                    // Connection already broken (timeout, reset, closed socket). Cannot send DISCARD.
+                    // Swallow to allow cleanup to complete; rethrowing would break Session.close() chain.
                     $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
                         'exception' => $e->getMessage(),
                     ]);
