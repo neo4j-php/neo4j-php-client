@@ -43,6 +43,50 @@ echo ""
 
 ## Run all tests in a single command with verbose output
 python3 -m unittest -v \
+    tests.neo4j.test_authentication.TestAuthenticationBasic \
+\
+    tests.neo4j.test_bookmarks.TestBookmarks.test_can_handle_multiple_bookmarks \
+    tests.neo4j.test_bookmarks.TestBookmarks.test_can_obtain_bookmark_after_commit \
+    tests.neo4j.test_bookmarks.TestBookmarks.test_can_pass_bookmark_into_next_session \
+    tests.neo4j.test_bookmarks.TestBookmarks.test_can_pass_write_bookmark_into_write_session \
+    tests.neo4j.test_bookmarks.TestBookmarks.test_fails_on_invalid_bookmark \
+    tests.neo4j.test_bookmarks.TestBookmarks.test_fails_on_invalid_bookmark_using_tx_func \
+    tests.neo4j.test_bookmarks.TestBookmarks.test_no_bookmark_after_rollback \
+\
+    tests.neo4j.test_direct_driver.TestDirectDriver.test_custom_resolver \
+    tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_http_port \
+    tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db \
+    tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_non_existing \
+    tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_various_databases \
+    tests.neo4j.test_direct_driver.TestDirectDriver.test_supports_multi_db \
+\
+    tests.neo4j.test_session_run.TestSessionRun.test_autocommit_transactions_should_support_metadata \
+    tests.neo4j.test_session_run.TestSessionRun.test_can_return_node \
+    tests.neo4j.test_session_run.TestSessionRun.test_can_return_path \
+    tests.neo4j.test_session_run.TestSessionRun.test_can_return_relationship \
+    tests.neo4j.test_session_run.TestSessionRun.test_fails_on_bad_syntax \
+    tests.neo4j.test_session_run.TestSessionRun.test_fails_on_missing_parameter \
+    tests.neo4j.test_session_run.TestSessionRun.test_iteration_larger_than_fetch_size \
+    tests.neo4j.test_session_run.TestSessionRun.test_iteration_nested \
+    tests.neo4j.test_session_run.TestSessionRun.test_iteration_smaller_than_fetch_size \
+    tests.neo4j.test_session_run.TestSessionRun.test_long_string \
+    tests.neo4j.test_session_run.TestSessionRun.test_partial_iteration \
+    tests.neo4j.test_session_run.TestSessionRun.test_recover_from_invalid_query \
+    tests.neo4j.test_session_run.TestSessionRun.test_regex_in_parameter \
+    tests.neo4j.test_session_run.TestSessionRun.test_regex_inline \
+    tests.neo4j.test_session_run.TestSessionRun.test_session_reuse \
+    tests.neo4j.test_session_run.TestSessionRun.test_simple_query \
+    tests.neo4j.test_session_run.TestSessionRun.test_updates_last_bookmark \
+\
+    tests.neo4j.test_summary.TestSummary \
+\
+    tests.neo4j.test_tx_func_run.TestTxFuncRun.test_client_exception_rolls_back_change \
+    tests.neo4j.test_tx_func_run.TestTxFuncRun.test_does_not_update_last_bookmark_on_rollback \
+    tests.neo4j.test_tx_func_run.TestTxFuncRun.test_iteration_nested \
+    tests.neo4j.test_tx_func_run.TestTxFuncRun.test_meta_data \
+    tests.neo4j.test_tx_func_run.TestTxFuncRun.test_parameter \
+    tests.neo4j.test_tx_func_run.TestTxFuncRun.test_simple_query \
+    tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_func_configuration \
     tests.neo4j.test_tx_func_run.TestTxFuncRun.test_tx_timeout \
     tests.neo4j.test_tx_func_run.TestTxFuncRun.test_updates_last_bookmark_on_commit \
     tests.neo4j.test_tx_run.TestTxRun.test_broken_transaction_should_not_break_session  \
