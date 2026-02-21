@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
+use Bolt\error\ConnectException;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
@@ -315,6 +316,9 @@ class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
+        // Graceful cleanup: GOODBYE/DISCARD may fail if connection already broken.
+        // Must catch to ensure unset($this->boltProtocol) executes,
+        // preventing pool from reusing broken connections.
         try {
             if ($this->isOpen()) {
                 if ($this->isStreaming()) {
@@ -326,8 +330,30 @@ class BoltConnection implements ConnectionInterface
 
                 unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
-        } catch (Throwable) {
+        } catch (ConnectException $e) {
+            // Connection already broken (timeout, reset, closed socket). Cannot send GOODBYE/DISCARD.
+            // Swallow to allow unset($this->boltProtocol); rethrowing would leave pool with broken connection.
+            $this->logger?->log(LogLevel::WARNING, 'Failed to close connection gracefully', [
+                'exception' => $e->getMessage(),
+                'type' => $e::class,
+            ]);
         }
+    }
+
+    /**
+     * Invalidates the connection without sending GOODBYE message.
+     *
+     * This method closes the Bolt protocol and socket connection WITHOUT
+     * sending a GOODBYE message, which is essential when handling timeout
+     * exceptions or when the connection is already broken. Sending GOODBYE
+     * on a broken connection can interfere with the server's expected
+     * message sequence.
+     */
+    public function invalidate(): void
+    {
+        $this->subscribedResults = [];
+        $this->connection->disconnect();
+        unset($this->boltProtocol);
     }
 
     private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
@@ -416,31 +442,32 @@ class BoltConnection implements ConnectionInterface
 
     /**
      * Discard unconsumed results - sends DISCARD to server for each subscribed result.
+     * Try-catch prevents DISCARD failures from breaking cleanup chain in Session.close().
      */
     public function discardUnconsumedResults(): void
     {
-        if (!in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
-            return;
-        }
+        if ($this->isOpen() && in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
+            $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
 
-        $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
+            $this->subscribedResults = array_values(array_filter(
+                $this->subscribedResults,
+                static fn (WeakReference $ref): bool => $ref->get() !== null
+            ));
 
-        $this->subscribedResults = array_values(array_filter(
-            $this->subscribedResults,
-            static fn (WeakReference $ref): bool => $ref->get() !== null
-        ));
-
-        if (!empty($this->subscribedResults)) {
-            try {
-                $this->discard(null);
-                $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
-            } catch (Throwable $e) {
-                $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
-                    'exception' => $e->getMessage(),
-                ]);
+            if (!empty($this->subscribedResults)) {
+                try {
+                    $this->discard(null);
+                    $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
+                } catch (ConnectException $e) {
+                    // Connection already broken (timeout, reset, closed socket). Cannot send DISCARD.
+                    // Swallow to allow cleanup to complete; rethrowing would break Session.close() chain.
+                    $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
+                        'exception' => $e->getMessage(),
+                    ]);
+                }
             }
-        }
 
-        $this->subscribedResults = [];
+            $this->subscribedResults = [];
+        }
     }
 }

@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use function array_splice;
+
+use Bolt\error\ConnectException as BoltConnectException;
+
 use function count;
 
 use Generator;
@@ -100,7 +103,15 @@ final class BoltResult implements Iterator
 
     private function fetchResults(): void
     {
-        $meta = $this->connection->pull($this->qid, $this->fetchSize);
+        // Catch socket/connection errors during PULL. Session retry logic detects BoltConnectException
+        // via isConnectionError() and handles connection failures (triggers routing table refresh).
+        try {
+            $meta = $this->connection->pull($this->qid, $this->fetchSize);
+        } catch (BoltConnectException $e) {
+            // Close connection on socket errors
+            $this->connection->invalidate();
+            throw $e;
+        }
 
         /** @var list<list> $rows */
         $rows = array_splice($meta, 0, count($meta) - 1);
@@ -154,6 +165,13 @@ final class BoltResult implements Iterator
 
     public function discard(): void
     {
-        $this->connection->discard($this->qid === -1 ? null : $this->qid);
+        try {
+            $this->connection->discard($this->qid === -1 ? null : $this->qid);
+        } catch (BoltConnectException $e) {
+            // Connection already broken if DISCARD fails. Invalidate to prevent pool from reusing it.
+            // Don't rethrow: this is called from __destruct() where exceptions don't propagate properly.
+            // Connection will be detected as broken on next operation when pool tries to reuse it.
+            $this->connection->invalidate();
+        }
     }
 }

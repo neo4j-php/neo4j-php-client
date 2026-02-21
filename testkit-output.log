@@ -1,0 +1,81 @@
+ Container neo4j-php-client-testkit_backend-1  Running
+Attaching to testkit-1
+testkit-1  |  Testkit commit validated (b22be9d)
+testkit-1  | 
+testkit-1  | 
+testkit-1  | ╔════════════════════════════════════════════════════════════════════════════╗
+testkit-1  | ║                     Neo4j PHP Driver TestKit Suite                        ║
+testkit-1  | ╚════════════════════════════════════════════════════════════════════════════╝
+testkit-1  | 
+testkit-1  | features {<Feature.OPT_MINIMAL_VERIFY_AUTHENTICATION: 'Optimization:MinimalVerifyAuthentication'>, <Feature.API_SSL_CONFIG: 'Feature:API:SSLConfig'>, <Feature.BOLT_5_1: 'Feature:Bolt:5.1'>, <Feature.API_RESULT_PEEK: 'Feature:API:Result.Peek'>, <Feature.API_RETRYABLE_EXCEPTION: 'Feature:API:RetryableExceptions'>, <Feature.DETAIL_NUMBER_IS_NUMBER: 'Detail:NumberIsNumber'>, <Feature.BOLT_4_3: 'Feature:Bolt:4.3'>, <Feature.API_DRIVER_NOTIFICATIONS_CONFIG: 'Feature:API:Driver:NotificationsConfig'>, <Feature.API_DRIVER_MAX_CONNECTION_LIFETIME: 'Feature:API:Driver:MaxConnectionLifetime'>, <Feature.BOLT_4_2: 'Feature:Bolt:4.2'>, <Feature.API_SSL_SCHEMES: 'Feature:API:SSLSchemes'>, <Feature.API_DRIVER_GET_SERVER_INFO: 'Feature:API:Driver:GetServerInfo'>, <Feature.OPT_IMPLICIT_DEFAULT_ARGUMENTS: 'Optimization:ImplicitDefaultArguments'>, <Feature.OPT_EAGER_TX_BEGIN: 'Optimization:EagerTransactionBegin'>, <Feature.API_DRIVER_EXECUTE_QUERY_WITH_AUTH: 'Feature:API:Driver.ExecuteQuery:WithAuth'>, <Feature.API_DRIVER_SUPPORTS_SESSION_AUTH: 'Feature:API:Driver.SupportsSessionAuth'>, <Feature.TLS_1_3: 'Feature:TLS:1.3'>, <Feature.TLS_1_2: 'Feature:TLS:1.2'>, <Feature.OPT_HOME_DB_CACHE: 'Optimization:HomeDatabaseCache'>, <Feature.AUTH_CUSTOM: 'Feature:Auth:Custom'>, <Feature.API_LIVENESS_CHECK: 'Feature:API:Liveness.Check'>, <Feature.API_DRIVER_VERIFY_CONNECTIVITY: 'Feature:API:Driver.VerifyConnectivity'>, <Feature.OPT_AUTH_PIPELINING: 'Optimization:AuthPipelining'>, <Feature.API_SSL_CLIENT_CERTIFICATE: 'Feature:API:SSLClientCertificate'>, <Feature.OPT_CONNECTION_REUSE: 'Optimization:ConnectionReuse'>, <Feature.API_TYPE_TEMPORAL: 'Feature:API:Type.Temporal'>, <Feature.API_RESULT_LIST: 'Feature:API:Result.List'>, <Feature.AUTH_KERBEROS: 'Feature:Auth:Kerberos'>, <Feature.BOLT_HANDSHAKE_MANIFEST_V1: 'Feature:Bolt:HandshakeManifestV1'>, <Feature.API_DRIVER_IS_ENCRYPTED: 'Feature:API:Driver.IsEncrypted'>, <Feature.OPT_HOME_DB_CACHE_BASIC_PRINCIPAL_IS_IMP_USER: 'Optimization:HomeDbCacheBasicPrincipalIsImpersonatedUser'>, <Feature.AUTH_BEARER: 'Feature:Auth:Bearer'>, <Feature.OPT_EXECUTE_QUERY_PIPELINING: 'Optimization:ExecuteQueryPipelining'>, <Feature.BOLT_3_0: 'Feature:Bolt:3.0'>, <Feature.API_SESSION_NOTIFICATIONS_CONFIG: 'Feature:API:Session:NotificationsConfig'>, <Feature.BOLT_5_0: 'Feature:Bolt:5.0'>, <Feature.DETAIL_CLOSED_DRIVER_IS_ENCRYPTED: 'Detail:ClosedDriverIsEncrypted'>, <Feature.API_RESULT_SINGLE_OPTIONAL: 'Feature:API:Result.SingleOptional'>, <Feature.API_RESULT_SINGLE: 'Feature:API:Result.Single'>, <Feature.IMPERSONATION: 'Feature:Impersonation'>, <Feature.API_DRIVER_VERIFY_AUTHENTICATION: 'Feature:API:Driver.VerifyAuthentication'>, <Feature.OPT_AUTHORIZATION_EXPIRED_TREATMENT: 'AuthorizationExpiredTreatment'>, <Feature.DETAIL_DEFAULT_SECURITY_CONFIG_VALUE_EQUALITY: 'Detail:DefaultSecurityConfigValueEquality'>, <Feature.BOLT_5_4: 'Feature:Bolt:5.4'>, <Feature.BOLT_PATCH_UTC: 'Feature:Bolt:Patch:UTC'>, <Feature.OPT_PULL_PIPELINING: 'Optimization:PullPipelining'>, <Feature.API_TYPE_SPATIAL: 'Feature:API:Type.Spatial'>, <Feature.BACKEND_RT_FETCH: 'Backend:RTFetch'>, <Feature.BOLT_5_3: 'Feature:Bolt:5.3'>, <Feature.CONF_HINT_CON_RECV_TIMEOUT: 'ConfHint:connection.recv_timeout_seconds'>, <Feature.BACKEND_MOCK_TIME: 'Backend:MockTime'>, <Feature.API_CONNECTION_ACQUISITION_TIMEOUT: 'Feature:API:ConnectionAcquisitionTimeout'>, <Feature.API_SESSION_AUTH_CONFIG: 'Feature:API:Session:AuthConfig'>, <Feature.OPT_RESULT_LIST_FETCH_ALL: 'Optimization:ResultListFetchAll'>, <Feature.TLS_1_1: 'Feature:TLS:1.1'>, <Feature.OPT_MINIMAL_BOOKMARKS_SET: 'Optimization:MinimalBookmarksSet'>, <Feature.BOLT_4_1: 'Feature:Bolt:4.1'>, <Feature.BOLT_5_2: 'Feature:Bolt:5.2'>, <Feature.BACKEND_RT_FORCE_UPDATE: 'Backend:RTForceUpdate'>, <Feature.OPT_MINIMAL_RESETS: 'Optimization:MinimalResets'>, <Feature.BOLT_4_4: 'Feature:Bolt:4.4'>, <Feature.API_BOOKMARK_MANAGER: 'Feature:API:BookmarkManager'>, <Feature.API_DRIVER_EXECUTE_QUERY: 'Feature:API:Driver.ExecuteQuery'>}
+testkit-1  | >>>> Captured stub server testkit:9010 stdout
+testkit-1  | Listening
+testkit-1  | [30;1m07:15:12.425[0m  [#E5D2>#2332]  S: <ACCEPT> 172.18.0.3:58834 -> 172.18.0.4:9010
+testkit-1  | [30;1m07:15:12.427[0m  [#E5D2>#2332]  C: <MAGIC> 60 60 B0 17
+testkit-1  | [30;1m07:15:12.427[0m  [#E5D2>#2332]  C: <HANDSHAKE> 00 04 04 05 00 00 04 04 00 00 00 00 00 00 00 00
+testkit-1  | [30;1m07:15:12.427[0m  [#E5D2>#2332]  S: <HANDSHAKE> 00 00 04 04
+testkit-1  | [30;1m07:15:12.428[0m  [#E5D2>#2332]  (   4) C: HELLO {"{}": {"user_agent": "neo4j-php-client/2", "scheme": "basic", "principal": "neo4j", "credentials": "pass"}}
+testkit-1  | [30;1m07:15:12.428[0m  [#E5D2>#2332]  (   5) S: SUCCESS {"server": "Neo4j/4.4.1", "hints": {"connection.recv_timeout_seconds": 1}, "connection_id": "bolt-2"}
+testkit-1  | [30;1m07:15:12.428[0m  [#E5D2>#2332]  (   7) C: BEGIN {"{}": {}}
+testkit-1  | [30;1m07:15:12.428[0m  [#E5D2>#2332]  (   8) S: SUCCESS {}
+testkit-1  | [30;1m07:15:12.429[0m  [#E5D2>#2332]  (  10) C: RUN "timeout" {"{}": {}} {"{}": {}}
+testkit-1  | [30;1m07:15:14.429[0m  [#E5D2>#2332]  (  12)        SUCCESS {"fields": ["n"]}
+testkit-1  | [30;1m07:15:14.430[0m  [#E5D2>#2332]  S: <HANGUP>
+testkit-1  | [30;1m07:15:14.430[0m  [#E5DA>#2332]  S: <ACCEPT> 172.18.0.3:58842 -> 172.18.0.4:9010
+testkit-1  | [30;1m07:15:14.432[0m  [#E5DA>#2332]  C: <MAGIC> 60 60 B0 17
+testkit-1  | [30;1m07:15:14.432[0m  [#E5DA>#2332]  C: <HANDSHAKE> 00 04 04 05 00 00 04 04 00 00 00 00 00 00 00 00
+testkit-1  | [30;1m07:15:14.432[0m  [#E5DA>#2332]  S: <HANDSHAKE> 00 00 04 04
+testkit-1  | [30;1m07:15:14.432[0m  [#E5DA>#2332]  (   4) C: HELLO {"{}": {"user_agent": "neo4j-php-client/2", "scheme": "basic", "principal": "neo4j", "credentials": "pass"}}
+testkit-1  | [30;1m07:15:14.432[0m  [#E5DA>#2332]  (   5) S: SUCCESS {"server": "Neo4j/4.4.1", "hints": {"connection.recv_timeout_seconds": 1}, "connection_id": "bolt-2"}
+testkit-1  | [30;1m07:15:14.433[0m  [#E5DA>#2332]  (   7) C: BEGIN {"{}": {}}
+testkit-1  | [30;1m07:15:14.433[0m  [#E5DA>#2332]  (   8) S: SUCCESS {}
+testkit-1  | [30;1m07:15:14.474[0m  [#E5DA>#2332]  (  27) C: RUN "in time" {"{}": {}} {"{}": {}}
+testkit-1  | [30;1m07:15:14.475[0m  [#E5DA>#2332]  (  28) S: SUCCESS {"fields": ["n"]}
+testkit-1  | [30;1m07:15:14.516[0m  [#E5DA>#2332]  (  29) C: PULL {"{}": {"n": 1000}}
+testkit-1  | [30;1m07:15:14.516[0m  [#E5DA>#2332]  (  30) S: RECORD [1]
+testkit-1  | [30;1m07:15:14.517[0m  [#E5DA>#2332]  (  31)        SUCCESS {"type": "r"}
+testkit-1  | [30;1m07:15:14.558[0m  [#E5DA>#2332]  (  32) C: COMMIT 
+testkit-1  | [30;1m07:15:14.558[0m  [#E5DA>#2332]  (  33) S: SUCCESS {}
+testkit-1  | 1st SIGINT received. Trying to finish all running scripts.
+testkit-1  | [30;1m07:15:14.760[0m  [#E5DA>#2332]  Script finished
+testkit-1  | [30;1m07:15:14.760[0m  [#E5DA>#2332]  S: <HANGUP>
+testkit-1  | Script mismatch in '/opt/project/testkit/tests/stub/configuration_hints/scripts/1_second_exceeds_tx.script':
+testkit-1  | Expected one of:
+testkit-1  | (  14) C: PULL {"n": "*"}
+testkit-1  | (  19) C: COMMIT
+testkit-1  | (  21) C: ROLLBACK
+testkit-1  | (  23) C: RESET
+testkit-1  | 
+testkit-1  | Received:
+testkit-1  | GOODBYE 
+testkit-1  |  => Structure[0x02|GOODBYE]()
+testkit-1  | 
+testkit-1  | <<<< Captured stub server testkit:9010 stdout
+testkit-1  | >>>> Captured stub server testkit:9010 stderr
+testkit-1  | <<<< Captured stub server testkit:9010 stderr
+testkit-1  | test_timeout_unmanaged_tx (tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestDirectConnectionRecvTimeout.test_timeout_unmanaged_tx) ... FAIL
+testkit-1  | 
+testkit-1  | ======================================================================
+testkit-1  | FAIL: test_timeout_unmanaged_tx (tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestDirectConnectionRecvTimeout.test_timeout_unmanaged_tx)
+testkit-1  | ----------------------------------------------------------------------
+testkit-1  | Traceback (most recent call last):
+testkit-1  |   File "/opt/project/testkit/tests/shared.py", line 100, in wrapper
+testkit-1  |     return func(*args, **kwargs)
+testkit-1  |   File "/opt/project/testkit/tests/stub/configuration_hints/test_connection_recv_timeout_seconds.py", line 142, in test_timeout_unmanaged_tx
+testkit-1  |     self._assert_is_timeout_exception(exc.exception)
+testkit-1  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+testkit-1  |   File "/opt/project/testkit/tests/stub/configuration_hints/test_connection_recv_timeout_seconds.py", line 74, in _assert_is_timeout_exception
+testkit-1  |     self.fail("no error mapping is defined for %s driver" % driver)
+testkit-1  |     ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+testkit-1  | AssertionError: no error mapping is defined for php driver
+testkit-1  | 
+testkit-1  | ----------------------------------------------------------------------
+testkit-1  | Ran 1 test in 2.728s
+testkit-1  | 
+testkit-1  | FAILED (failures=1)
+testkit-1  | 
+testkit-1  | ╔════════════════════════════════════════════════════════════════════════════╗
+testkit-1  | ║                          ✗ SOME TESTS FAILED                               ║
+testkit-1  | ╚════════════════════════════════════════════════════════════════════════════╝
+testkit-1  | 
+[Ktestkit-1 exited with code 1
