@@ -352,15 +352,7 @@ class BoltConnection implements ConnectionInterface
     public function invalidate(): void
     {
         $this->subscribedResults = [];
-        try {
-            $this->connection->disconnect();
-        } catch (Throwable $e) {
-            $this->logger?->log(LogLevel::WARNING, 'Failed to disconnect during invalidation', [
-                'exception' => $e->getMessage(),
-                'type' => $e::class,
-            ]);
-        }
-
+        $this->connection->disconnect();
         unset($this->boltProtocol);
     }
 
