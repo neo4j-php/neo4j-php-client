@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\error\ConnectException as BoltConnectException;
 use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Neo4jLogger;
@@ -201,25 +202,22 @@ final class Session implements SessionInterface
     }
 
     /**
-     * Check if the exception is a connection-related error.
+     * Check if the exception is a connection-related error (network/socket/timeout).
+     * NotALeader is a routing error, not a connection error - the connection is fine.
      */
     private function isConnectionError(Throwable $e): bool
     {
-        $message = strtolower($e->getMessage());
-
-        if (str_contains($message, 'interrupted system call')
-            || str_contains($message, 'broken pipe')
-            || str_contains($message, 'connection reset')
-            || str_contains($message, 'connection timeout')
-            || str_contains($message, 'connection closed')) {
+        if ($e instanceof BoltConnectException) {
             return true;
         }
 
-        if ($e instanceof Neo4jException) {
-            return $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader';
-        }
+        $message = strtolower($e->getMessage());
 
-        return false;
+        return str_contains($message, 'interrupted system call')
+            || str_contains($message, 'broken pipe')
+            || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection timeout')
+            || str_contains($message, 'connection closed');
     }
 
     /**
