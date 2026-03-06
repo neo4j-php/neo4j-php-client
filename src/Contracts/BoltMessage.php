@@ -38,13 +38,12 @@ abstract class BoltMessage
         // Temporarily apply recv_timeout hint for this response retrieval
         $this->connection->applyRecvTimeoutTemporarily();
 
-        // If no timeout hint is set, apply a shorter default timeout to prevent hanging on disconnect
-        // This is especially important for disconnect tests where the server closes the connection
+        // If no timeout hint is set, apply a default timeout to prevent hanging on disconnect.
+        // 30 seconds balances CI stability with disconnect detection.
         if ($this->connection->getRecvTimeoutHint() === null && $this->connection->getOriginalTimeout() === null) {
             $currentTimeout = $this->connection->getTimeout();
-            // Store original timeout and apply a shorter timeout (5 seconds) for disconnect detection
             $this->connection->setOriginalTimeout($currentTimeout);
-            $this->connection->setTimeout(5.0);
+            $this->connection->setTimeout(30.0);
         }
 
         try {

@@ -20,10 +20,10 @@ final class StreamConnectionFactory implements BasicConnectionFactoryInterface
 {
     public function create(UriConfiguration $config): Connection
     {
-        // For socket-level timeouts, use a reasonable default (5 seconds) to detect disconnects
-        // This is different from transaction timeout - socket timeout interrupts blocking reads
-        // The server's recv_timeout_seconds hint can override this per-operation via applyRecvTimeoutTemporarily()
-        $socketTimeout = 5.0;
+        // For socket-level timeouts, use a reasonable default (30 seconds) for CI and slow networks.
+        // This is different from transaction timeout - socket timeout interrupts blocking reads.
+        // The server's recv_timeout_seconds hint can override this per-operation via applyRecvTimeoutTemporarily().
+        $socketTimeout = 30.0;
 
         $connection = new StreamSocket($config->getHost(), $config->getPort() ?? 7687, $socketTimeout);
         if ($config->getSslLevel() !== '') {

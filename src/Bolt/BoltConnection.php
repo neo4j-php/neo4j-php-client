@@ -325,10 +325,11 @@ class BoltConnection implements ConnectionInterface
             // Apply timeout before iterating to ensure disconnects are detected
             $this->applyRecvTimeoutTemporarily();
 
-            // If no timeout hint is set, apply a shorter default timeout to prevent hanging on disconnect
+            // If no timeout hint is set, apply a default timeout to prevent hanging on disconnect.
+            // 30 seconds balances CI stability with disconnect detection.
             if ($this->originalTimeout === null && $this->recvTimeoutHint === null) {
                 $this->originalTimeout = $this->connection->getTimeout();
-                $this->connection->setTimeout(5.0);
+                $this->connection->setTimeout(30.0);
             }
 
             foreach ($message->send()->getResponses() as $response) {
