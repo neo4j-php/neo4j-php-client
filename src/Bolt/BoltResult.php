@@ -25,8 +25,6 @@ use Generator;
 use function in_array;
 
 use Iterator;
-use Laudis\Neo4j\Databags\Neo4jError;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Throwable;
 
@@ -114,13 +112,13 @@ final class BoltResult implements Iterator
 
     private function fetchResults(): void
     {
-        // Catch socket/connection errors during PULL. Convert BoltConnectException to Neo4jException
-        // so Session retry logic can detect and handle connection failures (triggers routing table refresh).
         try {
             $meta = $this->connection->pull($this->qid, $this->fetchSize);
         } catch (BoltConnectException $e) {
-            // Close connection on socket errors
+            // Invalidate connection on socket/network errors so pool does not reuse it.
+            // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
             $this->connection->invalidate();
+            throw $e;
             // Convert to Neo4jException with NotALeader code so Session.executeStatementWithRetry()
             // and Session.retry() can catch it and clear routing table for automatic failover recovery.
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);

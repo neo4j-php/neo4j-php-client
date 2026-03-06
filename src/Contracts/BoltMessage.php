@@ -17,8 +17,6 @@ use Bolt\error\BoltException;
 use Bolt\protocol\Response;
 use Iterator;
 use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Databags\Neo4jError;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Throwable;
 
 abstract class BoltMessage
@@ -50,20 +48,12 @@ abstract class BoltMessage
         try {
             $response = $this->connection->protocol()->getResponse();
         } catch (Throwable $e) {
-            $this->connection->restoreOriginalTimeout();
-
-            if ($this->isTimeoutException($e)) {
-                $timeoutMsg = 'Connection timeout reached';
-                if (preg_match('/(\d+)\s*(?:milliseconds?|ms|seconds?|s)/', $e->getMessage(), $matches) && array_key_exists(1, $matches)) {
-                    $timeoutMsg = 'Connection timeout reached after '.$matches[1].' seconds';
+            if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
+                try {
+                    $this->connection->invalidate();
+                } catch (Throwable $invalidateException) {
                 }
-                $this->tryInvalidateConnection();
-                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', $timeoutMsg)], $e);
-            }
-
-            if ($this->isSocketException($e)) {
-                $this->tryInvalidateConnection();
-                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+                // Rethrow original exception - Session retry logic inspects it via isConnectionError().
             }
 
             throw $e;
@@ -105,6 +95,7 @@ abstract class BoltMessage
         return str_contains($message, 'broken pipe')
             || str_contains($message, 'connection reset')
             || str_contains($message, 'connection refused')
+            || str_contains($message, 'connection closed')
             || str_contains($message, 'interrupted system call')
             || str_contains($message, 'i/o error')
             || str_contains($message, 'network read incomplete')
