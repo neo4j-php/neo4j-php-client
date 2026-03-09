@@ -217,7 +217,9 @@ final class Session implements SessionInterface
             || str_contains($message, 'broken pipe')
             || str_contains($message, 'connection reset')
             || str_contains($message, 'connection timeout')
-            || str_contains($message, 'connection closed');
+            || str_contains($message, 'connection closed')
+            || str_contains($message, 'connection refused')
+            || str_contains($message, 'i/o error');
     }
 
     /**

@@ -121,17 +121,14 @@ final class BoltResult implements Iterator
             // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
             $this->connection->invalidate();
             throw $e;
-        } catch (BoltException $e) {
-            // Close connection on Bolt protocol errors (includes disconnect errors)
-            $this->connection->invalidate();
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
         } catch (Neo4jException $e) {
             // Re-throw Neo4jExceptions that were already processed by BoltMessage
             throw $e;
-        } catch (Throwable $e) {
-            // Close connection on any other errors
+        } catch (BoltException|Throwable $e) {
+            // Invalidate connection on Bolt protocol errors or other failures (e.g. disconnect).
+            // Rethrow as-is - Session retry logic inspects via isConnectionError().
             $this->connection->invalidate();
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+            throw $e;
         }
 
         // Safety check: ensure $meta is not empty (pull() is typed non-empty-list but we defend against empty)

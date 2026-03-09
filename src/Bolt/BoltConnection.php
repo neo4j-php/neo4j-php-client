@@ -345,7 +345,7 @@ class BoltConnection implements ConnectionInterface
             $this->restoreOriginalTimeout();
 
             // Server sent a proper FAILURE (e.g. TransactionTimedOut) - rethrow so caller sees the error.
-            // Connection errors are wrapped as NotALeader; for those we may return partial results (exit_after_record tests).
+            // Connection errors are rethrown as-is; for those we may return partial results (exit_after_record tests).
             if ($e instanceof Neo4jException && $e->getNeo4jCode() !== 'Neo.ClientError.Cluster.NotALeader') {
                 throw $e;
             }
@@ -362,7 +362,7 @@ class BoltConnection implements ConnectionInterface
                 throw $e;
             }
 
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+            throw $e;
         }
     }
 

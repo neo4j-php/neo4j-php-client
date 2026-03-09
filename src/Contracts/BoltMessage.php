@@ -17,8 +17,6 @@ use Bolt\error\BoltException;
 use Bolt\protocol\Response;
 use Iterator;
 use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Databags\Neo4jError;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Throwable;
 
 abstract class BoltMessage
@@ -134,18 +132,8 @@ abstract class BoltMessage
         } catch (Throwable $e) {
             $this->connection->restoreOriginalTimeout();
 
-            if ($this->isTimeoutException($e)) {
-                $matches = [];
-                $timeoutMsg = preg_match('/(\d+)\s*(?:milliseconds?|ms|seconds?|s)/', $e->getMessage(), $matches) && array_key_exists(1, $matches)
-                    ? 'Connection timeout reached after '.$matches[1].' seconds'
-                    : 'Connection timeout reached';
+            if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
                 $this->tryInvalidateConnection();
-                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', $timeoutMsg)], $e);
-            }
-
-            if ($this->isSocketException($e)) {
-                $this->tryInvalidateConnection();
-                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
             }
 
             throw $e;
