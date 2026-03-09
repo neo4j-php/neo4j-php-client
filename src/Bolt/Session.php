@@ -346,7 +346,7 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
 
-        /** @var ConnectionPoolInterface|null $pool */
+        /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
@@ -396,10 +396,7 @@ final class Session implements SessionInterface
         // Defer BEGIN to first run/commit/rollback so driver does not advertise OPT_EAGER_TX_BEGIN.
         // This allows test_disconnect_on_tx_begin to expect error at "after run" when stub disconnects on BEGIN.
 
-        /** @var ConnectionPoolInterface|null $pool */
-        $pool = $this->pool;
-
-        /** @var ConnectionPoolInterface|null $pool */
+        /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(

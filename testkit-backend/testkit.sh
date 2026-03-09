@@ -1,7 +1,5 @@
 #!/bin/bash
 
-TESTKIT_VERSION=5.0
-
 [ -z "$TEST_NEO4J_HOST" ] && export TEST_NEO4J_HOST=neo4j
 [ -z "$TEST_NEO4J_USER" ] && export TEST_NEO4J_USER=neo4j
 [ -z "$TEST_NEO4J_PASS" ] && export TEST_NEO4J_PASS=testtest

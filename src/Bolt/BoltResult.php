@@ -139,14 +139,6 @@ final class BoltResult implements Iterator
         if (empty($meta)) {
             throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Empty response from server')]);
         }
-        try {
-            $meta = $this->connection->pull($this->qid, $this->fetchSize);
-        } catch (BoltConnectException $e) {
-            // Invalidate connection on socket/network errors so pool does not reuse it.
-            // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
-            $this->connection->invalidate();
-            throw $e;
-        }
 
         /** @var list<list> $rows */
         $rows = array_splice($meta, 0, count($meta) - 1);
