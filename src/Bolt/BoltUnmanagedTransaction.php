@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\enum\ServerState;
+use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
@@ -53,6 +54,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly BookmarkHolder $bookmarkHolder,
         private readonly BoltMessageFactory $messageFactory,
         private readonly bool $isInstantTransaction,
+        private readonly ?ConnectionPoolInterface $pool = null,
     ) {
     }
 
@@ -149,11 +151,14 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->database,
                 $this->tsxConfig->getTimeout(),
                 $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
-                $this->isInstantTransaction ? $this->config->getAccessMode() : null, // let the begin transaction decide if it is a managed transaction
+                null, // mode is never sent in RUN messages - it comes from session configuration
                 $this->tsxConfig->getMetaData()
             );
         } catch (Throwable $e) {
             $this->state = TransactionState::TERMINATED;
+            if ($this->pool !== null) {
+                $this->pool->release($this->connection);
+            }
             throw $e;
         }
         $run = microtime(true);

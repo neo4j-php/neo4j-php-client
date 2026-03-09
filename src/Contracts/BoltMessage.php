@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Contracts;
 use Bolt\protocol\Response;
 use Iterator;
 use Laudis\Neo4j\Bolt\BoltConnection;
+use Throwable;
 
 abstract class BoltMessage
 {
@@ -31,11 +32,42 @@ abstract class BoltMessage
 
     public function getResponse(): Response
     {
-        $response = $this->connection->protocol()->getResponse();
+        try {
+            $response = $this->connection->protocol()->getResponse();
+        } catch (Throwable $e) {
+            if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
+                try {
+                    $this->connection->invalidate();
+                } catch (Throwable $invalidateException) {
+                }
+                // Rethrow original exception - Session retry logic inspects it via isConnectionError().
+            }
+
+            throw $e;
+        }
 
         $this->connection->assertNoFailure($response);
 
         return $response;
+    }
+
+    private function isTimeoutException(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'timeout') || str_contains($message, 'time out');
+    }
+
+    private function isSocketException(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'broken pipe')
+            || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection refused')
+            || str_contains($message, 'connection closed')
+            || str_contains($message, 'interrupted system call')
+            || str_contains($message, 'i/o error');
     }
 
     /**
