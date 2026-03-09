@@ -241,8 +241,11 @@ Cypher values and types map to these php types and classes:
 | Node           | `\Laudis\Neo4j\Types\Node`                    |
 | Relationship   | `\Laudis\Neo4j\Types\Relationship`            |
 | Path           | `\Laudis\Neo4j\Types\Path`                    |
+| Vector         | `\Laudis\Neo4j\Types\Vector` ***              |
 
 (*) These items can also be used as parameters in the bolt protocol and will automatically be converted by the driver, so they can be used in Cypher.
+
+(***) Vector (e.g. embedding) is only produced when decoding results from the server; it is not supported as a query parameter.
 
 Besides these examples, `\DateTimeInterface` will map to `DateTimeZoneId` in Cypher. An empty or list-type `array` will be converted to a cypher `List`, and an `associative array` will be converted to a `map`.
 

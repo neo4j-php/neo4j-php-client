@@ -399,6 +399,9 @@ final class Session implements SessionInterface
         /** @var ConnectionPoolInterface|null $pool */
         $pool = $this->pool;
 
+        /** @var ConnectionPoolInterface|null $pool */
+        $pool = $this->pool;
+
         return new BoltUnmanagedTransaction(
             $this->config->getDatabase(),
             $this->formatter,

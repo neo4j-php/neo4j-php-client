@@ -83,13 +83,23 @@ final class ParameterHelper
         mixed $value,
         ConnectionProtocol $protocol,
     ): iterable|int|float|bool|string|stdClass|IStructure|null {
-        return self::cypherMapToStdClass($value) ??
+        return self::passThroughBoltStructure($value) ??
+            self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
             self::convertBoltConvertibles($value) ??
             self::convertTemporalTypes($value, $protocol) ??
             self::filledIterableToArray($value, $protocol) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
+    }
+
+    private static function passThroughBoltStructure(mixed $value): ?IStructure
+    {
+        if ($value instanceof IStructure) {
+            return $value;
+        }
+
+        return null;
     }
 
     /**

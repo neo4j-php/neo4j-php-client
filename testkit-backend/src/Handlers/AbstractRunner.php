@@ -133,6 +133,19 @@ abstract class AbstractRunner implements RequestHandlerInterface
             }
 
             throw new Exception('Unhandled exception for run request of type: '.get_class($request));
+        } catch (BoltConnectException $e) {
+            // Wrap connection/timeout errors for testkit protocol - tests expect DriverError with Neo4jException
+            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
+            $wrapped = new Neo4jException([$neo4jError], $e);
+
+            if ($request instanceof SessionRunRequest) {
+                return new DriverErrorResponse($request->getSessionId(), $wrapped);
+            }
+            if ($request instanceof TransactionRunRequest) {
+                return new DriverErrorResponse($request->getTxId(), $wrapped);
+            }
+
+            throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));
         }
         // NOTE: all other exceptions will be caught in the Backend
     }

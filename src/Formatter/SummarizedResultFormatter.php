@@ -47,6 +47,7 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\Vector;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 
@@ -55,7 +56,7 @@ use function microtime;
 /**
  * Decorates the result of the provided format with an extensive summary.
  *
- * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|DateTimeZoneId|CypherList<mixed>|CypherMap<mixed>
+ * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|DateTimeZoneId|Vector|CypherList<mixed>|CypherMap<mixed>
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  * @psalm-type CypherStats = array{
  *     nodes_created: int,
