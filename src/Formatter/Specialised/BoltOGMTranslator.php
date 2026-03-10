@@ -191,17 +191,17 @@ final class BoltOGMTranslator
             $elementId = (string) $rel->id;
         }
 
-        if (property_exists($rel, 'startNodeElementId')) {
+        if (property_exists($rel, 'start_node_element_id')) {
             /** @var string|null $startNodeElementIdValue */
-            $startNodeElementIdValue = $rel->startNodeElementId ?? null;
+            $startNodeElementIdValue = $rel->start_node_element_id ?? null;
             $startNodeElementId = is_string($startNodeElementIdValue) ? $startNodeElementIdValue : (string) $rel->startNodeId;
         } else {
             $startNodeElementId = (string) $rel->startNodeId;
         }
 
-        if (property_exists($rel, 'endNodeElementId')) {
+        if (property_exists($rel, 'end_node_element_id')) {
             /** @var string|null $endNodeElementIdValue */
-            $endNodeElementIdValue = $rel->endNodeElementId ?? null;
+            $endNodeElementIdValue = $rel->end_node_element_id ?? null;
             $endNodeElementId = is_string($endNodeElementIdValue) ? $endNodeElementIdValue : (string) $rel->endNodeId;
         } else {
             $endNodeElementId = (string) $rel->endNodeId;
