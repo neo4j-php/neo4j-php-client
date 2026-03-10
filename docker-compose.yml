@@ -119,6 +119,7 @@ services:
 
   testkit:
     image: python:3.13
+    hostname: testkit
     command: ./testkit.sh
     volumes:
       - .:/opt/project

@@ -159,6 +159,28 @@ python3 -m unittest -v \
     tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_on_tx_begin \
     tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_session_on_tx_pull_after_record \
     tests.stub.disconnects.test_disconnects.TestDisconnects.test_fail_on_reset \
+\
+    tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_0_records \
+    tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_1_records \
+    tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_2_records \
+    tests.stub.iteration.test_result_list.TestResultList.test_session_run_result_list_pulls_all_records_at_once \
+    tests.stub.iteration.test_result_list.TestResultList.test_session_run_result_list_pulls_all_records_at_once_next_before_list \
+\
+    tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_0_records \
+    tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_1_records \
+    tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_2_records \
+\
+    tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_0_records \
+    tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_1_records \
+    tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_2_records \
+\
+    tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_0_records \
+    tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_1_records \
+    tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_2_records \
+\
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_full_batch \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_half_batch \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_empty_batch
 
 EXIT_CODE=$?
 

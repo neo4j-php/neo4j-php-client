@@ -201,7 +201,7 @@ return [
     // Note: If your driver supports this, make sure to document well that this
     //       method ignores the configures fetch size. Your users will
     //       appreciate it <3.
-    'Optimization:ResultListFetchAll' => true,
+    'Optimization:ResultListFetchAll' => false,
 
     // === IMPLEMENTATION DETAILS ===
     // `Driver.IsEncrypted` can also be called on closed drivers.

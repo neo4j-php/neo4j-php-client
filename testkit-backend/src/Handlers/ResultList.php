@@ -18,17 +18,16 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
-use Laudis\Neo4j\TestkitBackend\Requests\ResultNextRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ResultListRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\NullRecordResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\RecordListResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
 use Throwable;
 
 /**
- * @implements RequestHandlerInterface<ResultNextRequest>
+ * @implements RequestHandlerInterface<ResultListRequest>
  */
-final class ResultNext implements RequestHandlerInterface
+final class ResultList implements RequestHandlerInterface
 {
     private MainRepository $repository;
 
@@ -38,7 +37,7 @@ final class ResultNext implements RequestHandlerInterface
     }
 
     /**
-     * @param ResultNextRequest $request
+     * @param ResultListRequest $request
      */
     public function handle($request): TestkitResponseInterface
     {
@@ -49,31 +48,25 @@ final class ResultNext implements RequestHandlerInterface
             }
 
             $iterator = $this->repository->getIterator($request->getResultId());
+            $records = [];
 
-            // Check if iterator is valid - this may trigger generator to start and fetch results
-            // If the connection is closed, this will throw an exception which we catch below
-            if (!$iterator->valid()) {
-                return new NullRecordResponse();
+            // Iterate from current position (don't rewind - next() may have already consumed records)
+            while ($iterator->valid()) {
+                $current = $iterator->current();
+                $iterator->next();
+                $values = [];
+                foreach ($current as $value) {
+                    $values[] = CypherObject::autoDetect($value);
+                }
+                $records[] = $values;
             }
 
-            // Get the current record
-            $current = $iterator->current();
-
-            // Advance iterator so next()/list() get subsequent records
-            $iterator->next();
-
-            $values = [];
-            foreach ($current as $value) {
-                $values[] = CypherObject::autoDetect($value);
-            }
-
-            return new RecordResponse($values);
+            return new RecordListResponse($records);
         } catch (Neo4jException $e) {
             $this->repository->removeRecords($request->getResultId());
 
             return new DriverErrorResponse($request->getResultId(), $e);
         } catch (Throwable $e) {
-            // Convert any other throwable (including unhandled exceptions) to Neo4jException format
             $this->repository->removeRecords($request->getResultId());
             $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.UnknownError', $e->getMessage());
             $neo4jException = new Neo4jException([$neo4jError], $e);
