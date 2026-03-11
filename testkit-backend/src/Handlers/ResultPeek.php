@@ -48,12 +48,16 @@ final class ResultPeek implements RequestHandlerInterface
 
             $iterator = $this->repository->getIterator($request->getResultId());
 
-            // Peek: get current without advancing (do NOT call next())
+            // Prime by fetching current - triggers setupCache -> getGenerator()->rewind() -> PULL.
+            // valid() alone can be false for unprimed CypherList; current() forces the generator to run.
+            try {
+                $current = $iterator->current();
+            } catch (\Throwable) {
+                return new NullRecordResponse();
+            }
             if (!$iterator->valid()) {
                 return new NullRecordResponse();
             }
-
-            $current = $iterator->current();
             $values = [];
             foreach ($current as $value) {
                 $values[] = CypherObject::autoDetect($value);

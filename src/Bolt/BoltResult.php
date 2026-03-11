@@ -156,11 +156,9 @@ final class BoltResult implements Iterator
                     $this->meta = $meta[0];
                 }
             } else {
-                // Empty summary but we have rows - partial result from disconnect
-                // Don't set $this->meta so the next fetchResults() will try to pull again
-                // This allows the first record to be consumed, and the next fetch will fail
-                // which is the expected behavior for tests like exit_after_record
-                $this->meta = null;
+                // Empty summary with rows: SUCCESS {} means stream complete (Bolt 4.x).
+                // Only treat as partial (meta=null) when we have no SUCCESS at all (disconnect).
+                $this->meta = [];
             }
         } else {
             // No summary received (connection closed before summary)

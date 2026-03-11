@@ -376,6 +376,7 @@ trait CypherSequenceTrait
     {
         if (is_callable($this->generator)) {
             $this->generator = call_user_func($this->generator);
+            $this->generator->rewind();
         }
 
         return $this->generator;

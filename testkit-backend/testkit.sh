@@ -180,7 +180,13 @@ python3 -m unittest -v \
 \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_full_batch \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_half_batch \
-    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_empty_batch
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_empty_batch \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_discards_on_session_close \
+\
+   tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch \
+   tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all \
+   tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
 
 EXIT_CODE=$?
 
