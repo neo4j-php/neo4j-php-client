@@ -217,7 +217,9 @@ final class Session implements SessionInterface
             || str_contains($message, 'broken pipe')
             || str_contains($message, 'connection reset')
             || str_contains($message, 'connection timeout')
-            || str_contains($message, 'connection closed');
+            || str_contains($message, 'connection closed')
+            || str_contains($message, 'connection refused')
+            || str_contains($message, 'i/o error');
     }
 
     /**
@@ -346,7 +348,7 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
 
-        /** @var ConnectionPoolInterface|null $pool */
+        /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
@@ -393,15 +395,10 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         $connection = $this->acquireConnection($config, $sessionConfig);
 
-        try {
-            $connection->begin($this->config->getDatabase(), $config->getTimeout(), $this->bookmarkHolder, $config->getMetaData());
-        } catch (Neo4jException $e) {
-            // BEGIN failed - clean up connection before rethrowing
-            $this->cleanupFailedConnection($connection);
-            throw $e;
-        }
+        // Defer BEGIN to first run/commit/rollback so driver does not advertise OPT_EAGER_TX_BEGIN.
+        // This allows test_disconnect_on_tx_begin to expect error at "after run" when stub disconnects on BEGIN.
 
-        /** @var ConnectionPoolInterface|null $pool */
+        /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
@@ -414,6 +411,7 @@ final class Session implements SessionInterface
             new BoltMessageFactory($connection, $this->getLogger()),
             false,
             $pool,
+            false, // BEGIN sent on first run/commit/rollback
         );
     }
 

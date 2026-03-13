@@ -32,6 +32,11 @@ final class DriverErrorResponse implements TestkitResponseInterface
         $this->exception = $exception;
     }
 
+    public function getException(): Neo4jException|TransactionException
+    {
+        return $this->exception;
+    }
+
     public function jsonSerialize(): array
     {
         $errorType = null;
@@ -42,6 +47,10 @@ final class DriverErrorResponse implements TestkitResponseInterface
             $code = $this->exception->getNeo4jCode();
             $msg = $this->exception->getNeo4jMessage();
             $errorType = get_class($this->exception);
+            // Handle case where getNeo4jCode() might return empty string or getNeo4jMessage() is null
+            if ($code === '') {
+                $code = null;
+            }
         } else {
             $code = $this->exception->getCode();
             $msg = $this->exception->getMessage();
