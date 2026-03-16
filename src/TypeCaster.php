@@ -16,13 +16,11 @@ namespace Laudis\Neo4j;
 use function is_a;
 use function is_iterable;
 use function is_numeric;
-use function is_object;
 use function is_scalar;
 
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-
-use function method_exists;
+use Stringable;
 
 final class TypeCaster
 {
@@ -31,7 +29,7 @@ final class TypeCaster
      */
     public static function toString(mixed $value): ?string
     {
-        if ($value === null || is_scalar($value) || (is_object($value) && method_exists($value, '__toString'))) {
+        if ($value === null || is_scalar($value) || $value instanceof Stringable) {
             return (string) $value;
         }
 
@@ -43,7 +41,12 @@ final class TypeCaster
      */
     public static function toFloat(mixed $value): ?float
     {
+        if (is_numeric($value) || is_bool($value)) {
+            return (float) $value;
+        }
+
         $value = self::toString($value);
+
         if (is_numeric($value)) {
             return (float) $value;
         }
@@ -56,8 +59,13 @@ final class TypeCaster
      */
     public static function toInt(mixed $value): ?int
     {
-        $value = self::toFloat($value);
-        if ($value !== null) {
+        if (is_numeric($value) || is_bool($value)) {
+            return (int) $value;
+        }
+
+        $value = self::toString($value);
+
+        if (is_numeric($value)) {
             return (int) $value;
         }
 
@@ -79,8 +87,13 @@ final class TypeCaster
      */
     public static function toBool(mixed $value): ?bool
     {
-        $value = self::toInt($value);
-        if ($value !== null) {
+        if (is_bool($value) || is_numeric($value)) {
+            return (bool) $value;
+        }
+
+        $value = self::toString($value);
+
+        if (is_numeric($value)) {
             return (bool) $value;
         }
 
