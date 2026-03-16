@@ -50,19 +50,14 @@ final class ResultNext implements RequestHandlerInterface
 
             $iterator = $this->repository->getIterator($request->getResultId());
 
-            // Advance first - this primes the iterator and triggers PULL for fresh results.
-            // Must run before valid() because CypherList's valid() can return false for an
-            // unprimed generator (before any next()), causing NullRecord without ever pulling.
-            $iterator->next();
-
+            // Check valid first - for unprimed iterator, valid() triggers getGenerator()->valid()
+            // which primes the generator. Do NOT call next() before current() or we skip the first record.
             if (!$iterator->valid()) {
                 return new NullRecordResponse();
             }
 
-            // Get the current record
+            // Get the current record, then advance for the next ResultNext call
             $current = $iterator->current();
-
-            // Advance so list() and subsequent next() see the correct position
             $iterator->next();
 
             $values = [];

@@ -52,7 +52,7 @@ final class ResultPeek implements RequestHandlerInterface
             // valid() alone can be false for unprimed CypherList; current() forces the generator to run.
             try {
                 $current = $iterator->current();
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 return new NullRecordResponse();
             }
             if (!$iterator->valid()) {

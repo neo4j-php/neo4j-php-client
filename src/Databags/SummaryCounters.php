@@ -115,11 +115,11 @@ final class SummaryCounters extends AbstractCypherObject
     }
 
     /**
-     * The number of indexed removed from the schema.
+     * The number of indexes removed from the schema.
      */
     public function indexesRemoved(): int
     {
-        return $this->labelsRemoved;
+        return $this->indexesRemoved;
     }
 
     /**
