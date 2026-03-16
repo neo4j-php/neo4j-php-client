@@ -134,7 +134,7 @@ final class BoltResult implements Iterator
         // Safety check: ensure $meta is not empty (pull() is typed non-empty-list but we defend against empty)
         /** @psalm-suppress TypeDoesNotContainType */
         if (empty($meta)) {
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Empty response from server')]);
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.General', 'Empty response from server')]);
         }
 
         /** @var list<list> $rows */

@@ -48,10 +48,7 @@ abstract class BoltMessage
             $response = $this->connection->protocol()->getResponse();
         } catch (Throwable $e) {
             if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
-                try {
-                    $this->connection->invalidate();
-                } catch (Throwable $invalidateException) {
-                }
+                $this->connection->invalidate();
                 // Rethrow original exception - Session retry logic inspects it via isConnectionError().
             }
 
@@ -68,11 +65,7 @@ abstract class BoltMessage
 
     private function tryInvalidateConnection(): void
     {
-        try {
-            $this->connection->invalidate();
-        } catch (Throwable) {
-            // Ignore so we do not mask the original exception
-        }
+        $this->connection->invalidate();
     }
 
     private function isTimeoutException(Throwable $e): bool
