@@ -18,6 +18,7 @@ use function is_iterable;
 use function is_numeric;
 use function is_scalar;
 
+use Laudis\Neo4j\Exception\InvalidTypeCast;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Stringable;
@@ -25,51 +26,65 @@ use Stringable;
 final class TypeCaster
 {
     /**
+     * @throws InvalidTypeCast
+     *
      * @pure
      */
-    public static function toString(mixed $value): ?string
+    public static function toString(mixed $value): string
     {
         if ($value === null || is_scalar($value) || $value instanceof Stringable) {
             return (string) $value;
         }
 
-        return null;
+        throw new InvalidTypeCast($value, 'string');
     }
 
     /**
+     * @throws InvalidTypeCast
+     *
      * @pure
      */
-    public static function toFloat(mixed $value): ?float
+    public static function toFloat(mixed $value): float
     {
         if (is_numeric($value) || is_bool($value)) {
             return (float) $value;
         }
 
-        $value = self::toString($value);
-
-        if (is_numeric($value)) {
-            return (float) $value;
+        try {
+            $stringValue = self::toString($value);
+        } catch (InvalidTypeCast) {
+            throw new InvalidTypeCast($value, 'float');
         }
 
-        return null;
+        if (is_numeric($stringValue)) {
+            return (float) $stringValue;
+        }
+
+        throw new InvalidTypeCast($value, 'float');
     }
 
     /**
+     * @throws InvalidTypeCast
+     *
      * @pure
      */
-    public static function toInt(mixed $value): ?int
+    public static function toInt(mixed $value): int
     {
         if (is_numeric($value) || is_bool($value)) {
             return (int) $value;
         }
 
-        $value = self::toString($value);
-
-        if (is_numeric($value)) {
-            return (int) $value;
+        try {
+            $stringValue = self::toString($value);
+        } catch (InvalidTypeCast) {
+            throw new InvalidTypeCast($value, 'int');
         }
 
-        return null;
+        if (is_numeric($stringValue)) {
+            return (int) $stringValue;
+        }
+
+        throw new InvalidTypeCast($value, 'int');
     }
 
     /**
@@ -83,21 +98,27 @@ final class TypeCaster
     }
 
     /**
+     * @throws InvalidTypeCast
+     *
      * @pure
      */
-    public static function toBool(mixed $value): ?bool
+    public static function toBool(mixed $value): bool
     {
         if (is_bool($value) || is_numeric($value)) {
             return (bool) $value;
         }
 
-        $value = self::toString($value);
-
-        if (is_numeric($value)) {
-            return (bool) $value;
+        try {
+            $stringValue = self::toString($value);
+        } catch (InvalidTypeCast) {
+            throw new InvalidTypeCast($value, 'bool');
         }
 
-        return null;
+        if (is_numeric($stringValue)) {
+            return (bool) $stringValue;
+        }
+
+        throw new InvalidTypeCast($value, 'bool');
     }
 
     /**
@@ -105,26 +126,30 @@ final class TypeCaster
      *
      * @param class-string<T> $class
      *
-     * @return T|null
+     * @throws InvalidTypeCast
+     *
+     * @return T
      *
      * @pure
      */
-    public static function toClass(mixed $value, string $class): ?object
+    public static function toClass(mixed $value, string $class): object
     {
         if (is_a($value, $class)) {
             /** @var T */
             return $value;
         }
 
-        return null;
+        throw new InvalidTypeCast($value, $class);
     }
 
     /**
+     * @throws InvalidTypeCast
+     *
      * @return list<mixed>
      *
      * @psalm-external-mutation-free
      */
-    public static function toArray(mixed $value): ?array
+    public static function toArray(mixed $value): array
     {
         if (is_iterable($value)) {
             $tbr = [];
@@ -137,32 +162,36 @@ final class TypeCaster
             return $tbr;
         }
 
-        return null;
+        throw new InvalidTypeCast($value, 'array');
     }
 
     /**
-     * @return CypherList<mixed>|null
+     * @throws InvalidTypeCast
+     *
+     * @return CypherList<mixed>
      *
      * @pure
      */
-    public static function toCypherList(mixed $value): ?CypherList
+    public static function toCypherList(mixed $value): CypherList
     {
         if (is_iterable($value)) {
             return CypherList::fromIterable($value);
         }
 
-        return null;
+        throw new InvalidTypeCast($value, CypherList::class);
     }
 
     /**
-     * @return CypherMap<mixed>|null
+     * @throws InvalidTypeCast
+     *
+     * @return CypherMap<mixed>
      */
-    public static function toCypherMap(mixed $value): ?CypherMap
+    public static function toCypherMap(mixed $value): CypherMap
     {
         if (is_iterable($value)) {
             return CypherMap::fromIterable($value);
         }
 
-        return null;
+        throw new InvalidTypeCast($value, CypherMap::class);
     }
 }
