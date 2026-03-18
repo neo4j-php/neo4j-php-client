@@ -84,19 +84,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         }
 
-        // For managed transactions, send BEGIN if not yet sent
-        if (!$this->isInstantTransaction && !$this->beginSent) {
-            try {
-                $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
-                $this->beginSent = true;
-            } catch (Throwable $e) {
-                $this->state = TransactionState::TERMINATED;
-                if ($this->pool !== null) {
-                    $this->pool->release($this->connection);
-                }
-                throw $e;
-            }
-        }
+        $this->ensureBeginSent();
 
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
@@ -122,19 +110,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         }
 
-        // For managed transactions, send BEGIN if not yet sent
-        if (!$this->isInstantTransaction && !$this->beginSent) {
-            try {
-                $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
-                $this->beginSent = true;
-            } catch (Throwable $e) {
-                $this->state = TransactionState::TERMINATED;
-                if ($this->pool !== null) {
-                    $this->pool->release($this->connection);
-                }
-                throw $e;
-            }
-        }
+        $this->ensureBeginSent();
 
         $this->messageFactory->createRollbackMessage()->send();
         $this->state = TransactionState::ROLLED_BACK;
@@ -175,19 +151,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->connection->consumeResults();
         }
 
-        // For managed transactions, send BEGIN before first query if not yet sent
-        if (!$this->isInstantTransaction && !$this->beginSent) {
-            try {
-                $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
-                $this->beginSent = true;
-            } catch (Throwable $e) {
-                $this->state = TransactionState::TERMINATED;
-                if ($this->pool !== null) {
-                    $this->pool->release($this->connection);
-                }
-                throw $e;
-            }
-        }
+        $this->ensureBeginSent();
 
         try {
             $meta = $this->connection->run(
@@ -249,5 +213,22 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function isFinished(): bool
     {
         return $this->state != TransactionState::ACTIVE;
+    }
+
+    private function ensureBeginSent(): void
+    {
+        if ($this->isInstantTransaction || $this->beginSent) {
+            return;
+        }
+        try {
+            $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
+            $this->beginSent = true;
+        } catch (Throwable $e) {
+            $this->state = TransactionState::TERMINATED;
+            if ($this->pool !== null) {
+                $this->pool->release($this->connection);
+            }
+            throw $e;
+        }
     }
 }

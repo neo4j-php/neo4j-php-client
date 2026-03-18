@@ -343,13 +343,6 @@ class BoltConnection implements ConnectionInterface
             return $tbr;
         } catch (Throwable $e) {
             $this->restoreOriginalTimeout();
-
-            // Server sent a proper FAILURE (e.g. TransactionTimedOut) - rethrow so caller sees the error.
-            // Connection errors are rethrown as-is; for those we may return partial results (exit_after_record tests).
-            if ($e instanceof Neo4jException && $e->getNeo4jCode() !== 'Neo.ClientError.Cluster.NotALeader') {
-                throw $e;
-            }
-
             // If we've received some records before the disconnect, return them so first next() succeeds and second next() fails.
             if (!empty($tbr)) {
                 $tbr[] = [];
@@ -357,11 +350,6 @@ class BoltConnection implements ConnectionInterface
                 /** @var non-empty-list<list> */
                 return $tbr;
             }
-
-            if ($e instanceof Neo4jException) {
-                throw $e;
-            }
-
             throw $e;
         }
     }
@@ -406,13 +394,7 @@ class BoltConnection implements ConnectionInterface
     public function invalidate(): void
     {
         $this->subscribedResults = [];
-        try {
-            $this->connection->disconnect();
-        } catch (Throwable $e) {
-            $this->logger?->log(LogLevel::WARNING, 'Failed to disconnect during connection invalidation', [
-                'exception' => $e->getMessage(),
-            ]);
-        }
+        $this->connection->disconnect();
         unset($this->boltProtocol);
     }
 
