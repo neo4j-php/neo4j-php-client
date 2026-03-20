@@ -298,4 +298,77 @@ final class ClientSessionExceptionHandlingTest extends TestCase
 
         $this->assertSame($expectedResult, $result);
     }
+
+    public function testExecuteWithRetryResetsDriverAfterFailureAndEventuallySucceeds(): void
+    {
+        $failingSessionMock = $this->createMock(SessionInterface::class);
+        $successfulSessionMock = $this->createMock(SessionInterface::class);
+
+        $firstDriverMock = $this->createMock(DriverInterface::class);
+        $secondDriverMock = $this->createMock(DriverInterface::class);
+
+        $driverSetupManager = $this->createMock(DriverSetupManager::class);
+
+        $sessionConfig = SessionConfiguration::default();
+        $transactionConfig = TransactionConfiguration::default();
+
+        $firstDriverMock->method('createSession')
+            ->willReturn($failingSessionMock);
+
+        $failingSessionMock->method('runStatements')
+            ->willThrowException(new ConnectionPoolException('First driver session is unavailable'));
+
+        $secondDriverMock->method('createSession')
+            ->willReturn($successfulSessionMock);
+
+        $expectedResult = $this->createMock(CypherList::class);
+        $successfulSessionMock->method('runStatements')
+            ->willReturn($expectedResult);
+
+        $driverSetupManager->method('getDefaultAlias')
+            ->willReturn('default');
+
+        $driverSetupManager->expects($this->exactly(2))
+            ->method('getDriver')
+            ->with($sessionConfig, 'default')
+            ->willReturnOnConsecutiveCalls($firstDriverMock, $secondDriverMock);
+
+        $driverSetupManager->expects($this->once())
+            ->method('resetDriver')
+            ->with('default');
+
+        $client = new Client($driverSetupManager, $sessionConfig, $transactionConfig);
+
+        $result = $client->runStatements([Statement::create('RETURN 1')]);
+
+        $this->assertSame($expectedResult, $result);
+    }
+
+    public function testExecuteWithRetryThrowsLastConnectionExceptionAfterMaxRetries(): void
+    {
+        $driverSetupManager = $this->createMock(DriverSetupManager::class);
+        $sessionConfig = SessionConfiguration::default();
+        $transactionConfig = TransactionConfiguration::default();
+
+        $connectionException = new ConnectionPoolException('No drivers reachable');
+
+        $driverSetupManager->method('getDefaultAlias')
+            ->willReturn('default');
+
+        $driverSetupManager->expects($this->exactly(3))
+            ->method('getDriver')
+            ->with($sessionConfig, 'default')
+            ->willThrowException($connectionException);
+
+        $driverSetupManager->expects($this->exactly(3))
+            ->method('resetDriver')
+            ->with('default');
+
+        $client = new Client($driverSetupManager, $sessionConfig, $transactionConfig);
+
+        $this->expectException(ConnectionPoolException::class);
+        $this->expectExceptionMessage('No drivers reachable');
+
+        $client->runStatements([Statement::create('RETURN 1')]);
+    }
 }

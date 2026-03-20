@@ -113,13 +113,15 @@ final class Client implements ClientInterface
      *
      * @return T The result of the operation
      */
-    private function executeWithRetry(callable $operation, ?string $alias = null)
+    private function executeWithRetry(callable $operation, ?string $alias = null, ?int $maxTries = 3)
     {
         $alias ??= $this->driverSetups->getDefaultAlias();
         $attemptedDrivers = [];
         $lastException = null;
 
-        while (true) {
+        $tries = $maxTries;
+
+        while ($tries > 0) {
             try {
                 $driver = $this->driverSetups->getDriver($this->defaultSessionConfiguration, $alias);
 
@@ -134,8 +136,13 @@ final class Client implements ClientInterface
                 return $operation($session);
             } catch (ConnectionPoolException|ConnectException $e) {
                 $lastException = $e;
+                $this->driverSetups->resetDriver($alias);
+
+                --$tries;
             }
         }
+
+        throw $lastException ?? new ConnectionPoolException('No available drivers');
     }
 
     public function runStatements(iterable $statements, ?string $alias = null): CypherList
