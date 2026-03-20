@@ -26,17 +26,30 @@ use Stringable;
 final class TypeCaster
 {
     /**
+     * @pure
+     */
+    private static function tryToString(mixed $value): ?string
+    {
+        if ($value === null || is_scalar($value) || $value instanceof Stringable) {
+            return (string) $value;
+        }
+
+        return null;
+    }
+
+    /**
      * @throws InvalidTypeCast
      *
      * @pure
      */
     public static function toString(mixed $value): string
     {
-        if ($value === null || is_scalar($value) || $value instanceof Stringable) {
-            return (string) $value;
+        $result = self::tryToString($value);
+        if ($result === null) {
+            throw new InvalidTypeCast($value, 'string');
         }
 
-        throw new InvalidTypeCast($value, 'string');
+        return $result;
     }
 
     /**
@@ -50,17 +63,12 @@ final class TypeCaster
             return (float) $value;
         }
 
-        try {
-            $stringValue = self::toString($value);
-        } catch (InvalidTypeCast) {
+        $stringValue = self::tryToString($value);
+        if ($stringValue === null || !is_numeric($stringValue)) {
             throw new InvalidTypeCast($value, 'float');
         }
 
-        if (is_numeric($stringValue)) {
-            return (float) $stringValue;
-        }
-
-        throw new InvalidTypeCast($value, 'float');
+        return (float) $stringValue;
     }
 
     /**
@@ -74,17 +82,12 @@ final class TypeCaster
             return (int) $value;
         }
 
-        try {
-            $stringValue = self::toString($value);
-        } catch (InvalidTypeCast) {
+        $stringValue = self::tryToString($value);
+        if ($stringValue === null || !is_numeric($stringValue)) {
             throw new InvalidTypeCast($value, 'int');
         }
 
-        if (is_numeric($stringValue)) {
-            return (int) $stringValue;
-        }
-
-        throw new InvalidTypeCast($value, 'int');
+        return (int) $stringValue;
     }
 
     /**
@@ -108,17 +111,12 @@ final class TypeCaster
             return (bool) $value;
         }
 
-        try {
-            $stringValue = self::toString($value);
-        } catch (InvalidTypeCast) {
+        $stringValue = self::tryToString($value);
+        if ($stringValue === null || !is_numeric($stringValue)) {
             throw new InvalidTypeCast($value, 'bool');
         }
 
-        if (is_numeric($stringValue)) {
-            return (bool) $stringValue;
-        }
-
-        throw new InvalidTypeCast($value, 'bool');
+        return (bool) $stringValue;
     }
 
     /**
