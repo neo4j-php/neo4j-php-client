@@ -116,20 +116,13 @@ final class BoltResult implements Iterator
     {
         try {
             $meta = $this->connection->pull($this->qid, $this->fetchSize);
-        } catch (BoltConnectException $e) {
+        } catch (BoltConnectException|BoltException $e) {
             // Invalidate connection on socket/network errors so pool does not reuse it.
             // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
             $this->connection->invalidate();
             throw $e;
-        } catch (Neo4jException $e) {
-            // Re-throw Neo4jExceptions that were already processed by BoltMessage
-            throw $e;
-        } catch (BoltException|Throwable $e) {
-            // Invalidate connection on Bolt protocol errors or other failures (e.g. disconnect).
-            // Rethrow as-is - Session retry logic inspects via isConnectionError().
-            $this->connection->invalidate();
-            throw $e;
         }
+        // Neo4jException and other Throwable propagate naturally - no invalidate needed for server errors
 
         // Safety check: ensure $meta is not empty (pull() is typed non-empty-list but we defend against empty)
         /** @psalm-suppress TypeDoesNotContainType */

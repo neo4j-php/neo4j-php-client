@@ -47,11 +47,10 @@ abstract class BoltMessage
         try {
             $response = $this->connection->protocol()->getResponse();
         } catch (Throwable $e) {
+            $this->connection->restoreOriginalTimeout();
             if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
                 $this->connection->invalidate();
-                // Rethrow original exception - Session retry logic inspects it via isConnectionError().
             }
-
             throw $e;
         }
 
