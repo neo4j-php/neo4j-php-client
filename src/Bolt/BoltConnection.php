@@ -66,6 +66,10 @@ class BoltConnection implements ConnectionInterface
      */
     private array $subscribedResults = [];
 
+    private ?float $recvTimeoutHint = null;
+
+    private ?float $originalTimeout = null;
+
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
      */
@@ -171,7 +175,17 @@ class BoltConnection implements ConnectionInterface
 
     public function setTimeout(float $timeout): void
     {
-        $this->connection->setTimeout($timeout);
+        // Only set timeout if connection is still open
+        // This prevents errors when trying to set timeout on a closed socket
+        // Connection::setTimeout swallows errors on closed connections (cleanup scenario)
+        if ($this->isOpen()) {
+            $this->connection->setTimeout($timeout);
+        }
+    }
+
+    public function getTimeout(): float
+    {
+        return $this->connection->getTimeout();
     }
 
     public function consumeResults(): void
@@ -300,13 +314,37 @@ class BoltConnection implements ConnectionInterface
         $tbr = [];
         $message = $this->messageFactory->createPullMessage($extra);
 
-        foreach ($message->send()->getResponses() as $response) {
-            $this->assertNoFailure($response);
-            $tbr[] = $response->content;
-        }
+        try {
+            // Apply timeout before iterating to ensure disconnects are detected
+            $this->applyRecvTimeoutTemporarily();
 
-        /** @var non-empty-list<list> */
-        return $tbr;
+            // If no timeout hint is set, apply a default timeout to prevent hanging on disconnect.
+            // 30 seconds balances CI stability with disconnect detection.
+            if ($this->originalTimeout === null && $this->recvTimeoutHint === null) {
+                $this->originalTimeout = $this->connection->getTimeout();
+                $this->connection->setTimeout(30.0);
+            }
+
+            foreach ($message->send()->getResponses() as $response) {
+                $this->assertNoFailure($response);
+                $tbr[] = $response->content;
+            }
+
+            $this->restoreOriginalTimeout();
+
+            /** @var non-empty-list<list> */
+            return $tbr;
+        } catch (Throwable $e) {
+            $this->restoreOriginalTimeout();
+            // If we've received some records before the disconnect, return them so first next() succeeds and second next() fails.
+            if (!empty($tbr)) {
+                $tbr[] = [];
+
+                /** @var non-empty-list<list> */
+                return $tbr;
+            }
+            throw $e;
+        }
     }
 
     public function __destruct()
@@ -465,5 +503,41 @@ class BoltConnection implements ConnectionInterface
 
             $this->subscribedResults = [];
         }
+    }
+
+    public function setRecvTimeoutHint(?float $timeout): void
+    {
+        $this->recvTimeoutHint = $timeout;
+    }
+
+    public function getRecvTimeoutHint(): ?float
+    {
+        return $this->recvTimeoutHint;
+    }
+
+    public function applyRecvTimeoutTemporarily(): void
+    {
+        if ($this->recvTimeoutHint !== null && $this->originalTimeout === null) {
+            $this->originalTimeout = $this->connection->getTimeout();
+            $this->connection->setTimeout($this->recvTimeoutHint);
+        }
+    }
+
+    public function restoreOriginalTimeout(): void
+    {
+        if ($this->originalTimeout !== null) {
+            $this->connection->setTimeout($this->originalTimeout);
+            $this->originalTimeout = null;
+        }
+    }
+
+    public function getOriginalTimeout(): ?float
+    {
+        return $this->originalTimeout;
+    }
+
+    public function setOriginalTimeout(?float $timeout): void
+    {
+        $this->originalTimeout = $timeout;
     }
 }

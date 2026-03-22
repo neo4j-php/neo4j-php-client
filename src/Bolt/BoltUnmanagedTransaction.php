@@ -39,6 +39,7 @@ use Throwable;
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
     private TransactionState $state = TransactionState::ACTIVE;
+    private bool $beginSent = false;
 
     public function __construct(
         /** @psalm-readonly */
@@ -55,7 +56,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly BoltMessageFactory $messageFactory,
         private readonly bool $isInstantTransaction,
         private readonly ?ConnectionPoolInterface $pool = null,
+        bool $beginAlreadySent = false,
     ) {
+        $this->beginSent = $beginAlreadySent;
     }
 
     /**
@@ -81,6 +84,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         }
 
+        $this->ensureBeginSent();
+
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
         $tbr = $this->runStatements($statements)->each(static function (CypherList $list) {
@@ -104,6 +109,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 throw new TransactionException("Can't rollback a rolled back transaction.");
             }
         }
+
+        $this->ensureBeginSent();
 
         $this->messageFactory->createRollbackMessage()->send();
         $this->state = TransactionState::ROLLED_BACK;
@@ -143,6 +150,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         if ($serverState === ServerState::STREAMING) {
             $this->connection->consumeResults();
         }
+
+        $this->ensureBeginSent();
 
         try {
             $meta = $this->connection->run(
@@ -204,5 +213,22 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function isFinished(): bool
     {
         return $this->state != TransactionState::ACTIVE;
+    }
+
+    private function ensureBeginSent(): void
+    {
+        if ($this->isInstantTransaction || $this->beginSent) {
+            return;
+        }
+        try {
+            $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
+            $this->beginSent = true;
+        } catch (Throwable $e) {
+            $this->state = TransactionState::TERMINATED;
+            if ($this->pool !== null) {
+                $this->pool->release($this->connection);
+            }
+            throw $e;
+        }
     }
 }
