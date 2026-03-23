@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Bolt\error\BoltException;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
@@ -75,13 +76,38 @@ final class ResultNext implements RequestHandlerInterface
             $this->repository->removeRecords($request->getResultId());
 
             return new DriverErrorResponse($request->getResultId(), $e);
-        } catch (Throwable $e) {
-            // Convert any other throwable (including unhandled exceptions) to Neo4jException format
+        } catch (BoltException $e) {
             $this->repository->removeRecords($request->getResultId());
-            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.UnknownError', $e->getMessage());
-            $neo4jException = new Neo4jException([$neo4jError], $e);
+            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
+            $wrapped = new Neo4jException([$neo4jError], $e);
 
-            return new DriverErrorResponse($request->getResultId(), $neo4jException);
+            return new DriverErrorResponse($request->getResultId(), $wrapped);
+        } catch (Throwable $e) {
+            $this->repository->removeRecords($request->getResultId());
+            if ($this->isConnectionOrSocketError($e)) {
+                $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
+                $wrapped = new Neo4jException([$neo4jError], $e);
+
+                return new DriverErrorResponse($request->getResultId(), $wrapped);
+            }
+            throw $e;
         }
+    }
+
+    private function isConnectionOrSocketError(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'broken pipe')
+            || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection refused')
+            || str_contains($message, 'connection closed')
+            || str_contains($message, 'connection is closed')
+            || str_contains($message, 'interrupted system call')
+            || str_contains($message, 'i/o error')
+            || str_contains($message, 'network read incomplete')
+            || str_contains($message, 'network write incomplete')
+            || str_contains($message, 'socket')
+            || str_contains($message, 'broken');
     }
 }

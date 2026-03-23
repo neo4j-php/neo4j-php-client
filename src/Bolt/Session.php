@@ -395,8 +395,9 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         $connection = $this->acquireConnection($config, $sessionConfig);
 
-        // Defer BEGIN to first run/commit/rollback so driver does not advertise OPT_EAGER_TX_BEGIN.
-        // This allows test_disconnect_on_tx_begin to expect error at "after run" when stub disconnects on BEGIN.
+        // Defer BEGIN to first run/commit/rollback. The driver does not support OPT_EAGER_TX_BEGIN,
+        // so BEGIN is sent on first run/commit/rollback. This matches test_disconnect_on_tx_begin,
+        // which expects the error at "after run" when the stub disconnects on BEGIN.
 
         /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;

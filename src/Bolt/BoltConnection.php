@@ -30,6 +30,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
@@ -89,6 +90,7 @@ class BoltConnection implements ConnectionInterface
         /** @psalm-readonly */
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
+        private readonly float $defaultRecvTimeout = DriverConfiguration::DEFAULT_SOCKET_TIMEOUT,
     ) {
         $this->messageFactory = new BoltMessageFactory($this, $this->logger);
     }
@@ -319,10 +321,9 @@ class BoltConnection implements ConnectionInterface
             $this->applyRecvTimeoutTemporarily();
 
             // If no timeout hint is set, apply a default timeout to prevent hanging on disconnect.
-            // 30 seconds balances CI stability with disconnect detection.
             if ($this->originalTimeout === null && $this->recvTimeoutHint === null) {
                 $this->originalTimeout = $this->connection->getTimeout();
-                $this->connection->setTimeout(30.0);
+                $this->connection->setTimeout($this->defaultRecvTimeout);
             }
 
             foreach ($message->send()->getResponses() as $response) {
@@ -534,6 +535,11 @@ class BoltConnection implements ConnectionInterface
     public function getOriginalTimeout(): ?float
     {
         return $this->originalTimeout;
+    }
+
+    public function getDefaultRecvTimeout(): float
+    {
+        return $this->defaultRecvTimeout;
     }
 
     public function setOriginalTimeout(?float $timeout): void

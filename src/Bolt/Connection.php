@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\IConnection;
 use Bolt\error\ConnectException as BoltConnectException;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 class Connection
@@ -25,6 +26,7 @@ class Connection
     public function __construct(
         private readonly IConnection $connection,
         private readonly string $ssl,
+        private readonly ?LoggerInterface $logger = null,
     ) {
     }
 
@@ -75,9 +77,10 @@ class Connection
         try {
             $this->connection->setTimeout($timeout);
         } catch (Throwable $e) {
-            // Ignore errors when setting timeout on a closed connection
-            // This can happen during cleanup or error handling
-            // The underlying IConnection may have already closed the socket
+            $this->logger?->warning('Failed to set socket timeout on connection', [
+                'timeout' => $timeout,
+                'exception' => $e->getMessage(),
+            ]);
         }
     }
 
