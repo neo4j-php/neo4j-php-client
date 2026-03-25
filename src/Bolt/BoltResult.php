@@ -95,6 +95,9 @@ final class BoltResult implements Iterator
         }
 
         $meta = $this->meta;
+        // Finished callbacks are callable(array): void and read summary keys (e.g. db, bookmark); passing null
+        // would error at runtime. We only run them when we have a real completion summary—if meta is still null
+        // (e.g. partial pull / more fetches pending), there is nothing to hand to the callback yet.
         if ($meta !== null) {
             foreach ($this->finishedCallbacks as $finishedCallback) {
                 $finishedCallback($meta);
