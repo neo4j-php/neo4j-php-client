@@ -88,13 +88,19 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 return new DriverErrorResponse($request->getSessionId(), $exception);
             }
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $exception);
+                $response = new DriverErrorResponse($request->getTxId(), $exception);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
         } catch (TransactionException $exception) {
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $exception);
+                $response = new DriverErrorResponse($request->getTxId(), $exception);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
@@ -112,7 +118,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));
         }
-        // NOTE: all other exceptions will be caught in the Backend
+        // Unhandled exceptions propagate to Backend's top-level catch and become BackendError (matches Java driver)
     }
 
     /**

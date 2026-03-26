@@ -24,8 +24,8 @@ use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Enum\SocketType;
 
@@ -54,12 +54,15 @@ class BoltFactory
     {
         [$sslLevel, $sslConfig] = $this->sslConfigurationFactory->create($data->getUri()->withHost($data->getHostname()), $data->getSslConfig());
 
+        $socketTimeout = $data->getSocketTimeoutSeconds() ?? DriverConfiguration::DEFAULT_SOCKET_TIMEOUT;
+
         $uriConfig = new UriConfiguration(
             $data->getUri()->getHost(),
             $data->getUri()->getPort(),
             $sslLevel,
             $sslConfig,
-            TransactionConfiguration::DEFAULT_TIMEOUT
+            $socketTimeout,
+            $this->logger?->getLogger()
         );
 
         $connection = $this->connectionFactory->create($uriConfig);
@@ -74,15 +77,17 @@ class BoltFactory
             $sslLevel
         );
 
-        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger);
+        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger, $socketTimeout);
 
         $response = $data->getAuth()->authenticateBolt($connection, $data->getUserAgent());
 
         $config->setServerAgent($response['server'] ?? '');
 
-        // Apply recv_timeout hint if present
-        if (array_key_exists('hints', $response) && array_key_exists('connection.recv_timeout_seconds', $response['hints'])) {
-            $connection->setTimeout((float) $response['hints']['connection.recv_timeout_seconds']);
+        // Timeout precedence: 1) driver config, 2) server hint, 3) default 30s.
+        // Only use server hint when driver did not explicitly configure a timeout.
+        $driverHasExplicitTimeout = $data->getSocketTimeoutSeconds() !== null;
+        if (!$driverHasExplicitTimeout && array_key_exists('hints', $response) && array_key_exists('connection.recv_timeout_seconds', $response['hints'])) {
+            $connection->setRecvTimeoutHint((float) $response['hints']['connection.recv_timeout_seconds']);
         }
 
         return $connection;

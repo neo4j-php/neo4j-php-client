@@ -13,7 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Bolt\error\ConnectException as BoltConnectException;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
@@ -51,6 +53,10 @@ final class TransactionRollback implements RequestHandlerInterface
             $tsx->rollback();
         } catch (Neo4jException|TransactionException $e) {
             return new DriverErrorResponse($request->getTxId(), $e);
+        } catch (BoltConnectException $e) {
+            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
+
+            return new DriverErrorResponse($request->getTxId(), new Neo4jException([$neo4jError], $e));
         }
 
         return new TransactionResponse($request->getTxId());

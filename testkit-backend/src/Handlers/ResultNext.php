@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Bolt\error\BoltException;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
@@ -22,6 +24,7 @@ use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\NullRecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
+use Throwable;
 
 /**
  * @implements RequestHandlerInterface<ResultNextRequest>
@@ -48,14 +51,18 @@ final class ResultNext implements RequestHandlerInterface
 
             $iterator = $this->repository->getIterator($request->getResultId());
 
+            // If we've already fetched the first record, advance to the next one
             if ($this->repository->getIteratorFetchedFirst($request->getResultId()) === true) {
                 $iterator->next();
             }
 
+            // Check if iterator is valid - this may trigger generator to start and fetch results
+            // If the connection is closed, this will throw an exception which we catch below
             if (!$iterator->valid()) {
                 return new NullRecordResponse();
             }
 
+            // Get the current record
             $current = $iterator->current();
             $this->repository->setIteratorFetchedFirst($request->getResultId(), true);
 
@@ -69,6 +76,38 @@ final class ResultNext implements RequestHandlerInterface
             $this->repository->removeRecords($request->getResultId());
 
             return new DriverErrorResponse($request->getResultId(), $e);
+        } catch (BoltException $e) {
+            $this->repository->removeRecords($request->getResultId());
+            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
+            $wrapped = new Neo4jException([$neo4jError], $e);
+
+            return new DriverErrorResponse($request->getResultId(), $wrapped);
+        } catch (Throwable $e) {
+            $this->repository->removeRecords($request->getResultId());
+            if ($this->isConnectionOrSocketError($e)) {
+                $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
+                $wrapped = new Neo4jException([$neo4jError], $e);
+
+                return new DriverErrorResponse($request->getResultId(), $wrapped);
+            }
+            throw $e;
         }
+    }
+
+    private function isConnectionOrSocketError(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'broken pipe')
+            || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection refused')
+            || str_contains($message, 'connection closed')
+            || str_contains($message, 'connection is closed')
+            || str_contains($message, 'interrupted system call')
+            || str_contains($message, 'i/o error')
+            || str_contains($message, 'network read incomplete')
+            || str_contains($message, 'network write incomplete')
+            || str_contains($message, 'socket')
+            || str_contains($message, 'broken');
     }
 }

@@ -40,6 +40,7 @@ final class DriverConfiguration
     public const DEFAULT_POOL_SIZE = 0x2F;
     public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
     public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
+    public const DEFAULT_SOCKET_TIMEOUT = 30.0;
     /** @var callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
     /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
@@ -65,6 +66,7 @@ final class DriverConfiguration
         ?string $logLevel,
         ?LoggerInterface $logger,
         ?SocketType $socketType = null,
+        private ?float $socketTimeoutSeconds = null,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
@@ -284,6 +286,38 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->socketType = $socketType;
+
+        return $tbr;
+    }
+
+    /**
+     * Default socket/recv timeout in seconds when server does not provide connection.recv_timeout_seconds hint.
+     *
+     * @psalm-mutation-free
+     */
+    public function getSocketTimeoutSeconds(): float
+    {
+        return $this->socketTimeoutSeconds ?? self::DEFAULT_SOCKET_TIMEOUT;
+    }
+
+    /**
+     * Returns the explicitly configured socket timeout, or null if not set.
+     * Used to determine precedence: driver config overrides server hint.
+     *
+     * @psalm-mutation-free
+     */
+    public function getSocketTimeoutSecondsExplicit(): ?float
+    {
+        return $this->socketTimeoutSeconds;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function withSocketTimeoutSeconds(?float $seconds): self
+    {
+        $tbr = clone $this;
+        $tbr->socketTimeoutSeconds = $seconds;
 
         return $tbr;
     }
