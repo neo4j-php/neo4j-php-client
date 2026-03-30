@@ -46,7 +46,7 @@ use Psr\SimpleCache\CacheInterface;
 
 use function random_int;
 
-use \RuntimeException;
+use RuntimeException;
 
 use function sprintf;
 use function str_replace;
