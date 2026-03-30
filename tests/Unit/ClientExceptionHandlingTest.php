@@ -15,8 +15,12 @@ namespace Laudis\Neo4j\Tests\Unit;
 
 use Laudis\Neo4j\Client;
 use Laudis\Neo4j\Common\DriverSetupManager;
+use Laudis\Neo4j\Contracts\DriverInterface;
+use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Exception\ConnectionPoolException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -118,5 +122,102 @@ final class ClientExceptionHandlingTest extends TestCase
         $this->expectExceptionMessage('Cannot connect to any server on alias: secondary');
 
         $client->run('RETURN 1 as n', [], 'secondary');
+    }
+
+    public function testWriteTransactionRecoversAfterConnectionPoolExceptionByResettingDriver(): void
+    {
+        $failingSessionMock = $this->createMock(SessionInterface::class);
+        $successfulSessionMock = $this->createMock(SessionInterface::class);
+        $firstDriverMock = $this->createMock(DriverInterface::class);
+        $secondDriverMock = $this->createMock(DriverInterface::class);
+        $driverSetupManager = $this->createMock(DriverSetupManager::class);
+
+        $sessionConfig = SessionConfiguration::default();
+        $transactionConfig = TransactionConfiguration::default();
+
+        $firstDriverMock->method('createSession')->willReturn($failingSessionMock);
+        $failingSessionMock->method('writeTransaction')
+            ->willThrowException(new ConnectionPoolException('Write leader unavailable'));
+
+        $secondDriverMock->method('createSession')->willReturn($successfulSessionMock);
+        $successfulSessionMock->method('writeTransaction')->willReturn('recovered');
+
+        $driverSetupManager->method('getDefaultAlias')->willReturn('default');
+        $driverSetupManager->expects($this->exactly(2))
+            ->method('getDriver')
+            ->with($sessionConfig, 'default')
+            ->willReturnOnConsecutiveCalls($firstDriverMock, $secondDriverMock);
+        $driverSetupManager->expects($this->once())->method('resetDriver')->with('default');
+
+        $client = new Client($driverSetupManager, $sessionConfig, $transactionConfig);
+
+        $this->assertSame(
+            'recovered',
+            $client->writeTransaction(static fn () => 'unused')
+        );
+    }
+
+    public function testReadTransactionRecoversAfterConnectionPoolExceptionByResettingDriver(): void
+    {
+        $failingSessionMock = $this->createMock(SessionInterface::class);
+        $successfulSessionMock = $this->createMock(SessionInterface::class);
+        $firstDriverMock = $this->createMock(DriverInterface::class);
+        $secondDriverMock = $this->createMock(DriverInterface::class);
+        $driverSetupManager = $this->createMock(DriverSetupManager::class);
+
+        $sessionConfig = SessionConfiguration::default();
+        $transactionConfig = TransactionConfiguration::default();
+
+        $firstDriverMock->method('createSession')->willReturn($failingSessionMock);
+        $failingSessionMock->method('readTransaction')
+            ->willThrowException(new ConnectionPoolException('Read replica unavailable'));
+
+        $secondDriverMock->method('createSession')->willReturn($successfulSessionMock);
+        $successfulSessionMock->method('readTransaction')->willReturn(42);
+
+        $driverSetupManager->method('getDefaultAlias')->willReturn('default');
+        $driverSetupManager->expects($this->exactly(2))
+            ->method('getDriver')
+            ->with($sessionConfig, 'default')
+            ->willReturnOnConsecutiveCalls($firstDriverMock, $secondDriverMock);
+        $driverSetupManager->expects($this->once())->method('resetDriver')->with('default');
+
+        $client = new Client($driverSetupManager, $sessionConfig, $transactionConfig);
+
+        $this->assertSame(
+            42,
+            $client->readTransaction(static fn () => 'unused')
+        );
+    }
+
+    public function testBeginTransactionRecoversAfterConnectionPoolExceptionByResettingDriver(): void
+    {
+        $failingSessionMock = $this->createMock(SessionInterface::class);
+        $successfulSessionMock = $this->createMock(SessionInterface::class);
+        $firstDriverMock = $this->createMock(DriverInterface::class);
+        $secondDriverMock = $this->createMock(DriverInterface::class);
+        $driverSetupManager = $this->createMock(DriverSetupManager::class);
+
+        $sessionConfig = SessionConfiguration::default();
+        $transactionConfig = TransactionConfiguration::default();
+
+        $firstDriverMock->method('createSession')->willReturn($failingSessionMock);
+        $failingSessionMock->method('beginTransaction')
+            ->willThrowException(new ConnectionPoolException('Cannot begin on stale session'));
+
+        $expectedTsx = $this->createMock(UnmanagedTransactionInterface::class);
+        $secondDriverMock->method('createSession')->willReturn($successfulSessionMock);
+        $successfulSessionMock->method('beginTransaction')->willReturn($expectedTsx);
+
+        $driverSetupManager->method('getDefaultAlias')->willReturn('default');
+        $driverSetupManager->expects($this->exactly(2))
+            ->method('getDriver')
+            ->with($sessionConfig, 'default')
+            ->willReturnOnConsecutiveCalls($firstDriverMock, $secondDriverMock);
+        $driverSetupManager->expects($this->once())->method('resetDriver')->with('default');
+
+        $client = new Client($driverSetupManager, $sessionConfig, $transactionConfig);
+
+        $this->assertSame($expectedTsx, $client->beginTransaction());
     }
 }
