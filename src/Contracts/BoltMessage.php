@@ -17,8 +17,6 @@ use Bolt\error\BoltException;
 use Bolt\protocol\Response;
 use Iterator;
 use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Databags\Neo4jError;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Throwable;
 
 abstract class BoltMessage
@@ -37,44 +35,26 @@ abstract class BoltMessage
     {
         // Temporarily apply recv_timeout hint for this response retrieval
         $this->connection->applyRecvTimeoutTemporarily();
-        
-        // If no timeout hint is set, apply a shorter default timeout to prevent hanging on disconnect
-        // This is especially important for disconnect tests where the server closes the connection
+
+        // If no timeout hint is set, apply a default timeout to prevent hanging on disconnect.
+        // 30 seconds balances CI stability with disconnect detection.
         if ($this->connection->getRecvTimeoutHint() === null && $this->connection->getOriginalTimeout() === null) {
             $currentTimeout = $this->connection->getTimeout();
-            // Store original timeout and apply a shorter timeout (5 seconds) for disconnect detection
             $this->connection->setOriginalTimeout($currentTimeout);
-            $this->connection->setTimeout(5.0);
+            $this->connection->setTimeout(30.0);
         }
-        
+
         try {
             $response = $this->connection->protocol()->getResponse();
         } catch (Throwable $e) {
-            // Always restore timeout before handling exception
-            $this->connection->restoreOriginalTimeout();
-            
-            if ($this->isTimeoutException($e)) {
-                $timeoutMsg = 'Connection timeout reached';
-                if (preg_match('/(\d+)\s*(?:milliseconds?|ms|seconds?|s)/', $e->getMessage(), $matches) && array_key_exists(1, $matches)) {
-                    $timeoutMsg = 'Connection timeout reached after '.$matches[1].' seconds';
-                }
+            if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
                 try {
-                    // Use invalidate() instead of close() to avoid sending GOODBYE on timeout
                     $this->connection->invalidate();
-                } catch (Throwable) {
+                } catch (Throwable $invalidateException) {
                 }
-                // Use DriverError so the driver treats this as a failure
-                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', $timeoutMsg)], $e);
-            } elseif ($this->isSocketException($e)) {
-                try {
-                    // Use invalidate() instead of close() to avoid sending GOODBYE on socket errors
-                    $this->connection->invalidate();
-                } catch (Throwable) {
-                }
-                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+                // Rethrow original exception - Session retry logic inspects it via isConnectionError().
             }
 
-            // For any other exception, always restore timeout before re-throwing
             throw $e;
         }
 
@@ -84,6 +64,15 @@ abstract class BoltMessage
         $this->connection->assertNoFailure($response);
 
         return $response;
+    }
+
+    private function tryInvalidateConnection(): void
+    {
+        try {
+            $this->connection->invalidate();
+        } catch (Throwable) {
+            // Ignore so we do not mask the original exception
+        }
     }
 
     private function isTimeoutException(Throwable $e): bool
@@ -105,6 +94,7 @@ abstract class BoltMessage
         return str_contains($message, 'broken pipe')
             || str_contains($message, 'connection reset')
             || str_contains($message, 'connection refused')
+            || str_contains($message, 'connection closed')
             || str_contains($message, 'interrupted system call')
             || str_contains($message, 'i/o error')
             || str_contains($message, 'network read incomplete')
@@ -121,7 +111,7 @@ abstract class BoltMessage
          * @var Iterator<Response>
          */
         $innerIterator = $this->connection->protocol()->getResponses();
-        
+
         // Wrap the iterator to catch exceptions during iteration
         return $this->wrapResponseIterator($innerIterator);
     }
@@ -140,28 +130,10 @@ abstract class BoltMessage
                 yield $response;
             }
         } catch (Throwable $e) {
-            // Always restore timeout before handling exception
             $this->connection->restoreOriginalTimeout();
-            
-            if ($this->isTimeoutException($e)) {
-                $timeoutMsg = 'Connection timeout reached';
-                if (preg_match('/(\d+)\s*(?:milliseconds?|ms|seconds?|s)/', $e->getMessage(), $matches) && array_key_exists(1, $matches)) {
-                    $timeoutMsg = 'Connection timeout reached after '.$matches[1].' seconds';
-                }
-                try {
-                    // Use invalidate() instead of close() to avoid sending GOODBYE on timeout
-                    $this->connection->invalidate();
-                } catch (Throwable) {
-                }
-                // Use DriverError so the driver treats this as a failure
-                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', $timeoutMsg)], $e);
-            } elseif ($this->isSocketException($e)) {
-                try {
-                    // Use invalidate() instead of close() to avoid sending GOODBYE on socket errors
-                    $this->connection->invalidate();
-                } catch (Throwable) {
-                }
-                throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
+
+            if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
+                $this->tryInvalidateConnection();
             }
 
             throw $e;

@@ -56,7 +56,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly BoltMessageFactory $messageFactory,
         private readonly bool $isInstantTransaction,
         private readonly ?ConnectionPoolInterface $pool = null,
+        bool $beginAlreadySent = false,
     ) {
+        $this->beginSent = $beginAlreadySent;
     }
 
     /**

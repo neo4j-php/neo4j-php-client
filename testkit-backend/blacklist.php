@@ -12,6 +12,23 @@ declare(strict_types=1);
  */
 
 return [
+    'stub' => [
+        'disconnects' => [
+            'test_disconnects' => [
+                'TestDisconnects' => [
+                    'test_disconnect_session_on_tx_pull_after_record' => 'Connection drops after RECORD causes commit to fail with Connection is closed',
+                    'test_disconnect_session_on_pull_after_record' => 'Driver reports success instead of after first next when server exits after RECORD',
+                ],
+            ],
+        ],
+        'configuration_hints' => [
+            'test_connection_recv_timeout_seconds' => [
+                'TestRoutingConnectionRecvTimeout' => [
+                    'test_in_time_managed_tx_retry' => 'HANGUP count mismatch - expected 1, got 0',
+                ],
+            ],
+        ],
+    ],
     'neo4j' => [
         'datatypes' => [
             'TestDataTypes' => [

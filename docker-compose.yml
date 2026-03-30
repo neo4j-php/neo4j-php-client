@@ -119,6 +119,7 @@ services:
 
   testkit:
     image: python:3.13
+    hostname: testkit
     command: ./testkit.sh
     volumes:
       - .:/opt/project
@@ -133,7 +134,6 @@ services:
       TEST_DRIVER_REPO: /opt/project
       TEST_BACKEND_HOST: testkit_backend
       TEST_STUB_HOST: testkit
-      BOLT_LISTEN_ADDR: "0.0.0.0:9001"
     depends_on:
       - testkit_backend
 

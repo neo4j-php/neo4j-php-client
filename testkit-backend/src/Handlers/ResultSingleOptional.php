@@ -18,23 +18,16 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
-use Laudis\Neo4j\TestkitBackend\Requests\ResultSingleRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ResultSingleOptionalRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\RecordOptionalResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
 use Throwable;
 
 /**
- * Request to expect and return exactly one record in the result stream.
- *
- * Backend should respond with a Record if exactly one record was found.
- * If more or fewer records are left in the result stream, or if any other
- * error occurs while retrieving the records, an Error response should be
- * returned.
- *
- * @implements RequestHandlerInterface<ResultSingleRequest>
+ * @implements RequestHandlerInterface<ResultSingleOptionalRequest>
  */
-final class ResultSingle implements RequestHandlerInterface
+final class ResultSingleOptional implements RequestHandlerInterface
 {
     public function __construct(
         private readonly MainRepository $repository,
@@ -42,7 +35,7 @@ final class ResultSingle implements RequestHandlerInterface
     }
 
     /**
-     * @param ResultSingleRequest $request
+     * @param ResultSingleOptionalRequest $request
      */
     public function handle($request): TestkitResponseInterface
     {
@@ -55,8 +48,10 @@ final class ResultSingle implements RequestHandlerInterface
             $iterator = $this->repository->getIterator($request->getResultId());
             $records = [];
 
-            // Iterate to consume result (triggers PULL) and collect records
-            foreach ($iterator as $current) {
+            // Use while loop to avoid rewind - result may already be partially consumed
+            while ($iterator->valid()) {
+                $current = $iterator->current();
+                $iterator->next();
                 $values = [];
                 foreach ($current as $value) {
                     $values[] = CypherObject::autoDetect($value);
@@ -64,16 +59,15 @@ final class ResultSingle implements RequestHandlerInterface
                 $records[] = $values;
             }
 
-            if (count($records) !== 1) {
-                $neo4jError = Neo4jError::fromMessageAndCode(
-                    'Neo.ClientError.Statement.ResultNotSingle',
-                    sprintf('Expected a result with exactly one record, but found %d', count($records))
-                );
-
-                return new DriverErrorResponse($request->getResultId(), new Neo4jException([$neo4jError]));
+            $count = count($records);
+            if ($count === 0) {
+                return new RecordOptionalResponse(null, []);
+            }
+            if ($count === 1) {
+                return new RecordOptionalResponse($records[0], []);
             }
 
-            return new RecordResponse($records[0]);
+            return new RecordOptionalResponse($records[0], ['multiple records']);
         } catch (Neo4jException $e) {
             $this->repository->removeRecords($request->getResultId());
 

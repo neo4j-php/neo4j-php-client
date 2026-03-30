@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
@@ -49,20 +50,15 @@ final class ResultNext implements RequestHandlerInterface
 
             $iterator = $this->repository->getIterator($request->getResultId());
 
-            // If we've already fetched the first record, advance to the next one
-            if ($this->repository->getIteratorFetchedFirst($request->getResultId()) === true) {
-                $iterator->next();
-            }
-
-            // Check if iterator is valid - this may trigger generator to start and fetch results
-            // If the connection is closed, this will throw an exception which we catch below
+            // Check valid first - for unprimed iterator, valid() triggers getGenerator()->valid()
+            // which primes the generator. Do NOT call next() before current() or we skip the first record.
             if (!$iterator->valid()) {
                 return new NullRecordResponse();
             }
 
-            // Get the current record
+            // Get the current record, then advance for the next ResultNext call
             $current = $iterator->current();
-            $this->repository->setIteratorFetchedFirst($request->getResultId(), true);
+            $iterator->next();
 
             $values = [];
             foreach ($current as $value) {
@@ -77,7 +73,8 @@ final class ResultNext implements RequestHandlerInterface
         } catch (Throwable $e) {
             // Convert any other throwable (including unhandled exceptions) to Neo4jException format
             $this->repository->removeRecords($request->getResultId());
-            $neo4jException = new Neo4jException([], $e);
+            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.UnknownError', $e->getMessage());
+            $neo4jException = new Neo4jException([$neo4jError], $e);
 
             return new DriverErrorResponse($request->getResultId(), $neo4jException);
         }

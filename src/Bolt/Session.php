@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\error\ConnectException as BoltConnectException;
 use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Neo4jLogger;
@@ -23,6 +24,7 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
@@ -76,54 +78,7 @@ final class Session implements SessionInterface
         $config = $this->mergeTsxConfig($config);
 
         foreach ($statements as $statement) {
-            // Wrap in retry logic for connection errors
-            $retries = 0;
-            $maxRetries = 3;
-
-            while ($retries < $maxRetries) {
-                try {
-                    $tbr[] = $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
-                    break; // Success, exit retry loop
-                } catch (Neo4jException $e) {
-                    if ($this->shouldClearRoutingTable($e)) {
-                        $this->getLogger()?->log(LogLevel::WARNING, 'Connection error in instant transaction, retrying', [
-                            'error' => $e->getMessage(),
-                            'retry' => $retries + 1,
-                        ]);
-
-                        if ($this->pool instanceof Neo4jConnectionPool) {
-                            $this->pool->clearRoutingTable($this->config);
-                        }
-                        $this->pool->close();
-
-                        ++$retries;
-                        if ($retries >= $maxRetries) {
-                            throw $e;
-                        }
-                    } else {
-                        throw $e;
-                    }
-                } catch (Throwable $e) {
-                    if ($this->isConnectionError($e)) {
-                        $this->getLogger()?->log(LogLevel::WARNING, 'Connection error in instant transaction, retrying', [
-                            'error' => $e->getMessage(),
-                            'retry' => $retries + 1,
-                        ]);
-
-                        if ($this->pool instanceof Neo4jConnectionPool) {
-                            $this->pool->clearRoutingTable($this->config);
-                        }
-                        $this->pool->close();
-
-                        ++$retries;
-                        if ($retries >= $maxRetries) {
-                            throw $e;
-                        }
-                    } else {
-                        throw $e;
-                    }
-                }
-            }
+            $tbr[] = $this->executeStatementWithRetry($statement, $config);
         }
 
         return new CypherList($tbr);
@@ -186,58 +141,85 @@ final class Session implements SessionInterface
 
                 return $tbr;
             } catch (Neo4jException $e) {
-                if ($transaction && !in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS)) {
-                    $transaction->rollback();
-                }
-
-                // ADD THIS SECTION - Handle connection timeouts and routing failures
-                if ($e->getTitle() === 'NotALeader'
-                    || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader'
-                    || $this->isConnectionError($e)) {
-                    // Clear routing table before closing pool to force fresh ROUTE request on retry
-                    if ($this->pool instanceof Neo4jConnectionPool) {
-                        $this->pool->clearRoutingTable($this->config);
-                    }
-                    // By closing the pool, we force the connection to be re-acquired and the routing table to be refetched
-                    $this->pool->close();
-                } elseif ($e->getClassification() !== 'TransientError') {
+                $this->handleManagedTransactionError($transaction, $e);
+            } catch (Throwable $e) {
+                // For non-Neo4jException errors, only retry on connection errors
+                if (!$this->isConnectionError($e)) {
                     throw $e;
                 }
-            } catch (Exception $e) {
-                if ($this->isConnectionError($e)) {
-                    if ($this->pool instanceof Neo4jConnectionPool) {
-                        $this->pool->clearRoutingTable($this->config);
-                    }
-                    $this->pool->close();
-                } else {
-                    throw $e;
-                }
+                // Connection error - clear routing and retry
+                $this->handleConnectionFailure();
             }
         }
     }
 
     /**
-     * Check if the exception is a connection-related error.
+     * Handle Neo4jException in managed transaction - either rollback and retry or throw.
+     *
+     * @param Neo4jException $e The exception that occurred
      */
-    private function isConnectionError(Throwable $e): bool
+    private function handleManagedTransactionError(?UnmanagedTransactionInterface $transaction, Neo4jException $e): void
     {
-        $message = strtolower($e->getMessage());
+        if ($transaction && !in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS)) {
+            $transaction->rollback();
+        }
 
-        // Check for common connection error messages
-        if (str_contains($message, 'interrupted system call')
-            || str_contains($message, 'broken pipe')
-            || str_contains($message, 'connection reset')
-            || str_contains($message, 'connection timeout')
-            || str_contains($message, 'connection closed')) {
+        if ($this->shouldRetryManagedTransaction($e)) {
+            $this->handleConnectionFailure();
+
+            return;
+        }
+
+        throw $e;
+    }
+
+    /**
+     * Determine if a Neo4jException should trigger retry of managed transaction.
+     */
+    private function shouldRetryManagedTransaction(Neo4jException $e): bool
+    {
+        if ($e->getTitle() === 'NotALeader' || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader') {
             return true;
         }
 
-        // Check for Neo4jException-specific codes
-        if ($e instanceof Neo4jException) {
-            return $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader';
+        if ($this->isConnectionError($e)) {
+            return true;
         }
 
-        return false;
+        return $e->getClassification() === 'TransientError';
+    }
+
+    /**
+     * Handle connection failure by clearing routing table and closing pool.
+     * This forces fresh connection acquisition and routing table refresh on next attempt.
+     */
+    private function handleConnectionFailure(): void
+    {
+        if ($this->pool instanceof Neo4jConnectionPool) {
+            $this->pool->clearRoutingTable($this->config);
+        }
+        $this->pool->close();
+    }
+
+    /**
+     * Check if the exception is a connection-related error (network/socket/timeout).
+     * NotALeader is a routing error, not a connection error - the connection is fine.
+     */
+    private function isConnectionError(Throwable $e): bool
+    {
+        if ($e instanceof BoltConnectException) {
+            return true;
+        }
+
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'interrupted system call')
+            || str_contains($message, 'broken pipe')
+            || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection timeout')
+            || str_contains($message, 'connection closed')
+            || str_contains($message, 'connection refused')
+            || str_contains($message, 'i/o error');
     }
 
     /**
@@ -248,7 +230,6 @@ final class Session implements SessionInterface
         $message = strtolower($e->getMessage());
         $title = $e->getTitle();
 
-        // Clear routing table for timeout, connection, and cluster errors
         return str_contains($message, 'interrupted system call')
             || str_contains($message, 'broken pipe')
             || str_contains($message, 'connection reset')
@@ -256,6 +237,79 @@ final class Session implements SessionInterface
             || str_contains($message, 'connection closed')
             || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader'
             || $title === 'NotALeader';
+    }
+
+    /**
+     * Execute a statement with automatic retry on connection errors.
+     * Retries up to 3 times on connection failures, clearing routing table between attempts.
+     *
+     * @param Statement                $statement The statement to execute
+     * @param TransactionConfiguration $config    Transaction configuration
+     *
+     * @return SummarizedResult The result of the statement
+     */
+
+    /**
+     * Execute instant transaction (session.run) with automatic retry on connection/routing errors.
+     *
+     * PURPOSE:
+     * - Handles transient failures transparently to user: connection timeouts, server unavailable, etc.
+     * - Supports cluster failover: when server goes down, clears routing table and retries on different node
+     * - Distinguishes errors: retries on connection/routing issues but fails immediately on client errors (syntax, auth)
+     * - Improves reliability: 3 retry attempts with fresh routing table each time = high availability
+     *
+     * EXAMPLE: User calls session.run("CREATE (n)") during cluster failover:
+     *   Attempt 1: Node A is leader → "NotALeader" (stepping down) → Clear routing table
+     *   Attempt 2: Node B elected leader → "Connection timeout" (election in progress) → Retry
+     *   Attempt 3: Cluster stable → Query succeeds
+     *   User sees: Query succeeded transparently (no exception, no manual retry needed)
+     *
+     * WHY THIS IS CRITICAL FOR DRIVERS:
+     * - All Neo4j drivers (Java, Python, JavaScript) have this pattern
+     * - Without it: user must manually retry or wrap every session.run() in try-catch
+     * - With it: driver handles recovery automatically = better UX and reliability
+     */
+    private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
+    {    // Retry instant transactions up to 3 times on connection/routing errors; catch distinguishes retryable errors from client errors (syntax, auth) and clears routing table for cluster failover.
+        $maxRetries = 3;
+        $retries = 0;
+
+        while ($retries < $maxRetries) {
+            try {
+                return $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+            } catch (Neo4jException $e) {
+                if (!$this->shouldClearRoutingTable($e)) {
+                    throw $e;
+                }
+                $this->handleStatementRetry($retries, $maxRetries, $e);
+            } catch (Throwable $e) {
+                if (!$this->isConnectionError($e)) {
+                    throw $e;
+                }
+                $this->handleStatementRetry($retries, $maxRetries, $e);
+            }
+        }
+
+        throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.General', 'Statement execution failed after maximum retries')]);
+    }
+
+    /**
+     * Handle retry logic for statement execution - clear routing and increment counter.
+     * Throws the exception if max retries exceeded.
+     */
+    private function handleStatementRetry(int &$retries, int $maxRetries, Throwable $e): void
+    {
+        $this->getLogger()?->log(LogLevel::WARNING, 'Connection error in instant transaction, retrying', [
+            'error' => $e->getMessage(),
+            'retry' => $retries + 1,
+        ]);
+
+        $this->handleConnectionFailure();
+
+        ++$retries;
+        if ($retries >= $maxRetries) {
+            throw $e;
+        }
     }
 
     private static function triggerLazyResult(mixed $tbr): void
@@ -294,7 +348,7 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
 
-        /** @var ConnectionPoolInterface|null $pool */
+        /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
@@ -339,23 +393,12 @@ final class Session implements SessionInterface
     private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig): UnmanagedTransactionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
-        try {
-            $connection = $this->acquireConnection($config, $sessionConfig);
-            
-            // Note: BEGIN is NOT sent immediately. It's deferred to the first run() call.
-            // This is why the PHP driver doesn't support OPT_EAGER_TX_BEGIN feature.
-        } catch (Neo4jException $e) {
-            if (isset($connection) && $connection->getServerState() === 'FAILED') {
-                $connection->reset();
-            }
-            // Release connection back to pool if available
-            if (isset($connection)) {
-                $this->pool->release($connection);
-            }
-            throw $e;
-        }
+        $connection = $this->acquireConnection($config, $sessionConfig);
 
-        /** @var ConnectionPoolInterface|null $pool */
+        // Defer BEGIN to first run/commit/rollback so driver does not advertise OPT_EAGER_TX_BEGIN.
+        // This allows test_disconnect_on_tx_begin to expect error at "after run" when stub disconnects on BEGIN.
+
+        /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
@@ -368,7 +411,21 @@ final class Session implements SessionInterface
             new BoltMessageFactory($connection, $this->getLogger()),
             false,
             $pool,
+            false, // BEGIN sent on first run/commit/rollback
         );
+    }
+
+    /**
+     * Clean up a connection that failed during BEGIN or other initialization.
+     * Resets the connection if it's in FAILED state and releases it back to the pool.
+     */
+    private function cleanupFailedConnection(BoltConnection $connection): void
+    {
+        if ($connection->getServerState() === 'FAILED') {
+            $connection->reset();
+        }
+        // Release connection back to pool for reuse
+        $this->pool->release($connection);
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration

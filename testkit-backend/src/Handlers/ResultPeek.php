@@ -18,23 +18,17 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
-use Laudis\Neo4j\TestkitBackend\Requests\ResultSingleRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ResultPeekRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\NullRecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
 use Throwable;
 
 /**
- * Request to expect and return exactly one record in the result stream.
- *
- * Backend should respond with a Record if exactly one record was found.
- * If more or fewer records are left in the result stream, or if any other
- * error occurs while retrieving the records, an Error response should be
- * returned.
- *
- * @implements RequestHandlerInterface<ResultSingleRequest>
+ * @implements RequestHandlerInterface<ResultPeekRequest>
  */
-final class ResultSingle implements RequestHandlerInterface
+final class ResultPeek implements RequestHandlerInterface
 {
     public function __construct(
         private readonly MainRepository $repository,
@@ -42,7 +36,7 @@ final class ResultSingle implements RequestHandlerInterface
     }
 
     /**
-     * @param ResultSingleRequest $request
+     * @param ResultPeekRequest $request
      */
     public function handle($request): TestkitResponseInterface
     {
@@ -53,27 +47,23 @@ final class ResultSingle implements RequestHandlerInterface
             }
 
             $iterator = $this->repository->getIterator($request->getResultId());
-            $records = [];
 
-            // Iterate to consume result (triggers PULL) and collect records
-            foreach ($iterator as $current) {
-                $values = [];
-                foreach ($current as $value) {
-                    $values[] = CypherObject::autoDetect($value);
-                }
-                $records[] = $values;
+            // Prime by fetching current - triggers setupCache -> getGenerator()->rewind() -> PULL.
+            // valid() alone can be false for unprimed CypherList; current() forces the generator to run.
+            try {
+                $current = $iterator->current();
+            } catch (Throwable) {
+                return new NullRecordResponse();
+            }
+            if (!$iterator->valid()) {
+                return new NullRecordResponse();
+            }
+            $values = [];
+            foreach ($current as $value) {
+                $values[] = CypherObject::autoDetect($value);
             }
 
-            if (count($records) !== 1) {
-                $neo4jError = Neo4jError::fromMessageAndCode(
-                    'Neo.ClientError.Statement.ResultNotSingle',
-                    sprintf('Expected a result with exactly one record, but found %d', count($records))
-                );
-
-                return new DriverErrorResponse($request->getResultId(), new Neo4jException([$neo4jError]));
-            }
-
-            return new RecordResponse($records[0]);
+            return new RecordResponse($values);
         } catch (Neo4jException $e) {
             $this->repository->removeRecords($request->getResultId());
 

@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
+use Bolt\error\ConnectException as BoltConnectException;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
@@ -174,7 +175,19 @@ class BoltConnection implements ConnectionInterface
 
     public function setTimeout(float $timeout): void
     {
-        $this->connection->setTimeout($timeout);
+        // Only set timeout if connection is still open
+        // This prevents errors when trying to set timeout on a closed socket
+        if ($this->isOpen()) {
+            try {
+                $this->connection->setTimeout($timeout);
+            } catch (Throwable $e) {
+                // Ignore errors when setting timeout on a closed connection
+                // This can happen during cleanup or error handling
+                $this->logger?->log(LogLevel::DEBUG, 'Failed to set timeout, connection may be closed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     public function getTimeout(): float
@@ -311,59 +324,46 @@ class BoltConnection implements ConnectionInterface
         try {
             // Apply timeout before iterating to ensure disconnects are detected
             $this->applyRecvTimeoutTemporarily();
-            
-            // If no timeout hint is set, apply a shorter default timeout to prevent hanging on disconnect
-            // This is especially important for disconnect tests where the server closes the connection
+
+            // If no timeout hint is set, apply a default timeout to prevent hanging on disconnect.
+            // 30 seconds balances CI stability with disconnect detection.
             if ($this->originalTimeout === null && $this->recvTimeoutHint === null) {
-                $currentTimeout = $this->connection->getTimeout();
-                // Use a shorter timeout (5 seconds) for disconnect detection
-                // This ensures we detect disconnects quickly rather than waiting indefinitely
-                $this->originalTimeout = $currentTimeout;
-                $this->connection->setTimeout(5.0);
+                $this->originalTimeout = $this->connection->getTimeout();
+                $this->connection->setTimeout(30.0);
             }
-            
-            try {
-                foreach ($message->send()->getResponses() as $response) {
-                    $this->assertNoFailure($response);
-                    $tbr[] = $response->content;
-                }
-            } catch (Throwable $e) {
-                // If we've received some records before the disconnect, return them
-                // This allows the first record to be consumed before the disconnect is detected
-                // This is important for tests like exit_after_record where a RECORD is sent before <EXIT>
-                if (!empty($tbr)) {
-                    // Add an empty summary to indicate the result is incomplete
-                    // The last element should be the summary, but since we disconnected, we add an empty one
-                    $tbr[] = [];
-                    
-                    // Restore timeout before returning partial results
-                    $this->restoreOriginalTimeout();
-                    
-                    /** @var non-empty-list<list> */
-                    return $tbr;
-                }
-                
-                // No records received, re-throw the exception to be handled by outer catch
+
+            foreach ($message->send()->getResponses() as $response) {
+                $this->assertNoFailure($response);
+                $tbr[] = $response->content;
+            }
+
+            $this->restoreOriginalTimeout();
+
+            /** @var non-empty-list<list> */
+            return $tbr;
+        } catch (Throwable $e) {
+            $this->restoreOriginalTimeout();
+
+            // Server sent a proper FAILURE (e.g. TransactionTimedOut) - rethrow so caller sees the error.
+            // Connection errors are rethrown as-is; for those we may return partial results (exit_after_record tests).
+            if ($e instanceof Neo4jException && $e->getNeo4jCode() !== 'Neo.ClientError.Cluster.NotALeader') {
                 throw $e;
             }
-            
-            // Restore timeout after successful iteration
-            $this->restoreOriginalTimeout();
-        } catch (Throwable $e) {
-            // Always restore timeout before handling exception
-            $this->restoreOriginalTimeout();
-            
-            // Re-throw Neo4jExceptions (already handled by getResponses wrapper)
+
+            // If we've received some records before the disconnect, return them so first next() succeeds and second next() fails.
+            if (!empty($tbr)) {
+                $tbr[] = [];
+
+                /** @var non-empty-list<list> */
+                return $tbr;
+            }
+
             if ($e instanceof Neo4jException) {
                 throw $e;
             }
-            
-            // Convert other exceptions to Neo4jException
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Connection error: '.$e->getMessage())], $e);
-        }
 
-        /** @var non-empty-list<list> */
-        return $tbr;
+            throw $e;
+        }
     }
 
     public function __destruct()
@@ -373,6 +373,9 @@ class BoltConnection implements ConnectionInterface
 
     public function close(): void
     {
+        // Graceful cleanup: GOODBYE/DISCARD may fail if connection already broken.
+        // Only catch network/connection failures - if connection is broken we can't send anyway.
+        // Other exceptions (Neo4jException, TypeError, etc.) should propagate.
         try {
             if ($this->isOpen()) {
                 if ($this->isStreaming()) {
@@ -384,7 +387,10 @@ class BoltConnection implements ConnectionInterface
 
                 unset($this->boltProtocol); // has to be set to null as the sockets don't recover nicely contrary to what the underlying code might lead you to believe;
             }
-        } catch (Throwable) {
+        } catch (BoltConnectException $e) {
+            $this->logger?->log(LogLevel::WARNING, 'Failed to close connection gracefully', [
+                'exception' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -399,25 +405,9 @@ class BoltConnection implements ConnectionInterface
      */
     public function invalidate(): void
     {
-        try {
-            $this->subscribedResults = [];
-
-            try {
-                $this->connection->disconnect();
-            } catch (Throwable $e) {
-                $this->logger?->log(LogLevel::WARNING, 'Failed to disconnect during invalidation', [
-                    'exception' => $e->getMessage(),
-                    'type' => $e::class,
-                ]);
-            }
-
-            unset($this->boltProtocol);
-        } catch (Throwable $e) {
-            $this->logger?->log(LogLevel::WARNING, 'Error during connection invalidation', [
-                'exception' => $e->getMessage(),
-                'type' => $e::class,
-            ]);
-        }
+        $this->subscribedResults = [];
+        $this->connection->disconnect();
+        unset($this->boltProtocol);
     }
 
     private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
@@ -506,36 +496,32 @@ class BoltConnection implements ConnectionInterface
 
     /**
      * Discard unconsumed results - sends DISCARD to server for each subscribed result.
+     * Try-catch prevents DISCARD failures from breaking cleanup chain in Session.close().
      */
     public function discardUnconsumedResults(): void
     {
-        if (!$this->isOpen()) {
-            return;
-        }
+        if ($this->isOpen() && in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
+            $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
 
-        if (!in_array($this->protocol()->serverState, [ServerState::STREAMING, ServerState::TX_STREAMING], true)) {
-            return;
-        }
+            $this->subscribedResults = array_values(array_filter(
+                $this->subscribedResults,
+                static fn (WeakReference $ref): bool => $ref->get() !== null
+            ));
 
-        $this->logger?->log(LogLevel::DEBUG, 'Discarding unconsumed results');
-
-        $this->subscribedResults = array_values(array_filter(
-            $this->subscribedResults,
-            static fn (WeakReference $ref): bool => $ref->get() !== null
-        ));
-
-        if (!empty($this->subscribedResults)) {
-            try {
-                $this->discard(null);
-                $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
-            } catch (Throwable $e) {
-                $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
-                    'exception' => $e->getMessage(),
-                ]);
+            if (!empty($this->subscribedResults)) {
+                try {
+                    $this->discard(null);
+                    $this->logger?->log(LogLevel::DEBUG, 'Sent DISCARD ALL for unconsumed results');
+                } catch (BoltConnectException $e) {
+                    // Connection already broken - can't send DISCARD. Log and continue cleanup.
+                    $this->logger?->log(LogLevel::ERROR, 'Failed to discard results', [
+                        'exception' => $e->getMessage(),
+                    ]);
+                }
             }
-        }
 
-        $this->subscribedResults = [];
+            $this->subscribedResults = [];
+        }
     }
 
     public function setRecvTimeoutHint(?float $timeout): void

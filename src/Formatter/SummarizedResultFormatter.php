@@ -47,6 +47,7 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\Vector;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 
@@ -55,7 +56,7 @@ use function microtime;
 /**
  * Decorates the result of the provided format with an extensive summary.
  *
- * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|DateTimeZoneId|CypherList<mixed>|CypherMap<mixed>
+ * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|DateTimeZoneId|Vector|CypherList<mixed>|CypherMap<mixed>
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  * @psalm-type CypherStats = array{
  *     nodes_created: int,
@@ -94,7 +95,7 @@ use function microtime;
  * @psalm-type CypherRowResponse = array{row: list<scalar|null|array<array-key,scalar|null|array>>}
  * @psalm-type CypherResponse = array{columns:list<string>, data:list<CypherRowResponse>, stats?:CypherStats}
  * @psalm-type CypherResponseSet = array{results: list<CypherResponse>, errors: list<CypherError>}
- * @psalm-type BoltMeta = array{t_first: int, fields: list<string>, qid ?: int}
+ * @psalm-type BoltMeta = array{t_first: int, fields?: list<string>, qid ?: int}
  *
  * @psalm-suppress PossiblyUndefinedStringArrayOffset
  * @psalm-suppress ArgumentTypeCoercion
@@ -195,11 +196,14 @@ final class SummarizedResultFormatter
 
         $formattedResult = $this->processBoltResult($meta, $result, $connection, $holder);
 
+        $fetchSize = $result->getFetchSize();
+        $cacheLimit = $fetchSize < 1 ? PHP_INT_MAX : $fetchSize;
+
         /** @var SummarizedResult */
-        $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
+        $result = (new CypherList($formattedResult))->withCacheLimit($cacheLimit);
         // Safely get fields from metadata, defaulting to empty array if missing (indicates connection loss)
         $keys = [];
-        if (isset($meta['fields']) && is_array($meta['fields'])) {
+        if (array_key_exists('fields', $meta)) {
             $keys = $meta['fields'];
         }
 
@@ -272,11 +276,14 @@ final class SummarizedResultFormatter
      */
     private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, BookmarkHolder $holder): CypherList
     {
+        $fetchSize = $result->getFetchSize();
+        $cacheLimit = $fetchSize < 1 ? PHP_INT_MAX : $fetchSize;
+
         $tbr = (new CypherList(function () use ($result, $meta) {
             foreach ($result as $row) {
                 yield $this->formatRow($meta, $row);
             }
-        }))->withCacheLimit($result->getFetchSize());
+        }))->withCacheLimit($cacheLimit);
 
         $connection->subscribeResult($tbr);
         $result->addFinishedCallback(function (array $response) use ($holder) {
