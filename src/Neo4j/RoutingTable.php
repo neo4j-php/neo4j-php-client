@@ -60,4 +60,52 @@ final class RoutingTable
 
         return array_values(array_unique($tbr));
     }
+
+    /**
+     * Whether the given address appears in this routing table.
+     */
+    public function hasServer(string $serverAddress): bool
+    {
+        foreach ($this->servers as $server) {
+            foreach ($server['addresses'] as $address) {
+                if ($address === $serverAddress) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns a new table with every occurrence of the address removed from all roles.
+     * If the address was not present, returns the same instance.
+     *
+     * @psalm-mutation-free
+     */
+    public function removeServer(string $serverAddress): self
+    {
+        $changed = false;
+        /** @var list<array{addresses: list<string>, role: string}> $newServers */
+        $newServers = [];
+        foreach ($this->servers as $server) {
+            $addresses = [];
+            foreach ($server['addresses'] as $address) {
+                if ($address === $serverAddress) {
+                    $changed = true;
+                } else {
+                    $addresses[] = $address;
+                }
+            }
+            if ($addresses !== []) {
+                $newServers[] = ['addresses' => $addresses, 'role' => $server['role']];
+            }
+        }
+
+        if (!$changed) {
+            return $this;
+        }
+
+        return new self($newServers, $this->ttl);
+    }
 }
