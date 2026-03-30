@@ -67,10 +67,8 @@ final class RoutingTable
     public function hasServer(string $serverAddress): bool
     {
         foreach ($this->servers as $server) {
-            foreach ($server['addresses'] as $address) {
-                if ($address === $serverAddress) {
-                    return true;
-                }
+            if (in_array($serverAddress, $server['addresses'], true)) {
+                return true;
             }
         }
 

@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Exception;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
+use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Neo4j\Neo4jDriver;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
@@ -53,11 +54,14 @@ final class ForcedRoutingTableUpdate implements RequestHandlerInterface
             /** @var ConnectionPoolInterface $pool */
             $pool = $poolProperty->getValue($driver);
 
-            $tableProperty = (new ReflectionClass(Neo4jConnectionPool::class))->getProperty('table');
-            $tableProperty->setAccessible(true);
-            $tableProperty->setValue($pool, null);
+            if ($pool instanceof Neo4jConnectionPool) {
+                // Clear the cached routing table to force a refresh
+                $config = new SessionConfiguration();
+                $pool->clearRoutingTable($config);
+            }
         }
 
+        // Running a query will trigger a new routing table fetch if needed
         $driver->createSession()->run('RETURN 1 AS x');
 
         return new DriverResponse($request->getDriverId());

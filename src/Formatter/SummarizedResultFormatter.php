@@ -47,6 +47,7 @@ use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\Vector;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
 
@@ -55,7 +56,7 @@ use function microtime;
 /**
  * Decorates the result of the provided format with an extensive summary.
  *
- * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|DateTimeZoneId|CypherList<mixed>|CypherMap<mixed>
+ * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|DateTimeZoneId|Vector|CypherList<mixed>|CypherMap<mixed>
  * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
  * @psalm-type CypherStats = array{
  *     nodes_created: int,
@@ -94,7 +95,7 @@ use function microtime;
  * @psalm-type CypherRowResponse = array{row: list<scalar|null|array<array-key,scalar|null|array>>}
  * @psalm-type CypherResponse = array{columns:list<string>, data:list<CypherRowResponse>, stats?:CypherStats}
  * @psalm-type CypherResponseSet = array{results: list<CypherResponse>, errors: list<CypherError>}
- * @psalm-type BoltMeta = array{t_first: int, fields: list<string>, qid ?: int}
+ * @psalm-type BoltMeta = array{t_first: int, fields?: list<string>, qid ?: int}
  *
  * @psalm-suppress PossiblyUndefinedStringArrayOffset
  * @psalm-suppress ArgumentTypeCoercion
@@ -197,7 +198,11 @@ final class SummarizedResultFormatter
 
         /** @var SummarizedResult */
         $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
-        $keys = $meta['fields'];
+        // Safely get fields from metadata, defaulting to empty array if missing (indicates connection loss)
+        $keys = [];
+        if (array_key_exists('fields', $meta)) {
+            $keys = $meta['fields'];
+        }
 
         return new SummarizedResult($summary, $result, $keys);
     }

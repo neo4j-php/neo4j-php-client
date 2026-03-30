@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Bolt\error\ConnectException as BoltConnectException;
 use Exception;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -86,18 +88,37 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 return new DriverErrorResponse($request->getSessionId(), $exception);
             }
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $exception);
+                $response = new DriverErrorResponse($request->getTxId(), $exception);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
         } catch (TransactionException $exception) {
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $exception);
+                $response = new DriverErrorResponse($request->getTxId(), $exception);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
+        } catch (BoltConnectException $e) {
+            // Wrap connection/timeout errors for testkit protocol - tests expect DriverError with Neo4jException
+            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
+            $wrapped = new Neo4jException([$neo4jError], $e);
+
+            if ($request instanceof SessionRunRequest) {
+                return new DriverErrorResponse($request->getSessionId(), $wrapped);
+            }
+            if ($request instanceof TransactionRunRequest) {
+                return new DriverErrorResponse($request->getTxId(), $wrapped);
+            }
+
+            throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));
         }
-        // NOTE: all other exceptions will be caught in the Backend
+        // Unhandled exceptions propagate to Backend's top-level catch and become BackendError (matches Java driver)
     }
 
     /**

@@ -23,7 +23,7 @@ use function json_encode;
 use const JSON_THROW_ON_ERROR;
 
 use Laudis\Neo4j\Databags\Pair;
-use Laudis\Neo4j\Exception\RuntimeTypeException;
+use Laudis\Neo4j\Exception\InvalidTypeCast;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use OutOfBoundsException;
@@ -470,7 +470,7 @@ final class CypherMapTest extends TestCase
 
         self::assertEquals('', $map->getAsString('a'));
 
-        $this->expectException(RuntimeTypeException::class);
+        $this->expectException(InvalidTypeCast::class);
         $map->getAsCartesian3DPoint('a');
     }
 

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\enum\ServerState;
+use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
@@ -38,6 +39,7 @@ use Throwable;
 final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 {
     private TransactionState $state = TransactionState::ACTIVE;
+    private bool $beginSent = false;
 
     public function __construct(
         /** @psalm-readonly */
@@ -53,7 +55,10 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly BookmarkHolder $bookmarkHolder,
         private readonly BoltMessageFactory $messageFactory,
         private readonly bool $isInstantTransaction,
+        private readonly ?ConnectionPoolInterface $pool = null,
+        bool $beginAlreadySent = false,
     ) {
+        $this->beginSent = $beginAlreadySent;
     }
 
     /**
@@ -79,6 +84,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         }
 
+        $this->ensureBeginSent();
+
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
         $tbr = $this->runStatements($statements)->each(static function (CypherList $list) {
@@ -102,6 +109,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 throw new TransactionException("Can't rollback a rolled back transaction.");
             }
         }
+
+        $this->ensureBeginSent();
 
         $this->messageFactory->createRollbackMessage()->send();
         $this->state = TransactionState::ROLLED_BACK;
@@ -142,6 +151,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->connection->consumeResults();
         }
 
+        $this->ensureBeginSent();
+
         try {
             $meta = $this->connection->run(
                 $statement->getText(),
@@ -149,11 +160,14 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->database,
                 $this->tsxConfig->getTimeout(),
                 $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
-                $this->isInstantTransaction ? $this->config->getAccessMode() : null, // let the begin transaction decide if it is a managed transaction
+                null, // mode is never sent in RUN messages - it comes from session configuration
                 $this->tsxConfig->getMetaData()
             );
         } catch (Throwable $e) {
             $this->state = TransactionState::TERMINATED;
+            if ($this->pool !== null) {
+                $this->pool->release($this->connection);
+            }
             throw $e;
         }
         $run = microtime(true);
@@ -199,5 +213,22 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function isFinished(): bool
     {
         return $this->state != TransactionState::ACTIVE;
+    }
+
+    private function ensureBeginSent(): void
+    {
+        if ($this->isInstantTransaction || $this->beginSent) {
+            return;
+        }
+        try {
+            $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
+            $this->beginSent = true;
+        } catch (Throwable $e) {
+            $this->state = TransactionState::TERMINATED;
+            if ($this->pool !== null) {
+                $this->pool->release($this->connection);
+            }
+            throw $e;
+        }
     }
 }

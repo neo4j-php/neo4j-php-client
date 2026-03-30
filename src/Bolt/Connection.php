@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\IConnection;
+use Bolt\error\ConnectException as BoltConnectException;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 class Connection
 {
@@ -23,6 +26,7 @@ class Connection
     public function __construct(
         private readonly IConnection $connection,
         private readonly string $ssl,
+        private readonly ?LoggerInterface $logger = null,
     ) {
     }
 
@@ -38,7 +42,14 @@ class Connection
 
     public function read(int $length = 2048): string
     {
-        return $this->connection->read($length);
+        $data = $this->connection->read($length);
+
+        // Detect EOF - empty read from blocking socket indicates connection closed
+        if ($data === '' && $length > 0) {
+            throw new BoltConnectException('Connection closed by remote host');
+        }
+
+        return $data;
     }
 
     public function disconnect(): void
@@ -63,7 +74,14 @@ class Connection
 
     public function setTimeout(float $timeout): void
     {
-        $this->connection->setTimeout($timeout);
+        try {
+            $this->connection->setTimeout($timeout);
+        } catch (Throwable $e) {
+            $this->logger?->warning('Failed to set socket timeout on connection', [
+                'timeout' => $timeout,
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

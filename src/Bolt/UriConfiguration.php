@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Psr\Log\LoggerInterface;
+
 final class UriConfiguration
 {
     /**
@@ -24,6 +26,7 @@ final class UriConfiguration
         private readonly string $sslLevel,
         private readonly array $sslConfiguration,
         private readonly ?float $timeout,
+        private readonly ?LoggerInterface $logger = null,
     ) {
     }
 
@@ -53,5 +56,10 @@ final class UriConfiguration
     public function getTimeout(): ?float
     {
         return $this->timeout;
+    }
+
+    public function getLogger(): ?LoggerInterface
+    {
+        return $this->logger;
     }
 }

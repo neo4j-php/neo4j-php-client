@@ -1,7 +1,5 @@
 #!/bin/bash
 
-TESTKIT_VERSION=5.0
-
 [ -z "$TEST_NEO4J_HOST" ] && export TEST_NEO4J_HOST=neo4j
 [ -z "$TEST_NEO4J_USER" ] && export TEST_NEO4J_USER=neo4j
 [ -z "$TEST_NEO4J_PASS" ] && export TEST_NEO4J_PASS=testtest
@@ -11,26 +9,28 @@ TESTKIT_VERSION=5.0
 
 [ -z "$TEST_DRIVER_REPO" ] && TEST_DRIVER_REPO=$(realpath ..) && export TEST_DRIVER_REPO
 
-if [ "$1" == "--clean" ]; then
-    if [ -d testkit ]; then
-        rm -rf testkit
-    fi
+# Use realpath for robustness instead of relative paths
+TESTKIT_DIR=$(realpath ../testkit)
+if [ ! -d "$TESTKIT_DIR" ]; then
+    echo "ERROR: testkit directory not found at $TESTKIT_DIR"
+    exit 1
 fi
 
-if [ ! -d testkit ]; then
-    git clone https://github.com/neo4j-drivers/testkit.git
-    if [ "$(cd testkit && git branch --show-current)" != "${TESTKIT_VERSION}" ]; then
-        (cd testkit && git checkout ${TESTKIT_VERSION})
-    fi
-fi
-#else
-#    (cd testkit && git pull)
-#fi
+cd "$TESTKIT_DIR" || (echo 'cannot cd into testkit' && exit 1)
 
-cd testkit || (echo 'cannot cd into testkit' && exit 1)
+# Verify tests directory exists
+if [ ! -d "$TESTKIT_DIR/tests" ]; then
+    echo "ERROR: tests directory not found at $TESTKIT_DIR/tests"
+    exit 1
+fi
+
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt > /dev/null 2>&1
+
+# Explicitly set PYTHONPATH to ensure module discovery
+export PYTHONPATH="${PYTHONPATH}:${TESTKIT_DIR}"
+
+pip install -r requirements.txt
 
 echo ""
 echo "╔════════════════════════════════════════════════════════════════════════════╗"
@@ -139,6 +139,26 @@ python3 -m unittest -v \
     tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_no_server \
     tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing_raises_error \
     tests.stub.connectivity_check.test_get_server_info.TestGetServerInfo.test_routing \
+\
+    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestDirectConnectionRecvTimeout.test_in_time \
+    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestDirectConnectionRecvTimeout.test_timeout_unmanaged_tx \
+    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestDirectConnectionRecvTimeout.test_timeout_unmanaged_tx_should_fail_subsequent_usage_after_timeout \
+    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestDirectConnectionRecvTimeout.test_in_time_unmanaged_tx \
+    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestDirectConnectionRecvTimeout.test_in_time_managed_tx_retry \
+\
+    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestRoutingConnectionRecvTimeout.test_in_time \
+    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestRoutingConnectionRecvTimeout.test_in_time_unmanaged_tx \
+    tests.stub.configuration_hints.test_connection_recv_timeout_seconds.TestRoutingConnectionRecvTimeout.test_in_time_managed_tx_retry \
+\
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_on_pull \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_on_tx_run \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_on_tx_pull \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_session_on_tx_commit \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_client_says_goodbye \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_session_on_pull_after_record \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_on_tx_begin \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_disconnect_session_on_tx_pull_after_record \
+    tests.stub.disconnects.test_disconnects.TestDisconnects.test_fail_on_reset \
 
 EXIT_CODE=$?
 

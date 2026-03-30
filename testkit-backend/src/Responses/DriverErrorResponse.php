@@ -32,25 +32,38 @@ final class DriverErrorResponse implements TestkitResponseInterface
         $this->exception = $exception;
     }
 
+    public function getException(): Neo4jException|TransactionException
+    {
+        return $this->exception;
+    }
+
     public function jsonSerialize(): array
     {
+        $errorType = null;
+        $code = null;
+        $msg = null;
+
         if ($this->exception instanceof Neo4jException) {
-            return [
-                'name' => 'DriverError',
-                'data' => [
-                    'id' => $this->id->toRfc4122(),
-                    'code' => $this->exception->getNeo4jCode(),
-                    'msg' => $this->exception->getNeo4jMessage(),
-                ],
-            ];
+            $code = $this->exception->getNeo4jCode();
+            $msg = $this->exception->getNeo4jMessage();
+            $errorType = get_class($this->exception);
+            // Handle case where getNeo4jCode() might return empty string or getNeo4jMessage() is null
+            if ($code === '') {
+                $code = null;
+            }
+        } else {
+            $code = $this->exception->getCode();
+            $msg = $this->exception->getMessage();
+            $errorType = get_class($this->exception);
         }
 
         return [
             'name' => 'DriverError',
             'data' => [
                 'id' => $this->id->toRfc4122(),
-                'code' => $this->exception->getCode(),
-                'msg' => $this->exception->getMessage(),
+                'errorType' => $errorType,
+                'code' => $code,
+                'msg' => $msg,
             ],
         ];
     }

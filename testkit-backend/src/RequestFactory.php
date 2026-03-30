@@ -37,6 +37,7 @@ use Laudis\Neo4j\TestkitBackend\Requests\SessionReadTransactionRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionWriteTransactionRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\StartTestRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\TransactionCloseRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\TransactionCommitRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\TransactionRollbackRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
@@ -65,6 +66,7 @@ final class RequestFactory
         'TransactionRun' => TransactionRunRequest::class,
         'TransactionCommit' => TransactionCommitRequest::class,
         'TransactionRollback' => TransactionRollbackRequest::class,
+        'TransactionClose' => TransactionCloseRequest::class,
         'ResultNext' => ResultNextRequest::class,
         'ResultConsume' => ResultConsumeRequest::class,
         'RetryablePositive' => RetryablePositiveRequest::class,

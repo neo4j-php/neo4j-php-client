@@ -13,23 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Bolt\error\ConnectException as BoltConnectException;
-use Laudis\Neo4j\Contracts\TransactionInterface;
-use Laudis\Neo4j\Databags\Neo4jError;
-use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
-use Laudis\Neo4j\TestkitBackend\Requests\TransactionRollbackRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\TransactionCloseRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\TransactionResponse;
 
 /**
- * @implements RequestHandlerInterface<TransactionRollbackRequest>
+ * @implements RequestHandlerInterface<TransactionCloseRequest>
  */
-final class TransactionRollback implements RequestHandlerInterface
+final class TransactionClose implements RequestHandlerInterface
 {
     private MainRepository $repository;
 
@@ -39,25 +33,17 @@ final class TransactionRollback implements RequestHandlerInterface
     }
 
     /**
-     * @param TransactionRollbackRequest $request
+     * @param TransactionCloseRequest $request
      */
     public function handle($request): TestkitResponseInterface
     {
         $tsx = $this->repository->getTransaction($request->getTxId());
 
-        if ($tsx === null || !$tsx instanceof TransactionInterface) {
+        if ($tsx === null) {
             return new BackendErrorResponse('Transaction not found');
         }
 
-        try {
-            $tsx->rollback();
-        } catch (Neo4jException|TransactionException $e) {
-            return new DriverErrorResponse($request->getTxId(), $e);
-        } catch (BoltConnectException $e) {
-            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
-
-            return new DriverErrorResponse($request->getTxId(), new Neo4jException([$neo4jError], $e));
-        }
+        $this->repository->removeTransaction($request->getTxId());
 
         return new TransactionResponse($request->getTxId());
     }

@@ -93,7 +93,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 $uri,
                 $auth,
                 $conf->getUserAgent(),
-                $conf->getSslConfiguration()
+                $conf->getSslConfiguration(),
+                $conf->getSocketTimeoutSecondsExplicit()
             ),
             Cache::getInstance(),
             $resolver,
@@ -109,7 +110,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $uri,
             $this->data->getAuth(),
             $this->data->getUserAgent(),
-            $this->data->getSslConfig()
+            $this->data->getSslConfig(),
+            $this->data->getSocketTimeoutSeconds()
         );
 
         $key = $this->createKey($data);

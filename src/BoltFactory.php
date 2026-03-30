@@ -24,9 +24,10 @@ use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
-use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Enum\SocketType;
 
 /**
  * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.
@@ -44,21 +45,24 @@ class BoltFactory
     ) {
     }
 
-    public static function create(?Neo4jLogger $logger): self
+    public static function create(?Neo4jLogger $logger, ?SocketType $socketType = null): self
     {
-        return new self(SystemWideConnectionFactory::getInstance(), new ProtocolFactory(), new SslConfigurationFactory(), $logger);
+        return new self(SystemWideConnectionFactory::getInstance($socketType), new ProtocolFactory(), new SslConfigurationFactory(), $logger);
     }
 
     public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig): BoltConnection
     {
         [$sslLevel, $sslConfig] = $this->sslConfigurationFactory->create($data->getUri()->withHost($data->getHostname()), $data->getSslConfig());
 
+        $socketTimeout = $data->getSocketTimeoutSeconds() ?? DriverConfiguration::DEFAULT_SOCKET_TIMEOUT;
+
         $uriConfig = new UriConfiguration(
             $data->getUri()->getHost(),
             $data->getUri()->getPort(),
             $sslLevel,
             $sslConfig,
-            TransactionConfiguration::DEFAULT_TIMEOUT
+            $socketTimeout,
+            $this->logger?->getLogger()
         );
 
         $connection = $this->connectionFactory->create($uriConfig);
@@ -73,11 +77,18 @@ class BoltFactory
             $sslLevel
         );
 
-        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger);
+        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger, $socketTimeout);
 
         $response = $data->getAuth()->authenticateBolt($connection, $data->getUserAgent());
 
-        $config->setServerAgent($response['server']);
+        $config->setServerAgent($response['server'] ?? '');
+
+        // Timeout precedence: 1) driver config, 2) server hint, 3) default 30s.
+        // Only use server hint when driver did not explicitly configure a timeout.
+        $driverHasExplicitTimeout = $data->getSocketTimeoutSeconds() !== null;
+        if (!$driverHasExplicitTimeout && array_key_exists('hints', $response) && array_key_exists('connection.recv_timeout_seconds', $response['hints'])) {
+            $connection->setRecvTimeoutHint((float) $response['hints']['connection.recv_timeout_seconds']);
+        }
 
         return $connection;
     }
@@ -92,7 +103,7 @@ class BoltFactory
         $database = $databaseInfo?->getName();
 
         return $connection->getAccessMode() === $config->getAccessMode()
-               && $database === $config->getDatabase();
+            && $database === $config->getDatabase();
     }
 
     public function reuseConnection(BoltConnection $connection, SessionConfiguration $sessionConfig): BoltConnection

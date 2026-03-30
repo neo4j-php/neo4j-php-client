@@ -53,13 +53,14 @@ final class ConnectionPool implements ConnectionPoolInterface
     ): self {
         return new self(
             $semaphore,
-            BoltFactory::create($conf->getLogger()),
+            BoltFactory::create($conf->getLogger(), $conf->getSocketType()),
             new ConnectionRequestData(
                 $uri->getHost(),
                 $uri,
                 $auth,
                 $conf->getUserAgent(),
-                $conf->getSslConfiguration()
+                $conf->getSslConfiguration(),
+                $conf->getSocketTimeoutSecondsExplicit()
             ),
             $conf->getLogger(),
             $conf->getAcquireConnectionTimeout()

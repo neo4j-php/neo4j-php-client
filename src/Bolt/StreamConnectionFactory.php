@@ -15,17 +15,21 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\connection\StreamSocket;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
-use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 
 final class StreamConnectionFactory implements BasicConnectionFactoryInterface
 {
     public function create(UriConfiguration $config): Connection
     {
-        $connection = new StreamSocket($config->getHost(), $config->getPort() ?? 7687, $config->getTimeout() ?? TransactionConfiguration::DEFAULT_TIMEOUT);
+        // Socket timeout interrupts blocking reads. The server's recv_timeout_seconds hint
+        // can override this per-operation via applyRecvTimeoutTemporarily().
+        $socketTimeout = $config->getTimeout() ?? DriverConfiguration::DEFAULT_SOCKET_TIMEOUT;
+
+        $connection = new StreamSocket($config->getHost(), $config->getPort() ?? 7687, $socketTimeout);
         if ($config->getSslLevel() !== '') {
             $connection->setSslContextOptions($config->getSslConfiguration());
         }
 
-        return new Connection($connection, $config->getSslLevel());
+        return new Connection($connection, $config->getSslLevel(), $config->getLogger());
     }
 }

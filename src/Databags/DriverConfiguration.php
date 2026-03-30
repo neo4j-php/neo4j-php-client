@@ -24,6 +24,7 @@ use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Contracts\SemaphoreFactoryInterface;
+use Laudis\Neo4j\Enum\SocketType;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
@@ -39,16 +40,19 @@ final class DriverConfiguration
     public const DEFAULT_POOL_SIZE = 0x2F;
     public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
     public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
+    public const DEFAULT_SOCKET_TIMEOUT = 30.0;
     /** @var callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
     /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
     private $semaphoreFactory;
     private ?Neo4jLogger $logger;
+    private ?SocketType $socketType;
 
     /**
      * @param callable():(CacheInterface|null)|CacheInterface|null                       $cache
      * @param callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null $semaphore
-     * @param string|null                                                                $logLevel  The log level to use. If null, LogLevel::INFO is used.
+     * @param string|null                                                                $logLevel   The log level to use. If null, LogLevel::INFO is used.
+     * @param SocketType|null                                                            $socketType the socket type to use (SocketType::SOCKETS(), SocketType::STREAM(), or null for auto-detect)
      *
      * @psalm-external-mutation-free
      */
@@ -61,6 +65,8 @@ final class DriverConfiguration
         callable|SemaphoreFactoryInterface|null $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
+        ?SocketType $socketType = null,
+        private ?float $socketTimeoutSeconds = null,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
@@ -69,6 +75,7 @@ final class DriverConfiguration
         } else {
             $this->logger = null;
         }
+        $this->socketType = $socketType;
     }
 
     /**
@@ -83,6 +90,7 @@ final class DriverConfiguration
         SemaphoreFactoryInterface $semaphore,
         ?string $logLevel,
         ?LoggerInterface $logger,
+        ?SocketType $socketType = null,
     ): self {
         return new self(
             $userAgent,
@@ -92,7 +100,8 @@ final class DriverConfiguration
             $acquireConnectionTimeout,
             $semaphore,
             $logLevel,
-            $logger
+            $logger,
+            $socketType
         );
     }
 
@@ -258,6 +267,57 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->logger = new Neo4jLogger($logLevel ?? LogLevel::INFO, $logger);
+
+        return $tbr;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function getSocketType(): ?SocketType
+    {
+        return $this->socketType;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function withSocketType(?SocketType $socketType): self
+    {
+        $tbr = clone $this;
+        $tbr->socketType = $socketType;
+
+        return $tbr;
+    }
+
+    /**
+     * Default socket/recv timeout in seconds when server does not provide connection.recv_timeout_seconds hint.
+     *
+     * @psalm-mutation-free
+     */
+    public function getSocketTimeoutSeconds(): float
+    {
+        return $this->socketTimeoutSeconds ?? self::DEFAULT_SOCKET_TIMEOUT;
+    }
+
+    /**
+     * Returns the explicitly configured socket timeout, or null if not set.
+     * Used to determine precedence: driver config overrides server hint.
+     *
+     * @psalm-mutation-free
+     */
+    public function getSocketTimeoutSecondsExplicit(): ?float
+    {
+        return $this->socketTimeoutSeconds;
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function withSocketTimeoutSeconds(?float $seconds): self
+    {
+        $tbr = clone $this;
+        $tbr->socketTimeoutSeconds = $seconds;
 
         return $tbr;
     }
