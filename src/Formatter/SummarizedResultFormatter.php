@@ -196,15 +196,18 @@ final class SummarizedResultFormatter
 
         $formattedResult = $this->processBoltResult($meta, $result, $connection, $holder);
 
+        // Do not use Bolt fetch_size as CypherList cacheLimit: fetch_size batches PULLs on the wire, while
+        // cacheLimit caps the client cursor for rewind() (CypherSequenceTrait). A small limit breaks long
+        // streams (e.g. 6 rows with fetch_size 2) and nested result iteration.
         /** @var SummarizedResult */
-        $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
+        $rows = new CypherList($formattedResult);
         // Safely get fields from metadata, defaulting to empty array if missing (indicates connection loss)
         $keys = [];
         if (array_key_exists('fields', $meta)) {
             $keys = $meta['fields'];
         }
 
-        return new SummarizedResult($summary, $result, $keys);
+        return new SummarizedResult($summary, $rows, $keys);
     }
 
     public function formatArgs(array $profiledPlanData): PlanArguments
@@ -273,11 +276,11 @@ final class SummarizedResultFormatter
      */
     private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, BookmarkHolder $holder): CypherList
     {
-        $tbr = (new CypherList(function () use ($result, $meta) {
+        $tbr = new CypherList(function () use ($result, $meta) {
             foreach ($result as $row) {
                 yield $this->formatRow($meta, $row);
             }
-        }))->withCacheLimit($result->getFetchSize());
+        });
 
         $connection->subscribeResult($tbr);
         $result->addFinishedCallback(function (array $response) use ($holder) {

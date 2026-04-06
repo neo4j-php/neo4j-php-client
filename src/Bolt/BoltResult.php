@@ -140,9 +140,10 @@ final class BoltResult implements Iterator
         // Check if we have a valid summary
         /** @psalm-suppress RedundantConditionGivenDocblockType */
         if (count($meta) > 0 && is_array($meta[0])) {
-            // If summary is empty array and we have no rows, it's a normal completion (no records)
-            // If summary is empty array but we have rows, it's a partial pull from disconnect
-            if (empty($meta[0]) && empty($rows)) {
+            if (isset($meta[0][BoltConnection::LAUDIS_BOLT_PARTIAL_PULL_MARKER])) {
+                // Synthetic summary from BoltConnection::pull() after disconnect mid-response
+                $this->meta = null;
+            } elseif (empty($meta[0]) && empty($rows)) {
                 // Normal completion with no records - mark as complete
                 $this->meta = [];
             } elseif (!empty($meta[0])) {
@@ -150,11 +151,10 @@ final class BoltResult implements Iterator
                 if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
                     $this->meta = $meta[0];
                 }
+            } elseif (!empty($rows)) {
+                // Real Bolt SUCCESS {} after records (empty map decodes to []): stream finished
+                $this->meta = [];
             } else {
-                // Empty summary but we have rows - partial result from disconnect
-                // Set $this->meta to null so the next fetchResults() will try to pull again
-                // This allows the first record to be consumed, and the next fetch will fail
-                // which is the expected behavior for tests like exit_after_record
                 $this->meta = null;
             }
         } else {
@@ -195,13 +195,6 @@ final class BoltResult implements Iterator
     public function rewind(): void
     {
         // Rewind is impossible
-    }
-
-    public function __destruct()
-    {
-        if ($this->meta === null && in_array($this->connection->getServerState(), ['STREAMING', 'TX_STREAMING'], true)) {
-            $this->discard();
-        }
     }
 
     public function discard(): void

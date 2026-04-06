@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\enum\ServerState;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
@@ -146,10 +145,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
         $start = microtime(true);
 
-        $serverState = $this->connection->protocol()->serverState;
-        if ($serverState === ServerState::STREAMING) {
-            $this->connection->consumeResults();
-        }
+        // Do not consume/drain an active result stream here: Bolt allows pipelined RUN while a prior
+        // qid is still streaming (nested tx.run + interleaved PULLs). consumeResults() would pull the
+        // entire outer result before the nested RUN and breaks TestKit stub iteration tests.
 
         $this->ensureBeginSent();
 

@@ -50,6 +50,14 @@ use WeakReference;
  */
 class BoltConnection implements ConnectionInterface
 {
+    /**
+     * Synthetic SUCCESS metadata when the socket fails mid-pull; BoltResult uses this to tell apart
+     * from a real Bolt SUCCESS {} (empty map), which means the stream finished.
+     *
+     * @internal
+     */
+    public const LAUDIS_BOLT_PARTIAL_PULL_MARKER = '__laudisBoltPartialPull';
+
     private BoltMessageFactory $messageFactory;
 
     /**
@@ -339,7 +347,7 @@ class BoltConnection implements ConnectionInterface
             $this->restoreOriginalTimeout();
             // If we've received some records before the disconnect, return them so first next() succeeds and second next() fails.
             if (!empty($tbr)) {
-                $tbr[] = [];
+                $tbr[] = [self::LAUDIS_BOLT_PARTIAL_PULL_MARKER => true];
 
                 /** @var non-empty-list<list> */
                 return $tbr;

@@ -51,20 +51,14 @@ final class ResultNext implements RequestHandlerInterface
 
             $iterator = $this->repository->getIterator($request->getResultId());
 
-            // If we've already fetched the first record, advance to the next one
-            if ($this->repository->getIteratorFetchedFirst($request->getResultId()) === true) {
-                $iterator->next();
-            }
-
-            // Check if iterator is valid - this may trigger generator to start and fetch results
-            // If the connection is closed, this will throw an exception which we catch below
+            // Check valid first — for an unprimed iterator, valid() primes the generator.
             if (!$iterator->valid()) {
                 return new NullRecordResponse();
             }
 
-            // Get the current record
+            // Return current row, then advance so peek() can re-read current without advancing.
             $current = $iterator->current();
-            $this->repository->setIteratorFetchedFirst($request->getResultId(), true);
+            $iterator->next();
 
             $values = [];
             foreach ($current as $value) {
