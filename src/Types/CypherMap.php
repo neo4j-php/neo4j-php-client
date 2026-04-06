@@ -22,7 +22,6 @@ use Generator;
 use Iterator;
 use Laudis\Neo4j\Contracts\CypherSequence;
 use Laudis\Neo4j\Databags\Pair;
-use Laudis\Neo4j\Exception\RuntimeTypeException;
 use Laudis\Neo4j\TypeCaster;
 use OutOfBoundsException;
 use stdClass;
@@ -360,62 +359,22 @@ final class CypherMap implements CypherSequence, ArrayAccess, Iterator
 
     public function getAsString(string $key): string
     {
-        if (func_num_args() === 1) {
-            $value = $this->get($key);
-        } else {
-            $value = $this->get($key);
-        }
-        $tbr = TypeCaster::toString($value);
-        if ($tbr === null) {
-            throw new RuntimeTypeException($value, 'string');
-        }
-
-        return $tbr;
+        return TypeCaster::toString($this->get($key));
     }
 
     public function getAsInt(string $key): int
     {
-        if (func_num_args() === 1) {
-            $value = $this->get($key);
-        } else {
-            $value = $this->get($key);
-        }
-        $tbr = TypeCaster::toInt($value);
-        if ($tbr === null) {
-            throw new RuntimeTypeException($value, 'int');
-        }
-
-        return $tbr;
+        return TypeCaster::toInt($this->get($key));
     }
 
     public function getAsFloat(string $key): float
     {
-        if (func_num_args() === 1) {
-            $value = $this->get($key);
-        } else {
-            $value = $this->get($key);
-        }
-        $tbr = TypeCaster::toFloat($value);
-        if ($tbr === null) {
-            throw new RuntimeTypeException($value, 'float');
-        }
-
-        return $tbr;
+        return TypeCaster::toFloat($this->get($key));
     }
 
     public function getAsBool(string $key): bool
     {
-        if (func_num_args() === 1) {
-            $value = $this->get($key);
-        } else {
-            $value = $this->get($key);
-        }
-        $tbr = TypeCaster::toBool($value);
-        if ($tbr === null) {
-            throw new RuntimeTypeException($value, 'bool');
-        }
-
-        return $tbr;
+        return TypeCaster::toBool($this->get($key));
     }
 
     /**
@@ -440,13 +399,7 @@ final class CypherMap implements CypherSequence, ArrayAccess, Iterator
      */
     public function getAsObject(string $key, string $class): object
     {
-        $value = $this->get($key);
-        $tbr = TypeCaster::toClass($value, $class);
-        if ($tbr === null) {
-            throw new RuntimeTypeException($value, $class);
-        }
-
-        return $tbr;
+        return TypeCaster::toClass($this->get($key), $class);
     }
 
     /**
@@ -466,13 +419,7 @@ final class CypherMap implements CypherSequence, ArrayAccess, Iterator
      */
     public function getAsCypherMap(string $key): CypherMap
     {
-        $value = $this->get($key);
-        $tbr = TypeCaster::toCypherMap($value);
-        if ($tbr === null) {
-            throw new RuntimeTypeException($value, self::class);
-        }
-
-        return $tbr;
+        return TypeCaster::toCypherMap($this->get($key));
     }
 
     /**
@@ -480,13 +427,7 @@ final class CypherMap implements CypherSequence, ArrayAccess, Iterator
      */
     public function getAsCypherList(string $key): CypherList
     {
-        $value = $this->get($key);
-        $tbr = TypeCaster::toCypherList($value);
-        if ($tbr === null) {
-            throw new RuntimeTypeException($value, CypherList::class);
-        }
-
-        return $tbr;
+        return TypeCaster::toCypherList($this->get($key));
     }
 
     public function getAsDate(string $key): Date

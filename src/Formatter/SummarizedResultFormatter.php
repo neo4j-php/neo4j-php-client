@@ -196,11 +196,8 @@ final class SummarizedResultFormatter
 
         $formattedResult = $this->processBoltResult($meta, $result, $connection, $holder);
 
-        $fetchSize = $result->getFetchSize();
-        $cacheLimit = $fetchSize < 1 ? PHP_INT_MAX : $fetchSize;
-
         /** @var SummarizedResult */
-        $result = (new CypherList($formattedResult))->withCacheLimit($cacheLimit);
+        $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
         // Safely get fields from metadata, defaulting to empty array if missing (indicates connection loss)
         $keys = [];
         if (array_key_exists('fields', $meta)) {
@@ -276,14 +273,11 @@ final class SummarizedResultFormatter
      */
     private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, BookmarkHolder $holder): CypherList
     {
-        $fetchSize = $result->getFetchSize();
-        $cacheLimit = $fetchSize < 1 ? PHP_INT_MAX : $fetchSize;
-
         $tbr = (new CypherList(function () use ($result, $meta) {
             foreach ($result as $row) {
                 yield $this->formatRow($meta, $row);
             }
-        }))->withCacheLimit($cacheLimit);
+        }))->withCacheLimit($result->getFetchSize());
 
         $connection->subscribeResult($tbr);
         $result->addFinishedCallback(function (array $response) use ($holder) {

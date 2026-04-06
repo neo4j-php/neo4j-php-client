@@ -59,7 +59,8 @@ final class ConnectionPool implements ConnectionPoolInterface
                 $uri,
                 $auth,
                 $conf->getUserAgent(),
-                $conf->getSslConfiguration()
+                $conf->getSslConfiguration(),
+                $conf->getSocketTimeoutSecondsExplicit()
             ),
             $conf->getLogger(),
             $conf->getAcquireConnectionTimeout()

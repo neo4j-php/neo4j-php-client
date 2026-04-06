@@ -27,6 +27,7 @@ final class ConnectionRequestData
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
         private readonly SslConfiguration $config,
+        private readonly ?float $socketTimeoutSeconds = null,
     ) {
     }
 
@@ -53,5 +54,10 @@ final class ConnectionRequestData
     public function getSslConfig(): SslConfiguration
     {
         return $this->config;
+    }
+
+    public function getSocketTimeoutSeconds(): ?float
+    {
+        return $this->socketTimeoutSeconds;
     }
 }

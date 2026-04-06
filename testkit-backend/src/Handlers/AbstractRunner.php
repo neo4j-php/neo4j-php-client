@@ -134,7 +134,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             throw new Exception('Unhandled exception for run request of type: '.get_class($request));
         }
-        // NOTE: all other exceptions will be caught in the Backend
+        // Unhandled exceptions propagate to Backend's top-level catch and become BackendError (matches Java driver)
     }
 
     /**

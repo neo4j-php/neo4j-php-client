@@ -37,24 +37,23 @@ abstract class BoltMessage
         $this->connection->applyRecvTimeoutTemporarily();
 
         // If no timeout hint is set, apply a default timeout to prevent hanging on disconnect.
-        // 30 seconds balances CI stability with disconnect detection.
         if ($this->connection->getRecvTimeoutHint() === null && $this->connection->getOriginalTimeout() === null) {
             $currentTimeout = $this->connection->getTimeout();
             $this->connection->setOriginalTimeout($currentTimeout);
-            $this->connection->setTimeout(30.0);
+            $this->connection->setTimeout($this->connection->getDefaultRecvTimeout());
         }
 
         try {
             $response = $this->connection->protocol()->getResponse();
+        } catch (BoltException $e) {
+            $this->connection->restoreOriginalTimeout();
+            $this->connection->invalidate();
+            throw $e;
         } catch (Throwable $e) {
+            $this->connection->restoreOriginalTimeout();
             if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
-                try {
-                    $this->connection->invalidate();
-                } catch (Throwable $invalidateException) {
-                }
-                // Rethrow original exception - Session retry logic inspects it via isConnectionError().
+                $this->connection->invalidate();
             }
-
             throw $e;
         }
 
@@ -68,11 +67,7 @@ abstract class BoltMessage
 
     private function tryInvalidateConnection(): void
     {
-        try {
-            $this->connection->invalidate();
-        } catch (Throwable) {
-            // Ignore so we do not mask the original exception
-        }
+        $this->connection->invalidate();
     }
 
     private function isTimeoutException(Throwable $e): bool
@@ -129,13 +124,15 @@ abstract class BoltMessage
             foreach ($iterator as $response) {
                 yield $response;
             }
+        } catch (BoltException $e) {
+            $this->connection->restoreOriginalTimeout();
+            $this->tryInvalidateConnection();
+            throw $e;
         } catch (Throwable $e) {
             $this->connection->restoreOriginalTimeout();
-
             if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
                 $this->tryInvalidateConnection();
             }
-
             throw $e;
         }
     }

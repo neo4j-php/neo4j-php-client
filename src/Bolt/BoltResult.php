@@ -25,9 +25,8 @@ use Generator;
 use function in_array;
 
 use Iterator;
-use Laudis\Neo4j\Databags\Neo4jError;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -96,6 +95,9 @@ final class BoltResult implements Iterator
         }
 
         $meta = $this->meta;
+        // Finished callbacks are callable(array): void and read summary keys (e.g. db, bookmark); passing null
+        // would error at runtime. We only run them when we have a real completion summary—if meta is still null
+        // (e.g. partial pull / more fetches pending), there is nothing to hand to the callback yet.
         if ($meta !== null) {
             foreach ($this->finishedCallbacks as $finishedCallback) {
                 $finishedCallback($meta);
@@ -116,25 +118,18 @@ final class BoltResult implements Iterator
     {
         try {
             $meta = $this->connection->pull($this->qid, $this->fetchSize);
-        } catch (BoltConnectException $e) {
+        } catch (BoltConnectException|BoltException $e) {
             // Invalidate connection on socket/network errors so pool does not reuse it.
             // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
             $this->connection->invalidate();
             throw $e;
-        } catch (Neo4jException $e) {
-            // Re-throw Neo4jExceptions that were already processed by BoltMessage
-            throw $e;
-        } catch (BoltException|Throwable $e) {
-            // Invalidate connection on Bolt protocol errors or other failures (e.g. disconnect).
-            // Rethrow as-is - Session retry logic inspects via isConnectionError().
-            $this->connection->invalidate();
-            throw $e;
         }
+        // Neo4jException and other Throwable propagate naturally - no invalidate needed for server errors
 
-        // Safety check: ensure $meta is not empty (pull() is typed non-empty-list but we defend against empty)
+        // Safety check: ensure pull response $meta is not empty (pull() is typed non-empty-list but we defend against empty)
         /** @psalm-suppress TypeDoesNotContainType */
         if (empty($meta)) {
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Cluster.NotALeader', 'Empty response from server')]);
+            throw new RuntimeException('Empty response from server');
         }
 
         /** @var list<list> $rows */
@@ -156,13 +151,15 @@ final class BoltResult implements Iterator
                     $this->meta = $meta[0];
                 }
             } else {
-                // Empty summary with rows: SUCCESS {} means stream complete (Bolt 4.x).
-                // Only treat as partial (meta=null) when we have no SUCCESS at all (disconnect).
-                $this->meta = [];
+                // Empty summary but we have rows - partial result from disconnect
+                // Set $this->meta to null so the next fetchResults() will try to pull again
+                // This allows the first record to be consumed, and the next fetch will fail
+                // which is the expected behavior for tests like exit_after_record
+                $this->meta = null;
             }
         } else {
             // No summary received (connection closed before summary)
-            // Don't set $this->meta so the next fetchResults() will try to pull again
+            // Set $this->meta to null so the next fetchResults() will try to pull again
             $this->meta = null;
         }
     }
@@ -211,16 +208,10 @@ final class BoltResult implements Iterator
     {
         try {
             $this->connection->discard($this->qid === -1 ? null : $this->qid);
-        } catch (BoltConnectException $e) {
+        } catch (BoltConnectException|BoltException $e) {
             // Connection already broken if DISCARD fails. Invalidate to prevent pool from reusing it.
             // Don't rethrow: this is called from __destruct() where exceptions don't propagate properly.
-            // Connection will be detected as broken on next operation when pool tries to reuse it.
             $this->connection->invalidate();
-            // Ignore connection errors during discard - connection is already broken
-            // The Neo4jException will be thrown when the next operation is attempted
-        } catch (BoltException $e) {
-            $this->connection->invalidate();
-            // Ignore Bolt protocol errors during discard - connection is already broken
         }
     }
 }

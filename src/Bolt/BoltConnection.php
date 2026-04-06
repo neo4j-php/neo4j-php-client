@@ -30,6 +30,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
+use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
@@ -89,6 +90,7 @@ class BoltConnection implements ConnectionInterface
         /** @psalm-readonly */
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
+        private readonly float $defaultRecvTimeout = DriverConfiguration::DEFAULT_SOCKET_TIMEOUT,
     ) {
         $this->messageFactory = new BoltMessageFactory($this, $this->logger);
     }
@@ -177,16 +179,9 @@ class BoltConnection implements ConnectionInterface
     {
         // Only set timeout if connection is still open
         // This prevents errors when trying to set timeout on a closed socket
+        // Connection::setTimeout swallows errors on closed connections (cleanup scenario)
         if ($this->isOpen()) {
-            try {
-                $this->connection->setTimeout($timeout);
-            } catch (Throwable $e) {
-                // Ignore errors when setting timeout on a closed connection
-                // This can happen during cleanup or error handling
-                $this->logger?->log(LogLevel::DEBUG, 'Failed to set timeout, connection may be closed', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            $this->connection->setTimeout($timeout);
         }
     }
 
@@ -326,10 +321,9 @@ class BoltConnection implements ConnectionInterface
             $this->applyRecvTimeoutTemporarily();
 
             // If no timeout hint is set, apply a default timeout to prevent hanging on disconnect.
-            // 30 seconds balances CI stability with disconnect detection.
             if ($this->originalTimeout === null && $this->recvTimeoutHint === null) {
                 $this->originalTimeout = $this->connection->getTimeout();
-                $this->connection->setTimeout(30.0);
+                $this->connection->setTimeout($this->defaultRecvTimeout);
             }
 
             foreach ($message->send()->getResponses() as $response) {
@@ -343,13 +337,6 @@ class BoltConnection implements ConnectionInterface
             return $tbr;
         } catch (Throwable $e) {
             $this->restoreOriginalTimeout();
-
-            // Server sent a proper FAILURE (e.g. TransactionTimedOut) - rethrow so caller sees the error.
-            // Connection errors are rethrown as-is; for those we may return partial results (exit_after_record tests).
-            if ($e instanceof Neo4jException && $e->getNeo4jCode() !== 'Neo.ClientError.Cluster.NotALeader') {
-                throw $e;
-            }
-
             // If we've received some records before the disconnect, return them so first next() succeeds and second next() fails.
             if (!empty($tbr)) {
                 $tbr[] = [];
@@ -357,11 +344,6 @@ class BoltConnection implements ConnectionInterface
                 /** @var non-empty-list<list> */
                 return $tbr;
             }
-
-            if ($e instanceof Neo4jException) {
-                throw $e;
-            }
-
             throw $e;
         }
     }
@@ -553,6 +535,11 @@ class BoltConnection implements ConnectionInterface
     public function getOriginalTimeout(): ?float
     {
         return $this->originalTimeout;
+    }
+
+    public function getDefaultRecvTimeout(): float
+    {
+        return $this->defaultRecvTimeout;
     }
 
     public function setOriginalTimeout(?float $timeout): void

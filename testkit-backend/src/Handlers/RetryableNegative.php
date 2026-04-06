@@ -23,6 +23,7 @@ use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -31,11 +32,10 @@ use Throwable;
  */
 final class RetryableNegative implements RequestHandlerInterface
 {
-    private MainRepository $repository;
-
-    public function __construct(MainRepository $repository)
-    {
-        $this->repository = $repository;
+    public function __construct(
+        private readonly MainRepository $repository,
+        private readonly LoggerInterface $logger,
+    ) {
     }
 
     /**
@@ -60,7 +60,8 @@ final class RetryableNegative implements RequestHandlerInterface
         try {
             $tsx->rollback();
         } catch (Throwable $e) {
-            // Attempt to rollback, but proceed with error handling even if rollback fails
+            // Best-effort rollback: connection may already be broken. Proceed with error response.
+            $this->logger->debug('Rollback failed during RetryableNegative', ['exception' => $e->getMessage()]);
         }
 
         $errorId = $request->getErrorId();
@@ -80,7 +81,8 @@ final class RetryableNegative implements RequestHandlerInterface
                     return new DriverErrorResponse($transactionId, $exception);
                 }
             } catch (Throwable $e) {
-                // If we can't get the error, fall through to generic error
+                // Invalid errorId or record not found - fall through to generic FrontendError
+                $this->logger->debug('Could not retrieve error for RetryableNegative', ['exception' => $e->getMessage()]);
             }
         }
 
