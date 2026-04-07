@@ -43,6 +43,8 @@ final class SummarizedResult extends CypherList
 
     /**
      * Keeps the Bolt result stream alive until this summarized result is consumed (avoids premature BoltResult::__destruct).
+     *
+     * @var object|null
      */
     private readonly ?object $boltResultRef;
 
