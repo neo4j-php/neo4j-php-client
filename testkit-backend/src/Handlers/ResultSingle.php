@@ -13,12 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\ResultSingleRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
+use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
 
 /**
  * Request to expect and return exactly one record in the result stream.
@@ -32,7 +35,7 @@ use Laudis\Neo4j\TestkitBackend\Responses\RecordResponse;
  */
 final class ResultSingle implements RequestHandlerInterface
 {
-    private function __construct(
+    public function __construct(
         private readonly MainRepository $repository,
     ) {
     }
@@ -41,17 +44,24 @@ final class ResultSingle implements RequestHandlerInterface
     {
         $record = $this->repository->getRecords($request->getResultId());
         if ($record instanceof TestkitResponseInterface) {
-            return new BackendErrorResponse('Something went wrong with the result handling');
+            $err = new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Statement.ResultNotSingle', 'Something went wrong with the result handling')]);
+
+            return new DriverErrorResponse($request->getResultId(), $err);
         }
 
         $count = $record->count();
         if ($count !== 1) {
-            return new BackendErrorResponse(sprintf('Found exactly %s result rows, but expected just one.', $count));
+            $err = new Neo4jException([Neo4jError::fromMessageAndCode(
+                'Neo.ClientError.Statement.ResultNotSingle',
+                sprintf('Expected exactly one result row, found %d.', $count)
+            )]);
+
+            return new DriverErrorResponse($request->getResultId(), $err);
         }
 
         $values = [];
         foreach ($record->getAsCypherMap(0) as $value) {
-            $values[] = $value;
+            $values[] = CypherObject::autoDetect($value);
         }
 
         return new RecordResponse($values);

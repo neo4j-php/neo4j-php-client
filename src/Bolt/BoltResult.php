@@ -49,9 +49,35 @@ final class BoltResult implements Iterator
     ) {
     }
 
+    /**
+     * Remaining server pulls use PULL n=-1 (TestKit Optimization:ResultListFetchAll / list()).
+     */
+    private ?int $pullOverrideSize = null;
+
+    /**
+     * True after at least one {@see fetchResults()} (network pull). Used so list() can reset a stale
+     * cached generator before the first pull, but must not reset after next()+list() or rows replay.
+     */
+    private bool $networkPullOccurred = false;
+
+    public function prepareForResultListFetchAll(): void
+    {
+        $this->pullOverrideSize = -1;
+        // Drop cached generator only if no pull ran yet (e.g. valid()/getIt() touched before list()).
+        // If next() already ran, resetting would restart iterator() and duplicate records on list().
+        if ($this->it !== null && !$this->networkPullOccurred) {
+            $this->it = null;
+        }
+    }
+
     public function getFetchSize(): int
     {
         return $this->fetchSize;
+    }
+
+    private function effectivePullSize(): int
+    {
+        return $this->pullOverrideSize ?? $this->fetchSize;
     }
 
     private ?Generator $it = null;
@@ -116,8 +142,10 @@ final class BoltResult implements Iterator
 
     private function fetchResults(): void
     {
+        $this->networkPullOccurred = true;
+
         try {
-            $meta = $this->connection->pull($this->qid, $this->fetchSize);
+            $meta = $this->connection->pull($this->qid, $this->effectivePullSize());
         } catch (BoltConnectException|BoltException $e) {
             // Invalidate connection on socket/network errors so pool does not reuse it.
             // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
@@ -141,7 +169,6 @@ final class BoltResult implements Iterator
         /** @psalm-suppress RedundantConditionGivenDocblockType */
         if (count($meta) > 0 && is_array($meta[0])) {
             // If summary is empty array and we have no rows, it's a normal completion (no records)
-            // If summary is empty array but we have rows, it's a partial pull from disconnect
             if (empty($meta[0]) && empty($rows)) {
                 // Normal completion with no records - mark as complete
                 $this->meta = [];
@@ -150,12 +177,11 @@ final class BoltResult implements Iterator
                 if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
                     $this->meta = $meta[0];
                 }
-            } else {
-                // Empty summary but we have rows - partial result from disconnect
-                // Set $this->meta to null so the next fetchResults() will try to pull again
-                // This allows the first record to be consumed, and the next fetch will fail
-                // which is the expected behavior for tests like exit_after_record
-                $this->meta = null;
+            } elseif (!empty($rows)) {
+                // SUCCESS {} after records: Bolt may deserialize as []; stream is complete (not has_more)
+                if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
+                    $this->meta = $meta[0];
+                }
             }
         } else {
             // No summary received (connection closed before summary)
