@@ -163,29 +163,59 @@ python3 -m unittest -v \
     tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_0_records \
     tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_1_records \
     tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_2_records \
+    tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_disconnect \
+    tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_failure \
+    tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_failure_tx_run \
+    tests.stub.iteration.test_result_list.TestResultList.test_result_list_with_failure_tx_func_run \
     tests.stub.iteration.test_result_list.TestResultList.test_session_run_result_list_pulls_all_records_at_once \
     tests.stub.iteration.test_result_list.TestResultList.test_session_run_result_list_pulls_all_records_at_once_next_before_list \
+    tests.stub.iteration.test_result_list.TestResultList.test_tx_run_result_list_pulls_all_records_at_once \
+    tests.stub.iteration.test_result_list.TestResultList.test_tx_run_result_list_pulls_all_records_at_once_next_before_list \
+    tests.stub.iteration.test_result_list.TestResultList.test_tx_func_result_list_pulls_all_records_at_once \
+    tests.stub.iteration.test_result_list.TestResultList.test_tx_func_result_list_pulls_all_records_at_once_next_before_list \
 \
     tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_0_records \
     tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_1_records \
     tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_2_records \
+    tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_disconnect \
+    tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_failure \
+    tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_failure_tx_run \
+    tests.stub.iteration.test_result_single.TestResultSingle.test_result_single_with_failure_tx_func_run \
 \
     tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_0_records \
     tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_1_records \
     tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_2_records \
+    tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_disconnect \
+    tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_failure \
+    tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_failure_tx_run \
+    tests.stub.iteration.test_result_optional_single.TestResultSingleOptional.test_result_single_optional_with_failure_tx_func_run \
 \
     tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_0_records \
     tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_1_records \
     tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_2_records \
+    tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_disconnect \
+    tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_failure \
+    tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_failure_tx_run \
+    tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_failure_tx_func_run \
 \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_full_batch \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_half_batch \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_empty_batch \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_error \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all_slow_connection \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all_v3 \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_discards_on_session_close \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested_using_list \
 \
-   tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch \
-   tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all \
-   tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all_slow_connection \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch_v3 \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all_v3 \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested_using_list \
 
 EXIT_CODE=$?
 
