@@ -40,7 +40,6 @@ final class SummarizedResultListTest extends TestCase
         $result = new SummarizedResult($summary, $recordsList, ['n'], null, null);
 
         self::assertTrue($result->valid());
-        self::assertSame(1, $result->current()->get('n'));
         $first = $result->current()->get('n');
         self::assertIsInt($first);
         self::assertSame(1, $first);
@@ -48,6 +47,15 @@ final class SummarizedResultListTest extends TestCase
 
         $rows = $result->list();
         self::assertCount(4, $rows);
+
+        $nValues = [];
+        foreach ($rows as $row) {
+            self::assertInstanceOf(CypherMap::class, $row);
+            $n = $row->get('n');
+            self::assertIsInt($n);
+            $nValues[] = $n;
+        }
+        self::assertSame([2, 3, 4, 5], $nValues);
         self::assertSame([2, 3, 4, 5], array_map(static fn (CypherMap $m): int => $m->get('n'), $rows));
 
         $nValues = [];

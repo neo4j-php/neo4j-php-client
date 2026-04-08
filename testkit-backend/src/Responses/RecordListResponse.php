@@ -24,7 +24,7 @@ use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
 final class RecordListResponse implements TestkitResponseInterface
 {
     /**
-     * @param list<list<mixed>> $records Each row is a list of cell values (OGM types).
+     * @param list<list<mixed>> $records each row is a list of cell values (OGM types)
      */
     public function __construct(
         private readonly array $records,

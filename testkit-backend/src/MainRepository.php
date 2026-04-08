@@ -120,7 +120,7 @@ final class MainRepository
     public function consumePeekPrimed(Uuid $id): bool
     {
         $key = $id->toRfc4122();
-        if (!isset($this->peekPrimed[$key])) {
+        if (!array_key_exists($key, $this->peekPrimed)) {
             return false;
         }
         unset($this->peekPrimed[$key]);
