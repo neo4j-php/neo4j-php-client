@@ -103,19 +103,6 @@ $statement = new Statement('MERGE (user {email: $email})', ['email' => 'abc@hotm
 $client->runStatement($statement, 'default');
 ```
 
-#### Running multiple queries at once
-
-The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database round trips when batching work.
-
-```php
-use Laudis\Neo4j\Databags\Statement;
-
-$results = $client->runStatements([
-    Statement::create('MATCH (x) RETURN x LIMIT 100'),
-    Statement::create('MERGE (x:Person {email: $email})', ['email' => 'abc@hotmail.com'])
-]);
-```
-
 ### Transaction functions
 
 Transaction functions are the **de facto** standard when using the driver. It is the most portable as it is resistant to a lot of the pitfalls when first developing with high availability solutions such as [Neo4j aura](https://neo4j.com/blog/neo4j-aura-enterprise-ga-release/) or a [cluster](https://neo4j.com/docs/operations-manual/current/clustering/).
@@ -291,15 +278,9 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 
 * PHP >= 7.4
 * A Neo4j database (minimum version 3.5)
-* ext-bcmath *
-* ext-json **
-* ext-sockets ***
-
-(*) Needed to implement the bolt protocol
-
-(**) Required by the package for JSON handling
-
-(***) Can be installed for optimal bolt protocol performance
+* ext-bcmath
+* ext-json
+* ext-sockets
 
 ## Result formats/hydration
 
