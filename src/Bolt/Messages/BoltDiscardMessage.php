@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt\Messages;
 
+use Bolt\protocol\V3;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\BoltMessage;
@@ -31,7 +32,12 @@ final class BoltDiscardMessage extends BoltMessage
     public function send(): BoltDiscardMessage
     {
         $this->logger?->log(LogLevel::DEBUG, 'DISCARD', $this->extra);
-        $this->connection->protocol()->discard($this->extra);
+        $protocol = $this->connection->protocol();
+        if ($protocol instanceof V3) {
+            $protocol->discardAll();
+        } else {
+            $protocol->discard($this->extra);
+        }
 
         return $this;
     }

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt\Messages;
 
+use Bolt\protocol\V3;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\BoltMessage;
@@ -31,7 +32,14 @@ final class BoltPullMessage extends BoltMessage
     public function send(): BoltPullMessage
     {
         $this->logger?->log(LogLevel::DEBUG, 'PULL', $this->extra);
-        $this->connection->protocol()->pull($this->extra);
+        $protocol = $this->connection->protocol();
+        if ($protocol instanceof V3) {
+            if (!$this->connection->consumeQueuedV3PullAll()) {
+                $protocol->pullAll();
+            }
+        } else {
+            $protocol->pull($this->extra);
+        }
 
         return $this;
     }
