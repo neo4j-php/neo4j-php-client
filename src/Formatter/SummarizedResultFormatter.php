@@ -194,17 +194,29 @@ final class SummarizedResultFormatter
                 );
             });
 
-        $formattedResult = $this->processBoltResult($meta, $result, $connection, $holder);
+        $boltResult = $result;
+        $formattedResult = $this->processBoltResult($meta, $boltResult, $connection, $holder);
 
-        /** @var SummarizedResult */
-        $result = (new CypherList($formattedResult))->withCacheLimit($result->getFetchSize());
+        $recordsList = (new CypherList($formattedResult))->withCacheLimit($this->clientSideCacheLimitFromBoltFetchSize($boltResult->getFetchSize()));
         // Safely get fields from metadata, defaulting to empty array if missing (indicates connection loss)
         $keys = [];
         if (array_key_exists('fields', $meta)) {
             $keys = $meta['fields'];
         }
 
-        return new SummarizedResult($summary, $result, $keys);
+        $prepareListFetchAll = static function () use ($boltResult): void {
+            $boltResult->prepareForResultListFetchAll();
+        };
+
+        return new SummarizedResult($summary, $recordsList, $keys, $prepareListFetchAll, $boltResult);
+    }
+
+    /**
+     * Bolt fetch size -1 means one PULL with n=-1; client-side CypherList cache must stay non-negative.
+     */
+    private function clientSideCacheLimitFromBoltFetchSize(int $boltFetchSize): int
+    {
+        return $boltFetchSize < 0 ? PHP_INT_MAX : $boltFetchSize;
     }
 
     public function formatArgs(array $profiledPlanData): PlanArguments
@@ -277,7 +289,7 @@ final class SummarizedResultFormatter
             foreach ($result as $row) {
                 yield $this->formatRow($meta, $row);
             }
-        }))->withCacheLimit($result->getFetchSize());
+        }))->withCacheLimit($this->clientSideCacheLimitFromBoltFetchSize($result->getFetchSize()));
 
         $connection->subscribeResult($tbr);
         $result->addFinishedCallback(function (array $response) use ($holder) {

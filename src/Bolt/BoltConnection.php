@@ -337,9 +337,12 @@ class BoltConnection implements ConnectionInterface
             return $tbr;
         } catch (Throwable $e) {
             $this->restoreOriginalTimeout();
-            // If we've received some records before the disconnect, return them so first next() succeeds and second next() fails.
+            // If we've received some records before the disconnect, return them so first next() succeeds.
+            // Second next() must pull again and fail with a connection error (TestKit exit_after_record scripts).
+            // Do not append []: BoltResult treats trailing empty SUCCESS as stream completion, so the iterator
+            // would stop cleanly instead of surfacing the disconnect. A synthetic has_more:true means "not done".
             if (!empty($tbr)) {
-                $tbr[] = [];
+                $tbr[] = ['has_more' => true];
 
                 /** @var non-empty-list<list> */
                 return $tbr;
