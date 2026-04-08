@@ -14,7 +14,7 @@
 - Designed, built and tested under close supervision with the official neo4j driver team
 - Validated with [testkit](https://github.com/neo4j-drivers/testkit)
 - Fully typed with [psalm](https://psalm.dev/)
-- Bolt, HTTP and auto routed drivers available
+- Bolt and Neo4j (auto-routed) drivers available
 
 ## See the driver in action
 
@@ -48,13 +48,14 @@ use Laudis\Neo4j\ClientBuilder;
 
 $client = ClientBuilder::create()
     ->withDriver('bolt', 'bolt+s://user:password@localhost') // creates a bolt driver
-    ->withDriver('https', 'https://test.com', Authenticate::basic('user', 'password')) // creates an http driver
     ->withDriver('neo4j', 'neo4j://neo4j.test.com?database=my-database', Authenticate::oidc('token')) // creates an auto routed driver with an OpenID Connect token
     ->withDefaultDriver('bolt')
     ->build();
 ```
 
-You have now created a client with **bolt, HTTPS and neo4j drivers**. The default driver that the client will use is **bolt**.
+You have now created a client with **bolt and neo4j drivers**. The default driver that the client will use is **bolt**.
+
+> **Note:** The HTTP/HTTPS drivers were [removed in version 3.3.0](https://github.com/neo4j-php/neo4j-php-client/releases). Use **Bolt** (`bolt://`, `bolt+s://`, …) or **Neo4j** (`neo4j://`, …) URIs only.
 
 Read more about the URLs and how to use them to configure drivers [here](#in-depth-configuration).
 
@@ -104,7 +105,7 @@ $client->runStatement($statement, 'default');
 
 #### Running multiple queries at once
 
-The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database calls, especially when using the HTTP protocol.
+The `runStatements` method will run all the statements at once. This method is an essential tool to reduce the number of database round trips when batching work.
 
 ```php
 use Laudis\Neo4j\Databags\Statement;
@@ -280,7 +281,6 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 |----------------------|----------------|
 | Authentication       | Yes            |
 | Transactions         | Yes            |
-| Http Protocol        | Yes            |
 | Bolt Protocol        | Yes            |
 | Cluster              | Yes            |
 | Aura                 | Yes            |
@@ -297,20 +297,13 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 
 (*) Needed to implement the bolt protocol
 
-(**) Needed to implement the http protocol
+(**) Required by the package for JSON handling
 
 (***) Can be installed for optimal bolt protocol performance
 
-
-If you plan on using the HTTP drivers, make sure you have [psr-7](https://www.php-fig.org/psr/psr-7/), [psr-17](https://www.php-fig.org/psr/psr-17/) and [psr-18](https://www.php-fig.org/psr/psr-18/) implementations included into the project. If you don't have any, you can install them via composer:
-
-```bash
-composer require nyholm/psr7 nyholm/psr7-server kriswallsmith/buzz
-```
-
 ## Result formats/hydration
 
-In order to make the results of the bolt protocol and the http uniform, the driver provides and summarizes the results.
+In order to make the results of the Bolt protocol uniform, the driver provides and summarizes the results.
 
 The default formatter is the `\Laudis\Neo4j\Formatters\SummarizedResultFormatter`, which is explained extensively in [the result format section](#accessing-the-results).
 
@@ -424,13 +417,12 @@ bolt://localhost:7687?database=neo4j
 
 #### Scheme configuration matrix
 
-This library supports three drivers: bolt, HTTP and neo4j. The scheme part of the url determines the driver.
+This library supports two driver kinds: **bolt** (single server) and **neo4j** (client-side routing). The scheme part of the URL selects the driver.
 
-| driver | scheme | valid certificate | self-signed certificate                      | function                      |
-|--------|--------|-------------------|----------------------------------------------|-------------------------------|
-| neo4j  | neo4j  | neo4j+s           | neo4j+ssc                                    | Client side routing over bolt |
-| bolt   | bolt   | bolt+s            | bolt+ssc                                     | Single server over bolt       |
-| http   | http   | https             | configured through PSR Client implementation | Single server over HTTP       |
+| driver | scheme | valid certificate | self-signed certificate | function                      |
+|--------|--------|-------------------|-------------------------|-------------------------------|
+| neo4j  | neo4j  | neo4j+s           | neo4j+ssc               | Client-side routing over Bolt |
+| bolt   | bolt   | bolt+s            | bolt+ssc                | Single server over Bolt       |
 
 ### Configuration objects
 
@@ -439,7 +431,6 @@ A driver, session and transaction can be configured using configuration objects.
 | name              | concept     | description                                                                      | class                      |
 |-------------------|-------------|----------------------------------------------------------------------------------|----------------------------|
 | user agent        | driver      | The user agent used to identify the client to the neo4j server.                  | `DriverConfiguration`      |
-| Http PSR Bindings | driver      | The relevant PSR implementation used by the driver when using the HTTP protocol. | `DriverConfiguration`      |
 | database          | session     | The database to connect to.                                                      | `SessionConfiguration`     |
 | fetch size        | session     | The amount of rows to fetch at once.                                             | `SessionConfiguration`     |
 | access mode       | session     | The default mode when accessing the server.                                      | `SessionConfiguration`     |
