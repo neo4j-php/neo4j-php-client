@@ -14,12 +14,15 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Mirrors TestKit stub: next() then list() must return only remaining rows (no rewind / duplicate).
+ *
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  */
 final class SummarizedResultListTest extends TestCase
 {
@@ -32,15 +35,26 @@ final class SummarizedResultListTest extends TestCase
             }
         }))->withCacheLimit(2);
 
+        /** @var CypherList<CypherMap<OGMTypes>> $recordsList */
         $recordsList = (new CypherList($inner))->withCacheLimit(2);
         $result = new SummarizedResult($summary, $recordsList, ['n'], null, null);
 
         self::assertTrue($result->valid());
-        self::assertSame(1, $result->current()->get('n'));
+        $first = $result->current()->get('n');
+        self::assertIsInt($first);
+        self::assertSame(1, $first);
         $result->next();
 
         $rows = $result->list();
         self::assertCount(4, $rows);
-        self::assertSame([2, 3, 4, 5], array_map(static fn (CypherMap $m): int => $m->get('n'), $rows));
+
+        $nValues = [];
+        foreach ($rows as $row) {
+            self::assertInstanceOf(CypherMap::class, $row);
+            $n = $row->get('n');
+            self::assertIsInt($n);
+            $nValues[] = $n;
+        }
+        self::assertSame([2, 3, 4, 5], $nValues);
     }
 }

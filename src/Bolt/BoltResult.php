@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use function array_key_exists;
 use function array_splice;
 
 use Bolt\error\BoltException;
@@ -23,10 +24,10 @@ use function count;
 use Generator;
 
 use function in_array;
+use function is_array;
 
 use Iterator;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -153,40 +154,34 @@ final class BoltResult implements Iterator
             throw $e;
         }
         // Neo4jException and other Throwable propagate naturally - no invalidate needed for server errors
-
-        // Safety check: ensure pull response $meta is not empty (pull() is typed non-empty-list but we defend against empty)
-        /** @psalm-suppress TypeDoesNotContainType */
-        if (empty($meta)) {
-            throw new RuntimeException('Empty response from server');
-        }
+        // $meta is non-empty: {@see BoltConnection::pull()} is contractually non-empty-list<list>.
 
         /** @var list<list> $rows */
         $rows = array_splice($meta, 0, count($meta) - 1);
         $this->rows = $rows;
 
-        /** @var array{0: array} $meta */
-        // Check if we have a valid summary
-        /** @psalm-suppress RedundantConditionGivenDocblockType */
-        if (count($meta) > 0 && is_array($meta[0])) {
-            // If summary is empty array and we have no rows, it's a normal completion (no records)
-            if (empty($meta[0]) && empty($rows)) {
-                // Normal completion with no records - mark as complete
-                $this->meta = [];
-            } elseif (!empty($meta[0])) {
-                // Valid summary with data
-                if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
-                    $this->meta = $meta[0];
-                }
-            } elseif (!empty($rows)) {
-                // SUCCESS {} after records: Bolt may deserialize as []; stream is complete (not has_more)
-                if (!array_key_exists('has_more', $meta[0]) || $meta[0]['has_more'] === false) {
-                    $this->meta = $meta[0];
-                }
+        $summarySlot = $meta[0] ?? null;
+        if (!is_array($summarySlot)) {
+            // No summary received (connection closed before summary)
+            $this->meta = null;
+
+            return;
+        }
+
+        $summaryEmpty = $summarySlot === [];
+        $hasDataRows = $rows !== [];
+
+        if ($summaryEmpty && !$hasDataRows) {
+            // Normal completion with no records
+            $this->meta = [];
+        } elseif (!$summaryEmpty) {
+            // Valid summary map (e.g. has_more, counters, db, …)
+            if (!array_key_exists('has_more', $summarySlot) || $summarySlot['has_more'] === false) {
+                $this->meta = $summarySlot;
             }
         } else {
-            // No summary received (connection closed before summary)
-            // Set $this->meta to null so the next fetchResults() will try to pull again
-            $this->meta = null;
+            // Empty summary slot with data rows: Bolt SUCCESS {} after RECORDs — stream complete (no has_more keys).
+            $this->meta = $summarySlot;
         }
     }
 
