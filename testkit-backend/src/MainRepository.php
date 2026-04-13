@@ -43,6 +43,18 @@ final class MainRepository
     /** @var array<string, bool> */
     private array $iteratorFetchedFirst;
 
+    /** @var array<string, bool> After ResultPeek advanced the iterator, ResultNext must not advance again. */
+    private array $peekPrimed = [];
+
+    /**
+     * Count of {@see Iterator::next()} calls owed before the next read: one per record already returned
+     * to TestKit without advancing the shared iterator (advancing immediately would run the next Bolt pull
+     * too early — e.g. disconnect tests expect the second pull on the second {@see ResultNext}, not after the first).
+     *
+     * @var array<string, int>
+     */
+    private array $pendingIteratorNextCount = [];
+
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
      * @param array<string, SessionInterface<SummarizedResult<CypherMap<OGMTypes>>>>              $sessions
@@ -94,6 +106,55 @@ final class MainRepository
     }
 
     /**
+     * ResultPeek advanced the iterator; the following ResultNext must skip its leading {@see Iterator::next()}.
+     */
+    public function setPeekPrimed(Uuid $id, bool $value): void
+    {
+        if ($value) {
+            $this->peekPrimed[$id->toRfc4122()] = true;
+        } else {
+            unset($this->peekPrimed[$id->toRfc4122()]);
+        }
+    }
+
+    public function consumePeekPrimed(Uuid $id): bool
+    {
+        $key = $id->toRfc4122();
+        if (!array_key_exists($key, $this->peekPrimed)) {
+            return false;
+        }
+        unset($this->peekPrimed[$key]);
+
+        return true;
+    }
+
+    /**
+     * After returning a record from {@see ResultNext}, the iterator must advance before the next read;
+     * defer that advance so the Bolt layer does not pull until the following ResultNext or Result.list().
+     */
+    public function addPendingIteratorNext(Uuid $id): void
+    {
+        $key = $id->toRfc4122();
+        $this->pendingIteratorNextCount[$key] = ($this->pendingIteratorNextCount[$key] ?? 0) + 1;
+    }
+
+    /**
+     * Applies deferred {@see Iterator::next()} calls (e.g. before the next ResultNext or before Result.list()).
+     */
+    public function drainPendingIteratorNexts(Uuid $id, Iterator $iterator): void
+    {
+        $key = $id->toRfc4122();
+        $n = $this->pendingIteratorNextCount[$key] ?? 0;
+        if ($n === 0) {
+            return;
+        }
+        unset($this->pendingIteratorNextCount[$key]);
+        for ($i = 0; $i < $n; ++$i) {
+            $iterator->next();
+        }
+    }
+
+    /**
      * @return DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>
      */
     public function getDriver(Uuid $id): DriverInterface
@@ -136,7 +197,8 @@ final class MainRepository
 
     public function removeRecords(Uuid $id): void
     {
-        unset($this->records[$id->toRfc4122()]);
+        $key = $id->toRfc4122();
+        unset($this->records[$key], $this->iteratorFetchedFirst[$key], $this->peekPrimed[$key], $this->pendingIteratorNextCount[$key]);
     }
 
     /**
