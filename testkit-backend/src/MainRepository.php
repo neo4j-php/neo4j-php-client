@@ -188,17 +188,26 @@ final class MainRepository
      */
     public function addRecords(Uuid $id, $result): void
     {
-        $this->records[$id->toRfc4122()] = $result;
+        $key = $id->toRfc4122();
+        $this->records[$key] = $result;
         if ($result instanceof SummarizedResult) {
             /** @var SummarizedResult<CypherMap<OGMTypes>> $result */
-            $this->recordIterators[$id->toRfc4122()] = $result;
+            $this->recordIterators[$key] = $result;
+        } else {
+            unset($this->recordIterators[$key]);
         }
     }
 
     public function removeRecords(Uuid $id): void
     {
         $key = $id->toRfc4122();
-        unset($this->records[$key], $this->iteratorFetchedFirst[$key], $this->peekPrimed[$key], $this->pendingIteratorNextCount[$key]);
+        unset(
+            $this->records[$key],
+            $this->recordIterators[$key],
+            $this->iteratorFetchedFirst[$key],
+            $this->peekPrimed[$key],
+            $this->pendingIteratorNextCount[$key]
+        );
     }
 
     /**

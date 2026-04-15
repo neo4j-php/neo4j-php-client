@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\error\ConnectException;
+use Bolt\protocol\V3;
 
 use function count;
 
@@ -308,6 +309,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     private function routingTable(BoltConnection $connection, SessionConfiguration $config): RoutingTable
     {
         $bolt = $connection->protocol();
+        if ($bolt instanceof V3) {
+            throw new RuntimeException('Neo4j routing requires Bolt protocol 4.4 or newer.');
+        }
 
         $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
