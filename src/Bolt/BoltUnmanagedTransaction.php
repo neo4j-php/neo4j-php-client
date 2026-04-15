@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\enum\ServerState;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
@@ -160,7 +161,10 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
         $start = microtime(true);
 
-        if ($this->connection->isStreaming()) {
+        // Only drain an outstanding autocommit result (STREAMING). In an explicit transaction (TX_STREAMING)
+        // several RUN streams may be open; consumeResults() would preload other streams and reorder PULLs
+        // vs RUN (TestKit tx_pull_1_nested*, Neo4j parallel/nested tx tests).
+        if ($this->connection->getServerState() === ServerState::STREAMING->name) {
             $this->connection->consumeResults();
         }
 
