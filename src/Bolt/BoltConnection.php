@@ -74,12 +74,11 @@ class BoltConnection implements ConnectionInterface
 
     private bool $clientTelemetryEnabled = true;
 
-    private bool $serverTelemetryEnabled = false;
-
-    /** @var array<int, true> */
-    private array $sentTelemetryApis = [];
-
-    private int $messagesInPipeline = 0;
+    /**
+     * When one PULL yields RECORD(s) then FAILURE, {@see pull()} defers the {@see Neo4jException} to the next
+     * {@see BoltResult::fetchResults()} so records are delivered before the error (TestKit pull_2_end_error.script).
+     */
+    private ?Neo4jException $deferredPullFailure = null;
 
     /**
      * When one PULL yields RECORD(s) then FAILURE, {@see assertNoFailure()} runs RESET on the FAILURE before we
