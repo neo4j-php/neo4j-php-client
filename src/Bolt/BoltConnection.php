@@ -441,7 +441,7 @@ class BoltConnection implements ConnectionInterface
     }
 
     /**
-     * @internal Used by {@see BoltPullMessage} for Bolt v3 pipelined RUN + PULL_ALL.
+     * @internal used by {@see BoltPullMessage} for Bolt v3 pipelined RUN + PULL_ALL
      */
     public function consumeQueuedV3PullAll(): bool
     {
