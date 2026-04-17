@@ -36,6 +36,8 @@ use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\DateTime as Neo4jDateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId as Neo4jDateTimeZoneId;
 use stdClass;
 
 /**
@@ -82,13 +84,14 @@ final class ParameterHelper
     public static function asParameter(
         mixed $value,
         ConnectionProtocol $protocol,
+        bool $boltUtcPatchNegotiated = false,
     ): iterable|int|float|bool|string|stdClass|IStructure|null {
         return self::passThroughBoltStructure($value) ??
             self::cypherMapToStdClass($value) ??
             self::emptySequenceToArray($value) ??
-            self::convertBoltConvertibles($value) ??
-            self::convertTemporalTypes($value, $protocol) ??
-            self::filledIterableToArray($value, $protocol) ??
+            self::convertBoltConvertibles($value, $protocol, $boltUtcPatchNegotiated) ??
+            self::convertTemporalTypes($value, $protocol, $boltUtcPatchNegotiated) ??
+            self::filledIterableToArray($value, $protocol, $boltUtcPatchNegotiated) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
     }
@@ -159,10 +162,10 @@ final class ParameterHelper
         return null;
     }
 
-    private static function filledIterableToArray(mixed $value, ConnectionProtocol $protocol): ?array
+    private static function filledIterableToArray(mixed $value, ConnectionProtocol $protocol, bool $boltUtcPatchNegotiated): ?array
     {
         if (is_iterable($value)) {
-            return self::iterableToArray($value, $protocol);
+            return self::iterableToArray($value, $protocol, $boltUtcPatchNegotiated);
         }
 
         return null;
@@ -173,8 +176,11 @@ final class ParameterHelper
      *
      * @return CypherMap<iterable|scalar|stdClass|null>
      */
-    public static function formatParameters(iterable $parameters, ConnectionProtocol $connection): CypherMap
-    {
+    public static function formatParameters(
+        iterable $parameters,
+        ConnectionProtocol $connection,
+        bool $boltUtcPatchNegotiated = false,
+    ): CypherMap {
         /** @var array<string, iterable|scalar|stdClass|null> $tbr */
         $tbr = [];
         /**
@@ -186,13 +192,13 @@ final class ParameterHelper
                 $msg = 'The parameters must have an integer or string as key values, '.gettype($key).' received.';
                 throw new InvalidArgumentException($msg);
             }
-            $tbr[(string) $key] = self::asParameter($value, $connection);
+            $tbr[(string) $key] = self::asParameter($value, $connection, $boltUtcPatchNegotiated);
         }
 
         return new CypherMap($tbr);
     }
 
-    private static function iterableToArray(iterable $value, ConnectionProtocol $protocol): array
+    private static function iterableToArray(iterable $value, ConnectionProtocol $protocol, bool $boltUtcPatchNegotiated): array
     {
         $tbr = [];
         /**
@@ -201,7 +207,7 @@ final class ParameterHelper
          */
         foreach ($value as $key => $val) {
             if (is_int($key) || is_string($key)) {
-                $tbr[$key] = self::asParameter($val, $protocol);
+                $tbr[$key] = self::asParameter($val, $protocol, $boltUtcPatchNegotiated);
             } else {
                 $msg = 'Iterable parameters must have an integer or string as key values, '.gettype(
                     $key
@@ -213,8 +219,19 @@ final class ParameterHelper
         return $tbr;
     }
 
-    private static function convertBoltConvertibles(mixed $value): ?IStructure
-    {
+    private static function convertBoltConvertibles(
+        mixed $value,
+        ConnectionProtocol $protocol,
+        bool $boltUtcPatchNegotiated,
+    ): ?IStructure {
+        if ($value instanceof Neo4jDateTimeZoneId) {
+            return $value->convertToBoltWithProtocol($protocol, $boltUtcPatchNegotiated);
+        }
+
+        if ($value instanceof Neo4jDateTime) {
+            return $value->convertToBoltWithProtocol($protocol, $boltUtcPatchNegotiated);
+        }
+
         if ($value instanceof BoltConvertibleInterface) {
             return $value->convertToBolt();
         }
@@ -222,10 +239,14 @@ final class ParameterHelper
         return null;
     }
 
-    private static function convertTemporalTypes(mixed $value, ConnectionProtocol $protocol): ?IStructure
-    {
+    private static function convertTemporalTypes(
+        mixed $value,
+        ConnectionProtocol $protocol,
+        bool $boltUtcPatchNegotiated,
+    ): ?IStructure {
         if ($value instanceof DateTimeInterface) {
-            if ($protocol->compare(ConnectionProtocol::BOLT_V44()) > 0) {
+            $useV5ZonedDateTime = $protocol->compare(ConnectionProtocol::BOLT_V44()) > 0 || $boltUtcPatchNegotiated;
+            if ($useV5ZonedDateTime) {
                 return new \Bolt\protocol\v5\structures\DateTimeZoneId(
                     $value->getTimestamp(),
                     ((int) $value->format('u')) * 1000,

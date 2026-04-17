@@ -85,6 +85,10 @@ return [
     'Feature:API:Type.Spatial' => true,
     // The driver supports sending and receiving temporal data types.
     'Feature:API:Type.Temporal' => true,
+    // The driver supports sending and receiving the unsupported-type sentinel (Bolt 6+ stubs).
+    'Feature:API:Type.UnsupportedType' => true,
+    // The driver supports sending and receiving vector values (Bolt 6+ stubs).
+    'Feature:API:Type.Vector' => true,
     // The driver supports single-sign-on (SSO) by providing a bearer auth token
     // API.
     'Feature:Auth:Bearer' => true,
@@ -127,6 +131,8 @@ return [
     'Feature:Bolt:5.7' => false,
     // The driver supports Bolt protocol version 5.8
     'Feature:Bolt:5.8' => false,
+    // The driver supports Bolt protocol version 6.0 (stub datatypes: vector, unsupported type).
+    'Feature:Bolt:6.0' => true,
     // The driver supports negotiating the Bolt protocol version with the server
     // using handshake manifest v1.
     'Feature:Bolt:HandshakeManifestV1' => true,

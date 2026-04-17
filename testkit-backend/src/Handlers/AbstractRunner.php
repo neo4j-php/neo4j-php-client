@@ -14,7 +14,10 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Bolt\error\ConnectException as BoltConnectException;
+use DateTimeImmutable;
+use DateTimeZone;
 use Exception;
+use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
@@ -31,11 +34,15 @@ use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\DateTime as Neo4jDateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId as Neo4jDateTimeZoneId;
+use Laudis\Neo4j\Types\UnsupportedType;
+use Laudis\Neo4j\Types\Vector;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
  *
  * @template T of \Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest|\Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest
  *
@@ -128,6 +135,31 @@ abstract class AbstractRunner implements RequestHandlerInterface
      */
     public static function decodeToValue(array $param)
     {
+        if ($param['name'] === 'CypherVector') {
+            /** @var array{dtype: string, data: string} $d */
+            $d = $param['data'];
+
+            return Vector::fromWire((string) $d['dtype'], (string) $d['data']);
+        }
+        if ($param['name'] === 'CypherUnsupportedType') {
+            /** @var array{name: string, minimumProtocol?: string, minimum_protocol?: string, message?: string|null} $d */
+            $d = $param['data'];
+            $minProto = $d['minimumProtocol'] ?? $d['minimum_protocol'] ?? '';
+            $msg = $d['message'] ?? null;
+
+            return new UnsupportedType(
+                (string) $d['name'],
+                (string) $minProto,
+                $msg !== null ? (string) $msg : null,
+            );
+        }
+        if ($param['name'] === 'CypherDateTime') {
+            /** @var array<string, mixed> $d */
+            $d = $param['data'];
+
+            return self::decodeCypherDateTime($d);
+        }
+
         $value = $param['data']['value'];
         if (is_iterable($value)) {
             if ($param['name'] === 'CypherMap') {
@@ -160,6 +192,67 @@ abstract class AbstractRunner implements RequestHandlerInterface
         }
 
         return $value;
+    }
+
+    /**
+     * @param array<string, mixed> $d
+     */
+    private static function decodeCypherDateTime(array $d): Neo4jDateTime|Neo4jDateTimeZoneId
+    {
+        $year = (int) $d['year'];
+        $month = (int) $d['month'];
+        $day = (int) $d['day'];
+        $hour = (int) $d['hour'];
+        $minute = (int) $d['minute'];
+        $second = (int) $d['second'];
+        $nanosecond = (int) $d['nanosecond'];
+        /** @var string|null $timezoneId */
+        $timezoneId = $d['timezone_id'] ?? null;
+        $utcOffsetS = array_key_exists('utc_offset_s', $d) ? $d['utc_offset_s'] : null;
+
+        if ($timezoneId !== null && $timezoneId !== '') {
+            $tz = new DateTimeZone($timezoneId);
+        } else {
+            $tz = self::timezoneFromUtcOffsetSeconds((int) ($utcOffsetS ?? 0));
+        }
+
+        $microPart = intdiv($nanosecond, 1000);
+        $formatted = sprintf(
+            '%04d-%02d-%02d %02d:%02d:%02d.%06d',
+            $year,
+            $month,
+            $day,
+            $hour,
+            $minute,
+            $second,
+            $microPart
+        );
+        $immutable = DateTimeImmutable::createFromFormat('Y-m-d H:i:s.u', $formatted, $tz);
+        if ($immutable === false) {
+            throw new InvalidArgumentException('Invalid CypherDateTime wall clock');
+        }
+
+        $utc = $immutable->setTimezone(new DateTimeZone('UTC'));
+        $unixSeconds = (int) $utc->format('U');
+        $nanoseconds = (int) $utc->format('u') * 1000 + ($nanosecond % 1000);
+
+        if ($timezoneId !== null && $timezoneId !== '') {
+            return new Neo4jDateTimeZoneId($unixSeconds, $nanoseconds, $timezoneId);
+        }
+
+        $tzOffsetSeconds = $immutable->getOffset();
+
+        return new Neo4jDateTime($unixSeconds, $nanoseconds, $tzOffsetSeconds, false);
+    }
+
+    private static function timezoneFromUtcOffsetSeconds(int $offsetSeconds): DateTimeZone
+    {
+        $sign = $offsetSeconds >= 0 ? '+' : '-';
+        $abs = abs($offsetSeconds);
+        $h = intdiv($abs, 3600);
+        $m = intdiv($abs % 3600, 60);
+
+        return new DateTimeZone($sign.sprintf('%02d:%02d', $h, $m));
     }
 
     /**

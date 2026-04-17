@@ -15,16 +15,15 @@ namespace Laudis\Neo4j\Databags;
 
 use Closure;
 use Generator;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 
 /**
  * A result containing the values and the summary.
  *
- * @psalm-import-type OGMTypes from SummarizedResultFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
  *
- * @extends CypherList<CypherMap<OGMTypes>>
+ * @extends \Laudis\Neo4j\Types\CypherList<\Laudis\Neo4j\Types\CypherMap<OGMTypes>>
  */
 final class SummarizedResult extends CypherList
 {

@@ -43,6 +43,7 @@ final class ResultNext implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
+        $iterator = null;
         try {
             $record = $this->repository->getRecords($request->getResultId());
             if ($record instanceof TestkitResponseInterface) {
@@ -70,13 +71,22 @@ final class ResultNext implements RequestHandlerInterface
             }
 
             $this->repository->addPendingIteratorNext($request->getResultId());
+            $this->repository->clearPendingDriverError($request->getResultId());
 
             return new RecordResponse($values);
         } catch (Neo4jException $e) {
-            $response = new DriverErrorResponse($request->getResultId(), $e);
-            $this->repository->addRecords($request->getResultId(), $response);
+            $this->repository->setPendingDriverError($request->getResultId(), $e);
+            if ($iterator !== null) {
+                try {
+                    if ($iterator->valid()) {
+                        $iterator->next();
+                    }
+                } catch (Throwable) {
+                    // Iterator may be exhausted or the stream broken after a row-level decode error.
+                }
+            }
 
-            return $response;
+            return new DriverErrorResponse($request->getResultId(), $e);
         } catch (BoltException $e) {
             $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
             $wrapped = new Neo4jException([$neo4jError], $e);

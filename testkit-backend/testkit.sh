@@ -216,6 +216,30 @@ python3 -m unittest -v \
     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all_v3 \
     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested_using_list \
+\
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV3x0.test_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV3x0.test_zoned_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x2.test_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x2.test_zoned_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x3.test_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x3.test_date_time_with_patch \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x3.test_zoned_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x3.test_zoned_date_time_with_patch \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time_with_patch \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_unknown_zoned_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_unknown_zoned_date_time_patched \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_unknown_then_known_zoned_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_unknown_then_known_zoned_date_time_patched \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV5x0.test_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV5x0.test_zoned_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV5x0.test_unknown_zoned_date_time \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV5x0.test_unknown_then_known_zoned_date_time \
+    tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
+    tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type_in_list \
+    tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
 
 EXIT_CODE=$?
 

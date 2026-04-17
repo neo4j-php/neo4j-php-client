@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter;
 
+use Generator;
+
 use function in_array;
 use function is_int;
 
@@ -33,31 +35,19 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Enum\QueryTypeEnum;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
-use Laudis\Neo4j\Types\Cartesian3DPoint;
-use Laudis\Neo4j\Types\CartesianPoint;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Date;
-use Laudis\Neo4j\Types\DateTime;
-use Laudis\Neo4j\Types\DateTimeZoneId;
-use Laudis\Neo4j\Types\Duration;
-use Laudis\Neo4j\Types\LocalDateTime;
-use Laudis\Neo4j\Types\LocalTime;
-use Laudis\Neo4j\Types\Node;
-use Laudis\Neo4j\Types\Path;
-use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
-use Laudis\Neo4j\Types\Vector;
-use Laudis\Neo4j\Types\WGS843DPoint;
-use Laudis\Neo4j\Types\WGS84Point;
 
 use function microtime;
 
 /**
  * Decorates the result of the provided format with an extensive summary.
  *
- * @psalm-type OGMTypes = string|int|float|bool|null|Date|DateTime|Duration|LocalDateTime|LocalTime|Time|Node|Relationship|Path|Cartesian3DPoint|CartesianPoint|WGS84Point|WGS843DPoint|DateTimeZoneId|Vector|CypherList<mixed>|CypherMap<mixed>
- * @psalm-type OGMResults = CypherList<CypherMap<OGMTypes>>
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
+ *
+ * @psalm-type OGMResults = \Laudis\Neo4j\Types\CypherList<\Laudis\Neo4j\Types\CypherMap<OGMTypes>>
  * @psalm-type CypherStats = array{
  *     nodes_created: int,
  *     nodes_deleted: int,
@@ -285,9 +275,13 @@ final class SummarizedResultFormatter
      */
     private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, BookmarkHolder $holder): CypherList
     {
-        $tbr = (new CypherList(function () use ($result, $meta) {
-            foreach ($result as $row) {
-                yield $this->formatRow($meta, $row);
+        $translator = $this->translator;
+        $tbr = (new CypherList(function () use ($result, $meta, $translator) {
+            foreach ($result as $i => $row) {
+                // Defer {@see BoltOGMTranslator::mapValueToType} until the row is read so one bad value
+                // (e.g. unknown IANA zone) does not close the list generator before remaining RECORDs are yielded
+                // (TestKit echo_unknown_then_known_zoned_date_time.script).
+                yield $i => $this->lazyMapRow($meta, $row, $translator);
             }
         }))->withCacheLimit($this->clientSideCacheLimitFromBoltFetchSize($result->getFetchSize()));
 
@@ -302,25 +296,21 @@ final class SummarizedResultFormatter
     }
 
     /**
-     * @psalm-mutation-free
-     *
-     * @param BoltMeta $meta
+     * @param list<mixed> $row
      *
      * @return CypherMap<OGMTypes>
      */
-    private function formatRow(array $meta, array $result): CypherMap
+    private function lazyMapRow(array $meta, array $row, BoltOGMTranslator $translator): CypherMap
     {
-        /** @var array<string, OGMTypes> $map */
-        $map = [];
         if (!array_key_exists('fields', $meta)) {
-            return new CypherMap($map);
+            return new CypherMap([]);
         }
 
-        foreach ($meta['fields'] as $i => $column) {
-            $map[$column] = $this->translator->mapValueToType($result[$i]);
-        }
-
-        return new CypherMap($map);
+        return new CypherMap(function () use ($meta, $row, $translator): Generator {
+            foreach ($meta['fields'] as $i => $column) {
+                yield $column => $translator->mapValueToType($row[$i]);
+            }
+        });
     }
 
     private function formatPlan(array $plan): Plan

@@ -18,12 +18,14 @@ use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherMap;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
  */
 final class MainRepository
 {
@@ -54,6 +56,15 @@ final class MainRepository
      * @var array<string, int>
      */
     private array $pendingIteratorNextCount = [];
+
+    /**
+     * Last driver error from {@see Handlers\ResultNext} for this result id, kept
+     * separately so {@see addRecords} does not replace the live {@see SummarizedResult} iterator (e.g. stub
+     * "unknown then known" zoned datetime). Consumed by {@see RetryableNegative}.
+     *
+     * @var array<string, Neo4jException|TransactionException>
+     */
+    private array $pendingDriverErrorsByResultId = [];
 
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
@@ -206,8 +217,31 @@ final class MainRepository
             $this->recordIterators[$key],
             $this->iteratorFetchedFirst[$key],
             $this->peekPrimed[$key],
-            $this->pendingIteratorNextCount[$key]
+            $this->pendingIteratorNextCount[$key],
+            $this->pendingDriverErrorsByResultId[$key]
         );
+    }
+
+    public function setPendingDriverError(Uuid $resultId, Neo4jException|TransactionException $exception): void
+    {
+        $this->pendingDriverErrorsByResultId[$resultId->toRfc4122()] = $exception;
+    }
+
+    public function clearPendingDriverError(Uuid $resultId): void
+    {
+        unset($this->pendingDriverErrorsByResultId[$resultId->toRfc4122()]);
+    }
+
+    public function takePendingDriverError(Uuid $resultId): Neo4jException|TransactionException|null
+    {
+        $key = $resultId->toRfc4122();
+        if (!array_key_exists($key, $this->pendingDriverErrorsByResultId)) {
+            return null;
+        }
+        $exception = $this->pendingDriverErrorsByResultId[$key];
+        unset($this->pendingDriverErrorsByResultId[$key]);
+
+        return $exception;
     }
 
     /**

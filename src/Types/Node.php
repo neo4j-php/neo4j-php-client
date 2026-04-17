@@ -14,14 +14,13 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Types;
 
 use Laudis\Neo4j\Exception\PropertyDoesNotExistException;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 
 use function sprintf;
 
 /**
  * A Node class representing a Node in cypher.
  *
- * @psalm-import-type OGMTypes from SummarizedResultFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
  *
  * @psalm-immutable
  * @psalm-immutable

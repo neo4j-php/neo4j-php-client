@@ -18,6 +18,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 use function sprintf;
 
@@ -62,6 +63,8 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
 
     /**
      * Returns the timezone identifier.
+     *
+     * @return non-empty-string
      */
     public function getTimezoneIdentifier(): string
     {
@@ -108,5 +111,31 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
     public function convertToBolt(): IStructure
     {
         return new \Bolt\protocol\v1\structures\DateTimeZoneId($this->getSeconds(), $this->getNanoseconds(), $this->getTimezoneIdentifier());
+    }
+
+    public function convertToBoltWithProtocol(
+        ConnectionProtocol $protocol,
+        bool $boltUtcPatchNegotiated = false,
+    ): IStructure {
+        /** @psalm-suppress ImpureMethodCall */
+        $isLegacyWire = $protocol->compare(ConnectionProtocol::BOLT_V5()) < 0 && !$boltUtcPatchNegotiated;
+        if ($isLegacyWire) {
+            $utc = (new DateTimeImmutable(sprintf('@%d', $this->getSeconds())))
+                ->modify(sprintf('+%d microseconds', intdiv($this->getNanoseconds(), 1000)));
+            $local = $utc->setTimezone(new DateTimeZone($this->getTimezoneIdentifier()));
+            $legacySeconds = $this->getSeconds() + $local->getOffset();
+
+            return new \Bolt\protocol\v1\structures\DateTimeZoneId(
+                $legacySeconds,
+                $this->getNanoseconds(),
+                $this->getTimezoneIdentifier(),
+            );
+        }
+
+        return new \Bolt\protocol\v5\structures\DateTimeZoneId(
+            $this->getSeconds(),
+            $this->getNanoseconds(),
+            $this->getTimezoneIdentifier(),
+        );
     }
 }

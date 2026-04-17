@@ -18,6 +18,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 use function sprintf;
 
@@ -79,8 +80,8 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
     {
         $dateTime = new DateTimeImmutable(sprintf('@%s', $this->getSeconds()));
         $dateTime = $dateTime->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
-        /** @psalm-suppress PossiblyFalseReference */
-        $dateTime = $dateTime->setTimezone(new DateTimeZone(sprintf("%+'05d", $this->getTimeZoneOffsetSeconds() / 3600 * 100)));
+        /** @psalm-suppress PossiblyFalseReference, ImpureMethodCall */
+        $dateTime = $dateTime->setTimezone(self::fixedOffsetTimeZone($this->getTimeZoneOffsetSeconds()));
 
         if ($this->legacy) {
             /**
@@ -93,6 +94,25 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
 
         /** @var DateTimeImmutable */
         return $dateTime;
+    }
+
+    /**
+     * PHP {@see DateTimeZone} needs a real offset form such as "+00:30", not a mangled HHMM integer
+     * (e.g. offset1800s must not become "+0050", which is 50 minutes and breaks TestKit offset-only datetimes).
+     */
+    private static function fixedOffsetTimeZone(int $tzOffsetSeconds): DateTimeZone
+    {
+        $sign = $tzOffsetSeconds < 0 ? '-' : '+';
+        $abs = abs($tzOffsetSeconds);
+        $hours = intdiv($abs, 3600);
+        $minutes = intdiv($abs % 3600, 60);
+        $seconds = $abs % 60;
+        $name = $seconds === 0
+            ? sprintf('%s%02d:%02d', $sign, $hours, $minutes)
+            : sprintf('%s%02d:%02d:%02d', $sign, $hours, $minutes, $seconds);
+
+        /** @var non-empty-string $name */
+        return new DateTimeZone($name);
     }
 
     /**
@@ -119,5 +139,31 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
         }
 
         return new \Bolt\protocol\v5\structures\DateTime($this->getSeconds(), $this->getNanoseconds(), $this->getTimeZoneOffsetSeconds());
+    }
+
+    /**
+     * Legacy 0x46 for Bolt below 5 when the UTC patch is not negotiated (incl. 4.4 non-patched TestKit stubs).
+     * v5/0x49 for Bolt 5+ or when the server echoed patch_bolt utc (4.3–4.4).
+     */
+    public function convertToBoltWithProtocol(
+        ConnectionProtocol $protocol,
+        bool $boltUtcPatchNegotiated = false,
+    ): IStructure {
+        /** @psalm-suppress ImpureMethodCall */
+        $isLegacyWire = $protocol->compare(ConnectionProtocol::BOLT_V5()) < 0 && !$boltUtcPatchNegotiated;
+        if ($isLegacyWire) {
+            // Legacy Bolt DateTime (0x46): seconds are UTC epoch + tz offset, not plain Unix UTC.
+            return new \Bolt\protocol\v1\structures\DateTime(
+                $this->getSeconds() + $this->getTimeZoneOffsetSeconds(),
+                $this->getNanoseconds(),
+                $this->getTimeZoneOffsetSeconds(),
+            );
+        }
+
+        return new \Bolt\protocol\v5\structures\DateTime(
+            $this->getSeconds(),
+            $this->getNanoseconds(),
+            $this->getTimeZoneOffsetSeconds(),
+        );
     }
 }
