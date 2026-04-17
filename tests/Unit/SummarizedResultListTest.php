@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Tests\Unit;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use PHPUnit\Framework\TestCase;
@@ -22,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Mirrors TestKit stub: next() then list() must return only remaining rows (no rewind / duplicate).
  *
- * @psalm-import-type OGMTypes from SummarizedResultFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
  */
 final class SummarizedResultListTest extends TestCase
 {

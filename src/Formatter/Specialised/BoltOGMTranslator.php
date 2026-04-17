@@ -26,9 +26,14 @@ use Bolt\protocol\v1\structures\Point3D as BoltPoint3D;
 use Bolt\protocol\v1\structures\Relationship as BoltRelationship;
 use Bolt\protocol\v1\structures\Time as BoltTime;
 use Bolt\protocol\v1\structures\UnboundRelationship as BoltUnboundRelationship;
+use Bolt\protocol\v5\structures\DateTimeZoneId as BoltV5DateTimeZoneId;
+use Bolt\protocol\v6\structures\UnsupportedType as BoltUnsupportedType;
 use Bolt\protocol\v6\structures\Vector as BoltVector;
+use DateTimeImmutable;
+use DateTimeZone;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\VectorTypeMarker;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
@@ -46,15 +51,17 @@ use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
+use Laudis\Neo4j\Types\UnsupportedType;
 use Laudis\Neo4j\Types\Vector;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
+use Throwable;
 use UnexpectedValueException;
 
 /**
  * Translates Bolt objects to Driver Types.
  *
- * @psalm-import-type OGMTypes from SummarizedResultFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
  *
  * @psalm-immutable
  *
@@ -85,6 +92,7 @@ final class BoltOGMTranslator
             BoltPoint3D::class => $this->makeFromBoltPoint3D(...),
             BoltDateTimeZoneId::class => $this->makeBoltTimezoneIdentifier(...),
             BoltVector::class => $this->makeFromBoltVector(...),
+            BoltUnsupportedType::class => $this->makeFromBoltUnsupportedType(...),
             'array' => $this->mapArray(...),
             'int' => static fn (int $x): int => $x,
             'null' => static fn (): ?object => null,
@@ -141,7 +149,46 @@ final class BoltOGMTranslator
         /** @var non-empty-string $tzId */
         $tzId = $time->tz_id;
 
-        return new DateTimeZoneId($time->seconds, $time->nanoseconds, $tzId);
+        $tz = $this->phpTimeZoneOrNeo4jError($tzId);
+
+        if ($time instanceof BoltV5DateTimeZoneId) {
+            return new DateTimeZoneId($time->seconds, $time->nanoseconds, $tzId);
+        }
+
+        // Legacy 0x66: wire seconds are UTC epoch + zone offset at that instant (inverse of Types\DateTimeZoneId encode).
+        $legacySeconds = $time->seconds;
+        $utcSeconds = $legacySeconds;
+        for ($i = 0; $i < 8; ++$i) {
+            $instant = (new DateTimeImmutable('@'.$utcSeconds))
+                ->modify(sprintf('+%d microseconds', intdiv($time->nanoseconds, 1000)));
+            if ($instant === false) {
+                throw new UnexpectedValueException('Invalid Bolt legacy DateTimeZoneId');
+            }
+            $offset = $tz->getOffset($instant);
+            $nextUtc = $legacySeconds - $offset;
+            if ($nextUtc === $utcSeconds) {
+                break;
+            }
+            $utcSeconds = $nextUtc;
+        }
+
+        return new DateTimeZoneId($utcSeconds, $time->nanoseconds, $tzId);
+    }
+
+    /**
+     * PHP only supports a subset of IANA IDs; unknown zones must surface as a driver error (TestKit unknown zoned datetime).
+     *
+     * @param non-empty-string $tzId
+     *
+     * @throws Neo4jException
+     */
+    private function phpTimeZoneOrNeo4jError(string $tzId): DateTimeZone
+    {
+        try {
+            return new DateTimeZone($tzId);
+        } catch (Throwable $e) {
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Statement.TypeError', $e->getMessage())], $e);
+        }
     }
 
     private function makeFromBoltDuration(BoltDuration $duration): Duration
@@ -272,16 +319,41 @@ final class BoltOGMTranslator
         throw new UnexpectedValueException('An srid of '.$x->srid.' has been returned, which has not been implemented.');
     }
 
+    /**
+     * @psalm-suppress ImpureMethodCall Bolt decode / Vector helpers are side-effect-free at runtime
+     */
     private function makeFromBoltVector(BoltVector $value): Vector
     {
-        /** @psalm-suppress ImpureMethodCall Vector::decode() only reads protocol data but Psalm treats Bolt structures as potentially stateful */
         $decoded = $value->decode();
-        // Cast to string then read first byte to avoid Bytes::offsetGet (ImpureMethodCall) and to satisfy Psalm that ord() never receives null
-        $bytesStr = (string) $value->type_marker;
-        $markerByte = $bytesStr !== '' ? ord($bytesStr[0]) : null;
+        $bytesStr = (string) $value->data;
+        $hex = $bytesStr === ''
+            ? ''
+            : implode(' ', array_map(static fn (string $b): string => sprintf('%02x', ord($b)), str_split($bytesStr, 1)));
+        $bytesStrMarker = (string) $value->type_marker;
+        $markerByte = $bytesStrMarker !== '' ? ord($bytesStrMarker[0]) : null;
         $typeMarker = $markerByte !== null ? VectorTypeMarker::tryFrom($markerByte) : null;
+        $dtype = $typeMarker !== null && $markerByte !== null
+            ? Vector::markerByteToDtypeString($markerByte)
+            : null;
 
-        return new Vector(array_values($decoded), $typeMarker);
+        /** @var list<int|float> $decoded */
+        return new Vector($decoded, $typeMarker, $dtype, $hex);
+    }
+
+    /**
+     * @psalm-suppress ImpureMethodCall factory reads Bolt structure fields only
+     */
+    private function makeFromBoltUnsupportedType(BoltUnsupportedType $value): UnsupportedType
+    {
+        $rawMsg = $value->extra['message'] ?? null;
+        $message = is_string($rawMsg) ? $rawMsg : null;
+
+        return UnsupportedType::fromBolt(
+            $value->name,
+            $value->minimum_protocol_major,
+            $value->minimum_protocol_minor,
+            $message,
+        );
     }
 
     private function makeFromBoltPath(BoltPath $path): Path

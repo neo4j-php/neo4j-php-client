@@ -33,7 +33,7 @@ final class NoAuth implements AuthenticateInterface
     /**
      * @throws Exception
      *
-     * @return array{server: string, connection_id: string, hints: list}
+     * @return array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>}
      */
     public function authenticateBolt(BoltConnection $connection, string $userAgent): array
     {
@@ -46,7 +46,7 @@ final class NoAuth implements AuthenticateInterface
 
             $response = $factory->createLogonMessage(['scheme' => 'none'])->send()->getResponse();
 
-            /** @var array{server: string, connection_id: string, hints: list} */
+            /** @var array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>} */
             return $response->content;
         }
 
@@ -57,7 +57,7 @@ final class NoAuth implements AuthenticateInterface
 
         $response = $factory->createHelloMessage($helloMetadata)->send()->getResponse();
 
-        /** @var array{server: string, connection_id: string, hints: list} */
+        /** @var array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>} */
         return $response->content;
     }
 

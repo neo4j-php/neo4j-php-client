@@ -90,6 +90,11 @@ class BoltFactory
             $connection->setRecvTimeoutHint((float) $response['hints']['connection.recv_timeout_seconds']);
         }
 
+        $patchBolt = $response['patch_bolt'] ?? null;
+        $config->setBoltUtcPatchNegotiated(
+            is_array($patchBolt) && in_array('utc', $patchBolt, true)
+        );
+
         return $connection;
     }
 

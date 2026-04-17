@@ -13,20 +13,26 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Responses\Types;
 
+use Bolt\protocol\v6\structures\TypeMarker as BoltTypeMarker;
+use Bolt\protocol\v6\structures\Vector as BoltVector;
+
 use function get_debug_type;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\DateTime as Neo4jDateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId as Neo4jDateTimeZoneId;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\UnboundRelationship;
+use Laudis\Neo4j\Types\UnsupportedType;
 use Laudis\Neo4j\Types\Vector;
 use RuntimeException;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
  */
 final class CypherObject implements TestkitResponseInterface
 {
@@ -87,11 +93,31 @@ final class CypherObject implements TestkitResponseInterface
                 break;
             case Vector::class:
                 /** @var Vector $value */
-                $list = [];
-                foreach ($value->getValues() as $item) {
-                    $list[] = self::autoDetect($item);
+                if ($value->getWireDtype() !== null && $value->getWireDataHex() !== null) {
+                    $tbr = new CypherObject('CypherVector', [
+                        'dtype' => $value->getWireDtype(),
+                        'data' => $value->getWireDataHex(),
+                    ]);
+                } else {
+                    $boltTm = $value->getTypeMarker() !== null
+                        ? BoltTypeMarker::from($value->getTypeMarker()->value)
+                        : null;
+                    $enc = BoltVector::encode($value->getValues(), $boltTm);
+                    $dataStr = (string) $enc->data;
+                    $hex = $dataStr === ''
+                        ? ''
+                        : implode(' ', array_map(static fn (string $b): string => sprintf('%02x', ord($b)), str_split($dataStr, 1)));
+                    $dtype = Vector::markerByteToDtypeString(ord((string) $enc->type_marker[0]));
+                    $tbr = new CypherObject('CypherVector', ['dtype' => $dtype, 'data' => $hex]);
                 }
-                $tbr = new CypherObject('Vector', new CypherList($list));
+                break;
+            case UnsupportedType::class:
+                /** @var UnsupportedType $value */
+                $tbr = new CypherObject('CypherUnsupportedType', [
+                    'name' => $value->getName(),
+                    'minimumProtocol' => $value->getMinimumProtocol(),
+                    'message' => $value->getMessage(),
+                ]);
                 break;
             case 'int':
                 $tbr = new CypherObject('CypherInt', $value);
@@ -237,6 +263,12 @@ final class CypherObject implements TestkitResponseInterface
                     new CypherObject('CypherNull', null)
                 );
                 break;
+            case Neo4jDateTime::class:
+                $tbr = new CypherObject('CypherDateTime', self::neo4jDateTimeToTestkitData($value));
+                break;
+            case Neo4jDateTimeZoneId::class:
+                $tbr = new CypherObject('CypherDateTime', self::neo4jDateTimeZoneIdToTestkitData($value));
+                break;
             default:
                 throw new RuntimeException('Unexpected type: '.get_debug_type($value));
         }
@@ -244,8 +276,87 @@ final class CypherObject implements TestkitResponseInterface
         return $tbr;
     }
 
+    /**
+     * @return array{
+     *     year: int,
+     *     month: int,
+     *     day: int,
+     *     hour: int,
+     *     minute: int,
+     *     second: int,
+     *     nanosecond: int,
+     *     utc_offset_s: int,
+     *     timezone_id: null
+     * }
+     */
+    private static function neo4jDateTimeToTestkitData(Neo4jDateTime $value): array
+    {
+        $local = $value->toDateTime();
+
+        return [
+            'year' => (int) $local->format('Y'),
+            'month' => (int) $local->format('n'),
+            'day' => (int) $local->format('j'),
+            'hour' => (int) $local->format('G'),
+            'minute' => (int) $local->format('i'),
+            'second' => (int) $local->format('s'),
+            'nanosecond' => $value->getNanoseconds(),
+            'utc_offset_s' => $value->getTimeZoneOffsetSeconds(),
+            'timezone_id' => null,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     year: int,
+     *     month: int,
+     *     day: int,
+     *     hour: int,
+     *     minute: int,
+     *     second: int,
+     *     nanosecond: int,
+     *     utc_offset_s: int,
+     *     timezone_id: string
+     * }
+     */
+    private static function neo4jDateTimeZoneIdToTestkitData(Neo4jDateTimeZoneId $value): array
+    {
+        $local = $value->toDateTime();
+
+        return [
+            'year' => (int) $local->format('Y'),
+            'month' => (int) $local->format('n'),
+            'day' => (int) $local->format('j'),
+            'hour' => (int) $local->format('G'),
+            'minute' => (int) $local->format('i'),
+            'second' => (int) $local->format('s'),
+            'nanosecond' => $value->getNanoseconds(),
+            'utc_offset_s' => $local->getOffset(),
+            'timezone_id' => $value->getTimezoneIdentifier(),
+        ];
+    }
+
     public function jsonSerialize(): array
     {
+        if ($this->name === 'CypherVector' && is_array($this->value)) {
+            return [
+                'name' => $this->name,
+                'data' => $this->value,
+            ];
+        }
+        if ($this->name === 'CypherUnsupportedType' && is_array($this->value)) {
+            return [
+                'name' => $this->name,
+                'data' => $this->value,
+            ];
+        }
+        if ($this->name === 'CypherDateTime' && is_array($this->value)) {
+            return [
+                'name' => $this->name,
+                'data' => $this->value,
+            ];
+        }
+
         return [
             'name' => $this->name,
             'data' => [

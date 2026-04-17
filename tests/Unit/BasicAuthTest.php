@@ -21,6 +21,7 @@ use Laudis\Neo4j\Authentication\BasicAuth;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\TestCase;
@@ -67,6 +68,7 @@ class BasicAuthTest extends TestCase
 
         $mockConnection = $this->createMock(BoltConnection::class);
         $mockConnection->method('protocol')->willReturn($mockProtocol);
+        $mockConnection->method('getProtocol')->willReturn(ConnectionProtocol::BOLT_V5());
 
         $result = $this->auth->authenticateBolt($mockConnection, $userAgent);
         $this->assertArrayHasKey('server', $result);
@@ -88,6 +90,7 @@ class BasicAuthTest extends TestCase
 
         $mockConnection = $this->createMock(BoltConnection::class);
         $mockConnection->method('protocol')->willReturn($mockProtocol);
+        $mockConnection->method('getProtocol')->willReturn(ConnectionProtocol::BOLT_V5());
 
         $error = Neo4jError::fromMessageAndCode('Neo.ClientError.Security.Unauthorized', 'Invalid credentials');
         $exception = new Neo4jException([$error]);

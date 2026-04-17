@@ -315,6 +315,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
+        /** @psalm-suppress PossiblyUndefinedMethod, InvalidArgument upstream Bolt route() signatures vary by protocol version */
         $route = $bolt->route([], [], ['db' => $config->getDatabase()])
             ->getResponse()
             ->content;

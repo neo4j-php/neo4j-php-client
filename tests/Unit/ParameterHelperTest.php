@@ -20,6 +20,8 @@ use InvalidArgumentException;
 use Iterator;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\ParameterHelper;
+use Laudis\Neo4j\Types\DateTime as Neo4jDateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId as Neo4jDateTimeZoneId;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use Stringable;
@@ -174,5 +176,45 @@ final class ParameterHelperTest extends TestCase
         $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), ConnectionProtocol::BOLT_V5());
 
         self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTimeZoneId::class, $date);
+    }
+
+    public function testNeo4jDateTimeBolt43LegacyUsesV1Structure(): void
+    {
+        $dt = new Neo4jDateTime(1654595525, 0, 7200, false);
+        $p = ParameterHelper::asParameter($dt, ConnectionProtocol::BOLT_V43(), false);
+
+        self::assertInstanceOf(\Bolt\protocol\v1\structures\DateTime::class, $p);
+    }
+
+    public function testNeo4jDateTimeBolt43UtcPatchUsesV5Structure(): void
+    {
+        $dt = new Neo4jDateTime(1654595525, 0, 7200, false);
+        $p = ParameterHelper::asParameter($dt, ConnectionProtocol::BOLT_V43(), true);
+
+        self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTime::class, $p);
+    }
+
+    public function testNeo4jDateTimeZoneIdBolt43UtcPatchUsesV5Structure(): void
+    {
+        $dt = new Neo4jDateTimeZoneId(1654595525, 0, 'Europe/Stockholm');
+        $p = ParameterHelper::asParameter($dt, ConnectionProtocol::BOLT_V43(), true);
+
+        self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTimeZoneId::class, $p);
+    }
+
+    public function testNeo4jDateTimeBolt44WithoutPatchUsesV1Structure(): void
+    {
+        $dt = new Neo4jDateTime(1654595525, 0, 7200, false);
+        $p = ParameterHelper::asParameter($dt, ConnectionProtocol::BOLT_V44(), false);
+
+        self::assertInstanceOf(\Bolt\protocol\v1\structures\DateTime::class, $p);
+    }
+
+    public function testNeo4jDateTimeBolt44WithPatchUsesV5Structure(): void
+    {
+        $dt = new Neo4jDateTime(1654595525, 0, 7200, false);
+        $p = ParameterHelper::asParameter($dt, ConnectionProtocol::BOLT_V44(), true);
+
+        self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTime::class, $p);
     }
 }

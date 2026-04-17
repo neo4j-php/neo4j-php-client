@@ -30,6 +30,7 @@ final class ConnectionConfiguration
         private readonly ?AccessMode $accessMode,
         private readonly ?DatabaseInfo $databaseInfo,
         private readonly string $encryptionLevel,
+        private bool $boltUtcPatchNegotiated = false,
     ) {
     }
 
@@ -70,5 +71,18 @@ final class ConnectionConfiguration
     public function getEncryptionLevel(): string
     {
         return $this->encryptionLevel;
+    }
+
+    /**
+     * True when the server echoed patch_bolt containing "utc" (Bolt 4.3–4.x UTC DateTime wire format).
+     */
+    public function isBoltUtcPatchNegotiated(): bool
+    {
+        return $this->boltUtcPatchNegotiated;
+    }
+
+    public function setBoltUtcPatchNegotiated(bool $boltUtcPatchNegotiated): void
+    {
+        $this->boltUtcPatchNegotiated = $boltUtcPatchNegotiated;
     }
 }

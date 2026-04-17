@@ -19,7 +19,7 @@ use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
 /**
  * Response to ResultList — full materialized record list.
  *
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
  */
 final class RecordListResponse implements TestkitResponseInterface
 {

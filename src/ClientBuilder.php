@@ -31,7 +31,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Immutable factory for creating a client.
  *
- * @psalm-import-type OGMTypes from SummarizedResultFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Types\OGMTypesAlias
  */
 final class ClientBuilder
 {

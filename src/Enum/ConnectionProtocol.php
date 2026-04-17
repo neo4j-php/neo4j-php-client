@@ -24,6 +24,7 @@ use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
+use Bolt\protocol\V6;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 
@@ -41,6 +42,7 @@ use Laudis\TypedEnum\TypedEnum;
  * @method static ConnectionProtocol BOLT_V5_2()
  * @method static ConnectionProtocol BOLT_V5_3()
  * @method static ConnectionProtocol BOLT_V5_4()
+ * @method static ConnectionProtocol BOLT_V6()
  *
  * @extends TypedEnum<string>
  *
@@ -61,17 +63,28 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
     private const BOLT_V5_2 = '5.2';
     private const BOLT_V5_3 = '5.3';
     private const BOLT_V5_4 = '5.4';
+    private const BOLT_V6 = '6';
 
     /**
      * @pure
      *
      * @psalm-suppress ImpureMethodCall
      */
-    public static function determineBoltVersion(V3|V4|V4_1|V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4 $bolt): self
+    public static function determineBoltVersion(V3|V4|V4_1|V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|V6 $bolt): self
     {
         $version = self::resolve($bolt->getVersion());
 
         return $version[0] ?? self::BOLT_V44();
+    }
+
+    /**
+     * Bolt 4.3–4.x: negotiate fixed DateTime via HELLO (TestKit echo_date_time_patched.script).
+     *
+     * @psalm-suppress ImpureMethodCall see compare()
+     */
+    public function needsBoltUtcPatchInHello(): bool
+    {
+        return $this->compare(self::BOLT_V43()) >= 0 && $this->compare(self::BOLT_V5()) < 0;
     }
 
     public function compare(ConnectionProtocol $protocol): int

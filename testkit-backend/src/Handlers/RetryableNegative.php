@@ -62,19 +62,26 @@ final class RetryableNegative implements RequestHandlerInterface
         if ($errorId !== '' && $errorId !== null) {
             try {
                 $errorUuid = $errorId instanceof Uuid ? $errorId : Uuid::fromString($errorId);
-                $errorResponse = $this->repository->getRecords($errorUuid);
-                if ($errorResponse instanceof DriverErrorResponse) {
-                    $resolvedException = $errorResponse->getException();
+                $resolvedException = $this->repository->takePendingDriverError($errorUuid);
+                if ($resolvedException === null) {
+                    $errorResponse = $this->repository->getRecords($errorUuid);
+                    if ($errorResponse instanceof DriverErrorResponse) {
+                        $resolvedException = $errorResponse->getException();
+                    }
                 }
             } catch (Throwable $e) {
                 $this->logger->debug('Could not retrieve error for RetryableNegative', ['exception' => $e->getMessage()]);
             }
         }
 
-        // After FAILURE on PULL, BoltConnection RESETs before throwing Neo4jException — ROLLBACK is invalid on the wire.
-        $skipRollback = $resolvedException instanceof Neo4jException;
+        $transientRetry = $resolvedException instanceof Neo4jException
+            && $resolvedException->getClassification() === 'TransientError';
 
-        if (!$skipRollback) {
+        // Managed tx retry ({@see Session::executeRead}): same {@see BoltUnmanagedTransaction} is reused. Calling
+        // rollback() when the server is already READY (e.g. after PULL FAILURE + RESET) marks the client
+        // ROLLED_BACK and the next attempt fails with "Can't run a query on a rolled back transaction."
+        // Skip rollback for transient errors so {@see BoltUnmanagedTransaction::ensureBeginSent} can issue BEGIN again.
+        if (!$transientRetry) {
             try {
                 $tsx->rollback();
             } catch (Throwable $e) {
@@ -83,7 +90,7 @@ final class RetryableNegative implements RequestHandlerInterface
         }
 
         if ($resolvedException instanceof Neo4jException) {
-            if ($resolvedException->getClassification() === 'TransientError') {
+            if ($transientRetry) {
                 return new RetryableTryResponse($transactionId);
             }
 
