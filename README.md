@@ -207,6 +207,8 @@ foreach ($results as $result) {
 }
 ```
 
+`peek()` returns the next row without moving the cursor (or `null` if there is none). It can pull the next record from the server into the buffer if needed, but does not advance past it—unlike `next()` in a `foreach`, which always consumes. Repeated calls to `peek()` return the same value until you advance the iterator (for example with `next()` or by continuing a `foreach`).
+
 Cypher values and types map to these php types and classes:
 
 | Cypher         | Php                                           |
