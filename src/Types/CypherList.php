@@ -309,6 +309,24 @@ class CypherList implements CypherSequence, Iterator, ArrayAccess
     }
 
     /**
+     * Returns the next record without consuming it (the iterator position is unchanged).
+     *
+     * This may pull and buffer the next row from the server when the result is lazy, the same as
+     * {@see current()} on a non-empty result. When there is no next record, returns `null` without
+     * erroring; calling {@see current()} on an exhausted result is not safe.
+     *
+     * @return TValue|null
+     */
+    public function peek()
+    {
+        if (!$this->valid()) {
+            return null;
+        }
+
+        return $this->current();
+    }
+
+    /**
      * @return array<int, TValue>
      */
     public function toArray(): array
