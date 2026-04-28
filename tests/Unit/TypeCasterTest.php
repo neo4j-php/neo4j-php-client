@@ -30,9 +30,11 @@ final class TypeCasterTest extends TestCase
      * Complete coverage: every input type × every cast method.
      * When a cast isn't possible, expected is null (invalid case).
      *
-     * @return iterable<string, array{input: mixed, method: string, expected: mixed, class?: string}>
+     * @return Generator<string, array{input: mixed, method: string, expected: mixed, class?: string}>
+     *
+     * @psalm-suppress MixedReturnTypeCoercion
      */
-    public static function provideCastMatrix(): iterable
+    public static function provideCastMatrix(): Generator
     {
         $stringable = new class implements Stringable {
             public function __toString(): string
@@ -89,6 +91,7 @@ final class TypeCasterTest extends TestCase
 
         foreach ($inputs as $inputName => $inputValue) {
             foreach ($matrix as $method => $expectations) {
+                /** @var mixed $expected */
                 $expected = $expectations[$inputName] ?? null;
                 $key = $inputName.'->'.$method;
 
@@ -107,7 +110,12 @@ final class TypeCasterTest extends TestCase
                 ];
 
                 if ($method === 'toClass') {
-                    $row['class'] = $expectations['_class'][$inputName] ?? stdClass::class;
+                    if (!isset($expectations['_class']) || !is_array($expectations['_class'])) {
+                        throw new InvalidArgumentException('Malformed toClass expectations: missing _class map');
+                    }
+                    /** @var array<string, class-string> $classMap */
+                    $classMap = $expectations['_class'];
+                    $row['class'] = $classMap[$inputName] ?? stdClass::class;
                 }
 
                 yield $key => $row;
