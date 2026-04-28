@@ -97,7 +97,7 @@ final class TypeCasterTest extends TestCase
 
         foreach ($inputs as $inputName => $inputValue) {
             foreach ($matrix as $method => $expectations) {
-                /** @var mixed $expected */
+                /** @psalm-suppress MixedAssignment */
                 $expected = $expectations[$inputName] ?? null;
                 $expected = self::expectedValueForInput($expectations, $inputName);
                 $key = $inputName.'->'.$method;
@@ -112,7 +112,7 @@ final class TypeCasterTest extends TestCase
 
                 $classForRow = null;
                 if ($method === 'toClass') {
-                    if (!isset($expectations['_class']) || !is_array($expectations['_class'])) {
+                    if (!array_key_exists('_class', $expectations) || !is_array($expectations['_class'])) {
                         throw new InvalidArgumentException('Malformed toClass expectations: missing _class map');
                     }
                     /** @var array<string, class-string> $classMap */
