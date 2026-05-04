@@ -17,7 +17,6 @@ use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
 use Bolt\error\ConnectException as BoltConnectException;
 use Bolt\protocol\Response;
-use Bolt\protocol\V3;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
@@ -45,7 +44,7 @@ use Traversable;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from SummarizedResultFormatter
  */
@@ -73,19 +72,13 @@ class BoltConnection implements ConnectionInterface
     private ?float $originalTimeout = null;
 
     /**
-     * Bolt v3 expects RUN and PULL_ALL to be sent before any SUCCESS is read (pipelined). After {@see run()}
-     * queues both, the first {@see pull()} must not send a second PULL_ALL.
-     */
-    private bool $v3PullAllQueued = false;
-
-    /**
      * When one PULL yields RECORD(s) then FAILURE, {@see pull()} defers the {@see Neo4jException} to the next
      * {@see BoltResult::fetchResults()} so records are delivered before the error (TestKit pull_2_end_error.script).
      */
     private ?Neo4jException $deferredPullFailure = null;
 
     /**
-     * @return array{0: V3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
+     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
      */
     public function getImplementation(): array
     {
@@ -96,7 +89,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
+        private V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
         private readonly Connection $connection,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
@@ -230,7 +223,6 @@ class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
-        $this->v3PullAllQueued = false;
         $this->deferredPullFailure = null;
         $message = $this->messageFactory->createResetMessage();
         $response = $message->send()->getResponse();
@@ -287,18 +279,6 @@ class BoltConnection implements ConnectionInterface
     ): array {
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
 
-        if ($this->protocol() instanceof V3) {
-            $this->v3PullAllQueued = false;
-            $this->messageFactory->createRunMessage($text, $parameters, $extra)->send();
-            $this->messageFactory->createPullMessage([])->send();
-            $response = $this->protocol()->getResponse();
-            $this->assertNoFailure($response);
-            $this->v3PullAllQueued = true;
-
-            /** @var BoltMeta */
-            return $response->content;
-        }
-
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -321,7 +301,7 @@ class BoltConnection implements ConnectionInterface
         $this->assertNoFailure($response);
     }
 
-    public function protocol(): V3|V4_4|V5|V5_1|V5_2|V5_3|V5_4
+    public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
     {
         if (!isset($this->boltProtocol)) {
             throw new Exception('Connection is closed');
@@ -404,7 +384,6 @@ class BoltConnection implements ConnectionInterface
         // Other exceptions (Neo4jException, TypeError, etc.) should propagate.
         try {
             if ($this->isOpen()) {
-                $this->v3PullAllQueued = false;
                 $this->deferredPullFailure = null;
                 if ($this->isStreaming()) {
                     $this->discardUnconsumedResults();
@@ -433,25 +412,10 @@ class BoltConnection implements ConnectionInterface
      */
     public function invalidate(): void
     {
-        $this->v3PullAllQueued = false;
         $this->deferredPullFailure = null;
         $this->subscribedResults = [];
         $this->connection->disconnect();
         unset($this->boltProtocol);
-    }
-
-    /**
-     * @internal used by {@see BoltPullMessage} for Bolt v3 pipelined RUN + PULL_ALL
-     */
-    public function consumeQueuedV3PullAll(): bool
-    {
-        if (!$this->boltProtocol instanceof V3 || !$this->v3PullAllQueued) {
-            return false;
-        }
-
-        $this->v3PullAllQueued = false;
-
-        return true;
     }
 
     /**
@@ -488,10 +452,6 @@ class BoltConnection implements ConnectionInterface
             if (count($metadataArray) > 0) {
                 $extra['tx_metadata'] = $metadataArray;
             }
-        }
-
-        if (isset($this->boltProtocol) && $this->boltProtocol instanceof V3) {
-            unset($extra['db'], $extra['mode'], $extra['bookmarks']);
         }
 
         return $extra;

@@ -204,7 +204,6 @@ python3 -m unittest -v \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_error \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all_slow_connection \
-    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all_v3 \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_discards_on_session_close \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested \
     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested_using_list \
@@ -212,8 +211,6 @@ python3 -m unittest -v \
     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch \
     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all \
     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all_slow_connection \
-    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch_v3 \
-    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all_v3 \
     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested_using_list \
 
