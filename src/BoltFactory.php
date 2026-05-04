@@ -30,7 +30,7 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Enum\SocketType;
 
 /**
- * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.
+ * Small wrapper around the bolt library to create and authenticate Bolt connections (protocol 4.4+).
  */
 class BoltFactory
 {
