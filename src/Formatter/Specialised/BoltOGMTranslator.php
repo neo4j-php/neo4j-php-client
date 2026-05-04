@@ -298,13 +298,13 @@ final class BoltOGMTranslator
         foreach ($rels as $rel) {
             $relationships[] = $this->makeFromBoltUnboundRelationship($rel);
         }
-        /** @var list<int> $ids */
-        $ids = $path->ids;
+        /** @var list<int> $indices */
+        $indices = $path->indices;
 
         return new Path(
             new CypherList($nodes),
             new CypherList($relationships),
-            new CypherList($ids),
+            new CypherList($indices),
         );
     }
 
