@@ -136,6 +136,16 @@ class DriverSetupManager implements Countable
         throw new RuntimeException(sprintf('Cannot connect to any server on alias: %s with Uris: (\'%s\')', $alias, implode('\', ', array_unique($urisTried))));
     }
 
+    /**
+     * Resets the driver for the given alias, so that it will be recreated on the next call to getDriver, verifying the connection again.
+     */
+    public function resetDriver(?string $alias): void
+    {
+        $alias ??= $this->decideAlias($alias);
+
+        unset($this->drivers[$alias]);
+    }
+
     public function verifyConnectivity(SessionConfiguration $config, ?string $alias = null): bool
     {
         try {

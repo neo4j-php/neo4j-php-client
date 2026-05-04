@@ -208,6 +208,8 @@ final class MainRepository
             $this->peekPrimed[$key],
             $this->pendingIteratorNextCount[$key]
         );
+        $key = $id->toRfc4122();
+        unset($this->records[$key], $this->iteratorFetchedFirst[$key], $this->peekPrimed[$key], $this->pendingIteratorNextCount[$key]);
     }
 
     /**

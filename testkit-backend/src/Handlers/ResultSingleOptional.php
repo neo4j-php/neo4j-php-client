@@ -71,9 +71,11 @@ final class ResultSingleOptional implements RequestHandlerInterface
         } catch (Neo4jException $e) {
             $response = new DriverErrorResponse($request->getResultId(), $e);
             $this->repository->addRecords($request->getResultId(), $response);
+            $this->repository->removeRecords($request->getResultId());
 
             return $response;
         } catch (BoltException $e) {
+            $this->repository->removeRecords($request->getResultId());
             $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
             $wrapped = new Neo4jException([$neo4jError], $e);
             $response = new DriverErrorResponse($request->getResultId(), $wrapped);
@@ -81,6 +83,7 @@ final class ResultSingleOptional implements RequestHandlerInterface
 
             return $response;
         } catch (Throwable $e) {
+            $this->repository->removeRecords($request->getResultId());
             if ($this->isConnectionOrSocketError($e)) {
                 $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
                 $wrapped = new Neo4jException([$neo4jError], $e);

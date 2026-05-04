@@ -150,6 +150,8 @@ final class BoltResult implements Iterator
             throw $deferred;
         }
 
+        $this->networkPullOccurred = true;
+
         try {
             $meta = $this->connection->pull($this->qid, $this->effectivePullSize());
         } catch (BoltConnectException|BoltException $e) {

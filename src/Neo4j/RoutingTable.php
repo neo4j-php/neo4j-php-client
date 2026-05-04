@@ -62,40 +62,7 @@ final class RoutingTable
     }
 
     /**
-     * Remove a server from the routing table.
-     *
-     * @param string $serverAddress The address to remove
-     *
-     * @return RoutingTable A new routing table with the server removed
-     */
-    public function removeServer(string $serverAddress): RoutingTable
-    {
-        /** @var list<array{addresses: list<string>, role: string}> $updatedServers */
-        $updatedServers = [];
-
-        foreach ($this->servers as $server) {
-            $updatedAddresses = array_filter(
-                $server['addresses'],
-                static fn (string $address): bool => $address !== $serverAddress
-            );
-
-            if (!empty($updatedAddresses)) {
-                $updatedServers[] = [
-                    'addresses' => array_values($updatedAddresses),
-                    'role' => $server['role'],
-                ];
-            }
-        }
-
-        return new self($updatedServers, $this->ttl);
-    }
-
-    /**
-     * Check if a server exists in the routing table.
-     *
-     * @param string $serverAddress The address to check
-     *
-     * @return bool True if the server exists, false otherwise
+     * Whether the given address appears in this routing table.
      */
     public function hasServer(string $serverAddress): bool
     {
@@ -106,5 +73,37 @@ final class RoutingTable
         }
 
         return false;
+    }
+
+    /**
+     * Returns a new table with every occurrence of the address removed from all roles.
+     * If the address was not present, returns the same instance.
+     *
+     * @psalm-mutation-free
+     */
+    public function removeServer(string $serverAddress): self
+    {
+        $changed = false;
+        /** @var list<array{addresses: list<string>, role: string}> $newServers */
+        $newServers = [];
+        foreach ($this->servers as $server) {
+            $addresses = [];
+            foreach ($server['addresses'] as $address) {
+                if ($address === $serverAddress) {
+                    $changed = true;
+                } else {
+                    $addresses[] = $address;
+                }
+            }
+            if ($addresses !== []) {
+                $newServers[] = ['addresses' => $addresses, 'role' => $server['role']];
+            }
+        }
+
+        if (!$changed) {
+            return $this;
+        }
+
+        return new self($newServers, $this->ttl);
     }
 }

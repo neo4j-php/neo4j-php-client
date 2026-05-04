@@ -24,6 +24,9 @@ use PHPUnit\Framework\TestCase;
 use stdClass;
 use Stringable;
 
+/**
+ * @psalm-type ExpectationRow = array<string, mixed>
+ */
 final class TypeCasterTest extends TestCase
 {
     /**
@@ -33,6 +36,9 @@ final class TypeCasterTest extends TestCase
      * @return Generator<string, array{input: mixed, method: string, expected: mixed, class?: string}>
      *
      * @psalm-suppress MixedReturnTypeCoercion
+     * Yields argument lists for {@see testCastMatrix} in order: input, method, expected, class (null unless toClass).
+     *
+     * @return Generator<string, array{0: mixed, 1: string, 2: mixed, 3: string|null}>
      */
     public static function provideCastMatrix(): Generator
     {
@@ -103,12 +109,7 @@ final class TypeCasterTest extends TestCase
                     })()
                     : $inputValue;
 
-                $row = [
-                    'input' => $actualInput,
-                    'method' => $method,
-                    'expected' => $expected,
-                ];
-
+                $classForRow = null;
                 if ($method === 'toClass') {
                     if (!array_key_exists('_class', $expectations) || !is_array($expectations['_class'])) {
                         throw new InvalidArgumentException('Malformed toClass expectations: missing _class map');
@@ -116,15 +117,46 @@ final class TypeCasterTest extends TestCase
                     /** @var array<string, class-string> $classMap */
                     $classMap = $expectations['_class'];
                     $row['class'] = $classMap[$inputName] ?? stdClass::class;
+                    $classForRow = self::toClassClassNameForInput($expectations, $inputName);
                 }
 
-                yield $key => $row;
+                yield $key => [$actualInput, $method, $expected, $classForRow];
             }
         }
     }
 
     /**
-     * @return array<string, array<string, mixed>>
+     * Values come from {@see getExpectedMatrix()} literals; array access stays `mixed` to Psalm.
+     *
+     * @param ExpectationRow $row
+     *
+     * @return bool|int|float|string|object|array<mixed>|array<string, mixed>|null
+     *
+     * @psalm-suppress MixedReturnStatement
+     */
+    private static function expectedValueForInput(array $row, string $inputName)
+    {
+        return $row[$inputName] ?? null;
+    }
+
+    /**
+     * @param ExpectationRow $expectations
+     */
+    private static function toClassClassNameForInput(array $expectations, string $inputName): string
+    {
+        $maybe = $expectations['_class'] ?? [];
+        if (!is_array($maybe)) {
+            return stdClass::class;
+        }
+
+        /** @var array<string, string> $classMap */
+        $classMap = $maybe;
+
+        return $classMap[$inputName] ?? stdClass::class;
+    }
+
+    /**
+     * @return array<string, ExpectationRow>
      */
     private static function getExpectedMatrix(
         object $stringable,

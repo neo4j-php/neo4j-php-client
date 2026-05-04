@@ -31,6 +31,7 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Exception\ConnectionPoolException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
@@ -92,7 +93,7 @@ final class Neo4jDriver implements DriverInterface
         $config ??= SessionConfiguration::default();
         try {
             GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
-        } catch (ConnectException $e) {
+        } catch (ConnectException|ConnectionPoolException $e) {
             $this->pool->getLogger()?->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
 
             return false;
