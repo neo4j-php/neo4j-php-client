@@ -27,7 +27,11 @@ use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\NewSessionRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ResolverResolutionCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ResultConsumeRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ResultListRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ResultNextRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ResultPeekRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ResultSingleOptionalRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ResultSingleRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\RetryableNegativeRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\RetryablePositiveRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionBeginTransactionRequest;
@@ -68,6 +72,10 @@ final class RequestFactory
         'TransactionRollback' => TransactionRollbackRequest::class,
         'TransactionClose' => TransactionCloseRequest::class,
         'ResultNext' => ResultNextRequest::class,
+        'ResultSingle' => ResultSingleRequest::class,
+        'ResultList' => ResultListRequest::class,
+        'ResultPeek' => ResultPeekRequest::class,
+        'ResultSingleOptional' => ResultSingleOptionalRequest::class,
         'ResultConsume' => ResultConsumeRequest::class,
         'RetryablePositive' => RetryablePositiveRequest::class,
         'RetryableNegative' => RetryableNegativeRequest::class,
