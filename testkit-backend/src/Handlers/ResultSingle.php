@@ -49,12 +49,6 @@ final class ResultSingle implements RequestHandlerInterface
             if ($record instanceof TestkitResponseInterface) {
                 return $record;
             }
-            $record = $this->repository->getRecords($request->getResultId());
-            if ($record instanceof TestkitResponseInterface) {
-                $err = new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Statement.ResultNotSingle', 'Something went wrong with the result handling')]);
-
-                return new DriverErrorResponse($request->getResultId(), $err);
-            }
 
             $count = $record->count();
             if ($count !== 1) {
@@ -67,15 +61,6 @@ final class ResultSingle implements RequestHandlerInterface
 
                 return $response;
             }
-            $count = $record->count();
-            if ($count !== 1) {
-                $err = new Neo4jException([Neo4jError::fromMessageAndCode(
-                    'Neo.ClientError.Statement.ResultNotSingle',
-                    sprintf('Expected exactly one result row, found %d.', $count)
-                )]);
-
-                return new DriverErrorResponse($request->getResultId(), $err);
-            }
 
             $values = [];
             foreach ($record->getAsCypherMap(0) as $value) {
@@ -83,10 +68,6 @@ final class ResultSingle implements RequestHandlerInterface
             }
 
             $this->repository->removeRecords($request->getResultId());
-            $values = [];
-            foreach ($record->getAsCypherMap(0) as $value) {
-                $values[] = CypherObject::autoDetect($value);
-            }
 
             return new RecordResponse($values);
         } catch (Neo4jException $e) {
