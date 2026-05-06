@@ -72,8 +72,14 @@ class BoltConnection implements ConnectionInterface
     private ?float $originalTimeout = null;
 
     /**
-     * When one PULL yields RECORD(s) then FAILURE, {@see pull()} defers the {@see Neo4jException} to the next
-     * {@see BoltResult::fetchResults()} so records are delivered before the error (TestKit pull_2_end_error.script).
+     * When one PULL yields RECORD(s) then FAILURE, {@see assertNoFailure()} runs RESET on the FAILURE before we
+     * can finish yielding those rows. {@see pull()} therefore defers the {@see Neo4jException} to the next
+     * {@see BoltResult::fetchResults()} so buffered RECORDs are delivered first (TestKit pull_2_end_error.script).
+     *
+     * This is not peek-specific: any consumption path that pulls (including {@see CypherList::peek()} calling
+     * {@see Iterator::current()} on a lazy {@see BoltResult}) relies on the same ordering. Official Neo4j drivers
+     * treat peek at end-of-stream as non-throwing (null / absent record); for a FAILURE that arrives after RECORDs
+     * in the same PULL response, surfacing the error only after those rows matches the same stream semantics.
      */
     private ?Neo4jException $deferredPullFailure = null;
 
