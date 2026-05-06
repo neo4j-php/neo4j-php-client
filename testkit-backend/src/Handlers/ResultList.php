@@ -89,8 +89,6 @@ final class ResultList implements RequestHandlerInterface
                 $this->repository->addRecords($request->getResultId(), $response);
 
                 return $response;
-
-                return new DriverErrorResponse($request->getResultId(), $wrapped);
             }
             throw $e;
         }
