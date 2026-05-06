@@ -70,6 +70,7 @@ final class ResultSingleOptional implements RequestHandlerInterface
             );
         } catch (Neo4jException $e) {
             $response = new DriverErrorResponse($request->getResultId(), $e);
+            // Keep error for RetryableNegative lookup by result id (execute_read tx_func tests).
             $this->repository->addRecords($request->getResultId(), $response);
 
             return $response;
