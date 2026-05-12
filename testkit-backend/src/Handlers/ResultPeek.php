@@ -15,7 +15,9 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Bolt\error\BoltException;
 use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\RowDecodeFailure;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -57,7 +59,17 @@ final class ResultPeek implements RequestHandlerInterface
                 return new NullRecordResponse();
             }
 
-            $current = $iterator->current();
+            $current = $iterator instanceof SummarizedResult
+                ? $iterator->currentAllowingDecodeFailures()
+                : $iterator->current();
+
+            if ($current instanceof RowDecodeFailure) {
+                // Same as ResultNext: keep SummarizedResult so peek/next can continue the stream.
+                $response = new DriverErrorResponse($request->getResultId(), $current->exception);
+                $this->repository->rememberResultDriverError($request->getResultId(), $response);
+
+                return $response;
+            }
 
             $values = [];
             foreach ($current as $value) {

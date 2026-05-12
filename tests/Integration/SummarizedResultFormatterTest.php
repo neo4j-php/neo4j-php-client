@@ -17,6 +17,7 @@ use function bin2hex;
 
 use DateInterval;
 use DateTimeImmutable;
+use DateTimeZone;
 
 use function dump;
 
@@ -113,11 +114,16 @@ final class SummarizedResultFormatterTest extends EnvironmentAwareIntegrationTes
             $this->markTestSkipped('http does not support datetime conversion');
         }
 
-        $dt = new DateTimeImmutable();
+        // Neo4j may return either Bolt DateTime (offset) → Types\DateTime or Bolt DateTimeZoneId → Types\DateTimeZoneId
+        // depending on server/version and how the instant is canonicalised on the wire.
+        $dt = new DateTimeImmutable('2021-06-15T14:30:00', new DateTimeZone('Europe/Paris'));
         $ls = $this->getSession()->run('RETURN $x AS x', ['x' => $dt])->first()->get('x');
 
-        $this->assertInstanceOf(DateTimeZoneId::class, $ls);
-        $this->assertEquals($dt, $ls->toDateTime());
+        self::assertTrue(
+            $ls instanceof DateTimeZoneId || $ls instanceof DateTime,
+            sprintf('Expected DateTimeZoneId or DateTime, got %s', get_debug_type($ls))
+        );
+        self::assertEquals($dt, $ls->toDateTime());
     }
 
     public function testNull(): void
