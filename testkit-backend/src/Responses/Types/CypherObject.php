@@ -13,11 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Responses\Types;
 
+use DateTimeInterface;
+
 use function get_debug_type;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\DateTime as Neo4jDateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId as Neo4jDateTimeZoneId;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
@@ -92,6 +96,19 @@ final class CypherObject implements TestkitResponseInterface
                     $list[] = self::autoDetect($item);
                 }
                 $tbr = new CypherObject('Vector', new CypherList($list));
+                break;
+            case Neo4jDateTime::class:
+                /** @var Neo4jDateTime $value */
+                $tbr = NutkitFlatCypherValue::cypherDateTimeFromNeo4jDateTime($value);
+                break;
+            case Neo4jDateTimeZoneId::class:
+                /** @var Neo4jDateTimeZoneId $value */
+                $tbr = NutkitFlatCypherValue::cypherDateTimeFromNeo4jDateTimeZoneId($value);
+                break;
+            case 'DateTimeImmutable':
+            case 'DateTime':
+                /** @var DateTimeInterface $value */
+                $tbr = NutkitFlatCypherValue::cypherDateTimeFromDateTimeInterface($value);
                 break;
             case 'int':
                 $tbr = new CypherObject('CypherInt', $value);

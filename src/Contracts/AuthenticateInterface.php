@@ -21,7 +21,7 @@ interface AuthenticateInterface
     /**
      * Authenticates a Bolt connection with the provided configuration Uri and userAgent.
      *
-     * @return array{server: string, connection_id: string, hints: list}
+     * @return array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>}
      */
     public function authenticateBolt(BoltConnection $connection, string $userAgent): array;
 

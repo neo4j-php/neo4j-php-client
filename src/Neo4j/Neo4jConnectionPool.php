@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\error\ConnectException;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
 
 use function count;
 
@@ -171,7 +173,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
-                // TODO: release probably logs off the connection, it is not preferable
+                // Return permit; keep the connection pooled for reuse (Optimization:ConnectionReuse). TestKit
+                // routing stubs expect no router <HANGUP> until driver/session teardown sends GOODBYE.
                 $pool->release($connection);
 
                 break;
@@ -310,8 +313,18 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $bolt = $connection->protocol();
 
         $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
+
+        if ($bolt instanceof V4_2) {
+            throw new RuntimeException('Neo4j routing requires Bolt protocol 4.3 or newer (ROUTE message).');
+        }
+
+        $db = $config->getDatabase();
+        $routeMessage = $bolt instanceof V4_3
+            ? $bolt->route([], [], $db)
+            : $bolt->route([], [], ['db' => $db]);
+
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
-        $route = $bolt->route([], [], ['db' => $config->getDatabase()])
+        $route = $routeMessage
             ->getResponse()
             ->content;
 

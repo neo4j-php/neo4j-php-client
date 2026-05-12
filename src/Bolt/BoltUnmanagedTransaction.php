@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\enum\ServerState;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
@@ -86,7 +85,12 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         $this->ensureBeginSent();
 
-        // Force the results to pull all the results.
+        // Drain subscribed Bolt streams before COMMIT. Rows that fail OGM mapping are surfaced as
+        // RowDecodeFailure in the formatter so preload can advance without throwing (TestKit
+        // unknown-then-known temporal).
+        $this->connection->consumeResults();
+
+        // Run any extra statements, then commit.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
         $tbr = $this->runStatements($statements)->each(static function (CypherList $list) {
             $list->preload();
@@ -101,6 +105,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function rollback(): void
     {
         if ($this->isFinished()) {
+            if ($this->state === TransactionState::TERMINATED) {
+                // Run/pull already failed; connection may have been RESET — nothing to send.
+                return;
+            }
+
             if ($this->state === TransactionState::COMMITTED) {
                 throw new TransactionException("Can't rollback a committed transaction.");
             }
@@ -110,7 +119,23 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         }
 
+        // FAILURE on PULL triggers RESET in {@see BoltConnection::assertNoFailure()}; server has no open tx.
+        // Must run before {@see ensureBeginSent()}: otherwise we would send BEGIN then ROLLBACK (tx_error_on_pull).
+        if ($this->connection->getServerState() === 'READY') {
+            $this->beginSent = false;
+            $this->state = TransactionState::ROLLED_BACK;
+
+            return;
+        }
+
         $this->ensureBeginSent();
+
+        if ($this->connection->getServerState() === 'READY') {
+            $this->beginSent = false;
+            $this->state = TransactionState::ROLLED_BACK;
+
+            return;
+        }
 
         $this->messageFactory->createRollbackMessage()->send();
         $this->state = TransactionState::ROLLED_BACK;
@@ -143,11 +168,17 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function runStatement(Statement $statement): SummarizedResult
     {
-        $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
+        $parameters = ParameterHelper::formatParameters(
+            $statement->getParameters(),
+            $this->connection->getProtocol(),
+            $this->connection->isBoltUtcPatchNegotiated()
+        );
         $start = microtime(true);
 
-        $serverState = $this->connection->protocol()->serverState;
-        if ($serverState === ServerState::STREAMING) {
+        // Only drain an outstanding autocommit result (STREAMING). In an explicit transaction (TX_STREAMING)
+        // several RUN streams may be open; consumeResults() would preload other streams and reorder PULLs
+        // vs RUN (TestKit tx_pull_1_nested*, Neo4j parallel/nested tx tests).
+        if ($this->connection->getServerState() === 'STREAMING') {
             $this->connection->consumeResults();
         }
 
@@ -217,7 +248,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     private function ensureBeginSent(): void
     {
-        if ($this->isInstantTransaction || $this->beginSent) {
+        if ($this->isInstantTransaction) {
+            return;
+        }
+        // FAILURE on PULL triggers RESET in BoltConnection — server is READY with no tx, but we may still
+        // have beginSent=true (e.g. execute_read retry). Must send BEGIN again before RUN.
+        if ($this->beginSent && $this->state === TransactionState::ACTIVE && $this->connection->getServerState() === 'READY') {
+            $this->beginSent = false;
+        }
+        if ($this->beginSent) {
             return;
         }
         try {

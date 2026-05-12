@@ -17,6 +17,8 @@ use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
 use Bolt\error\ConnectException as BoltConnectException;
 use Bolt\protocol\Response;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
@@ -44,7 +46,7 @@ use Traversable;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from SummarizedResultFormatter
  */
@@ -72,7 +74,21 @@ class BoltConnection implements ConnectionInterface
     private ?float $originalTimeout = null;
 
     /**
-     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
+     * When one PULL yields RECORD(s) then FAILURE, {@see assertNoFailure()} runs RESET on the FAILURE before we
+     * can finish yielding those rows. {@see pull()} therefore defers the {@see Neo4jException} to the next
+     * {@see BoltResult::fetchResults()} so buffered RECORDs are delivered first (TestKit pull_2_end_error.script).
+     *
+     * This is not peek-specific: any consumption path that pulls (including {@see CypherList::peek()} calling
+     * {@see Iterator::current()} on a lazy {@see BoltResult}) relies on the same ordering. Official Neo4j drivers
+     * treat peek at end-of-stream as non-throwing (null / absent record); for a FAILURE that arrives after RECORDs
+     * in the same PULL response, surfacing the error only after those rows matches the same stream semantics.
+     */
+    private ?Neo4jException $deferredPullFailure = null;
+
+    private bool $boltUtcPatchNegotiated = false;
+
+    /**
+     * @return array{0: V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
      */
     public function getImplementation(): array
     {
@@ -83,7 +99,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
+        private V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
         private readonly Connection $connection,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
@@ -130,6 +146,16 @@ class BoltConnection implements ConnectionInterface
     public function getProtocol(): ConnectionProtocol
     {
         return $this->config->getProtocol();
+    }
+
+    public function setBoltUtcPatchNegotiated(bool $negotiated): void
+    {
+        $this->boltUtcPatchNegotiated = $negotiated;
+    }
+
+    public function isBoltUtcPatchNegotiated(): bool
+    {
+        return $this->boltUtcPatchNegotiated;
     }
 
     /**
@@ -217,6 +243,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
+        $this->deferredPullFailure = null;
         $message = $this->messageFactory->createResetMessage();
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -271,6 +298,7 @@ class BoltConnection implements ConnectionInterface
         ?iterable $tsxMetadata,
     ): array {
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
+
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -293,7 +321,7 @@ class BoltConnection implements ConnectionInterface
         $this->assertNoFailure($response);
     }
 
-    public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
+    public function protocol(): V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4
     {
         if (!isset($this->boltProtocol)) {
             throw new Exception('Connection is closed');
@@ -337,6 +365,23 @@ class BoltConnection implements ConnectionInterface
             return $tbr;
         } catch (Throwable $e) {
             $this->restoreOriginalTimeout();
+            if ($e instanceof Neo4jException) {
+                // RECORD(s) then FAILURE in one PULL: RESET already ran in assertNoFailure — return rows and
+                // defer the exception to the next fetchResults() so the last record is yielded first and no
+                // extra PULL is sent (pull_2_end_error.script).
+                if (!empty($tbr)) {
+                    $this->deferredPullFailure = $e;
+                    $tbr[] = ['has_more' => true];
+
+                    /** @var non-empty-list<list> */
+                    return $tbr;
+                }
+                throw $e;
+            }
+            // If we've received some records before the disconnect, return them so first next() succeeds.
+            // Second next() must pull again and fail with a connection error (TestKit exit_after_record scripts).
+            // Do not append []: BoltResult treats trailing empty SUCCESS as stream completion, so the iterator
+            // would stop cleanly instead of surfacing the disconnect. A synthetic has_more:true means "not done".
             // If we've received some records before the disconnect, return them so first next() succeeds.
             // Second next() must pull again and fail with a connection error (TestKit exit_after_record scripts).
             // Do not append []: BoltResult treats trailing empty SUCCESS as stream completion, so the iterator
@@ -363,6 +408,7 @@ class BoltConnection implements ConnectionInterface
         // Other exceptions (Neo4jException, TypeError, etc.) should propagate.
         try {
             if ($this->isOpen()) {
+                $this->deferredPullFailure = null;
                 if ($this->isStreaming()) {
                     $this->discardUnconsumedResults();
                 }
@@ -390,9 +436,21 @@ class BoltConnection implements ConnectionInterface
      */
     public function invalidate(): void
     {
+        $this->deferredPullFailure = null;
         $this->subscribedResults = [];
         $this->connection->disconnect();
         unset($this->boltProtocol);
+    }
+
+    /**
+     * Consumes a FAILURE that was deferred from the previous {@see pull()} (RECORD(s) then FAILURE).
+     */
+    public function takeDeferredPullFailure(): ?Neo4jException
+    {
+        $e = $this->deferredPullFailure;
+        $this->deferredPullFailure = null;
+
+        return $e;
     }
 
     private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
@@ -431,6 +489,10 @@ class BoltConnection implements ConnectionInterface
         }
 
         if ($qid !== null && $qid >= 0) {
+            // Always send explicit qid (including 0). Omitting qid defaults to the "current" stream; with
+            // multiple concurrent RUN streams in a transaction, PULL must target the correct stream or Neo4j
+            // returns e.g. "No such statement: N" (Neo.ClientError.Request.InvalidFormat). The Bolt library's
+            // openStreams counter is not reliable for this across all server versions and message orderings.
             $extra['qid'] = $qid;
         }
 

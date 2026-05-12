@@ -15,6 +15,8 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\Bolt;
 use Bolt\connection\IConnection;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
@@ -25,7 +27,7 @@ use RuntimeException;
 
 class ProtocolFactory
 {
-    public function createProtocol(IConnection $connection): V4_4|V5|V5_1|V5_2|V5_3|V5_4
+    public function createProtocol(IConnection $connection): V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4
     {
         $boltOptoutEnv = getenv('BOLT_ANALYTICS_OPTOUT');
         if ($boltOptoutEnv === false) {
@@ -33,12 +35,12 @@ class ProtocolFactory
         }
 
         $bolt = new Bolt($connection);
-        // Offer protocol versions from newest to oldest (only 4.4 and above are supported)
-        $bolt->setProtocolVersions('5.4.4', 4.4);
+        // Four Bolt version suggestions (library maximum); include 4.2/4.3 for TestKit stubs and older servers.
+        $bolt->setProtocolVersions('5.4.4', '4.4.4', '4.3.3', '4.2.2');
         $protocol = $bolt->build();
 
-        if (!($protocol instanceof V4_4 || $protocol instanceof V5 || $protocol instanceof V5_1 || $protocol instanceof V5_2 || $protocol instanceof V5_3 || $protocol instanceof V5_4)) {
-            throw new RuntimeException('Client only supports bolt version 4.4 to 5.4');
+        if (!($protocol instanceof V4_2 || $protocol instanceof V4_3 || $protocol instanceof V4_4 || $protocol instanceof V5 || $protocol instanceof V5_1 || $protocol instanceof V5_2 || $protocol instanceof V5_3 || $protocol instanceof V5_4)) {
+            throw new RuntimeException('Client only supports Bolt protocol 4.2 through 5.4');
         }
 
         return $protocol;

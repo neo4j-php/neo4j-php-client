@@ -15,7 +15,9 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Bolt\error\BoltException;
 use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Formatter\RowDecodeFailure;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -61,8 +63,20 @@ final class ResultNext implements RequestHandlerInterface
             }
 
             // Get the current record
-            $current = $iterator->current();
+            $current = $iterator instanceof SummarizedResult
+                ? $iterator->currentAllowingDecodeFailures()
+                : $iterator->current();
             $this->repository->setIteratorFetchedFirst($request->getResultId(), true);
+
+            if ($current instanceof RowDecodeFailure) {
+                // Do not replace the SummarizedResult in the repository: the stream must stay iterable so
+                // a following ResultNext can read later rows (e.g. unknown-then-known temporal stub).
+                $response = new DriverErrorResponse($request->getResultId(), $current->exception);
+                $this->repository->rememberResultDriverError($request->getResultId(), $response);
+                $this->repository->addPendingIteratorNext($request->getResultId());
+
+                return $response;
+            }
 
             $values = [];
             foreach ($current as $value) {
@@ -73,22 +87,25 @@ final class ResultNext implements RequestHandlerInterface
 
             return new RecordResponse($values);
         } catch (Neo4jException $e) {
-            $this->repository->removeRecords($request->getResultId());
+            $response = new DriverErrorResponse($request->getResultId(), $e);
+            $this->repository->addRecords($request->getResultId(), $response);
 
-            return new DriverErrorResponse($request->getResultId(), $e);
+            return $response;
         } catch (BoltException $e) {
-            $this->repository->removeRecords($request->getResultId());
             $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
             $wrapped = new Neo4jException([$neo4jError], $e);
+            $response = new DriverErrorResponse($request->getResultId(), $wrapped);
+            $this->repository->addRecords($request->getResultId(), $response);
 
-            return new DriverErrorResponse($request->getResultId(), $wrapped);
+            return $response;
         } catch (Throwable $e) {
-            $this->repository->removeRecords($request->getResultId());
             if ($this->isConnectionOrSocketError($e)) {
                 $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
                 $wrapped = new Neo4jException([$neo4jError], $e);
+                $response = new DriverErrorResponse($request->getResultId(), $wrapped);
+                $this->repository->addRecords($request->getResultId(), $response);
 
-                return new DriverErrorResponse($request->getResultId(), $wrapped);
+                return $response;
             }
             throw $e;
         }
