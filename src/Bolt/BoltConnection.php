@@ -85,6 +85,8 @@ class BoltConnection implements ConnectionInterface
 
     private bool $boltUtcPatchNegotiated = false;
 
+    private bool $boltUtcPatchNegotiated = false;
+
     /**
      * @return array{0: V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
      */
