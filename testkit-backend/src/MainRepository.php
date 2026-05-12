@@ -19,6 +19,7 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\Types\CypherMap;
 use Symfony\Component\Uid\Uuid;
 
@@ -54,6 +55,14 @@ final class MainRepository
      * @var array<string, int>
      */
     private array $pendingIteratorNextCount = [];
+
+    /**
+     * {@see DriverErrorResponse} for a result id when the live {@see SummarizedResult} must stay in
+     * {@see $records} (RowDecodeFailure path) so {@see RetryableNegative} can still resolve {@code errorId}.
+     *
+     * @var array<string, DriverErrorResponse>
+     */
+    private array $resultDriverErrors = [];
 
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
@@ -206,10 +215,19 @@ final class MainRepository
             $this->recordIterators[$key],
             $this->iteratorFetchedFirst[$key],
             $this->peekPrimed[$key],
-            $this->pendingIteratorNextCount[$key]
+            $this->pendingIteratorNextCount[$key],
+            $this->resultDriverErrors[$key]
         );
-        $key = $id->toRfc4122();
-        unset($this->records[$key], $this->iteratorFetchedFirst[$key], $this->peekPrimed[$key], $this->pendingIteratorNextCount[$key]);
+    }
+
+    public function rememberResultDriverError(Uuid $id, DriverErrorResponse $response): void
+    {
+        $this->resultDriverErrors[$id->toRfc4122()] = $response;
+    }
+
+    public function peekResultDriverError(Uuid $id): ?DriverErrorResponse
+    {
+        return $this->resultDriverErrors[$id->toRfc4122()] ?? null;
     }
 
     /**

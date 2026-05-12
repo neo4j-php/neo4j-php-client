@@ -26,8 +26,13 @@ use Bolt\protocol\v1\structures\Point3D as BoltPoint3D;
 use Bolt\protocol\v1\structures\Relationship as BoltRelationship;
 use Bolt\protocol\v1\structures\Time as BoltTime;
 use Bolt\protocol\v1\structures\UnboundRelationship as BoltUnboundRelationship;
+use Bolt\protocol\v5\structures\DateTimeZoneId as BoltV5DateTimeZoneId;
 use Bolt\protocol\v6\structures\Vector as BoltVector;
+use DateTimeImmutable;
+use DateTimeZone;
+use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\VectorTypeMarker;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
@@ -49,6 +54,7 @@ use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\Vector;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
+use Throwable;
 use UnexpectedValueException;
 
 /**
@@ -138,8 +144,35 @@ final class BoltOGMTranslator
 
     private function makeBoltTimezoneIdentifier(BoltDateTimeZoneId $time): DateTimeZoneId
     {
-        /** @var non-empty-string $tzId */
         $tzId = $time->tz_id;
+        if ($tzId === '') {
+            $msg = 'Time zone ID must not be empty';
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Statement.TypeError', $msg)]);
+        }
+
+        try {
+            $tz = new DateTimeZone($tzId);
+        } catch (Throwable $e) {
+            $msg = sprintf('Unknown time zone ID: %s', $time->tz_id);
+            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Statement.TypeError', $msg)], $e);
+        }
+
+        if ($time instanceof BoltV5DateTimeZoneId) {
+            $micros = intdiv($time->nanoseconds, 1000);
+            $utc = (new DateTimeImmutable('@'.$time->seconds))->modify(sprintf('%+d microseconds', $micros));
+            if ($utc === false) {
+                throw new UnexpectedValueException('Expected DateTimeImmutable');
+            }
+            /** @psalm-suppress ImpureMethodCall */
+            $inZone = $utc->setTimezone($tz);
+
+            /** @psalm-suppress ImpureMethodCall */
+            return new DateTimeZoneId(
+                DateTimeZoneId::encodeBoltCivilSecondsForInstant($inZone, $tz),
+                $time->nanoseconds,
+                $tzId
+            );
+        }
 
         return new DateTimeZoneId($time->seconds, $time->nanoseconds, $tzId);
     }

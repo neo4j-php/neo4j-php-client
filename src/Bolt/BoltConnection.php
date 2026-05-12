@@ -17,6 +17,8 @@ use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
 use Bolt\error\ConnectException as BoltConnectException;
 use Bolt\protocol\Response;
+use Bolt\protocol\V4_2;
+use Bolt\protocol\V4_3;
 use Bolt\protocol\V4_4;
 use Bolt\protocol\V5;
 use Bolt\protocol\V5_1;
@@ -44,7 +46,7 @@ use Traversable;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from SummarizedResultFormatter
  */
@@ -83,8 +85,10 @@ class BoltConnection implements ConnectionInterface
      */
     private ?Neo4jException $deferredPullFailure = null;
 
+    private bool $boltUtcPatchNegotiated = false;
+
     /**
-     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
+     * @return array{0: V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
      */
     public function getImplementation(): array
     {
@@ -95,7 +99,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
+        private V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
         private readonly Connection $connection,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
@@ -142,6 +146,16 @@ class BoltConnection implements ConnectionInterface
     public function getProtocol(): ConnectionProtocol
     {
         return $this->config->getProtocol();
+    }
+
+    public function setBoltUtcPatchNegotiated(bool $negotiated): void
+    {
+        $this->boltUtcPatchNegotiated = $negotiated;
+    }
+
+    public function isBoltUtcPatchNegotiated(): bool
+    {
+        return $this->boltUtcPatchNegotiated;
     }
 
     /**
@@ -307,7 +321,7 @@ class BoltConnection implements ConnectionInterface
         $this->assertNoFailure($response);
     }
 
-    public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
+    public function protocol(): V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4
     {
         if (!isset($this->boltProtocol)) {
             throw new Exception('Connection is closed');

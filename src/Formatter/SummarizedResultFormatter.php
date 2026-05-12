@@ -32,6 +32,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\SummaryCounters;
 use Laudis\Neo4j\Enum\QueryTypeEnum;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\Specialised\BoltOGMTranslator;
 use Laudis\Neo4j\Types\Cartesian3DPoint;
 use Laudis\Neo4j\Types\CartesianPoint;
@@ -281,13 +282,19 @@ final class SummarizedResultFormatter
     /**
      * @param BoltMeta $meta
      *
-     * @return CypherList<CypherMap<OGMTypes>>
+     * @return CypherList<CypherMap<OGMTypes>|RowDecodeFailure>
      */
     private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, BookmarkHolder $holder): CypherList
     {
         $tbr = (new CypherList(function () use ($result, $meta) {
-            foreach ($result as $row) {
-                yield $this->formatRow($meta, $row);
+            while ($result->valid()) {
+                $row = $result->current();
+                try {
+                    yield $this->formatRow($meta, $row);
+                } catch (Neo4jException $e) {
+                    yield new RowDecodeFailure($e);
+                }
+                $result->next();
             }
         }))->withCacheLimit($this->clientSideCacheLimitFromBoltFetchSize($result->getFetchSize()));
 

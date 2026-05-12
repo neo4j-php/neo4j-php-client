@@ -85,9 +85,12 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         $this->ensureBeginSent();
 
+        // Drain subscribed Bolt streams before COMMIT. Rows that fail OGM mapping are surfaced as
+        // RowDecodeFailure in the formatter so preload can advance without throwing (TestKit
+        // unknown-then-known temporal).
         $this->connection->consumeResults();
 
-        // Force the results to pull all the results.
+        // Run any extra statements, then commit.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
         $tbr = $this->runStatements($statements)->each(static function (CypherList $list) {
             $list->preload();
@@ -116,11 +119,19 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             }
         }
 
+        // FAILURE on PULL triggers RESET in {@see BoltConnection::assertNoFailure()}; server has no open tx.
+        // Must run before {@see ensureBeginSent()}: otherwise we would send BEGIN then ROLLBACK (tx_error_on_pull).
+        if ($this->connection->getServerState() === 'READY') {
+            $this->beginSent = false;
+            $this->state = TransactionState::ROLLED_BACK;
+
+            return;
+        }
+
         $this->ensureBeginSent();
 
-        // FAILURE on PULL triggers RESET in {@see BoltConnection::assertNoFailure()}; server has no open tx.
-        // TestKit stubs (e.g. tx_error_on_pull.script) expect no ROLLBACK after that RESET.
         if ($this->connection->getServerState() === 'READY') {
+            $this->beginSent = false;
             $this->state = TransactionState::ROLLED_BACK;
 
             return;
@@ -157,7 +168,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
      */
     public function runStatement(Statement $statement): SummarizedResult
     {
-        $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
+        $parameters = ParameterHelper::formatParameters(
+            $statement->getParameters(),
+            $this->connection->getProtocol(),
+            $this->connection->isBoltUtcPatchNegotiated()
+        );
         $start = microtime(true);
 
         // Only drain an outstanding autocommit result (STREAMING). In an explicit transaction (TX_STREAMING)

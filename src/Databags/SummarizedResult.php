@@ -15,16 +15,18 @@ namespace Laudis\Neo4j\Databags;
 
 use Closure;
 use Generator;
+use Laudis\Neo4j\Formatter\RowDecodeFailure;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use OutOfBoundsException;
 
 /**
  * A result containing the values and the summary.
  *
  * @psalm-import-type OGMTypes from SummarizedResultFormatter
  *
- * @extends CypherList<CypherMap<OGMTypes>>
+ * @extends CypherList<CypherMap<OGMTypes>|RowDecodeFailure>
  */
 final class SummarizedResult extends CypherList
 {
@@ -49,9 +51,9 @@ final class SummarizedResult extends CypherList
     /**
      * @psalm-mutation-free
      *
-     * @param iterable<mixed, CypherMap<OGMTypes>>|callable():Generator<mixed, CypherMap<OGMTypes>> $iterable
-     * @param list<string>                                                                          $keys
-     * @param (Closure():void)|null                                                                 $prepareListFetchAll
+     * @param iterable<mixed, CypherMap<OGMTypes>|RowDecodeFailure>|callable():Generator<mixed, CypherMap<OGMTypes>|RowDecodeFailure> $iterable
+     * @param list<string>                                                                                                            $keys
+     * @param (Closure():void)|null                                                                                                   $prepareListFetchAll
      */
     public function __construct(?ResultSummary &$summary, iterable|callable $iterable = [], array $keys = [], ?Closure $prepareListFetchAll = null, ?object $boltResultRef = null)
     {
@@ -80,7 +82,7 @@ final class SummarizedResult extends CypherList
      */
     public function getResults(): CypherList
     {
-        return new CypherList($this);
+        return new CypherList(array_values($this->toArray()));
     }
 
     /**
@@ -121,5 +123,102 @@ final class SummarizedResult extends CypherList
         }
 
         return $rows;
+    }
+
+    public function current(): CypherMap
+    {
+        $value = parent::current();
+
+        if ($value instanceof RowDecodeFailure) {
+            throw $value->exception;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @internal testKit backend: same as {@see parent::current()} but keeps {@see RowDecodeFailure} rows
+     *            so the client can map them to {@see \Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse}
+     *            without losing the underlying Bolt row cursor
+     */
+    public function currentAllowingDecodeFailures(): mixed
+    {
+        return parent::current();
+    }
+
+    public function peek(): ?CypherMap
+    {
+        if (!$this->valid()) {
+            return null;
+        }
+
+        return $this->current();
+    }
+
+    public function first(): CypherMap
+    {
+        foreach ($this as $value) {
+            return $value;
+        }
+
+        throw new OutOfBoundsException('Cannot grab first element of an empty list');
+    }
+
+    public function last(): CypherMap
+    {
+        $rows = array_values($this->toArray());
+        if ($rows === []) {
+            throw new OutOfBoundsException('Cannot grab last element of an empty list');
+        }
+
+        return $rows[count($rows) - 1];
+    }
+
+    /**
+     * @param callable(CypherMap<OGMTypes>, int):void $callable
+     *
+     * @return $this
+     */
+    public function each(callable $callable): self
+    {
+        foreach ($this as $key => $value) {
+            $callable($value, $key);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return array<int, CypherMap<OGMTypes>>
+     */
+    public function toArray(): array
+    {
+        $this->preload();
+
+        /** @var array<int, CypherMap<OGMTypes>> $out */
+        $out = [];
+        foreach ($this->cache as $i => $value) {
+            if ($value instanceof RowDecodeFailure) {
+                throw $value->exception;
+            }
+            $out[$i] = $value;
+        }
+
+        return $out;
+    }
+
+    public function offsetGet(mixed $offset): CypherMap
+    {
+        $value = parent::offsetGet($offset);
+        if ($value instanceof RowDecodeFailure) {
+            throw $value->exception;
+        }
+
+        return $value;
+    }
+
+    public function get(int $key): CypherMap
+    {
+        return $this->offsetGet($key);
     }
 }

@@ -65,14 +65,22 @@ final class RetryableNegative implements RequestHandlerInterface
                 $errorResponse = $this->repository->getRecords($errorUuid);
                 if ($errorResponse instanceof DriverErrorResponse) {
                     $resolvedException = $errorResponse->getException();
+                } else {
+                    $buffered = $this->repository->peekResultDriverError($errorUuid);
+                    if ($buffered instanceof DriverErrorResponse) {
+                        $resolvedException = $buffered->getException();
+                    }
                 }
             } catch (Throwable $e) {
                 $this->logger->debug('Could not retrieve error for RetryableNegative', ['exception' => $e->getMessage()]);
             }
         }
 
-        // After FAILURE on PULL, BoltConnection RESETs before throwing Neo4jException — ROLLBACK is invalid on the wire.
-        $skipRollback = $resolvedException instanceof Neo4jException;
+        // Transient errors after PULL (e.g. tx_error_on_pull.script): connection is RESET to READY and the
+        // same transaction object is retried — do not ROLLBACK/BEGIN here; the next RUN will send BEGIN.
+        // Client errors (e.g. unknown zone) need a real ROLLBACK on the wire.
+        $skipRollback = $resolvedException instanceof Neo4jException
+            && $resolvedException->getClassification() === 'TransientError';
 
         if (!$skipRollback) {
             try {
