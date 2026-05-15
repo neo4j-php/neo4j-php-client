@@ -39,11 +39,16 @@ return [
     },
 
     MainRepository::class => static function () {
-        return new MainRepository(
-            [],
-            [],
-            [],
-            [],
-        );
+        static $repository = null;
+        if ($repository === null) {
+            $repository = new MainRepository(
+                [],
+                [],
+                [],
+                [],
+            );
+        }
+
+        return $repository;
     },
 ];

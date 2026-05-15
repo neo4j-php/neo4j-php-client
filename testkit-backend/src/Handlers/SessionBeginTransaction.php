@@ -15,14 +15,17 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\DriverConnectionExceptionMapper;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionBeginTransactionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\TransactionResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 /**
  * @implements RequestHandlerInterface<SessionBeginTransactionRequest>
@@ -69,6 +72,17 @@ final class SessionBeginTransaction implements RequestHandlerInterface
             $this->logger->debug($exception->__toString());
 
             return new DriverErrorResponse($request->getSessionId(), $exception);
+        } catch (TransactionException $exception) {
+            $this->logger->debug($exception->__toString());
+
+            return new DriverErrorResponse($request->getSessionId(), $exception);
+        } catch (Throwable $e) {
+            $this->logger->debug((string) $e);
+
+            return new DriverErrorResponse(
+                $request->getSessionId(),
+                DriverConnectionExceptionMapper::wrapConnectionFailureAsNeo4jException($e)
+            );
         }
         $id = Uuid::v4();
 

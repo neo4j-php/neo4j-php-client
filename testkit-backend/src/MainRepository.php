@@ -23,6 +23,7 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherMap;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -42,6 +43,11 @@ final class MainRepository
     private array $transactions;
     /** @var array<string, Uuid> */
     private array $sessionToTransactions = [];
+
+    private ?ClientProtocolBridge $protocolBridge = null;
+
+    /** @var array<string, BookmarkManagerState> */
+    private array $bookmarkManagers = [];
 
     /** @var array<string, bool> */
     private array $iteratorFetchedFirst;
@@ -294,5 +300,34 @@ final class MainRepository
     public function tryGetTsxIdFromSession(Uuid $sessionId): ?Uuid
     {
         return $this->sessionToTransactions[$sessionId->toRfc4122()] ?? null;
+    }
+
+    public function bindProtocolBridge(ClientProtocolBridge $bridge): void
+    {
+        $this->protocolBridge = $bridge;
+    }
+
+    public function getProtocolBridge(): ClientProtocolBridge
+    {
+        if ($this->protocolBridge === null) {
+            throw new RuntimeException('Protocol bridge not bound');
+        }
+
+        return $this->protocolBridge;
+    }
+
+    public function addBookmarkManager(Uuid $id, BookmarkManagerState $state): void
+    {
+        $this->bookmarkManagers[$id->toRfc4122()] = $state;
+    }
+
+    public function getBookmarkManager(Uuid $id): BookmarkManagerState
+    {
+        return $this->bookmarkManagers[$id->toRfc4122()];
+    }
+
+    public function removeBookmarkManager(Uuid $id): void
+    {
+        unset($this->bookmarkManagers[$id->toRfc4122()]);
     }
 }

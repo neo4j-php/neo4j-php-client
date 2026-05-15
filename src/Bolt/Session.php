@@ -62,7 +62,8 @@ final class Session implements SessionInterface
          */
         private readonly SummarizedResultFormatter $formatter,
     ) {
-        $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
+        $this->bookmarkHolder = $config->getBookmarkHolder()
+            ?? new BookmarkHolder(Bookmark::from($config->getBookmarks()));
     }
 
     /**

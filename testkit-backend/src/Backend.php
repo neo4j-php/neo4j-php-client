@@ -66,7 +66,10 @@ final class Backend
         $logger = $container->get(LoggerInterface::class);
         $logger->info('Booting testkit backend ...');
         Socket::setupEnvironment();
-        $tbr = new self(Socket::fromEnvironment(), $logger, $container, new RequestFactory());
+        $socket = Socket::fromEnvironment();
+        $factory = new RequestFactory();
+        $container->get(MainRepository::class)->bindProtocolBridge(new ClientProtocolBridge($socket, $factory));
+        $tbr = new self($socket, $logger, $container, $factory);
         $logger->info('Testkit booted');
 
         return $tbr;
@@ -131,7 +134,7 @@ final class Backend
         $response = json_decode($message, true, 512, JSON_THROW_ON_ERROR);
 
         $handler = $this->loadRequestHandler($response['name']);
-        $request = $this->factory->create($response['name'], $response['data']);
+        $request = $this->factory->create($response['name'], $response['data'] ?? []);
 
         return [$handler, $request];
     }

@@ -18,6 +18,7 @@ use Bolt\protocol\Response;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\BoltMessage;
+use Laudis\Neo4j\Contracts\Neo4jBookmarkManagerHooksInterface;
 use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Psr\Log\LogLevel;
@@ -28,6 +29,8 @@ final class BoltCommitMessage extends BoltMessage
         BoltConnection $connection,
         private readonly ?Neo4jLogger $logger,
         private readonly BookmarkHolder $bookmarks,
+        private readonly ?Neo4jBookmarkManagerHooksInterface $bookmarkManagerHooks = null,
+        private readonly bool $neo4jSharedManagedBookmarks = false,
     ) {
         parent::__construct($connection);
     }
@@ -54,9 +57,15 @@ final class BoltCommitMessage extends BoltMessage
         /** @var array{bookmark?: string} $content */
         $content = $response->content;
         $bookmark = $content['bookmark'] ?? '';
-
-        if (trim($bookmark) !== '') {
-            $this->bookmarks->setBookmark(new Bookmark([$bookmark]));
+        $trimmed = trim($bookmark);
+        if ($trimmed !== '') {
+            $incoming = new Bookmark([$trimmed]);
+            if ($this->neo4jSharedManagedBookmarks) {
+                $this->bookmarks->neo4jApplyCommittedServerBookmark($incoming);
+            } else {
+                $this->bookmarks->setBookmark($incoming);
+            }
+            $this->bookmarkManagerHooks?->notifyBookmarksUpdated([$trimmed]);
         }
 
         $this->connection->protocol()->serverState = ServerState::READY;
