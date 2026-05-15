@@ -18,6 +18,7 @@ use function is_int;
 
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\BoltResult;
+use Laudis\Neo4j\Contracts\Neo4jBookmarkManagerHooksInterface;
 use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
@@ -161,7 +162,7 @@ final class SummarizedResultFormatter
     /**
      * @param BoltMeta $meta
      */
-    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder): SummarizedResult
+    public function formatBoltResult(array $meta, BoltResult $result, BoltConnection $connection, float $runStart, float $resultAvailableAfter, Statement $statement, BookmarkHolder $holder, ?Neo4jBookmarkManagerHooksInterface $bookmarkManagerHooks = null): SummarizedResult
     {
         /** @var ResultSummary|null $summary */
         $summary = null;
@@ -196,7 +197,7 @@ final class SummarizedResultFormatter
             });
 
         $boltResult = $result;
-        $formattedResult = $this->processBoltResult($meta, $boltResult, $connection, $holder);
+        $formattedResult = $this->processBoltResult($meta, $boltResult, $connection, $holder, $bookmarkManagerHooks);
 
         $recordsList = (new CypherList($formattedResult))->withCacheLimit($this->clientSideCacheLimitFromBoltFetchSize($boltResult->getFetchSize()));
         // Safely get fields from metadata, defaulting to empty array if missing (indicates connection loss)
@@ -284,7 +285,7 @@ final class SummarizedResultFormatter
      *
      * @return CypherList<CypherMap<OGMTypes>|RowDecodeFailure>
      */
-    private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, BookmarkHolder $holder): CypherList
+    private function processBoltResult(array $meta, BoltResult $result, BoltConnection $connection, BookmarkHolder $holder, ?Neo4jBookmarkManagerHooksInterface $bookmarkManagerHooks = null): CypherList
     {
         $tbr = (new CypherList(function () use ($result, $meta) {
             while ($result->valid()) {
@@ -299,9 +300,13 @@ final class SummarizedResultFormatter
         }))->withCacheLimit($this->clientSideCacheLimitFromBoltFetchSize($result->getFetchSize()));
 
         $connection->subscribeResult($tbr);
-        $result->addFinishedCallback(function (array $response) use ($holder) {
+        $result->addFinishedCallback(function (array $response) use ($holder, $bookmarkManagerHooks) {
             if (array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
-                $holder->setBookmark(new Bookmark([$response['bookmark']]));
+                $b = trim($response['bookmark']);
+                if ($b !== '') {
+                    $holder->setBookmark(new Bookmark([$b]));
+                    $bookmarkManagerHooks?->notifyBookmarksUpdated([$b]);
+                }
             }
         });
 

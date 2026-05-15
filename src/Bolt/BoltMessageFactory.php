@@ -25,6 +25,7 @@ use Laudis\Neo4j\Bolt\Messages\BoltResetMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltRollbackMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltRunMessage;
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Contracts\Neo4jBookmarkManagerHooksInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 
 /**
@@ -58,9 +59,9 @@ class BoltMessageFactory
         return new BoltRunMessage($this->connection, $text, $parameters, $extra, $this->logger);
     }
 
-    public function createCommitMessage(BookmarkHolder $bookmarkHolder): BoltCommitMessage
+    public function createCommitMessage(BookmarkHolder $bookmarkHolder, ?Neo4jBookmarkManagerHooksInterface $bookmarkManagerHooks = null, bool $neo4jSharedManagedBookmarks = false): BoltCommitMessage
     {
-        return new BoltCommitMessage($this->connection, $this->logger, $bookmarkHolder);
+        return new BoltCommitMessage($this->connection, $this->logger, $bookmarkHolder, $bookmarkManagerHooks, $neo4jSharedManagedBookmarks);
     }
 
     public function createRollbackMessage(): BoltRollbackMessage

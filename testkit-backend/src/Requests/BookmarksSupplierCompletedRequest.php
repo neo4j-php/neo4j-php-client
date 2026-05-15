@@ -15,19 +15,14 @@ namespace Laudis\Neo4j\TestkitBackend\Requests;
 
 use Symfony\Component\Uid\Uuid;
 
-final class NewSessionRequest
+final class BookmarksSupplierCompletedRequest
 {
     /**
-     * @param list<string>|null $bookmarks
+     * @param list<string> $bookmarks
      */
     public function __construct(
-        public Uuid $driverId,
-        public string $accessMode,
-        public ?array $bookmarks,
-        public ?string $database,
-        public ?int $fetchSize,
-        public ?string $impersonatedUser,
-        public ?Uuid $bookmarkManagerId = null,
+        public readonly Uuid $requestId,
+        public readonly array $bookmarks,
     ) {
     }
 }
