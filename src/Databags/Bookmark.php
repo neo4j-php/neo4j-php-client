@@ -13,8 +13,9 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Databags;
 
-use function array_unique;
-
+/**
+ * @psalm-immutable
+ */
 final class Bookmark
 {
     /** @var list<string> */
@@ -22,12 +23,17 @@ final class Bookmark
 
     /**
      * @param list<string> $bookmarks
+     *
+     * @psalm-mutation-free
      */
     public function __construct(?array $bookmarks = null)
     {
         $this->values = $bookmarks ?? [];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isEmpty(): bool
     {
         return count($this->values) === 0;
@@ -35,6 +41,8 @@ final class Bookmark
 
     /**
      * @return list<string>
+     *
+     * @psalm-mutation-free
      */
     public function values(): array
     {
@@ -43,6 +51,8 @@ final class Bookmark
 
     /**
      * @param iterable<Bookmark>|null $bookmarks
+     *
+     * @psalm-mutation-free
      */
     public static function from(?iterable $bookmarks): self
     {
@@ -50,8 +60,18 @@ final class Bookmark
         $values = [];
 
         foreach ($bookmarks as $bookmark) {
-            array_push($values, ...$bookmark->values());
-            $values = array_values(array_unique($values));
+            foreach ($bookmark->values() as $candidate) {
+                $duplicate = false;
+                foreach ($values as $existing) {
+                    if ($existing === $candidate) {
+                        $duplicate = true;
+                        break;
+                    }
+                }
+                if (!$duplicate) {
+                    $values[] = $candidate;
+                }
+            }
         }
 
         return new self($values);

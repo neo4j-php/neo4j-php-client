@@ -20,6 +20,7 @@ use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\NewSessionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\SessionResponse;
+use Laudis\Neo4j\TestkitBackend\TestkitBookmarkManagerHooks;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -59,6 +60,16 @@ final class NewSession implements RequestHandlerInterface
 
         if ($request->fetchSize !== null) {
             $config = $config->withFetchSize($request->fetchSize);
+        }
+
+        if ($request->bookmarkManagerId !== null) {
+            $state = $this->repository->getBookmarkManager($request->bookmarkManagerId);
+            $hooks = ($state->supplierRegistered || $state->consumerRegistered)
+                ? new TestkitBookmarkManagerHooks($this->repository->getProtocolBridge(), $state)
+                : null;
+            $config = $config
+                ->withBookmarkHolder($state->holder)
+                ->withBookmarkManagerHooks($hooks);
         }
 
         $session = $driver->createSession($config);

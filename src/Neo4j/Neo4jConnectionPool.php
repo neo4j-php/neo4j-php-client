@@ -40,6 +40,7 @@ use Laudis\Neo4j\Contracts\SemaphoreInterface;
 use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\SessionWireBookmarks;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
@@ -319,9 +320,16 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
 
         $db = $config->getDatabase();
-        $routeMessage = $bolt instanceof V4_3
-            ? $bolt->route([], [], $db)
-            : $bolt->route([], [], ['db' => $db]);
+        $bookmarks = SessionWireBookmarks::resolve($config)->values();
+        if ($bolt instanceof V4_3) {
+            $routeMessage = $bolt->route([], $bookmarks, $db);
+        } else {
+            $extra = [];
+            if ($db !== null) {
+                $extra['db'] = $db;
+            }
+            $routeMessage = $bolt->route([], $bookmarks, $extra);
+        }
 
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $routeMessage

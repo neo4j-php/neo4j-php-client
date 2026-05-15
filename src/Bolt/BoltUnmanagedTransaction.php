@@ -96,7 +96,14 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $list->preload();
         });
 
-        $this->messageFactory->createCommitMessage($this->bookmarkHolder)->send()->getResponse();
+        $this->messageFactory->createCommitMessage(
+            $this->bookmarkHolder,
+            $this->config->getBookmarkManagerHooks(),
+            $this->config->getBookmarkHolder() !== null
+        )->send()->getResponse();
+        if ($this->config->getBookmarkHolder() !== null) {
+            $this->bookmarkHolder->neo4jSharedManagedTransactionClosed();
+        }
         $this->state = TransactionState::COMMITTED;
 
         return $tbr;
@@ -122,6 +129,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         // FAILURE on PULL triggers RESET in {@see BoltConnection::assertNoFailure()}; server has no open tx.
         // Must run before {@see ensureBeginSent()}: otherwise we would send BEGIN then ROLLBACK (tx_error_on_pull).
         if ($this->connection->getServerState() === 'READY') {
+            if ($this->beginSent && $this->config->getBookmarkHolder() !== null) {
+                $this->bookmarkHolder->neo4jSharedManagedTransactionClosed();
+            }
             $this->beginSent = false;
             $this->state = TransactionState::ROLLED_BACK;
 
@@ -131,6 +141,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $this->ensureBeginSent();
 
         if ($this->connection->getServerState() === 'READY') {
+            if ($this->beginSent && $this->config->getBookmarkHolder() !== null) {
+                $this->bookmarkHolder->neo4jSharedManagedTransactionClosed();
+            }
             $this->beginSent = false;
             $this->state = TransactionState::ROLLED_BACK;
 
@@ -138,6 +151,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         }
 
         $this->messageFactory->createRollbackMessage()->send();
+        if ($this->beginSent && $this->config->getBookmarkHolder() !== null) {
+            $this->bookmarkHolder->neo4jSharedManagedTransactionClosed();
+        }
         $this->state = TransactionState::ROLLED_BACK;
     }
 
@@ -188,13 +204,17 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $meta = $this->connection->run(
                 $statement->getText(),
                 $parameters->toArray(),
-                $this->database,
-                $this->tsxConfig->getTimeout(),
+                $this->isInstantTransaction ? $this->database : null,
+                $this->isInstantTransaction ? $this->tsxConfig->getTimeout() : null,
                 $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
                 null, // mode is never sent in RUN messages - it comes from session configuration
-                $this->tsxConfig->getMetaData()
+                $this->isInstantTransaction ? $this->tsxConfig->getMetaData() : null,
+                $this->isInstantTransaction ? $this->config : null,
             );
         } catch (Throwable $e) {
+            if ($this->beginSent && $this->config->getBookmarkHolder() !== null) {
+                $this->bookmarkHolder->neo4jSharedManagedTransactionClosed();
+            }
             $this->state = TransactionState::TERMINATED;
             if ($this->pool !== null) {
                 $this->pool->release($this->connection);
@@ -210,7 +230,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $start,
             $run - $start,
             $statement,
-            $this->bookmarkHolder
+            $this->bookmarkHolder,
+            $this->config->getBookmarkManagerHooks()
         );
     }
 
@@ -254,14 +275,26 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         // FAILURE on PULL triggers RESET in BoltConnection — server is READY with no tx, but we may still
         // have beginSent=true (e.g. execute_read retry). Must send BEGIN again before RUN.
         if ($this->beginSent && $this->state === TransactionState::ACTIVE && $this->connection->getServerState() === 'READY') {
+            if ($this->config->getBookmarkHolder() !== null) {
+                $this->bookmarkHolder->neo4jSharedManagedTransactionClosed();
+            }
             $this->beginSent = false;
         }
         if ($this->beginSent) {
             return;
         }
         try {
-            $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
+            $this->connection->begin(
+                $this->database,
+                $this->tsxConfig->getTimeout(),
+                $this->bookmarkHolder,
+                $this->tsxConfig->getMetaData(),
+                $this->config
+            );
             $this->beginSent = true;
+            if ($this->config->getBookmarkHolder() !== null) {
+                $this->bookmarkHolder->neo4jSharedManagedTransactionOpened();
+            }
         } catch (Throwable $e) {
             $this->state = TransactionState::TERMINATED;
             if ($this->pool !== null) {

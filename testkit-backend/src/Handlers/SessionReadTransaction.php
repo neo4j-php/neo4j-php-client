@@ -15,13 +15,16 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
+use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\DriverConnectionExceptionMapper;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionReadTransactionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 /**
  * @implements RequestHandlerInterface<SessionReadTransactionRequest>
@@ -73,6 +76,18 @@ final class SessionReadTransaction implements RequestHandlerInterface
             ));
 
             return new DriverErrorResponse($id, $exception);
+        } catch (TransactionException $exception) {
+            $this->repository->addRecords($id, new DriverErrorResponse(
+                $id,
+                $exception
+            ));
+
+            return new DriverErrorResponse($id, $exception);
+        } catch (Throwable $e) {
+            $wrapped = DriverConnectionExceptionMapper::wrapConnectionFailureAsNeo4jException($e);
+            $this->repository->addRecords($id, new DriverErrorResponse($id, $wrapped));
+
+            return new DriverErrorResponse($id, $wrapped);
         }
 
         return new RetryableTryResponse($id);

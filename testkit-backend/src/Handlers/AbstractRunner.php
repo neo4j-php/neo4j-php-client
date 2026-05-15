@@ -21,9 +21,11 @@ use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Exception\ConnectionPoolException;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\DriverConnectionExceptionMapper;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\NutkitValueDecoder;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
@@ -33,7 +35,9 @@ use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\AbstractCypherObject;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -97,6 +101,9 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
         } catch (TransactionException $exception) {
+            if ($request instanceof SessionRunRequest) {
+                return new DriverErrorResponse($request->getSessionId(), $exception);
+            }
             if ($request instanceof TransactionRunRequest) {
                 $response = new DriverErrorResponse($request->getTxId(), $exception);
                 $this->repository->addRecords($request->getTxId(), $response);
@@ -106,20 +113,38 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
         } catch (BoltConnectException $e) {
-            // Wrap connection/timeout errors for testkit protocol - tests expect DriverError with Neo4jException
-            $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
-            $wrapped = new Neo4jException([$neo4jError], $e);
-
-            if ($request instanceof SessionRunRequest) {
-                return new DriverErrorResponse($request->getSessionId(), $wrapped);
-            }
-            if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $wrapped);
+            return $this->wrapConnectionFailureAndRespond($request, $e);
+        } catch (ConnectionPoolException $e) {
+            return $this->wrapConnectionFailureAndRespond($request, $e);
+        } catch (RuntimeException $e) {
+            // Neo4jConnectionPool throws plain RuntimeException when no router is reachable; Bolt may surface "Connection refused"
+            if (!DriverConnectionExceptionMapper::isLikelyConnectionFailureMessage($e->getMessage())) {
+                throw $e;
             }
 
-            throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));
+            return $this->wrapConnectionFailureAndRespond($request, $e);
         }
         // Unhandled exceptions propagate to Backend's top-level catch and become BackendError (matches Java driver)
+    }
+
+    private function wrapConnectionFailureAndRespond(
+        SessionRunRequest|TransactionRunRequest $request,
+        Throwable $e,
+    ): DriverErrorResponse {
+        $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
+        $wrapped = new Neo4jException([$neo4jError], $e);
+
+        if ($request instanceof SessionRunRequest) {
+            return new DriverErrorResponse($request->getSessionId(), $wrapped);
+        }
+        if ($request instanceof TransactionRunRequest) {
+            $response = new DriverErrorResponse($request->getTxId(), $wrapped);
+            $this->repository->addRecords($request->getTxId(), $response);
+
+            return $response;
+        }
+
+        throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));
     }
 
     /**

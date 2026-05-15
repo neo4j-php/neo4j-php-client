@@ -16,6 +16,9 @@ namespace Laudis\Neo4j\TestkitBackend;
 use function is_string;
 
 use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\BookmarkManagerCloseRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\BookmarksConsumerCompletedRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\BookmarksSupplierCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\CheckMultiDBSupportRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DomainNameResolutionCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
@@ -23,6 +26,7 @@ use Laudis\Neo4j\TestkitBackend\Requests\ForcedRoutingTableUpdateRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetRoutingTableRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetServerInfoRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\NewBookmarkManagerRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\NewSessionRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ResolverResolutionCompletedRequest;
@@ -47,6 +51,7 @@ use Laudis\Neo4j\TestkitBackend\Requests\TransactionRollbackRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\VerifyConnectivityRequest;
 use Symfony\Component\Uid\Uuid;
+use Traversable;
 
 final class RequestFactory
 {
@@ -60,7 +65,6 @@ final class RequestFactory
         'ResolverResolutionCompleted' => ResolverResolutionCompletedRequest::class,
         'DomainNameResolutionCompleted' => DomainNameResolutionCompletedRequest::class,
         'DriverClose' => DriverCloseRequest::class,
-        'NewSession' => NewSessionRequest::class,
         'SessionClose' => SessionCloseRequest::class,
         'SessionRun' => SessionRunRequest::class,
         'SessionReadTransaction' => SessionReadTransactionRequest::class,
@@ -89,19 +93,56 @@ final class RequestFactory
      */
     public function create(string $name, iterable $data): object
     {
+        $assoc = $data instanceof Traversable ? iterator_to_array($data, false) : (array) $data;
+
+        if ($name === 'NewSession') {
+            return new NewSessionRequest(
+                Uuid::fromString((string) $assoc['driverId']),
+                (string) $assoc['accessMode'],
+                $assoc['bookmarks'] ?? null,
+                $assoc['database'] ?? null,
+                $assoc['fetchSize'] ?? null,
+                $assoc['impersonatedUser'] ?? null,
+                array_key_exists('bookmarkManagerId', $assoc) ? Uuid::fromString((string) $assoc['bookmarkManagerId']) : null,
+            );
+        }
+
+        if ($name === 'NewBookmarkManager') {
+            return new NewBookmarkManagerRequest(
+                $assoc['initialBookmarks'] ?? null,
+                (bool) ($assoc['bookmarksSupplierRegistered'] ?? false),
+                (bool) ($assoc['bookmarksConsumerRegistered'] ?? false),
+            );
+        }
+
+        if ($name === 'BookmarkManagerClose') {
+            return new BookmarkManagerCloseRequest(Uuid::fromString((string) $assoc['id']));
+        }
+
+        if ($name === 'BookmarksSupplierCompleted') {
+            return new BookmarksSupplierCompletedRequest(
+                Uuid::fromString((string) $assoc['requestId']),
+                $assoc['bookmarks'] ?? [],
+            );
+        }
+
+        if ($name === 'BookmarksConsumerCompleted') {
+            return new BookmarksConsumerCompletedRequest(Uuid::fromString((string) $assoc['requestId']));
+        }
+
         $class = self::MAPPINGS[$name];
 
         if ($name === 'AuthorizationToken') {
             return new AuthorizationTokenRequest(
-                $data['scheme'],
-                $data['realm'] ?? '',
-                $data['principal'],
-                $data['credentials']
+                $assoc['scheme'],
+                $assoc['realm'] ?? '',
+                $assoc['principal'],
+                $assoc['credentials']
             );
         }
 
         $params = [];
-        foreach ($data as $value) {
+        foreach ($assoc as $value) {
             if (is_array($value) && isset($value['name'], $value['data'])) {
                 /** @psalm-suppress MixedArgument */
                 $params[] = $this->create($value['name'], $value['data']);

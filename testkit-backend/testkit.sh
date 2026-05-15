@@ -235,6 +235,27 @@ python3 -m unittest -v \
       tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
       tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type_in_list \
       tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
+\
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x2.test_default_user_agent \
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x2.test_custom_user_agent \
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_default_user_agent \
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_custom_user_agent \
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_bolt_agent \
+\
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_keep_track_of_session_run \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_keep_track_of_tx_in_sequence \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_not_replace_bookmarks_with_empty_bookmarks \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_keep_track_of_tx_in_parallel \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_manage_explicitly_session_bookmarks \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_ignore_bookmark_manager_not_set_in_a_session \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_use_initial_bookmark_set_in_the_first_tx \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_send_all_bookmarks_and_replace_it_by_the_new_one \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_handle_database_redirection_in_tx \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_handle_database_redirection_in_session_run \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_resolve_database_name_with_bookmarks \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_not_change_bmm_state_with_supplied_bookmarks \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_call_bookmarks_consumer_for_default_db \
+    tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_multiple_bookmark_manager \
 
 EXIT_CODE=$?
 

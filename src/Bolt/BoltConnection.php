@@ -30,10 +30,13 @@ use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
+use Laudis\Neo4j\Databags\Bookmark;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\Neo4jError;
+use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\SessionWireBookmarks;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -257,11 +260,13 @@ class BoltConnection implements ConnectionInterface
      *
      * @param iterable<string, scalar|array|null>|null $txMetaData
      */
-    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData): void
+    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData, ?SessionConfiguration $sessionBookmarks = null): void
     {
         $this->consumeResults();
 
-        $extra = $this->buildRunExtra($database, $timeout, $holder, null, $txMetaData);
+        $sessionMode = $sessionBookmarks?->getAccessMode();
+        $modeForBegin = ($sessionMode === AccessMode::READ()) ? AccessMode::READ() : null;
+        $extra = $this->buildRunExtra($database, $timeout, $holder, $modeForBegin, $txMetaData, $sessionBookmarks);
         $message = $this->messageFactory->createBeginMessage($extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
@@ -296,8 +301,9 @@ class BoltConnection implements ConnectionInterface
         ?BookmarkHolder $holder,
         ?AccessMode $mode,
         ?iterable $tsxMetadata,
+        ?SessionConfiguration $sessionBookmarks = null,
     ): array {
-        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
+        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata, $sessionBookmarks);
 
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
@@ -453,7 +459,7 @@ class BoltConnection implements ConnectionInterface
         return $e;
     }
 
-    private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
+    private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata, ?SessionConfiguration $sessionBookmarks = null): array
     {
         $extra = [];
         if ($database !== null) {
@@ -463,7 +469,31 @@ class BoltConnection implements ConnectionInterface
             $extra['tx_timeout'] = (int) ($timeout * 1000);
         }
 
-        if ($holder && !$holder->getBookmark()->isEmpty()) {
+        if ($sessionBookmarks !== null) {
+            $holderFromConfig = $sessionBookmarks->getBookmarkHolder();
+            $wireFromConfig = SessionWireBookmarks::resolve($sessionBookmarks);
+
+            if ($holder !== null && ($holderFromConfig === null || $holder !== $holderFromConfig)) {
+                $live = $holder->getBookmark();
+                // Session-local holder (not on SessionConfiguration): it is seeded from config then updated
+                // by COMMIT/PULL — use it alone on the wire. Merging with immutable config bookmarks would
+                // resend superseded bookmarks (TestKit send_and_receive_bookmark_two_write_tx.script).
+                // When bookmark-manager hooks are present, SessionWireBookmarks::resolve() may add supplier bookmarks
+                // that are not stored on the holder; do not drop those by taking live only.
+                if ($holderFromConfig === null && !$live->isEmpty() && $sessionBookmarks->getBookmarkManagerHooks() === null) {
+                    $wire = $live;
+                } elseif (!$live->isEmpty()) {
+                    $wire = Bookmark::from([$wireFromConfig, $live]);
+                } else {
+                    $wire = $wireFromConfig;
+                }
+            } else {
+                $wire = $wireFromConfig;
+            }
+            if (!$wire->isEmpty()) {
+                $extra['bookmarks'] = $wire->values();
+            }
+        } elseif ($holder && !$holder->getBookmark()->isEmpty()) {
             $extra['bookmarks'] = $holder->getBookmark()->values();
         }
 
