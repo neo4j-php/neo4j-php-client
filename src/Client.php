@@ -98,7 +98,15 @@ final class Client implements ClientInterface
             return $this->boundSessions[$alias];
         }
 
-        return $this->boundSessions[$alias] = $this->startSession($alias, $this->defaultSessionConfiguration);
+        return $this->boundSessions[$alias] = $this->startSession(
+            $alias,
+            $this->resolveSessionConfiguration($this->defaultSessionConfiguration, $alias)
+        );
+    }
+
+    private function resolveSessionConfiguration(SessionConfiguration $config, ?string $alias = null): SessionConfiguration
+    {
+        return $config;
     }
 
     /**
@@ -123,7 +131,8 @@ final class Client implements ClientInterface
 
         while ($tries > 0) {
             try {
-                $driver = $this->driverSetups->getDriver($this->defaultSessionConfiguration, $alias);
+                $sessionConfig = $this->resolveSessionConfiguration($this->defaultSessionConfiguration, $alias);
+                $driver = $this->driverSetups->getDriver($sessionConfig, $alias);
 
                 $driverHash = spl_object_hash($driver);
                 if (in_array($driverHash, $attemptedDrivers, true)) {
@@ -131,7 +140,7 @@ final class Client implements ClientInterface
                 }
                 $attemptedDrivers[] = $driverHash;
 
-                $session = $driver->createSession($this->defaultSessionConfiguration);
+                $session = $driver->createSession($sessionConfig);
 
                 return $operation($session);
             } catch (ConnectionPoolException|ConnectException $e) {
@@ -190,12 +199,17 @@ final class Client implements ClientInterface
 
     public function getDriver(?string $alias): DriverInterface
     {
-        return $this->driverSetups->getDriver($this->defaultSessionConfiguration, $alias);
+        return $this->driverSetups->getDriver(
+            $this->resolveSessionConfiguration($this->defaultSessionConfiguration, $alias),
+            $alias
+        );
     }
 
     private function startSession(?string $alias, SessionConfiguration $configuration): SessionInterface
     {
-        return $this->getDriver($alias)->createSession($configuration);
+        return $this->getDriver($alias)->createSession(
+            $this->resolveSessionConfiguration($configuration, $alias)
+        );
     }
 
     public function writeTransaction(callable $tsxHandler, ?string $alias = null, ?TransactionConfiguration $config = null)
@@ -239,7 +253,10 @@ final class Client implements ClientInterface
 
     public function verifyConnectivity(?string $driver = null): bool
     {
-        return $this->driverSetups->verifyConnectivity($this->defaultSessionConfiguration, $driver);
+        return $this->driverSetups->verifyConnectivity(
+            $this->resolveSessionConfiguration($this->defaultSessionConfiguration, $driver),
+            $driver
+        );
     }
 
     public function hasDriver(string $alias): bool

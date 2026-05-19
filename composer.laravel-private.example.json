@@ -1,0 +1,14 @@
+{
+    "_comment": "Merge into your Laravel app composer.json (private nagels-tech repo + Aura fix branch)",
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:nagels-tech/neo4j-php-client.git"
+        }
+    ],
+    "require": {
+        "laudis/neo4j-php-client": "dev-fix/aura-database-routing as 3.4.4"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

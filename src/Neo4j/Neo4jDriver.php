@@ -91,8 +91,11 @@ final class Neo4jDriver implements DriverInterface
     public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
         $config ??= SessionConfiguration::default();
+        $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl, $this->pool->getLogger()));
+
         try {
-            GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
+            $connection = GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
+            $this->pool->release($connection);
         } catch (ConnectException|ConnectionPoolException $e) {
             $this->pool->getLogger()?->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
 
@@ -105,6 +108,7 @@ final class Neo4jDriver implements DriverInterface
     public function getServerInfo(?SessionConfiguration $config = null): ServerInfo
     {
         $config ??= SessionConfiguration::default();
+        $config = $config->merge(SessionConfiguration::fromUri($this->parsedUrl, $this->pool->getLogger()));
 
         // Use READ access mode to connect to a follower (read server)
         if ($config->getAccessMode() === null) {

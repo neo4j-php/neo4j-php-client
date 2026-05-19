@@ -160,6 +160,38 @@ final class SessionConfiguration
     }
 
     /**
+     * On Aura (*.databases.neo4j.io), the default name "neo4j" is not a valid database.
+     * Do not strip the hostname instance id here — on many Aura instances that *is* the
+     * real database name. A wrong instance-id-only .env value is cleared on DatabaseNotFound retry.
+     */
+    public static function normalizeAuraDatabaseName(?string $database, ?string $host): ?string
+    {
+        if ($database === null || $host === null || $host === '') {
+            return $database;
+        }
+
+        if (!str_ends_with(strtolower($host), '.databases.neo4j.io')) {
+            return $database;
+        }
+
+        if ($database === self::DEFAULT_DATABASE) {
+            return null;
+        }
+
+        return $database;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function withAuraNormalizedDatabase(string $host): self
+    {
+        $normalized = self::normalizeAuraDatabaseName($this->database, $host);
+
+        return $normalized === $this->database ? $this : $this->withDatabase($normalized);
+    }
+
+    /**
      * Creates a session configuration from the information found within the uri.
      *
      * @pure

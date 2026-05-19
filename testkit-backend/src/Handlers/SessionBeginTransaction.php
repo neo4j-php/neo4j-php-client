@@ -62,7 +62,6 @@ final class SessionBeginTransaction implements RequestHandlerInterface
             $config = $config->withMetaData($actualMeta);
         }
 
-        // TODO - Create beginReadTransaction and beginWriteTransaction
         try {
             $transaction = $session->beginTransaction(null, $config);
         } catch (Neo4jException $exception) {

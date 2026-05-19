@@ -55,6 +55,16 @@ final class Session implements SessionInterface
         return new UnmanagedTransaction($this->session->beginTransaction($statements, $config));
     }
 
+    public function beginWriteTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransaction
+    {
+        return new UnmanagedTransaction($this->session->beginWriteTransaction($statements, $config));
+    }
+
+    public function beginReadTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransaction
+    {
+        return new UnmanagedTransaction($this->session->beginReadTransaction($statements, $config));
+    }
+
     public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
         return $this->session->writeTransaction($tsxHandler, $config);

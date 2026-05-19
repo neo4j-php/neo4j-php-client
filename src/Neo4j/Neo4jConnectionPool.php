@@ -127,7 +127,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     public function acquire(SessionConfiguration $config): Generator
     {
-        $key = $this->createKey($this->data, $config);
+        $host = $this->data->getUri()->getHost();
+        // Strip invalid Aura default "neo4j" for ROUTE; keep explicit names (including instance id when that is the DB name).
+        $routeConfig = $config->withAuraNormalizedDatabase($host);
+        $routingConfig = $this->resolveRoutingSessionConfiguration($routeConfig, $config);
+        $key = $this->createKey($this->data, $routingConfig);
 
         /** @var RoutingTable|null $table */
         $table = $this->cache->get($key);
@@ -152,8 +156,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                      *
                      * @psalm-suppress UnnecessaryVarAnnotation
                      */
-                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
-                    $table = $this->routingTable($connection, $config);
+                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($routeConfig));
+                    $table = $this->routingTable($connection, $routeConfig);
 
                     $this->getLogger()?->log(LogLevel::DEBUG, 'Successfully fetched routing table', [
                         'ttl' => $table->getTtl(),
@@ -170,7 +174,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                     continue; // We continue if something is wrong with the current server
                 }
 
-                $this->cache->set($key, $table, $table->getTtl());
+                $this->cacheRoutingTable($key, $table, $routeConfig);
                 // TODO: release probably logs off the connection, it is not preferable
                 $pool->release($connection);
 
@@ -228,6 +232,23 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             'key' => $key,
             'deleted' => $deleted,
         ]);
+    }
+
+    /**
+     * Clears all cached routing tables and home-database hints for this driver's host.
+     */
+    public function invalidateRoutingForHost(): void
+    {
+        $host = $this->data->getUri()->getHost();
+        HomeDatabaseCache::clear($host);
+        $this->cache->clear();
+
+        $this->getLogger()?->log(LogLevel::INFO, 'Invalidated routing cache for host', ['host' => $host]);
+    }
+
+    public function getHost(): string
+    {
+        return $this->data->getUri()->getHost();
     }
 
     /**
@@ -309,11 +330,27 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         $bolt = $connection->protocol();
 
-        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
-        /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
-        $route = $bolt->route([], [], ['db' => $config->getDatabase()])
+        $database = $config->getDatabase();
+        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $database]);
+        /** @var array{rt?: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}, db?: string} $route */
+        $route = $bolt->route([], [], self::buildRouteExtra($database))
             ->getResponse()
             ->content;
+
+        if (!isset($route['rt']) || !is_array($route['rt'])) {
+            $databaseHint = $database ?? '(home database)';
+
+            throw new RuntimeException(sprintf(
+                'Invalid ROUTE response: missing routing table for database %s. '
+                .'On Aura, do not use database name "neo4j"; omit the database or use the name from SHOW DATABASES.',
+                $databaseHint
+            ));
+        }
+
+        if (isset($route['db']) && $route['db'] !== '') {
+            HomeDatabaseCache::set($this->data->getUri()->getHost(), $route['db']);
+            $this->getLogger()?->log(LogLevel::DEBUG, 'Cached home database from ROUTE', ['db' => $route['db']]);
+        }
 
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();
@@ -326,6 +363,63 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $this->createOrGetPool($connection->getServerAddress()->getHost(), $connection->getServerAddress())->release(
             $connection
         );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function buildRouteExtra(?string $database): array
+    {
+        if ($database === null) {
+            return [];
+        }
+
+        return ['db' => $database];
+    }
+
+    /**
+     * When the session has no database, reuse the cached home DB for routing table lookup.
+     */
+    private function resolveRoutingSessionConfiguration(SessionConfiguration $routeConfig, SessionConfiguration $sessionConfig): SessionConfiguration
+    {
+        if ($routeConfig->getDatabase() !== null) {
+            return $routeConfig;
+        }
+
+        $normalizedSession = $sessionConfig->withAuraNormalizedDatabase($this->data->getUri()->getHost());
+        if ($normalizedSession->getDatabase() !== null) {
+            return $routeConfig->withDatabase($normalizedSession->getDatabase());
+        }
+
+        $cachedHomeDatabase = HomeDatabaseCache::get($this->data->getUri()->getHost());
+        if ($cachedHomeDatabase === null) {
+            return $routeConfig;
+        }
+
+        return $routeConfig->withDatabase($cachedHomeDatabase);
+    }
+
+    private function cacheRoutingTable(
+        string $key,
+        RoutingTable $table,
+        SessionConfiguration $config,
+    ): void {
+        $ttl = $table->getTtl();
+        $this->cache->set($key, $table, $ttl);
+
+        if ($config->getDatabase() !== null) {
+            return;
+        }
+
+        $homeDatabase = HomeDatabaseCache::get($this->data->getUri()->getHost());
+        if ($homeDatabase === null) {
+            return;
+        }
+
+        $homeKey = $this->createKey($this->data, $config->withDatabase($homeDatabase));
+        if ($homeKey !== $key) {
+            $this->cache->set($homeKey, $table, $ttl);
+        }
     }
 
     private function createKey(ConnectionRequestData $data, ?SessionConfiguration $config = null): string
@@ -365,6 +459,17 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         }
         self::$pools = [];
         $this->cache->clear();
+    }
+
+    /**
+     * Closes every shared sub-pool. Useful for tests and when resetting routing state.
+     */
+    public static function closeAll(): void
+    {
+        foreach (self::$pools as $pool) {
+            $pool->close();
+        }
+        self::$pools = [];
     }
 
     /**

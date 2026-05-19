@@ -49,6 +49,20 @@ interface SessionInterface extends TransactionInterface
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
 
     /**
+     * @psalm-param iterable<Statement>|null $statements
+     *
+     * @throws Neo4jException
+     */
+    public function beginWriteTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
+
+    /**
+     * @psalm-param iterable<Statement>|null $statements
+     *
+     * @throws Neo4jException
+     */
+    public function beginReadTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface;
+
+    /**
      * @template HandlerResult
      *
      * @param callable(TransactionInterface):HandlerResult $tsxHandler

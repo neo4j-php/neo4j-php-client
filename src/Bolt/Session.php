@@ -48,6 +48,8 @@ final class Session implements SessionInterface
     private array $usedConnections = [];
     /** @psalm-readonly */
     private readonly BookmarkHolder $bookmarkHolder;
+    private ?SessionConfiguration $databaseFallbackConfig = null;
+    private int $databaseNotFoundRecoveryAttempts = 0;
 
     /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
@@ -106,6 +108,7 @@ final class Session implements SessionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning write transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
+        $this->resetDatabaseRecoveryState();
 
         return $this->retry($tsxHandler, false, $config);
     }
@@ -114,6 +117,7 @@ final class Session implements SessionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning read transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
+        $this->resetDatabaseRecoveryState();
 
         return $this->retry($tsxHandler, true, $config);
     }
@@ -130,11 +134,8 @@ final class Session implements SessionInterface
         while (true) {
             $transaction = null;
             try {
-                if ($read) {
-                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()));
-                } else {
-                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE()));
-                }
+                $accessMode = $this->resolveRoutingAccessMode($read);
+                $transaction = $this->startTransaction($config, $this->getSessionConfiguration()->withAccessMode($accessMode));
                 $tbr = $tsxHandler($transaction);
                 self::triggerLazyResult($tbr);
                 $transaction->commit();
@@ -178,6 +179,10 @@ final class Session implements SessionInterface
      */
     private function shouldRetryManagedTransaction(Neo4jException $e): bool
     {
+        if ($this->isDatabaseNotFound($e) && $this->tryRecoverFromDatabaseNotFound()) {
+            return true;
+        }
+
         if ($e->getTitle() === 'NotALeader' || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader') {
             return true;
         }
@@ -195,9 +200,14 @@ final class Session implements SessionInterface
      */
     private function handleConnectionFailure(): void
     {
+        $this->usedConnections = [];
+
         if ($this->pool instanceof Neo4jConnectionPool) {
-            $this->pool->clearRoutingTable($this->config);
+            $this->pool->invalidateRoutingForHost();
+
+            return;
         }
+
         $this->pool->close();
     }
 
@@ -239,6 +249,58 @@ final class Session implements SessionInterface
             || $title === 'NotALeader';
     }
 
+    private function getSessionConfiguration(): SessionConfiguration
+    {
+        return $this->databaseFallbackConfig ?? $this->config;
+    }
+
+    private function resetDatabaseRecoveryState(): void
+    {
+        $this->databaseNotFoundRecoveryAttempts = 0;
+        $this->databaseFallbackConfig = null;
+    }
+
+    private function isDatabaseNotFound(Neo4jException $e): bool
+    {
+        return $e->getNeo4jCode() === 'Neo.ClientError.Database.DatabaseNotFound'
+            || $e->getTitle() === 'DatabaseNotFound';
+    }
+
+    /**
+     * Clears routing state and drops an explicit database selection so Aura can resolve the home DB.
+     */
+    private function tryRecoverFromDatabaseNotFound(int $maxAttempts = 2): bool
+    {
+        if ($this->databaseNotFoundRecoveryAttempts >= $maxAttempts) {
+            return false;
+        }
+
+        ++$this->databaseNotFoundRecoveryAttempts;
+
+        $this->usedConnections = [];
+
+        if ($this->pool instanceof Neo4jConnectionPool) {
+            $this->pool->invalidateRoutingForHost();
+        }
+
+        if ($this->databaseFallbackConfig !== null) {
+            return true;
+        }
+
+        if ($this->config->getDatabase() === null) {
+            return true;
+        }
+
+        $fallback = $this->config->withDatabase(null);
+        if ($this->pool instanceof Neo4jConnectionPool) {
+            $fallback = $fallback->withAuraNormalizedDatabase($this->pool->getHost());
+        }
+
+        $this->databaseFallbackConfig = $fallback;
+
+        return true;
+    }
+
     /**
      * Execute a statement with automatic retry on connection errors.
      * Retries up to 3 times on connection failures, clearing routing table between attempts.
@@ -271,13 +333,17 @@ final class Session implements SessionInterface
      */
     private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
     {    // Retry instant transactions up to 3 times on connection/routing errors; catch distinguishes retryable errors from client errors (syntax, auth) and clears routing table for cluster failover.
+        $this->resetDatabaseRecoveryState();
         $maxRetries = 3;
         $retries = 0;
 
         while ($retries < $maxRetries) {
             try {
-                return $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+                return $this->runStatementOnce($statement, $config);
             } catch (Neo4jException $e) {
+                if ($this->isDatabaseNotFound($e) && $this->tryRecoverFromDatabaseNotFound()) {
+                    continue;
+                }
                 if (!$this->shouldClearRoutingTable($e)) {
                     throw $e;
                 }
@@ -291,6 +357,38 @@ final class Session implements SessionInterface
         }
 
         throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.General', 'Statement execution failed after maximum retries')]);
+    }
+
+    /**
+     * Routed clusters (neo4j://) need an explicit transaction for session.run(); autocommit RUN
+     * alone does not resolve the home database correctly on Aura.
+     */
+    private function runStatementOnce(Statement $statement, TransactionConfiguration $config): SummarizedResult
+    {
+        $sessionConfig = $this->getSessionConfiguration();
+
+        if ($this->pool instanceof Neo4jConnectionPool) {
+            if ($sessionConfig->getAccessMode() === null) {
+                $sessionConfig = $sessionConfig->withAccessMode(AccessMode::WRITE());
+            }
+
+            $transaction = $this->startTransaction($config, $sessionConfig);
+            try {
+                $result = $transaction->runStatement($statement);
+                self::triggerLazyResult($result);
+                $transaction->commit();
+
+                return $result;
+            } catch (Throwable $e) {
+                if (!$transaction->isFinished()) {
+                    $transaction->rollback();
+                }
+
+                throw $e;
+            }
+        }
+
+        return $this->beginInstantTransaction($sessionConfig, $config)->runStatement($statement);
     }
 
     /**
@@ -329,10 +427,41 @@ final class Session implements SessionInterface
      */
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
-        $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
-        $config = $this->mergeTsxConfig($config);
-        $tsx = $this->startTransaction($config, $this->config);
+        return $this->beginTransactionWithAccessMode($statements, $config, null);
+    }
 
+    public function beginWriteTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    {
+        return $this->beginTransactionWithAccessMode($statements, $config, AccessMode::WRITE());
+    }
+
+    public function beginReadTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    {
+        return $this->beginTransactionWithAccessMode($statements, $config, AccessMode::READ());
+    }
+
+    /**
+     * @param iterable<Statement>|null $statements
+     */
+    private function beginTransactionWithAccessMode(
+        ?iterable $statements,
+        ?TransactionConfiguration $config,
+        ?AccessMode $accessMode,
+    ): UnmanagedTransactionInterface {
+        $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', [
+            'statements' => $statements,
+            'config' => $config,
+            'accessMode' => $accessMode?->getValue(),
+        ]);
+        $config = $this->mergeTsxConfig($config);
+        $sessionConfig = $this->getSessionConfiguration();
+        if ($accessMode !== null) {
+            $sessionConfig = $sessionConfig->withAccessMode($accessMode);
+        } elseif ($sessionConfig->getAccessMode() === null && $this->pool instanceof Neo4jConnectionPool) {
+            $sessionConfig = $sessionConfig->withAccessMode(AccessMode::WRITE());
+        }
+
+        $tsx = $this->startTransaction($config, $sessionConfig);
         $tsx->runStatements($statements ?? []);
 
         return $tsx;
@@ -351,11 +480,13 @@ final class Session implements SessionInterface
         /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
+        $sessionConfig = $this->getSessionConfiguration();
+
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $sessionConfig->getDatabase(),
             $this->formatter,
             $connection,
-            $this->config,
+            $sessionConfig,
             $tsxConfig,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
@@ -402,11 +533,13 @@ final class Session implements SessionInterface
         /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
+        $effectiveSessionConfig = $this->resolveTransactionSessionConfiguration($sessionConfig);
+
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $effectiveSessionConfig->getDatabase(),
             $this->formatter,
             $connection,
-            $this->config,
+            $effectiveSessionConfig,
             $config,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
@@ -414,6 +547,38 @@ final class Session implements SessionInterface
             $pool,
             false, // BEGIN sent on first run/commit/rollback
         );
+    }
+
+    private function resolveTransactionSessionConfiguration(SessionConfiguration $sessionConfig): SessionConfiguration
+    {
+        $effective = $this->getSessionConfiguration();
+
+        if ($sessionConfig->getAccessMode() !== null) {
+            $effective = $effective->withAccessMode($sessionConfig->getAccessMode());
+        }
+
+        return $effective;
+    }
+
+    /**
+     * Aura often exposes followers that cannot serve the user database; route reads to the leader.
+     */
+    private function resolveRoutingAccessMode(bool $read): AccessMode
+    {
+        if ($read && $this->isAuraHost()) {
+            return AccessMode::WRITE();
+        }
+
+        return $read ? AccessMode::READ() : AccessMode::WRITE();
+    }
+
+    private function isAuraHost(): bool
+    {
+        if (!$this->pool instanceof Neo4jConnectionPool) {
+            return false;
+        }
+
+        return str_ends_with(strtolower($this->pool->getHost()), '.databases.neo4j.io');
     }
 
     /**

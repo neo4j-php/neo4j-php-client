@@ -176,6 +176,21 @@ class DriverSetupManager implements Countable
         return $this->decideAlias(null);
     }
 
+    public function getUriHostForAlias(?string $alias = null): ?string
+    {
+        $alias ??= $this->getDefaultAlias();
+
+        if (!array_key_exists($alias, $this->driverSetups)) {
+            return null;
+        }
+
+        foreach ($this->driverSetups[$alias] as $setup) {
+            return $setup->getUri()->getHost();
+        }
+
+        return null;
+    }
+
     /**
      * @psalm-mutation-free
      */

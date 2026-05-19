@@ -80,15 +80,18 @@ final class BoltDriver implements DriverInterface
         if ($config !== null) {
             $sessionConfig = $sessionConfig->merge($config);
         }
-
         return new Session($sessionConfig, $this->pool, $this->formatter);
     }
 
     public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
         $config ??= SessionConfiguration::default();
+        $sessionConfig = SessionConfiguration::fromUri($this->parsedUrl, $this->pool->getLogger());
+        $config = $config->merge($sessionConfig);
+
         try {
-            GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
+            $connection = GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
+            $this->pool->release($connection);
         } catch (ConnectException $e) {
             $this->pool->getLogger()?->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
 

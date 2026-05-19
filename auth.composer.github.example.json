@@ -1,0 +1,5 @@
+{
+    "github-oauth": {
+        "github.com": "YOUR_GITHUB_PAT_WITH_repo_SCOPE"
+    }
+}
