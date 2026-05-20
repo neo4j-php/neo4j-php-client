@@ -153,15 +153,20 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         $this->ensureBeginSent();
 
+        // Bolt spec: only autocommit RUN carries db/timeout/bookmarks/metadata in `extra`.
+        // RUN inside an explicit transaction must send an empty `extra` map; otherwise
+        // strict servers (e.g. Aura) reject the message and surface it as DatabaseNotFound.
+        $isInstant = $this->isInstantTransaction;
+
         try {
             $meta = $this->connection->run(
                 $statement->getText(),
                 $parameters->toArray(),
-                $this->database,
-                $this->tsxConfig->getTimeout(),
-                $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
-                null, // mode is never sent in RUN messages - it comes from session configuration
-                $this->tsxConfig->getMetaData()
+                $isInstant ? $this->database : null,
+                $isInstant ? $this->tsxConfig->getTimeout() : null,
+                $isInstant ? $this->bookmarkHolder : null,
+                null,
+                $isInstant ? $this->tsxConfig->getMetaData() : null,
             );
         } catch (Throwable $e) {
             $this->state = TransactionState::TERMINATED;
