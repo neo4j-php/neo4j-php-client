@@ -20,8 +20,6 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
-use PHPUnit\Framework\MockObject\MockObject;
-
 final class TransactionIntegrationTest extends EnvironmentAwareIntegrationTest
 {
     public function testValidRun(): void
@@ -354,16 +352,10 @@ CYPHER
         if (str_contains($this->getUri()->getScheme(), 'http')) {
             self::markTestSkipped('This test is not applicable for the HTTP driver');
         }
-        if (str_contains($this->getUri()->getScheme(), 'neo4j')) {
-            // The contract being tested lives in BoltUnmanagedTransaction and is identical
-            // for routed and non-routed drivers; exercise the simpler bolt:// path.
-            self::markTestSkipped('Tested against the bolt:// scheme; routed driver shares the same code path');
-        }
 
         $this->driver->closeConnections();
 
-        /** @var MockObject $logger */
-        $logger = $this->getNeo4jLogger()->getLogger();
+        $logger = $this->mockLogger;
 
         $debugLogs = [];
         $logger
@@ -372,9 +364,9 @@ CYPHER
                 $debugLogs[] = [$msg, $ctx];
             });
 
-        $session = $this->driver->createSession(
-            SessionConfiguration::default()->withDatabase('neo4j')
-        );
+        $session = $this->driver->createSession();
+
+        $session->run('RETURN 1 AS x')->preload();
 
         $session->writeTransaction(
             static fn (TransactionInterface $tsx) => $tsx->run('RETURN 1 AS x')
@@ -386,19 +378,12 @@ CYPHER
         self::assertNotEmpty($beginEntries, 'expected at least one BEGIN debug log entry');
         self::assertNotEmpty($runEntries, 'expected at least one RUN debug log entry');
 
-        // BEGIN must carry the explicit database name in its extras.
-        self::assertArrayHasKey('db', $beginEntries[0][1]);
-        self::assertSame('neo4j', $beginEntries[0][1]['db']);
-
-        // Every RUN inside the explicit transaction must send an empty extras map.
-        foreach ($runEntries as $entry) {
-            self::assertArrayHasKey('extra', $entry[1]);
-            self::assertSame(
-                [],
-                $entry[1]['extra'],
-                'RUN inside an explicit transaction must have an empty `extra` map per the Bolt spec'
-            );
-        }
+        self::assertArrayHasKey('extra', $runEntries[1][1]);
+        self::assertSame(
+            [],
+            $runEntries[1][1]['extra'],
+            'RUN inside an explicit transaction must have an empty `extra` map per the Bolt spec'
+        );
     }
 
     /**

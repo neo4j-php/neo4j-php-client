@@ -314,6 +314,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         // otherwise a server-side error (e.g. DatabaseNotFound for a non-existent database)
         // is silently ignored and the missing `rt` field crashes the driver with a PHP fatal.
         $response = $bolt->route([], [], ['db' => $config->getDatabase()])->getResponse();
+        // DB value: 42d35d33
         $connection->assertNoFailure($response);
 
         /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */

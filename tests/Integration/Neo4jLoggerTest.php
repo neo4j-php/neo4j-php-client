@@ -18,7 +18,6 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
-use PHPUnit\Framework\MockObject\MockObject;
 
 class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
 {
@@ -38,8 +37,7 @@ class Neo4jLoggerTest extends EnvironmentAwareIntegrationTest
 
         $this->driver->closeConnections();
 
-        /** @var MockObject $logger */
-        $logger = $this->getNeo4jLogger()->getLogger();
+        $logger = $this->mockLogger;
         /** @var Session $session */
         $session = $this->getSession();
 
