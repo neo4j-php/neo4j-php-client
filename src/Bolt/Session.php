@@ -50,6 +50,15 @@ final class Session implements SessionInterface
     private readonly BookmarkHolder $bookmarkHolder;
 
     /**
+     * Holds a session configuration with the database stripped to null after a
+     * DatabaseNotFound failure, so the next retry can let the server resolve the
+     * principal's home database instead of replaying the failing explicit name.
+     * See {@see self::tryRecoverFromDatabaseNotFound()}.
+     */
+    private ?SessionConfiguration $databaseFallbackConfig = null;
+    private int $databaseNotFoundRecoveryAttempts = 0;
+
+    /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
      *
      * @psalm-mutation-free
@@ -106,6 +115,7 @@ final class Session implements SessionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning write transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
+        $this->resetDatabaseRecoveryState();
 
         return $this->retry($tsxHandler, false, $config);
     }
@@ -114,6 +124,7 @@ final class Session implements SessionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning read transaction', ['config' => $config]);
         $config = $this->mergeTsxConfig($config);
+        $this->resetDatabaseRecoveryState();
 
         return $this->retry($tsxHandler, true, $config);
     }
@@ -130,11 +141,11 @@ final class Session implements SessionInterface
         while (true) {
             $transaction = null;
             try {
-                if ($read) {
-                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()));
-                } else {
-                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE()));
-                }
+                $accessMode = $read ? AccessMode::READ() : AccessMode::WRITE();
+                $transaction = $this->startTransaction(
+                    $config,
+                    $this->getSessionConfiguration()->withAccessMode($accessMode),
+                );
                 $tbr = $tsxHandler($transaction);
                 self::triggerLazyResult($tbr);
                 $transaction->commit();
@@ -178,6 +189,13 @@ final class Session implements SessionInterface
      */
     private function shouldRetryManagedTransaction(Neo4jException $e): bool
     {
+        // DatabaseNotFound on routed drivers (Aura especially) is transient when the
+        // cluster's home-database mapping is still warming up. Drop the explicit DB
+        // and retry so the server resolves the principal's home database itself.
+        if ($this->isDatabaseNotFound($e) && $this->tryRecoverFromDatabaseNotFound()) {
+            return true;
+        }
+
         if ($e->getTitle() === 'NotALeader' || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader') {
             return true;
         }
@@ -195,9 +213,14 @@ final class Session implements SessionInterface
      */
     private function handleConnectionFailure(): void
     {
+        $this->usedConnections = [];
+
         if ($this->pool instanceof Neo4jConnectionPool) {
-            $this->pool->clearRoutingTable($this->config);
+            $this->pool->invalidateRoutingForHost();
+
+            return;
         }
+
         $this->pool->close();
     }
 
@@ -240,6 +263,57 @@ final class Session implements SessionInterface
     }
 
     /**
+     * Effective session configuration used by every transaction/connection acquire.
+     * After {@see self::tryRecoverFromDatabaseNotFound()} flips on the fallback, all
+     * subsequent acquires drop the explicit database so the server can resolve home DB.
+     */
+    private function getSessionConfiguration(): SessionConfiguration
+    {
+        return $this->databaseFallbackConfig ?? $this->config;
+    }
+
+    private function resetDatabaseRecoveryState(): void
+    {
+        $this->databaseNotFoundRecoveryAttempts = 0;
+        $this->databaseFallbackConfig = null;
+    }
+
+    private function isDatabaseNotFound(Neo4jException $e): bool
+    {
+        return $e->getNeo4jCode() === 'Neo.ClientError.Database.DatabaseNotFound'
+            || $e->getTitle() === 'DatabaseNotFound';
+    }
+
+    /**
+     * Bounded recovery loop for DatabaseNotFound: invalidate the routing cache, drop
+     * any explicit database name to null, and signal the caller to retry. The server
+     * then resolves the home database for the authenticated principal — which is what
+     * actually works on Aura instances whose user→home-DB mapping is still warming up.
+     */
+    private function tryRecoverFromDatabaseNotFound(int $maxAttempts = 2): bool
+    {
+        if ($this->databaseNotFoundRecoveryAttempts >= $maxAttempts) {
+            return false;
+        }
+
+        ++$this->databaseNotFoundRecoveryAttempts;
+
+        $this->usedConnections = [];
+
+        if ($this->pool instanceof Neo4jConnectionPool) {
+            $this->pool->invalidateRoutingForHost();
+        }
+
+        if ($this->databaseFallbackConfig !== null) {
+            return true;
+        }
+
+        $this->databaseFallbackConfig = $this->config->withDatabase(null);
+
+        return true;
+    }
+
+    /**
      * Execute a statement with automatic retry on connection errors.
      * Retries up to 3 times on connection failures, clearing routing table between attempts.
      *
@@ -271,13 +345,17 @@ final class Session implements SessionInterface
      */
     private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
     {    // Retry instant transactions up to 3 times on connection/routing errors; catch distinguishes retryable errors from client errors (syntax, auth) and clears routing table for cluster failover.
+        $this->resetDatabaseRecoveryState();
         $maxRetries = 3;
         $retries = 0;
 
         while ($retries < $maxRetries) {
             try {
-                return $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+                return $this->runStatementOnce($statement, $config);
             } catch (Neo4jException $e) {
+                if ($this->isDatabaseNotFound($e) && $this->tryRecoverFromDatabaseNotFound()) {
+                    continue;
+                }
                 if (!$this->shouldClearRoutingTable($e)) {
                     throw $e;
                 }
@@ -291,6 +369,41 @@ final class Session implements SessionInterface
         }
 
         throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.General', 'Statement execution failed after maximum retries')]);
+    }
+
+    /**
+     * Single attempt of an autocommit-like run. On routed drivers (neo4j://) we wrap
+     * the statement in an explicit transaction so that DatabaseNotFound recovery has
+     * something to roll back and retry — a bare autocommit RUN cannot be cleanly
+     * retried after the server has emitted FAILURE. On direct bolt:// drivers we
+     * keep the original autocommit fast path.
+     */
+    private function runStatementOnce(Statement $statement, TransactionConfiguration $config): SummarizedResult
+    {
+        $sessionConfig = $this->getSessionConfiguration();
+
+        if ($this->pool instanceof Neo4jConnectionPool) {
+            if ($sessionConfig->getAccessMode() === null) {
+                $sessionConfig = $sessionConfig->withAccessMode(AccessMode::WRITE());
+            }
+
+            $transaction = $this->startTransaction($config, $sessionConfig);
+            try {
+                $result = $transaction->runStatement($statement);
+                self::triggerLazyResult($result);
+                $transaction->commit();
+
+                return $result;
+            } catch (Throwable $e) {
+                if (!$transaction->isFinished()) {
+                    $transaction->rollback();
+                }
+
+                throw $e;
+            }
+        }
+
+        return $this->beginInstantTransaction($sessionConfig, $config)->runStatement($statement);
     }
 
     /**
@@ -351,11 +464,13 @@ final class Session implements SessionInterface
         /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
+        $sessionConfig = $this->getSessionConfiguration();
+
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $sessionConfig->getDatabase(),
             $this->formatter,
             $connection,
-            $this->config,
+            $sessionConfig,
             $tsxConfig,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
@@ -402,11 +517,18 @@ final class Session implements SessionInterface
         /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
+        // Merge: caller's access mode wins, but the database comes from the session
+        // (so the DatabaseNotFound fallback config is honoured by the retry path).
+        $effectiveSessionConfig = $this->getSessionConfiguration();
+        if ($sessionConfig->getAccessMode() !== null) {
+            $effectiveSessionConfig = $effectiveSessionConfig->withAccessMode($sessionConfig->getAccessMode());
+        }
+
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $effectiveSessionConfig->getDatabase(),
             $this->formatter,
             $connection,
-            $this->config,
+            $effectiveSessionConfig,
             $config,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),

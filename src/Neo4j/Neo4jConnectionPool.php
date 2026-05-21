@@ -231,6 +231,26 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
+     * Invalidate every cached routing table for this driver's host.
+     *
+     * Used by {@see \Laudis\Neo4j\Bolt\Session::tryRecoverFromDatabaseNotFound()} so the
+     * retry attempt fetches a fresh routing table with the fallback (null) database
+     * instead of replaying the same cached entry that just failed on this host.
+     */
+    public function invalidateRoutingForHost(): void
+    {
+        $host = $this->data->getUri()->getHost();
+        $this->cache->clear();
+
+        $this->getLogger()?->log(LogLevel::INFO, 'Invalidated routing cache for host', ['host' => $host]);
+    }
+
+    public function getHost(): string
+    {
+        return $this->data->getUri()->getHost();
+    }
+
+    /**
      * Remove a failed server from the routing table.
      * This removes the server from all roles (leader, follower, router) and updates the cache.
      *
