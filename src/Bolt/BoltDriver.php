@@ -76,19 +76,20 @@ final class BoltDriver implements DriverInterface
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
-        $sessionConfig = SessionConfiguration::fromUri($this->parsedUrl, $this->pool->getLogger());
-        if ($config !== null) {
-            $sessionConfig = $sessionConfig->merge($config);
-        }
-
-        return new Session($sessionConfig, $this->pool, $this->formatter);
+        /** @psalm-suppress ImpureMethodCall */
+        return new Session(
+            SessionConfiguration::resolveForDriver($this->parsedUrl, $config, $this->pool->getLogger()),
+            $this->pool,
+            $this->formatter
+        );
     }
 
     public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
-        $config ??= SessionConfiguration::default();
+        $config = SessionConfiguration::resolveForDriver($this->parsedUrl, $config, $this->pool->getLogger());
         try {
-            GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
+            $connection = GeneratorHelper::getConnectionFromGenerator($this->pool->acquire($config));
+            $this->pool->release($connection);
         } catch (ConnectException $e) {
             $this->pool->getLogger()?->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
 
@@ -100,9 +101,9 @@ final class BoltDriver implements DriverInterface
 
     public function getServerInfo(?SessionConfiguration $config = null): ServerInfo
     {
-        $config ??= SessionConfiguration::default();
+        $config = SessionConfiguration::resolveForDriver($this->parsedUrl, $config, $this->pool->getLogger());
 
-        $connection = GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
+        $connection = GeneratorHelper::getConnectionFromGenerator($this->pool->acquire($config));
 
         $serverInfo = new ServerInfo(
             $connection->getServerAddress(),
@@ -119,4 +120,5 @@ final class BoltDriver implements DriverInterface
     {
         $this->pool->close();
     }
+
 }

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Common;
 
 use Generator;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 
 use function microtime;
 
@@ -41,6 +42,14 @@ final class GeneratorHelper
         }
 
         return $generator->getReturn();
+    }
+
+    /**
+     * @param Generator<int, float, bool, ConnectionInterface> $generator
+     */
+    public static function getConnectionFromGenerator(Generator $generator, ?float $timeout = null): ConnectionInterface
+    {
+        return self::getReturnFromGenerator($generator, $timeout);
     }
 
     public static function guardTiming(float $start, float $timeout): void

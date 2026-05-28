@@ -299,7 +299,7 @@ final class BoltOGMTranslator
             $relationships[] = $this->makeFromBoltUnboundRelationship($rel);
         }
         /** @var list<int> $ids */
-        $ids = $path->ids;
+        $ids = $path->indices;
 
         return new Path(
             new CypherList($nodes),

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use Bolt\enum\Signature;
 use Bolt\error\ConnectException;
 
 use function count;
@@ -39,6 +40,7 @@ use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Enum\RoutingRoles;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
@@ -59,6 +61,7 @@ use function time;
  *
  * @implements ConnectionPoolInterface<BoltConnection>
  */
+/** @implements ConnectionPoolInterface<BoltConnection> */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
     /** @var array<string, ConnectionPool> */
@@ -123,6 +126,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
+     * @return Generator<int, float, bool, BoltConnection>
+     *
      * @throws Exception
      */
     public function acquire(SessionConfiguration $config): Generator
@@ -171,7 +176,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
-                // TODO: release probably logs off the connection, it is not preferable
+                // Router connections must not be reused for RUN; close before releasing the semaphore slot.
+                $connection->close();
                 $pool->release($connection);
 
                 break;
@@ -309,16 +315,37 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         $bolt = $connection->protocol();
 
-        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
-        /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
-        $route = $bolt->route([], [], ['db' => $config->getDatabase()])
-            ->getResponse()
-            ->content;
+        $routeExtra = $this->buildRouteExtra($config);
+        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $routeExtra['db'] ?? null]);
+        $response = $bolt->route([], [], $routeExtra)->getResponse();
+
+        if ($response->signature === Signature::FAILURE) {
+            throw Neo4jException::fromBoltResponse($response);
+        }
+
+        /** @var array{rt?: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
+        $route = $response->content;
+        if (!isset($route['rt'])) {
+            throw new RuntimeException('Routing table missing from ROUTE response');
+        }
 
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();
 
         return new RoutingTable($servers, $ttl);
+    }
+
+    /**
+     * @return array{db?: string}
+     */
+    private function buildRouteExtra(SessionConfiguration $config): array
+    {
+        $database = $config->getDatabase();
+        if ($database === null || $database === SessionConfiguration::DEFAULT_DATABASE) {
+            return [];
+        }
+
+        return ['db' => $database];
     }
 
     public function release(ConnectionInterface $connection): void
@@ -372,7 +399,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     private function getAddresses(string $host): Generator
     {
-        yield gethostbyname($host);
+        // Prefer the DNS name for TLS (Aura rejects IP-only peer names).
+        yield $host;
+
+        $resolved = gethostbyname($host);
+        if ($resolved !== $host) {
+            yield $resolved;
+        }
+
         yield from $this->resolver->getAddresses($host);
     }
 }

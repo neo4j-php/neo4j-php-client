@@ -31,6 +31,7 @@ use function shuffle;
 /**
  * @implements ConnectionPoolInterface<BoltConnection>
  */
+/** @implements ConnectionPoolInterface<BoltConnection> */
 final class ConnectionPool implements ConnectionPoolInterface
 {
     /** @var list<BoltConnection> */
