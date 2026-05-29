@@ -113,15 +113,11 @@ final class Neo4jDriver implements DriverInterface
 
         $connection = GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
 
-        $serverInfo = new ServerInfo(
+        return new ServerInfo(
             $connection->getServerAddress(),
             $connection->getProtocol(),
             $connection->getServerAgent()
         );
-
-        $this->pool->release($connection);
-
-        return $serverInfo;
     }
 
     public function closeConnections(): void
