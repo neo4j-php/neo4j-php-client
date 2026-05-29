@@ -300,8 +300,6 @@ final class BoltOGMTranslator
         }
         /** @var list<int> $indices */
         $indices = $path->indices;
-        /** @var list<int> $ids */
-        $ids = $path->indices;
 
         return new Path(
             new CypherList($nodes),

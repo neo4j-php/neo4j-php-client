@@ -96,8 +96,6 @@ final class TypeCasterTest extends TestCase
 
         foreach ($inputs as $inputName => $inputValue) {
             foreach ($matrix as $method => $expectations) {
-                /** @psalm-suppress MixedAssignment */
-                $expected = $expectations[$inputName] ?? null;
                 $expected = self::expectedValueForInput($expectations, $inputName);
                 $key = $inputName.'->'.$method;
 
