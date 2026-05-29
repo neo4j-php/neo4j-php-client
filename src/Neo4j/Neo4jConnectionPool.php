@@ -40,8 +40,8 @@ use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Enum\RoutingRoles;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
@@ -126,9 +126,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @return Generator<int, float, bool, BoltConnection>
-     *
      * @throws Exception
+     *
+     * @return Generator<int, float, bool, BoltConnection>
      */
     public function acquire(SessionConfiguration $config): Generator
     {
@@ -176,9 +176,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
-                // Router connections must not be reused for RUN; close before releasing the semaphore slot.
-                $connection->close();
-                $pool->release($connection);
+                // Keep router connection open for ROUTE refresh (Optimization:ConnectionReuse).
+                // Writer/reader traffic uses a separate pool; this socket must not run Cypher.
+                $pool->returnToPool($connection);
 
                 break;
             }
@@ -325,7 +325,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         /** @var array{rt?: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
         $route = $response->content;
-        if (!isset($route['rt'])) {
+        if (!array_key_exists('rt', $route)) {
             throw new RuntimeException('Routing table missing from ROUTE response');
         }
 

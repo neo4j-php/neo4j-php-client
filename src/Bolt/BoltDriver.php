@@ -120,5 +120,4 @@ final class BoltDriver implements DriverInterface
     {
         $this->pool->close();
     }
-
 }

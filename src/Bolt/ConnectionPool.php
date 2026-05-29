@@ -124,6 +124,15 @@ final class ConnectionPool implements ConnectionPoolInterface
         }
     }
 
+    /**
+     * Return a checked-out connection to the idle pool without closing it.
+     * Router connections use this after ROUTE so the socket stays open for reuse.
+     */
+    public function returnToPool(ConnectionInterface $connection): void
+    {
+        $this->semaphore->post();
+    }
+
     public function getLogger(): ?Neo4jLogger
     {
         return $this->logger;

@@ -131,5 +131,4 @@ final class Neo4jDriver implements DriverInterface
     {
         $this->pool->close();
     }
-
 }
