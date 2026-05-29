@@ -32,10 +32,7 @@
         "symfony/polyfill-php80": "^1.2",
         "psr/simple-cache": ">=2.0",
         "ext-json": "*",
-        "ext-mbstring": "*",
-        "symfony/dotenv": "^6.4",
-        "monolog/monolog": "^2.2",
-        "psr/log": "^3.0"
+        "ext-mbstring": "*"
     },
     "provide": {
         "psr/simple-cache-implementation": "2.0|3.0"
@@ -54,11 +51,13 @@
         "vimeo/psalm": "^6.5",
         "friendsofphp/php-cs-fixer": "3.68.5",
         "psalm/plugin-phpunit": "^0.19",
+        "monolog/monolog": "^2.2",
         "symfony/uid": "^5.0",
         "symfony/var-dumper": "^5.0",
         "cache/integration-tests": "dev-master",
         "kubawerlos/php-cs-fixer-custom-fixers": "3.13.*",
         "rector/rector": "^1.0",
+        "psr/log": "^3.0",
         "php-di/php-di": "^6.3"
     },
     "autoload": {

@@ -176,10 +176,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
-                // Keep router connection open for ROUTE refresh (Optimization:ConnectionReuse).
-                // Writer/reader traffic uses a separate pool; this socket must not run Cypher.
-                $pool->returnToPool($connection);
-
+                // TODO: release probably logs off the connection, it is not preferable
+                $pool->release($connection);
                 break;
             }
         }
@@ -341,7 +339,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     private function buildRouteExtra(SessionConfiguration $config): array
     {
         $database = $config->getDatabase();
-        if ($database === null || $database === SessionConfiguration::DEFAULT_DATABASE) {
+        if ($database === null) {
             return [];
         }
 

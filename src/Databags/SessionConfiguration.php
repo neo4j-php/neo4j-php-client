@@ -27,7 +27,6 @@ use Psr\Http\Message\UriInterface;
  */
 final class SessionConfiguration
 {
-    public const DEFAULT_DATABASE = 'neo4j';
     public const DEFAULT_FETCH_SIZE = 1000;
     public const DEFAULT_ACCESS_MODE = 'WRITE';
     public const DEFAULT_BOOKMARKS = '[]';
@@ -171,9 +170,9 @@ final class SessionConfiguration
          *
          * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message-meta.md#why-value-objects
          */
-        $queryString = $uri->getQuery();
+        $uri = $uri->getQuery();
         /** @psalm-suppress ImpureFunctionCall */
-        parse_str($queryString, $query);
+        parse_str($uri, $query);
         $tbr = SessionConfiguration::default();
 
         if ($logger !== null) {
@@ -186,56 +185,5 @@ final class SessionConfiguration
         }
 
         return $tbr;
-    }
-
-    /**
-     * Builds the effective session configuration for a driver URI and optional overrides.
-     */
-    public static function resolveForDriver(UriInterface $parsedUrl, ?self $config, ?Neo4jLogger $logger): self
-    {
-        $resolved = self::fromUri($parsedUrl, $logger);
-        if ($config !== null) {
-            $resolved = $resolved->merge($config);
-        }
-
-        $database = $resolved->getDatabase();
-        if ($database === null || $database === self::DEFAULT_DATABASE) {
-            $inferred = self::inferAuraFreeDatabaseFromUri($parsedUrl);
-            if ($inferred !== null) {
-                $resolved = $resolved->withDatabase($inferred);
-            }
-        }
-
-        if ($resolved->getDatabase() === '') {
-            return $resolved->withDatabase(self::DEFAULT_DATABASE);
-        }
-
-        return $resolved;
-    }
-
-    /**
-     * Aura Free (legacy): when the Bolt principal matches the instance id in the hostname
-     * (e.g. 42d35d33@42d35d33.databases.neo4j.io), the database name is that id.
-     * Aura Professional uses principal neo4j and database neo4j — not inferred here.
-     */
-    public static function inferAuraFreeDatabaseFromUri(UriInterface $uri): ?string
-    {
-        $host = $uri->getHost();
-        if ($host === '' || preg_match('/^([a-z0-9]+)\.databases\.neo4j\.io$/i', $host, $matches) !== 1) {
-            return null;
-        }
-
-        $instanceId = $matches[1] ?? null;
-        if ($instanceId === null) {
-            return null;
-        }
-        $userInfo = $uri->getUserInfo();
-        $user = $userInfo === '' ? '' : explode(':', $userInfo, 2)[0];
-
-        if ($user === '' || $user === 'neo4j' || $user !== $instanceId) {
-            return null;
-        }
-
-        return $instanceId;
     }
 }

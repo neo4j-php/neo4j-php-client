@@ -76,20 +76,19 @@ final class BoltDriver implements DriverInterface
      */
     public function createSession(?SessionConfiguration $config = null): SessionInterface
     {
-        /** @psalm-suppress ImpureMethodCall */
-        return new Session(
-            SessionConfiguration::resolveForDriver($this->parsedUrl, $config, $this->pool->getLogger()),
-            $this->pool,
-            $this->formatter
-        );
+        $sessionConfig = SessionConfiguration::fromUri($this->parsedUrl, $this->pool->getLogger());
+        if ($config !== null) {
+            $sessionConfig = $sessionConfig->merge($config);
+        }
+
+        return new Session($sessionConfig, $this->pool, $this->formatter);
     }
 
     public function verifyConnectivity(?SessionConfiguration $config = null): bool
     {
-        $config = SessionConfiguration::resolveForDriver($this->parsedUrl, $config, $this->pool->getLogger());
+        $config ??= SessionConfiguration::default();
         try {
-            $connection = GeneratorHelper::getConnectionFromGenerator($this->pool->acquire($config));
-            $this->pool->release($connection);
+            GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
         } catch (ConnectException $e) {
             $this->pool->getLogger()?->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
 
@@ -101,9 +100,9 @@ final class BoltDriver implements DriverInterface
 
     public function getServerInfo(?SessionConfiguration $config = null): ServerInfo
     {
-        $config = SessionConfiguration::resolveForDriver($this->parsedUrl, $config, $this->pool->getLogger());
+        $config ??= SessionConfiguration::default();
 
-        $connection = GeneratorHelper::getConnectionFromGenerator($this->pool->acquire($config));
+        $connection = GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
 
         $serverInfo = new ServerInfo(
             $connection->getServerAddress(),
