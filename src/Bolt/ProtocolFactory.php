@@ -33,12 +33,11 @@ class ProtocolFactory
         }
 
         $bolt = new Bolt($connection);
-        // Offer protocol versions from newest to oldest (only 4.4 and above are supported)
         $bolt->setProtocolVersions('5.4.4', 4.4);
         $protocol = $bolt->build();
 
         if (!($protocol instanceof V4_4 || $protocol instanceof V5 || $protocol instanceof V5_1 || $protocol instanceof V5_2 || $protocol instanceof V5_3 || $protocol instanceof V5_4)) {
-            throw new RuntimeException('Client only supports bolt version 4.4 to 5.4');
+            throw new RuntimeException('Client only supports Bolt protocol 4.4 through 5.4');
         }
 
         return $protocol;

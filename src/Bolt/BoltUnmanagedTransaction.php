@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-use Bolt\enum\ServerState;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
@@ -86,6 +85,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         $this->ensureBeginSent();
 
+        $this->connection->consumeResults();
+
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
         $tbr = $this->runStatements($statements)->each(static function (CypherList $list) {
@@ -101,6 +102,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function rollback(): void
     {
         if ($this->isFinished()) {
+            if ($this->state === TransactionState::TERMINATED) {
+                // Run/pull already failed; connection may have been RESET — nothing to send.
+                return;
+            }
+
             if ($this->state === TransactionState::COMMITTED) {
                 throw new TransactionException("Can't rollback a committed transaction.");
             }
@@ -111,6 +117,14 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         }
 
         $this->ensureBeginSent();
+
+        // FAILURE on PULL triggers RESET in {@see BoltConnection::assertNoFailure()}; server has no open tx.
+        // TestKit stubs (e.g. tx_error_on_pull.script) expect no ROLLBACK after that RESET.
+        if ($this->connection->getServerState() === 'READY') {
+            $this->state = TransactionState::ROLLED_BACK;
+
+            return;
+        }
 
         $this->messageFactory->createRollbackMessage()->send();
         $this->state = TransactionState::ROLLED_BACK;
@@ -146,8 +160,10 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $parameters = ParameterHelper::formatParameters($statement->getParameters(), $this->connection->getProtocol());
         $start = microtime(true);
 
-        $serverState = $this->connection->protocol()->serverState;
-        if ($serverState === ServerState::STREAMING) {
+        // Only drain an outstanding autocommit result (STREAMING). In an explicit transaction (TX_STREAMING)
+        // several RUN streams may be open; consumeResults() would preload other streams and reorder PULLs
+        // vs RUN (TestKit tx_pull_1_nested*, Neo4j parallel/nested tx tests).
+        if ($this->connection->getServerState() === 'STREAMING') {
             $this->connection->consumeResults();
         }
 
@@ -217,7 +233,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     private function ensureBeginSent(): void
     {
-        if ($this->isInstantTransaction || $this->beginSent) {
+        if ($this->isInstantTransaction) {
+            return;
+        }
+        // FAILURE on PULL triggers RESET in BoltConnection — server is READY with no tx, but we may still
+        // have beginSent=true (e.g. execute_read retry). Must send BEGIN again before RUN.
+        if ($this->beginSent && $this->state === TransactionState::ACTIVE && $this->connection->getServerState() === 'READY') {
+            $this->beginSent = false;
+        }
+        if ($this->beginSent) {
             return;
         }
         try {

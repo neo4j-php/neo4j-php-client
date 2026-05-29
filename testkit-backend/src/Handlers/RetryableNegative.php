@@ -57,33 +57,41 @@ final class RetryableNegative implements RequestHandlerInterface
             return new BackendErrorResponse('Transaction not found '.$transactionId->toRfc4122());
         }
 
-        try {
-            $tsx->rollback();
-        } catch (Throwable $e) {
-            // Best-effort rollback: connection may already be broken. Proceed with error response.
-            $this->logger->debug('Rollback failed during RetryableNegative', ['exception' => $e->getMessage()]);
-        }
-
         $errorId = $request->getErrorId();
+        $resolvedException = null;
         if ($errorId !== '' && $errorId !== null) {
             try {
                 $errorUuid = $errorId instanceof Uuid ? $errorId : Uuid::fromString($errorId);
                 $errorResponse = $this->repository->getRecords($errorUuid);
-
                 if ($errorResponse instanceof DriverErrorResponse) {
-                    $exception = $errorResponse->getException();
-                    if ($exception instanceof Neo4jException && $exception->getClassification() === 'TransientError') {
-                        // If the original error was retryable, signal for retry
-                        return new RetryableTryResponse($transactionId);
-                    }
-
-                    // Otherwise, return the original error to the frontend
-                    return new DriverErrorResponse($transactionId, $exception);
+                    $resolvedException = $errorResponse->getException();
                 }
             } catch (Throwable $e) {
-                // Invalid errorId or record not found - fall through to generic FrontendError
                 $this->logger->debug('Could not retrieve error for RetryableNegative', ['exception' => $e->getMessage()]);
             }
+        }
+
+        // After FAILURE on PULL, BoltConnection RESETs before throwing Neo4jException — ROLLBACK is invalid on the wire.
+        $skipRollback = $resolvedException instanceof Neo4jException;
+
+        if (!$skipRollback) {
+            try {
+                $tsx->rollback();
+            } catch (Throwable $e) {
+                $this->logger->debug('Rollback failed during RetryableNegative', ['exception' => $e->getMessage()]);
+            }
+        }
+
+        if ($resolvedException instanceof Neo4jException) {
+            if ($resolvedException->getClassification() === 'TransientError') {
+                return new RetryableTryResponse($transactionId);
+            }
+
+            return new DriverErrorResponse($transactionId, $resolvedException);
+        }
+
+        if ($resolvedException !== null) {
+            return new DriverErrorResponse($transactionId, $resolvedException);
         }
 
         // If no specific error was provided or couldn't be retrieved,

@@ -90,11 +90,15 @@ final class Socket
 
     public function reset(): void
     {
-        if ($this->socket !== null && !stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR)) {
-            throw new RuntimeException(json_encode(error_get_last(), JSON_THROW_ON_ERROR));
+        if ($this->socket === null) {
+            return;
         }
 
+        $sock = $this->socket;
         $this->socket = null;
+        if (is_resource($sock)) {
+            @stream_socket_shutdown($sock, STREAM_SHUT_RDWR);
+        }
     }
 
     public function readMessage(): ?string
