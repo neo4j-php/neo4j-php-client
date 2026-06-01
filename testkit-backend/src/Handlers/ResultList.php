@@ -106,6 +106,7 @@ final class ResultList implements RequestHandlerInterface
             || str_contains($message, 'network read incomplete')
             || str_contains($message, 'network write incomplete')
             || str_contains($message, 'socket')
-            || str_contains($message, 'broken');
+            || str_contains($message, 'broken')
+            || str_contains($message, 'already been closed');
     }
 }

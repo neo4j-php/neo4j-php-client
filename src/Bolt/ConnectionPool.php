@@ -31,7 +31,6 @@ use function shuffle;
 /**
  * @implements ConnectionPoolInterface<BoltConnection>
  */
-/** @implements ConnectionPoolInterface<BoltConnection> */
 final class ConnectionPool implements ConnectionPoolInterface
 {
     /** @var list<BoltConnection> */
@@ -113,10 +112,21 @@ final class ConnectionPool implements ConnectionPoolInterface
 
     public function release(ConnectionInterface $connection): void
     {
-        // Return a permit only — keep the connection in {@see $activeConnections} so it stays
-        // pooled for reuse and is still closed by {@see close()}. Removing it here orphaned
-        // sockets (no GOODBYE on driver close), which breaks TestKit stubs after errors.
         $this->semaphore->post();
+
+        // Keep open connections in the pool for reuse and so {@see close()} can send GOODBYE.
+        // Evict only connections that are already closed (e.g. after {@see BoltConnection::invalidate()}).
+        if ($connection->isOpen()) {
+            return;
+        }
+
+        foreach ($this->activeConnections as $i => $activeConnection) {
+            if ($connection === $activeConnection) {
+                array_splice($this->activeConnections, $i, 1);
+
+                return;
+            }
+        }
     }
 
     public function getLogger(): ?Neo4jLogger

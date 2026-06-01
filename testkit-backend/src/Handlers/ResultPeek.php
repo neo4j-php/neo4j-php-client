@@ -29,9 +29,6 @@ use Throwable;
 /**
  * Peek at the next record without consuming it (no {@see Iterator::next()} after the peek itself).
  * Deferred advances from prior {@see ResultNext} must be applied first so peek sees the correct row.
- * Peek at the next record without advancing the iterator position used by ResultNext.
- * Peek at the next record without consuming it (no {@see Iterator::next()} after the peek itself).
- * Deferred advances from prior {@see ResultNext} must be applied first so peek sees the correct row.
  *
  * @implements RequestHandlerInterface<ResultPeekRequest>
  */

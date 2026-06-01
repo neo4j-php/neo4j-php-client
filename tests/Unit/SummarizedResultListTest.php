@@ -56,20 +56,5 @@ final class SummarizedResultListTest extends TestCase
             $nValues[] = $n;
         }
         self::assertSame([2, 3, 4, 5], $nValues);
-        self::assertSame([2, 3, 4, 5], array_map(static function (CypherMap $m): int {
-            $n = $m->get('n');
-            self::assertIsInt($n);
-
-            return $n;
-        }, $rows));
-
-        $nValues = [];
-        foreach ($rows as $row) {
-            self::assertInstanceOf(CypherMap::class, $row);
-            $n = $row->get('n');
-            self::assertIsInt($n);
-            $nValues[] = $n;
-        }
-        self::assertSame([2, 3, 4, 5], $nValues);
     }
 }
