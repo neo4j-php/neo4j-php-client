@@ -33,6 +33,7 @@ use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Enum\BoltTelemetryApi;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
@@ -71,6 +72,13 @@ class BoltConnection implements ConnectionInterface
 
     private ?float $originalTimeout = null;
 
+    private bool $serverTelemetryEnabled = false;
+
+    /** @var array<int, true> */
+    private array $acknowledgedTelemetryApis = [];
+
+    private ?BoltTelemetryApi $pendingTelemetryApi = null;
+
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
      */
@@ -91,8 +99,46 @@ class BoltConnection implements ConnectionInterface
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
         private readonly float $defaultRecvTimeout = DriverConfiguration::DEFAULT_SOCKET_TIMEOUT,
+        private readonly bool $driverTelemetryDisabled = false,
     ) {
         $this->messageFactory = new BoltMessageFactory($this, $this->logger);
+    }
+
+    public function setServerTelemetryEnabled(bool $enabled): void
+    {
+        $this->serverTelemetryEnabled = $enabled;
+    }
+
+    /**
+     * Sends a TELEMETRY message once per API type per connection when enabled by server and driver.
+     * Resends on failure until SUCCESS is received; never sends again after success.
+     */
+    public function sendTelemetryIfNeeded(BoltTelemetryApi $api): void
+    {
+        if ($this->driverTelemetryDisabled || !$this->serverTelemetryEnabled) {
+            return;
+        }
+
+        if (!$this->protocol() instanceof V5_4) {
+            return;
+        }
+
+        if (isset($this->acknowledgedTelemetryApis[$api->value])) {
+            return;
+        }
+
+        $this->messageFactory->createTelemetryMessage($api)->send();
+        $this->pendingTelemetryApi = $api;
+    }
+
+    public function acknowledgePendingTelemetry(): void
+    {
+        if ($this->pendingTelemetryApi === null) {
+            return;
+        }
+
+        $this->acknowledgedTelemetryApis[$this->pendingTelemetryApi->value] = true;
+        $this->pendingTelemetryApi = null;
     }
 
     public function getEncryptionLevel(): string
@@ -238,6 +284,7 @@ class BoltConnection implements ConnectionInterface
         $message = $this->messageFactory->createBeginMessage($extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
+        $this->acknowledgePendingTelemetry();
     }
 
     /**
@@ -274,6 +321,7 @@ class BoltConnection implements ConnectionInterface
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
+        $this->acknowledgePendingTelemetry();
 
         /** @var BoltMeta */
         return $response->content;

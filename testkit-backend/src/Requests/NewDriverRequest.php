@@ -41,6 +41,7 @@ final class NewDriverRequest
         public readonly ?int $connectionAcquisitionTimeoutMs = null,
         public readonly mixed $clientCertificate = null,
         public readonly ?string $clientCertificateProviderId = null,
+        public readonly ?bool $telemetryDisabled = null,
     ) {
     }
 }

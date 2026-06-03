@@ -243,4 +243,12 @@ final class MainRepository
     {
         $this->records[$id] = $records;
     }
+
+    /**
+     * @param SummarizedResult<CypherMap<OGMTypes>> $result
+     */
+    public function addEagerResult(Uuid $id, SummarizedResult $result): void
+    {
+        $this->addRecords($id, $result);
+    }
 }

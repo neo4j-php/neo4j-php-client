@@ -30,6 +30,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Enum\BoltTelemetryApi;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
@@ -325,20 +326,6 @@ final class Session implements SessionInterface
     }
 
     /**
-     * @param iterable<Statement> $statements
-     */
-    public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
-    {
-        $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
-        $config = $this->mergeTsxConfig($config);
-        $tsx = $this->startTransaction($config, $this->config);
-
-        $tsx->runStatements($statements ?? []);
-
-        return $tsx;
-    }
-
-    /**
      * @return UnmanagedTransactionInterface
      */
     private function beginInstantTransaction(
@@ -361,6 +348,7 @@ final class Session implements SessionInterface
             new BoltMessageFactory($connection, $this->getLogger()),
             true,
             $pool,
+            beginTelemetryApi: null,
         );
     }
 
@@ -413,6 +401,56 @@ final class Session implements SessionInterface
             false,
             $pool,
             false, // BEGIN sent on first run/commit/rollback
+            beginTelemetryApi: BoltTelemetryApi::MANAGED_TRANSACTION,
+        );
+    }
+
+    /**
+     * @param iterable<Statement> $statements
+     */
+    public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    {
+        $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
+        $config = $this->mergeTsxConfig($config);
+        $tsx = $this->startExplicitTransaction($config, $this->config);
+
+        $tsx->runStatements($statements ?? []);
+
+        return $tsx;
+    }
+
+    /**
+     * Opens a managed-transaction scope (executeRead / executeWrite telemetry) for TestKit retryable handlers.
+     */
+    public function openManagedTransaction(?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    {
+        $config = $this->mergeTsxConfig($config);
+
+        return $this->startTransaction($config, $this->config);
+    }
+
+    private function startExplicitTransaction(
+        TransactionConfiguration $config,
+        SessionConfiguration $sessionConfig,
+    ): UnmanagedTransactionInterface {
+        $this->getLogger()?->log(LogLevel::INFO, 'Starting explicit transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
+        $connection = $this->acquireConnection($config, $sessionConfig);
+
+        /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
+        $pool = $this->pool;
+
+        return new BoltUnmanagedTransaction(
+            $this->config->getDatabase(),
+            $this->formatter,
+            $connection,
+            $this->config,
+            $config,
+            $this->bookmarkHolder,
+            new BoltMessageFactory($connection, $this->getLogger()),
+            false,
+            $pool,
+            false,
+            BoltTelemetryApi::EXPLICIT_TRANSACTION,
         );
     }
 

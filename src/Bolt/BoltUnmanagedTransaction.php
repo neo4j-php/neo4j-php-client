@@ -21,6 +21,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Enum\BoltTelemetryApi;
 use Laudis\Neo4j\Enum\TransactionState;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
@@ -57,6 +58,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly bool $isInstantTransaction,
         private readonly ?ConnectionPoolInterface $pool = null,
         bool $beginAlreadySent = false,
+        private readonly ?BoltTelemetryApi $beginTelemetryApi = null,
     ) {
         $this->beginSent = $beginAlreadySent;
     }
@@ -153,6 +155,10 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         $this->ensureBeginSent();
 
+        if ($this->isInstantTransaction) {
+            $this->connection->sendTelemetryIfNeeded(BoltTelemetryApi::AUTOCOMMIT);
+        }
+
         try {
             $meta = $this->connection->run(
                 $statement->getText(),
@@ -221,6 +227,9 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             return;
         }
         try {
+            if ($this->beginTelemetryApi !== null) {
+                $this->connection->sendTelemetryIfNeeded($this->beginTelemetryApi);
+            }
             $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
             $this->beginSent = true;
         } catch (Throwable $e) {

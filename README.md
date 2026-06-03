@@ -418,6 +418,26 @@ A driver, session and transaction can be configured using configuration objects.
 | bookmarks         | session     | The bookmarks used in the session. (experimental)                                | `SessionConfiguration`     |
 | metadata          | transaction | The metadata used during the transaction. (experimental)                         | `TransactionConfiguration` |
 | timeout           | transaction | The maximum amount of time before timing out.                                    | `TransactionConfiguration` |
+| telemetry disabled | driver     | Opt out of anonymous Bolt API usage telemetry (Bolt 5.4). Default: enabled.      | `DriverConfiguration`      |
+
+### Bolt API telemetry (Bolt 5.4+)
+
+When the server advertises `telemetry.enabled` in the HELLO/LOGON response (for example on Aura), the driver may send a single anonymous integer per API category per connection, immediately before `BEGIN` or `RUN`. This helps Neo4j understand which driver APIs are used in production. No query text, parameters, or user data are transmitted.
+
+| Value | API |
+|-------|-----|
+| 0 | Managed transactions (`readTransaction` / `writeTransaction`) |
+| 1 | Explicit transactions (`beginTransaction`) |
+| 2 | Autocommit (`session.run`) |
+| 3 | Driver-level (`executeQuery`) |
+
+Telemetry is sent only when enabled on **both** server and driver. Disable it on the driver with:
+
+```php
+use Laudis\Neo4j\Databags\DriverConfiguration;
+
+$config = DriverConfiguration::default()->withTelemetryDisabled(true);
+```
 
 Code Example:
 

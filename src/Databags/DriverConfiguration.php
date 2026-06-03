@@ -67,6 +67,7 @@ final class DriverConfiguration
         ?LoggerInterface $logger,
         ?SocketType $socketType = null,
         private ?float $socketTimeoutSeconds = null,
+        private bool $telemetryDisabled = false,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
@@ -318,6 +319,28 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->socketTimeoutSeconds = $seconds;
+
+        return $tbr;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isTelemetryDisabled(): bool
+    {
+        return $this->telemetryDisabled;
+    }
+
+    /**
+     * Opt out of anonymous Bolt API telemetry (Bolt 5.4 TELEMETRY message).
+     * Metrics are collected only when both server and driver have telemetry enabled.
+     *
+     * @psalm-immutable
+     */
+    public function withTelemetryDisabled(bool $disabled = true): self
+    {
+        $tbr = clone $this;
+        $tbr->telemetryDisabled = $disabled;
 
         return $tbr;
     }

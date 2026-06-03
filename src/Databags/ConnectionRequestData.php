@@ -28,7 +28,13 @@ final class ConnectionRequestData
         private readonly string $userAgent,
         private readonly SslConfiguration $config,
         private readonly ?float $socketTimeoutSeconds = null,
+        private readonly bool $telemetryDisabled = false,
     ) {
+    }
+
+    public function isTelemetryDisabled(): bool
+    {
+        return $this->telemetryDisabled;
     }
 
     public function getHostname(): string

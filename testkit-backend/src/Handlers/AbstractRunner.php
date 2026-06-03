@@ -113,7 +113,10 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 return new DriverErrorResponse($request->getSessionId(), $wrapped);
             }
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $wrapped);
+                $response = new DriverErrorResponse($request->getTxId(), $wrapped);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));

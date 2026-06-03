@@ -32,10 +32,13 @@ use Throwable;
  */
 final class RetryableNegative implements RequestHandlerInterface
 {
+    private RetryableManagedTransactionSupport $retrySupport;
+
     public function __construct(
         private readonly MainRepository $repository,
         private readonly LoggerInterface $logger,
     ) {
+        $this->retrySupport = new RetryableManagedTransactionSupport($repository);
     }
 
     /**
@@ -57,13 +60,6 @@ final class RetryableNegative implements RequestHandlerInterface
             return new BackendErrorResponse('Transaction not found '.$transactionId->toRfc4122());
         }
 
-        try {
-            $tsx->rollback();
-        } catch (Throwable $e) {
-            // Best-effort rollback: connection may already be broken. Proceed with error response.
-            $this->logger->debug('Rollback failed during RetryableNegative', ['exception' => $e->getMessage()]);
-        }
-
         $errorId = $request->getErrorId();
         if ($errorId !== '' && $errorId !== null) {
             try {
@@ -72,12 +68,16 @@ final class RetryableNegative implements RequestHandlerInterface
 
                 if ($errorResponse instanceof DriverErrorResponse) {
                     $exception = $errorResponse->getException();
-                    if ($exception instanceof Neo4jException && $exception->getClassification() === 'TransientError') {
-                        // If the original error was retryable, signal for retry
-                        return new RetryableTryResponse($transactionId);
+                    if ($this->retrySupport->isRetryableException($exception)) {
+                        return $this->retrySupport->retryManagedTransaction($sessionId, $transactionId, $errorResponse);
                     }
 
-                    // Otherwise, return the original error to the frontend
+                    try {
+                        $tsx->rollback();
+                    } catch (Throwable $e) {
+                        $this->logger->debug('Rollback failed during RetryableNegative', ['exception' => $e->getMessage()]);
+                    }
+
                     return new DriverErrorResponse($transactionId, $exception);
                 }
             } catch (Throwable $e) {

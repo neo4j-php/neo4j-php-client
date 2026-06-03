@@ -79,11 +79,24 @@ class BoltFactory
             $sslLevel
         );
 
-        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger, $socketTimeout);
+        $connection = new BoltConnection(
+            $protocol,
+            $connection,
+            $data->getAuth(),
+            $data->getUserAgent(),
+            $config,
+            $this->logger,
+            $socketTimeout,
+            $data->isTelemetryDisabled(),
+        );
 
         $response = $data->getAuth()->authenticateBolt($connection, $data->getUserAgent());
 
         $config->setServerAgent($response['server'] ?? '');
+
+        if (array_key_exists('hints', $response) && ($response['hints']['telemetry.enabled'] ?? false) === true) {
+            $connection->setServerTelemetryEnabled(true);
+        }
 
         // Timeout precedence: 1) driver config, 2) server hint, 3) default 30s.
         // Only use server hint when driver did not explicitly configure a timeout.
