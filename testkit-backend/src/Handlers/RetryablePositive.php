@@ -30,18 +30,15 @@ use Throwable;
  */
 final class RetryablePositive implements RequestHandlerInterface
 {
-    private MainRepository $repository;
-    private RetryableManagedTransactionSupport $retrySupport;
-
-    public function __construct(MainRepository $repository)
-    {
-        $this->repository = $repository;
-        $this->retrySupport = new RetryableManagedTransactionSupport($repository);
+    public function __construct(
+        private readonly MainRepository $repository,
+    ) {
     }
 
     public function handle($request): TestkitResponseInterface
     {
         $sessionId = $request->getSessionId();
+        $retrySupport = $this->repository->getRetryableManagedTransactionSupport();
 
         try {
             $transactionId = $this->repository->getTsxIdFromSession($sessionId);
@@ -58,13 +55,13 @@ final class RetryablePositive implements RequestHandlerInterface
         try {
             $tsx->commit();
         } catch (Neo4jException|TransactionException $e) {
-            if ($this->retrySupport->isRetryableException($e)) {
+            if ($retrySupport->isRetryableException($e)) {
                 try {
                     $tsx->rollback();
                 } catch (Throwable) {
                 }
 
-                return $this->retrySupport->retryManagedTransaction(
+                return $retrySupport->retryManagedTransaction(
                     $sessionId,
                     $transactionId,
                     new DriverErrorResponse($transactionId, $e),
@@ -74,7 +71,7 @@ final class RetryablePositive implements RequestHandlerInterface
             return new DriverErrorResponse($transactionId, $e);
         }
 
-        $this->retrySupport->clearRetryAttempts($sessionId);
+        $retrySupport->clearRetryAttempts($sessionId);
 
         return new RetryableDoneResponse();
     }

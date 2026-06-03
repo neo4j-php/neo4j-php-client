@@ -19,6 +19,7 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\Handlers\RetryableManagedTransactionSupport;
 use Laudis\Neo4j\Types\CypherMap;
 use Symfony\Component\Uid\Uuid;
 
@@ -54,6 +55,8 @@ final class MainRepository
      * @var array<string, int>
      */
     private array $pendingIteratorNextCount = [];
+
+    private ?RetryableManagedTransactionSupport $retryableManagedTransactionSupport = null;
 
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
@@ -244,11 +247,8 @@ final class MainRepository
         $this->records[$id] = $records;
     }
 
-    /**
-     * @param SummarizedResult<CypherMap<OGMTypes>> $result
-     */
-    public function addEagerResult(Uuid $id, SummarizedResult $result): void
+    public function getRetryableManagedTransactionSupport(): RetryableManagedTransactionSupport
     {
-        $this->addRecords($id, $result);
+        return $this->retryableManagedTransactionSupport ??= new RetryableManagedTransactionSupport($this);
     }
 }

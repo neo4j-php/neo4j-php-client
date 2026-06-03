@@ -15,17 +15,12 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Bolt\error\ConnectException as BoltConnectException;
 use Laudis\Neo4j\Bolt\BoltConnection;
-use Laudis\Neo4j\Bolt\BoltMessageFactory;
 use Laudis\Neo4j\Bolt\BoltUnmanagedTransaction;
 use Laudis\Neo4j\Bolt\ConnectionPool;
 use Laudis\Neo4j\Bolt\Session as BoltSession;
-use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
-use Laudis\Neo4j\Enum\BoltTelemetryApi;
 use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -70,8 +65,7 @@ final class RetryableManagedTransactionSupport
             return true;
         }
 
-        $code = $exception->getNeo4jCode();
-        if ($code === 'Neo.ClientError.General.ConnectionError') {
+        if ($exception->getNeo4jCode() === 'Neo.ClientError.General.ConnectionError') {
             return true;
         }
 
@@ -104,7 +98,7 @@ final class RetryableManagedTransactionSupport
 
         try {
             $session = $this->repository->getSession($sessionId);
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             return new BackendErrorResponse('Session not found for retry '.$sessionId->toRfc4122());
         }
 
@@ -147,7 +141,7 @@ final class RetryableManagedTransactionSupport
         }
 
         try {
-            $transaction = $this->createManagedTransactionOnConnection($session, $connection);
+            $transaction = $session->openManagedTransactionOnConnection($connection);
             $this->repository->addTransaction($transactionId, $transaction);
         } catch (Neo4jException $e) {
             return new DriverErrorResponse($transactionId, $e);
@@ -156,32 +150,9 @@ final class RetryableManagedTransactionSupport
         return new RetryableTryResponse($transactionId);
     }
 
-    private function createManagedTransactionOnConnection(BoltSession $session, BoltConnection $connection): BoltUnmanagedTransaction
-    {
-        $sessionConfig = $this->getSessionConfiguration($session);
-        $formatter = $this->getSessionFormatter($session);
-        $pool = $this->getSessionPool($session);
-        $bookmarkHolder = $this->getSessionBookmarkHolder($session);
-
-        return new BoltUnmanagedTransaction(
-            $sessionConfig->getDatabase(),
-            $formatter,
-            $connection,
-            $sessionConfig,
-            TransactionConfiguration::default(),
-            $bookmarkHolder,
-            new BoltMessageFactory($connection, $pool->getLogger()),
-            false,
-            $pool,
-            false,
-            BoltTelemetryApi::MANAGED_TRANSACTION,
-        );
-    }
-
     private function getTransactionConnection(BoltUnmanagedTransaction $transaction): BoltConnection
     {
         $property = new ReflectionProperty(BoltUnmanagedTransaction::class, 'connection');
-        $property->setAccessible(true);
 
         /** @var BoltConnection */
         return $property->getValue($transaction);
@@ -202,7 +173,6 @@ final class RetryableManagedTransactionSupport
     private function getSessionPool(BoltSession $session): ConnectionPool|Neo4jConnectionPool
     {
         $property = new ReflectionProperty(BoltSession::class, 'pool');
-        $property->setAccessible(true);
 
         /** @var ConnectionPool|Neo4jConnectionPool */
         return $property->getValue($session);
@@ -211,27 +181,8 @@ final class RetryableManagedTransactionSupport
     private function getSessionConfiguration(BoltSession $session): SessionConfiguration
     {
         $property = new ReflectionProperty(BoltSession::class, 'config');
-        $property->setAccessible(true);
 
         /** @var SessionConfiguration */
-        return $property->getValue($session);
-    }
-
-    private function getSessionFormatter(BoltSession $session): SummarizedResultFormatter
-    {
-        $property = new ReflectionProperty(BoltSession::class, 'formatter');
-        $property->setAccessible(true);
-
-        /** @var SummarizedResultFormatter */
-        return $property->getValue($session);
-    }
-
-    private function getSessionBookmarkHolder(BoltSession $session): BookmarkHolder
-    {
-        $property = new ReflectionProperty(BoltSession::class, 'bookmarkHolder');
-        $property->setAccessible(true);
-
-        /** @var BookmarkHolder */
         return $property->getValue($session);
     }
 }

@@ -30,7 +30,7 @@ final class TelemetryIntegrationTest extends EnvironmentAwareIntegrationTest
     private function requireAuraConnection(): void
     {
         $connection = $_ENV['CONNECTION'] ?? '';
-        if (!is_string($connection) || !str_contains($connection, 'databases.neo4j.io')) {
+        if ($connection === '' || !str_contains($connection, 'databases.neo4j.io')) {
             $this->markTestSkipped('Set CONNECTION to a Neo4j Aura URI (e.g. neo4j+s://….databases.neo4j.io) for Aura telemetry E2E.');
         }
     }
@@ -43,7 +43,7 @@ final class TelemetryIntegrationTest extends EnvironmentAwareIntegrationTest
         $connection = $this->acquireBoltConnection($driver);
 
         try {
-            if (!self::readServerTelemetryEnabled($connection)) {
+            if (!$connection->isServerTelemetryEnabled()) {
                 $this->markTestSkipped('Server did not advertise telemetry.enabled (expected on Aura when Bolt 5.4 telemetry is enabled).');
             }
         } finally {
@@ -98,12 +98,5 @@ final class TelemetryIntegrationTest extends EnvironmentAwareIntegrationTest
 
         /** @var ConnectionPool */
         return $property->getValue($driver);
-    }
-
-    private static function readServerTelemetryEnabled(BoltConnection $connection): bool
-    {
-        $property = new ReflectionProperty(BoltConnection::class, 'serverTelemetryEnabled');
-
-        return $property->getValue($connection) === true;
     }
 }

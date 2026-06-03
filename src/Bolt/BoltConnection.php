@@ -109,6 +109,11 @@ class BoltConnection implements ConnectionInterface
         $this->serverTelemetryEnabled = $enabled;
     }
 
+    public function isServerTelemetryEnabled(): bool
+    {
+        return $this->serverTelemetryEnabled;
+    }
+
     /**
      * Sends a TELEMETRY message once per API type per connection when enabled by server and driver.
      * Resends on failure until SUCCESS is received; never sends again after success.
@@ -123,7 +128,7 @@ class BoltConnection implements ConnectionInterface
             return;
         }
 
-        if (isset($this->acknowledgedTelemetryApis[$api->value])) {
+        if (array_key_exists($api->value, $this->acknowledgedTelemetryApis)) {
             return;
         }
 

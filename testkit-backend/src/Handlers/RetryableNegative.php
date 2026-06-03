@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -22,7 +21,6 @@ use Laudis\Neo4j\TestkitBackend\Requests\RetryableNegativeRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -32,13 +30,10 @@ use Throwable;
  */
 final class RetryableNegative implements RequestHandlerInterface
 {
-    private RetryableManagedTransactionSupport $retrySupport;
-
     public function __construct(
         private readonly MainRepository $repository,
         private readonly LoggerInterface $logger,
     ) {
-        $this->retrySupport = new RetryableManagedTransactionSupport($repository);
     }
 
     /**
@@ -47,6 +42,7 @@ final class RetryableNegative implements RequestHandlerInterface
     public function handle($request): TestkitResponseInterface
     {
         $sessionId = $request->getSessionId();
+        $retrySupport = $this->repository->getRetryableManagedTransactionSupport();
 
         try {
             $transactionId = $this->repository->getTsxIdFromSession($sessionId);
@@ -68,8 +64,8 @@ final class RetryableNegative implements RequestHandlerInterface
 
                 if ($errorResponse instanceof DriverErrorResponse) {
                     $exception = $errorResponse->getException();
-                    if ($this->retrySupport->isRetryableException($exception)) {
-                        return $this->retrySupport->retryManagedTransaction($sessionId, $transactionId, $errorResponse);
+                    if ($retrySupport->isRetryableException($exception)) {
+                        return $retrySupport->retryManagedTransaction($sessionId, $transactionId, $errorResponse);
                     }
 
                     try {

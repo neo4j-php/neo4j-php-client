@@ -15,9 +15,6 @@ namespace Laudis\Neo4j\TestkitBackend\Responses;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
-use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
-use stdClass;
-use Symfony\Component\Uid\Uuid;
 use Traversable;
 
 /**
@@ -29,7 +26,7 @@ final class EagerResultResponse implements TestkitResponseInterface
     private array $records;
     private array $summary;
 
-    public function __construct(Uuid $id, SummarizedResult $eagerResult)
+    public function __construct(SummarizedResult $eagerResult)
     {
         $this->keys = $eagerResult->keys();
         $this->summary = (new SummaryResponse($eagerResult))->jsonSerialize()['data'];
