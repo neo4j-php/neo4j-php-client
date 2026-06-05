@@ -13,13 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend;
 
-use Laudis\Neo4j\TestkitBackend\Requests\ExecuteQueryRequest;
 use function is_string;
 
 use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\CheckMultiDBSupportRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DomainNameResolutionCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ExecuteQueryRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ForcedRoutingTableUpdateRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetRoutingTableRequest;
@@ -83,6 +83,7 @@ final class RequestFactory
         'ForcedRoutingTableUpdate' => ForcedRoutingTableUpdateRequest::class,
         'GetRoutingTable' => GetRoutingTableRequest::class,
         'GetServerInfo' => GetServerInfoRequest::class,
+        'ExecuteQuery' => ExecuteQueryRequest::class,
     ];
 
     /**
@@ -103,7 +104,7 @@ final class RequestFactory
 
         if ($name === 'NewDriver') {
             $authToken = new AuthorizationTokenRequest('basic', '', '', '');
-            if (array_key_exists('authorizationToken', $data) && is_array($data['authorizationToken'])) {
+            if (isset($data['authorizationToken']) && is_array($data['authorizationToken'])) {
                 $tokenData = $data['authorizationToken'];
                 if (isset($tokenData['name'], $tokenData['data'])) {
                     /** @var AuthorizationTokenRequest $authToken */

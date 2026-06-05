@@ -26,7 +26,6 @@ use Laudis\Neo4j\TestkitBackend\Requests\SessionWriteTransactionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
 use Symfony\Component\Uid\Uuid;
-use Throwable;
 
 /**
  * @implements RequestHandlerInterface<SessionWriteTransactionRequest>

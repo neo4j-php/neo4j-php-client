@@ -74,9 +74,4 @@ final class Session implements SessionInterface
     {
         return $this->session->getLastBookmark();
     }
-
-    public function close(): void
-    {
-        $this->session->close();
-    }
 }

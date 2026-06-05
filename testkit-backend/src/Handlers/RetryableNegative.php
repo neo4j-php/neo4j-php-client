@@ -21,7 +21,6 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\DriverExceptionHelper;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
-use Laudis\Neo4j\TestkitBackend\DriverExceptionHelper;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\RetryableNegativeRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
