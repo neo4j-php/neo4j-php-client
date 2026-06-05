@@ -35,7 +35,7 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @throws Exception
      *
-     * @return array{server: string, connection_id: string, hints: list}
+     * @return array{server: string, connection_id: string, hints: array<string, mixed>}
      */
     public function authenticateBolt(BoltConnection $connection, string $userAgent): array
     {
@@ -55,7 +55,7 @@ final class BasicAuth implements AuthenticateInterface
 
             $response = $factory->createLogonMessage($credentials)->send()->getResponse();
 
-            /** @var array{server: string, connection_id: string, hints: list} */
+            /** @var array{server: string, connection_id: string, hints: array<string, mixed>} */
             return array_merge($responseHello->content, $response->content);
         }
 
@@ -68,7 +68,7 @@ final class BasicAuth implements AuthenticateInterface
 
         $response = $factory->createHelloMessage($helloMetadata)->send()->getResponse();
 
-        /** @var array{server: string, connection_id: string, hints: list} */
+        /** @var array{server: string, connection_id: string, hints: array<string, mixed>} */
         return $response->content;
     }
 

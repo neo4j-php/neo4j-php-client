@@ -108,7 +108,7 @@ class BoltConnectionPoolTest extends TestCase
         $this->pool->release($this->createMock(ConnectionInterface::class));
     }
 
-    public function testReleaseReference(): void
+    public function testReleaseKeepsConnectionInPool(): void
     {
         $connection = $this->pool->acquire(SessionConfiguration::default());
         $connection->next();
@@ -116,13 +116,51 @@ class BoltConnectionPoolTest extends TestCase
 
         static::assertInstanceOf(ConnectionInterface::class, $connection);
 
-        // We use a refCount instead of checking for garbage collection as
-        // the underlying libraries for mocking keep references throughout the system
         $refCount = $this->refCount($connection);
 
         $this->pool->release($connection);
 
-        static::assertEquals($refCount - 1, $this->refCount($connection));
+        static::assertSame($refCount, $this->refCount($connection));
+    }
+
+    public function testReleaseAllowsConnectionReuse(): void
+    {
+        $this->setupPool((function (): Generator {
+            yield 1.0;
+
+            return true;
+        })());
+
+        $boltConnection = $this->createMock(BoltConnection::class);
+        $boltConnection->method('protocol')->willReturn($this->createMock(V5::class));
+        $boltConnection->method('getServerState')->willReturn('READY');
+
+        $this->factory = $this->createMock(BoltFactory::class);
+        $this->factory->expects(self::once())->method('createConnection')->willReturn($boltConnection);
+        $this->factory->method('canReuseConnection')->willReturn(true);
+        $this->factory->method('reuseConnection')
+            ->willReturnCallback(fn (MockObject $x): MockObject => $x);
+
+        $this->pool = new ConnectionPool(
+            $this->semaphore,
+            $this->factory,
+            new ConnectionRequestData(
+                '',
+                Uri::create(''),
+                Authenticate::disabled(),
+                '',
+                SslConfiguration::default()
+            ),
+            null,
+            10.0
+        );
+
+        $sessionConfig = SessionConfiguration::default();
+        $first = GeneratorHelper::getReturnFromGenerator($this->pool->acquire($sessionConfig));
+        $this->pool->release($first);
+        $second = GeneratorHelper::getReturnFromGenerator($this->pool->acquire($sessionConfig));
+
+        static::assertSame($first, $second);
     }
 
     /**

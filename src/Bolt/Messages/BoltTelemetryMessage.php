@@ -21,6 +21,7 @@ use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\BoltMessage;
 use Laudis\Neo4j\Enum\TelemetryAPI;
 use Psr\Log\LogLevel;
+use ReflectionClass;
 
 final class BoltTelemetryMessage extends BoltMessage
 {
@@ -53,7 +54,7 @@ final class BoltTelemetryMessage extends BoltMessage
      */
     private function discardFromPipeline(AProtocol $protocol): void
     {
-        $property = (new \ReflectionClass($protocol))->getProperty('pipelinedMessages');
+        $property = (new ReflectionClass($protocol))->getProperty('pipelinedMessages');
         $messages = $property->getValue($protocol);
         if ($messages !== [] && end($messages) === Message::TELEMETRY) {
             array_pop($messages);

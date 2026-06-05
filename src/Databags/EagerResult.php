@@ -14,19 +14,22 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use IteratorAggregate;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherMap;
 use Traversable;
 
 /**
  * Eagerly consumed query result returned by Driver::executeQuery.
  *
- * @implements IteratorAggregate<int, CypherMap<mixed>>
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
+ *
+ * @implements IteratorAggregate<int, CypherMap<OGMTypes>>
  */
 final class EagerResult implements IteratorAggregate
 {
     /**
      * @param list<string>              $keys
-     * @param list<CypherMap<mixed>>    $records
+     * @param list<CypherMap<OGMTypes>> $records
      */
     public function __construct(
         private readonly array $keys,
@@ -61,7 +64,7 @@ final class EagerResult implements IteratorAggregate
     }
 
     /**
-     * @return list<CypherMap<mixed>>
+     * @return list<CypherMap<OGMTypes>>
      */
     public function records(): array
     {
