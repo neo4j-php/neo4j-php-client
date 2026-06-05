@@ -13,9 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Enum\TelemetryAPI;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\DriverExceptionHelper;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\RetryableNegativeRequest;
@@ -68,13 +72,18 @@ final class RetryableNegative implements RequestHandlerInterface
         if ($errorId !== '' && $errorId !== null) {
             try {
                 $errorUuid = $errorId instanceof Uuid ? $errorId : Uuid::fromString($errorId);
-                $errorResponse = $this->repository->getRecords($errorUuid);
+                $errorResponse = $this->getDriverErrorResponse($errorUuid, $transactionId);
 
                 if ($errorResponse instanceof DriverErrorResponse) {
                     $exception = $errorResponse->getException();
-                    if ($exception instanceof Neo4jException && $exception->getClassification() === 'TransientError') {
-                        // If the original error was retryable, signal for retry
-                        return new RetryableTryResponse($transactionId);
+                    if ($exception instanceof Neo4jException && DriverExceptionHelper::shouldRetryManagedTransaction($exception)) {
+                        if (DriverExceptionHelper::isConnectionNeo4jException($exception)) {
+                            $this->dropLastUsedBoltConnection($sessionId);
+                        } else {
+                            $this->resetSessionBoltConnection($sessionId);
+                        }
+
+                        return $this->retryTransaction($sessionId);
                     }
 
                     // Otherwise, return the original error to the frontend
@@ -89,5 +98,54 @@ final class RetryableNegative implements RequestHandlerInterface
         // If no specific error was provided or couldn't be retrieved,
         // client code caused the rollback (e.g. ApplicationCodeError) - return FrontendError
         return new FrontendErrorResponse('Client code caused transaction to be rolled back');
+    }
+
+    private function getDriverErrorResponse(Uuid $errorId, Uuid $transactionId): ?DriverErrorResponse
+    {
+        $stored = $this->repository->getRecords($errorId);
+        if ($stored instanceof DriverErrorResponse) {
+            return $stored;
+        }
+
+        if (!$errorId->equals($transactionId)) {
+            $fallback = $this->repository->getRecords($transactionId);
+            if ($fallback instanceof DriverErrorResponse) {
+                return $fallback;
+            }
+        }
+
+        return null;
+    }
+
+    private function dropLastUsedBoltConnection(Uuid $sessionId): void
+    {
+        $session = $this->repository->getSession($sessionId);
+        if ($session instanceof Session) {
+            $session->dropLastUsedBoltConnection();
+        }
+    }
+
+    private function resetSessionBoltConnection(Uuid $sessionId): void
+    {
+        $session = $this->repository->getSession($sessionId);
+        if ($session instanceof Session) {
+            $session->resetLastUsedBoltConnection();
+        }
+    }
+
+    private function retryTransaction(Uuid $sessionId): RetryableTryResponse
+    {
+        $session = $this->repository->getSession($sessionId);
+        $config = TransactionConfiguration::default();
+
+        $newId = Uuid::v4();
+        $transaction = $session instanceof Session
+            ? $session->beginTransaction(null, $config, TelemetryAPI::TX_FUNC)
+            : $session->beginTransaction(null, $config);
+
+        $this->repository->addTransaction($newId, $transaction);
+        $this->repository->bindTransactionToSession($sessionId, $newId);
+
+        return new RetryableTryResponse($newId);
     }
 }

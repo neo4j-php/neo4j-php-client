@@ -85,6 +85,12 @@ class BoltFactory
 
         $config->setServerAgent($response['server'] ?? '');
 
+        $serverTelemetryEnabled = false;
+        if (array_key_exists('hints', $response) && is_array($response['hints'])) {
+            $serverTelemetryEnabled = ($response['hints']['telemetry.enabled'] ?? false) === true;
+        }
+        $connection->configureTelemetry($data->isTelemetryDisabled(), $serverTelemetryEnabled);
+
         // Timeout precedence: 1) driver config, 2) server hint, 3) default 30s.
         // Only use server hint when driver did not explicitly configure a timeout.
         $driverHasExplicitTimeout = $data->getSocketTimeoutSeconds() !== null;

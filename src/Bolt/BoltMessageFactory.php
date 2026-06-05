@@ -24,8 +24,10 @@ use Laudis\Neo4j\Bolt\Messages\BoltPullMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltResetMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltRollbackMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltRunMessage;
+use Laudis\Neo4j\Bolt\Messages\BoltTelemetryMessage;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Databags\BookmarkHolder;
+use Laudis\Neo4j\Enum\TelemetryAPI;
 
 /**
  * Factory class for creating Bolt protocol messages.
@@ -95,5 +97,10 @@ class BoltMessageFactory
     public function createGoodbyeMessage(): BoltGoodbyeMessage
     {
         return new BoltGoodbyeMessage($this->connection, $this->logger);
+    }
+
+    public function createTelemetryMessage(TelemetryAPI $api): BoltTelemetryMessage
+    {
+        return new BoltTelemetryMessage($this->connection, $api, $this->logger);
     }
 }

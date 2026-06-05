@@ -23,6 +23,7 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\DriverExceptionHelper;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
@@ -33,6 +34,7 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 /**
  * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
@@ -84,6 +86,11 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             return new ResultResponse($id, $result->keys());
         } catch (Neo4jException $exception) {
+            if (DriverExceptionHelper::isConnectionNeo4jException($exception)
+                || DriverExceptionHelper::isRetryableConnectionFailure($exception)) {
+                $exception = DriverExceptionHelper::toConnectionNeo4jException($exception);
+            }
+
             if ($request instanceof SessionRunRequest) {
                 return new DriverErrorResponse($request->getSessionId(), $exception);
             }
@@ -113,7 +120,28 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 return new DriverErrorResponse($request->getSessionId(), $wrapped);
             }
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $wrapped);
+                $response = new DriverErrorResponse($request->getTxId(), $wrapped);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
+            }
+
+            throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));
+        } catch (Throwable $e) {
+            if (!DriverExceptionHelper::isRetryableConnectionFailure($e)) {
+                throw $e;
+            }
+
+            $wrapped = DriverExceptionHelper::toConnectionNeo4jException($e);
+
+            if ($request instanceof SessionRunRequest) {
+                return new DriverErrorResponse($request->getSessionId(), $wrapped);
+            }
+            if ($request instanceof TransactionRunRequest) {
+                $response = new DriverErrorResponse($request->getTxId(), $wrapped);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));

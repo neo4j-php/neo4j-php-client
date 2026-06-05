@@ -97,7 +97,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 $auth,
                 $conf->getUserAgent(),
                 $conf->getSslConfiguration(),
-                $conf->getSocketTimeoutSecondsExplicit()
+                $conf->getSocketTimeoutSecondsExplicit(),
+                $conf->isTelemetryDisabled(),
             ),
             Cache::getInstance(),
             $resolver,
@@ -114,7 +115,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $this->data->getAuth(),
             $this->data->getUserAgent(),
             $this->data->getSslConfig(),
-            $this->data->getSocketTimeoutSeconds()
+            $this->data->getSocketTimeoutSeconds(),
+            $this->data->isTelemetryDisabled(),
         );
 
         $key = $this->createKey($data);
@@ -176,7 +178,6 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
-                // TODO: release probably logs off the connection, it is not preferable
                 $pool->release($connection);
                 break;
             }

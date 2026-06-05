@@ -19,6 +19,7 @@ use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\CheckMultiDBSupportRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DomainNameResolutionCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ExecuteQueryRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ForcedRoutingTableUpdateRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetRoutingTableRequest;
@@ -82,6 +83,7 @@ final class RequestFactory
         'ForcedRoutingTableUpdate' => ForcedRoutingTableUpdateRequest::class,
         'GetRoutingTable' => GetRoutingTableRequest::class,
         'GetServerInfo' => GetServerInfoRequest::class,
+        'ExecuteQuery' => ExecuteQueryRequest::class,
     ];
 
     /**
@@ -97,6 +99,51 @@ final class RequestFactory
                 $data['realm'] ?? '',
                 $data['principal'],
                 $data['credentials']
+            );
+        }
+
+        if ($name === 'NewDriver') {
+            $authToken = new AuthorizationTokenRequest('basic', '', '', '');
+            if (isset($data['authorizationToken']) && is_array($data['authorizationToken'])) {
+                $tokenData = $data['authorizationToken'];
+                if (isset($tokenData['name'], $tokenData['data'])) {
+                    /** @var AuthorizationTokenRequest $authToken */
+                    $authToken = $this->create($tokenData['name'], $tokenData['data']);
+                } else {
+                    $authToken = $this->create('AuthorizationToken', $tokenData);
+                }
+            }
+
+            return new NewDriverRequest(
+                $data['uri'],
+                $authToken,
+                $data['authTokenManagerId'] ?? null,
+                $data['userAgent'] ?? null,
+                $data['resolverRegistered'] ?? null,
+                $data['domainNameResolverRegistered'] ?? null,
+                $data['connectionTimeoutMs'] ?? null,
+                $data['fetchSize'] ?? null,
+                $data['maxTxRetryTimeMs'] ?? null,
+                $data['livenessCheckTimeoutMs'] ?? null,
+                $data['maxConnectionPoolSize'] ?? null,
+                $data['connectionAcquisitionTimeoutMs'] ?? null,
+                $data['clientCertificate'] ?? null,
+                $data['clientCertificateProviderId'] ?? null,
+                $data['telemetryDisabled'] ?? null,
+            );
+        }
+
+        if ($name === 'ExecuteQuery') {
+            $driverId = $data['driverId'] ?? $data[0] ?? null;
+            if (is_string($driverId)) {
+                $driverId = Uuid::fromString($driverId);
+            }
+
+            return new ExecuteQueryRequest(
+                $driverId,
+                $data['cypher'] ?? $data[1] ?? '',
+                $data['params'] ?? $data[2] ?? null,
+                $data['config'] ?? $data[3] ?? null,
             );
         }
 

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\enum\Message;
 use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
 use Bolt\error\ConnectException as BoltConnectException;
@@ -34,6 +35,7 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
+use Laudis\Neo4j\Enum\TelemetryAPI;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
@@ -70,6 +72,13 @@ class BoltConnection implements ConnectionInterface
     private ?float $recvTimeoutHint = null;
 
     private ?float $originalTimeout = null;
+
+    private bool $telemetryDisabled = false;
+
+    private bool $serverTelemetryEnabled = false;
+
+    /** @var array<int, true> */
+    private array $sentTelemetryApis = [];
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -236,8 +245,12 @@ class BoltConnection implements ConnectionInterface
 
         $extra = $this->buildRunExtra($database, $timeout, $holder, null, $txMetaData);
         $message = $this->messageFactory->createBeginMessage($extra);
-        $response = $message->send()->getResponse();
-        $this->assertNoFailure($response);
+        $message->send();
+
+        do {
+            $response = $message->getResponse();
+            $this->assertNoFailure($response);
+        } while ($response->message !== Message::BEGIN);
     }
 
     /**
@@ -272,8 +285,12 @@ class BoltConnection implements ConnectionInterface
     ): array {
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
-        $response = $message->send()->getResponse();
-        $this->assertNoFailure($response);
+        $message->send();
+
+        do {
+            $response = $message->getResponse();
+            $this->assertNoFailure($response);
+        } while ($response->message !== Message::RUN);
 
         /** @var BoltMeta */
         return $response->content;
@@ -548,5 +565,34 @@ class BoltConnection implements ConnectionInterface
     public function setOriginalTimeout(?float $timeout): void
     {
         $this->originalTimeout = $timeout;
+    }
+
+    public function configureTelemetry(bool $disabled, bool $serverEnabled): void
+    {
+        $this->telemetryDisabled = $disabled;
+        $this->serverTelemetryEnabled = $serverEnabled;
+    }
+
+    public function hasSentTelemetry(TelemetryAPI $api): bool
+    {
+        return isset($this->sentTelemetryApis[$api->value]);
+    }
+
+    public function sendTelemetry(TelemetryAPI $api): void
+    {
+        if ($this->telemetryDisabled || !$this->serverTelemetryEnabled) {
+            return;
+        }
+
+        if ($this->hasSentTelemetry($api)) {
+            return;
+        }
+
+        if (!$this->protocol() instanceof V5_4) {
+            return;
+        }
+
+        $this->messageFactory->createTelemetryMessage($api)->send();
+        $this->sentTelemetryApis[$api->value] = true;
     }
 }

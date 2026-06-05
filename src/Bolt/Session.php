@@ -30,6 +30,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
+use Laudis\Neo4j\Enum\TelemetryAPI;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
@@ -102,6 +103,34 @@ final class Session implements SessionInterface
         return $this->runStatement(new Statement($statement, $parameters), $config);
     }
 
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    public function executeQueryStatement(string $statement, array $parameters = []): SummarizedResult
+    {
+        $config = $this->mergeTsxConfig(null);
+
+        while (true) {
+            $transaction = null;
+            try {
+                $transaction = $this->startTransaction($config, $this->config, TelemetryAPI::DRIVER);
+                $result = $transaction->run($statement, $parameters);
+                $result->list();
+                $transaction->commit();
+
+                return $result;
+            } catch (Neo4jException $e) {
+                $this->handleManagedTransactionError($transaction, $e);
+            } catch (Throwable $e) {
+                if (!$this->isConnectionError($e)) {
+                    throw $e;
+                }
+
+                $this->dropLastUsedBoltConnection();
+            }
+        }
+    }
+
     public function writeTransaction(callable $tsxHandler, ?TransactionConfiguration $config = null)
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning write transaction', ['config' => $config]);
@@ -131,9 +160,9 @@ final class Session implements SessionInterface
             $transaction = null;
             try {
                 if ($read) {
-                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()));
+                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()), TelemetryAPI::TX_FUNC);
                 } else {
-                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE()));
+                    $transaction = $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE()), TelemetryAPI::TX_FUNC);
                 }
                 $tbr = $tsxHandler($transaction);
                 self::triggerLazyResult($tbr);
@@ -147,8 +176,8 @@ final class Session implements SessionInterface
                 if (!$this->isConnectionError($e)) {
                     throw $e;
                 }
-                // Connection error - clear routing and retry
-                $this->handleConnectionFailure();
+
+                $this->dropLastUsedBoltConnection();
             }
         }
     }
@@ -165,7 +194,13 @@ final class Session implements SessionInterface
         }
 
         if ($this->shouldRetryManagedTransaction($e)) {
-            $this->handleConnectionFailure();
+            if ($this->shouldClearPoolOnManagedTransactionRetry($e)) {
+                $this->handleConnectionFailure();
+            } elseif ($this->isConnectionError($e)) {
+                $this->dropLastUsedBoltConnection();
+            } else {
+                $this->resetLastUsedBoltConnection();
+            }
 
             return;
         }
@@ -187,6 +222,51 @@ final class Session implements SessionInterface
         }
 
         return $e->getClassification() === 'TransientError';
+    }
+
+    private function shouldClearPoolOnManagedTransactionRetry(Neo4jException $e): bool
+    {
+        return $e->getTitle() === 'NotALeader'
+            || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader';
+    }
+
+    /**
+     * Send Bolt RESET on the last connection used by this session (keeps the pool open).
+     * Required after transient failures when retrying on the same socket.
+     */
+    public function resetLastUsedBoltConnection(): void
+    {
+        if ($this->usedConnections === []) {
+            return;
+        }
+
+        $connection = $this->usedConnections[array_key_last($this->usedConnections)];
+        try {
+            $connection->reset();
+        } catch (Throwable) {
+            $this->dropLastUsedBoltConnection();
+        }
+    }
+
+    /**
+     * Invalidate the last connection without closing the entire pool.
+     * Used when the socket is dead and a fresh connection is required.
+     */
+    public function dropLastUsedBoltConnection(): void
+    {
+        if ($this->usedConnections === []) {
+            return;
+        }
+
+        $connection = $this->usedConnections[array_key_last($this->usedConnections)];
+        try {
+            if ($connection->isOpen()) {
+                $connection->invalidate();
+            }
+        } catch (Throwable) {
+        }
+
+        array_pop($this->usedConnections);
     }
 
     /**
@@ -211,6 +291,25 @@ final class Session implements SessionInterface
             return true;
         }
 
+        if ($e instanceof Neo4jException) {
+            if ($e->getClassification() === 'TransientError') {
+                return false;
+            }
+
+            $code = $e->getNeo4jCode();
+            if ($code === 'Neo.ClientError.General.ConnectionError' || str_contains($code, '-9999')) {
+                return true;
+            }
+
+            $message = strtolower($e->getNeo4jMessage() ?? $e->getMessage());
+
+            return str_contains($message, 'connection')
+                || str_contains($message, 'broken pipe')
+                || str_contains($message, 'cannot connect')
+                || str_contains($message, 'cannot create socket')
+                || str_contains($message, '-9999');
+        }
+
         $message = strtolower($e->getMessage());
 
         return str_contains($message, 'interrupted system call')
@@ -219,7 +318,8 @@ final class Session implements SessionInterface
             || str_contains($message, 'connection timeout')
             || str_contains($message, 'connection closed')
             || str_contains($message, 'connection refused')
-            || str_contains($message, 'i/o error');
+            || str_contains($message, 'i/o error')
+            || str_contains($message, '-9999');
     }
 
     /**
@@ -327,11 +427,11 @@ final class Session implements SessionInterface
     /**
      * @param iterable<Statement> $statements
      */
-    public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransactionInterface
+    public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null, ?TelemetryAPI $telemetryApi = TelemetryAPI::TX): UnmanagedTransactionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
         $config = $this->mergeTsxConfig($config);
-        $tsx = $this->startTransaction($config, $this->config);
+        $tsx = $this->startTransaction($config, $this->config, $telemetryApi);
 
         $tsx->runStatements($statements ?? []);
 
@@ -344,9 +444,14 @@ final class Session implements SessionInterface
     private function beginInstantTransaction(
         SessionConfiguration $config,
         TransactionConfiguration $tsxConfig,
+        ?TelemetryAPI $telemetryApi = TelemetryAPI::AUTO_COMMIT,
     ): TransactionInterface {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
+
+        if ($telemetryApi !== null) {
+            $connection->sendTelemetry($telemetryApi);
+        }
 
         /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
         $pool = $this->pool;
@@ -390,10 +495,14 @@ final class Session implements SessionInterface
         return $connection;
     }
 
-    private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig): UnmanagedTransactionInterface
+    private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig, ?TelemetryAPI $telemetryApi = null): UnmanagedTransactionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         $connection = $this->acquireConnection($config, $sessionConfig);
+
+        if ($telemetryApi !== null) {
+            $connection->sendTelemetry($telemetryApi);
+        }
 
         // Defer BEGIN to first run/commit/rollback. The driver does not support OPT_EAGER_TX_BEGIN,
         // so BEGIN is sent on first run/commit/rollback. This matches test_disconnect_on_tx_begin,

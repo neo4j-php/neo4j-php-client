@@ -13,11 +13,15 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Enum\TelemetryAPI;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\DriverExceptionHelper;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
+use Throwable;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionReadTransactionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
@@ -61,16 +65,28 @@ final class SessionReadTransaction implements RequestHandlerInterface
 
         $id = Uuid::v4();
         try {
-            // TODO - Create beginReadTransaction and beginWriteTransaction
-            $transaction = $session->beginTransaction(null, $config);
+            $transaction = $session instanceof Session
+                ? $session->beginTransaction(null, $config, TelemetryAPI::TX_FUNC)
+                : $session->beginTransaction(null, $config);
 
             $this->repository->addTransaction($id, $transaction);
             $this->repository->bindTransactionToSession($request->getSessionId(), $id);
         } catch (Neo4jException $exception) {
-            $this->repository->addRecords($id, new DriverErrorResponse(
-                $id,
-                $exception
-            ));
+            if (DriverExceptionHelper::isConnectionNeo4jException($exception)
+                || DriverExceptionHelper::isRetryableConnectionFailure($exception)) {
+                $exception = DriverExceptionHelper::toConnectionNeo4jException($exception);
+            }
+
+            $this->repository->addRecords($id, new DriverErrorResponse($id, $exception));
+
+            return new DriverErrorResponse($id, $exception);
+        } catch (Throwable $e) {
+            if (!DriverExceptionHelper::isRetryableConnectionFailure($e)) {
+                throw $e;
+            }
+
+            $exception = DriverExceptionHelper::toConnectionNeo4jException($e);
+            $this->repository->addRecords($id, new DriverErrorResponse($id, $exception));
 
             return new DriverErrorResponse($id, $exception);
         }

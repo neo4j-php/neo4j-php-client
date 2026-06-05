@@ -186,6 +186,24 @@ python3 -m unittest -v \
    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch \
    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all \
    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
+\
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_read \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_write \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_begin_transaction \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_session_run \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_query \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_read_retry \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_write_retry \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_query_retry \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_read \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_write \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_begin_transaction \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_session_run \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_read_retry \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_write_retry \
+   tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query_retry \
+
 
 EXIT_CODE=$?
 

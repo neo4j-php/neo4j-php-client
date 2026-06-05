@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Bolt\error\ConnectException;
+use Bolt\error\ConnectException as BoltConnectException;
 use Exception;
 
 use function is_string;
@@ -28,6 +28,7 @@ use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\EagerResult;
 use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
@@ -93,7 +94,7 @@ final class Neo4jDriver implements DriverInterface
         $config ??= SessionConfiguration::default();
         try {
             GeneratorHelper::getReturnFromGenerator($this->pool->acquire($config));
-        } catch (ConnectException|ConnectionPoolException $e) {
+        } catch (BoltConnectException|ConnectionPoolException $e) {
             $this->pool->getLogger()?->log(LogLevel::WARNING, 'Could not connect to server on URI '.$this->parsedUrl->__toString(), ['error' => $e]);
 
             return false;
@@ -123,5 +124,28 @@ final class Neo4jDriver implements DriverInterface
     public function closeConnections(): void
     {
         $this->pool->close();
+    }
+
+    public function executeQuery(string $cypher, array $parameters = [], array $config = []): EagerResult
+    {
+        $sessionConfig = SessionConfiguration::default();
+        if (array_key_exists('database', $config) && $config['database'] !== null) {
+            $sessionConfig = $sessionConfig->withDatabase($config['database']);
+        }
+        if (array_key_exists('routing', $config) && $config['routing'] === 'w') {
+            $sessionConfig = $sessionConfig->withAccessMode(AccessMode::WRITE());
+        } else {
+            $sessionConfig = $sessionConfig->withAccessMode(AccessMode::READ());
+        }
+
+        $session = $this->createSession($sessionConfig);
+        try {
+            /** @var Session $session */
+            $result = $session->executeQueryStatement($cypher, $parameters);
+
+            return EagerResult::fromSummarizedResult($result);
+        } finally {
+            $session->close();
+        }
     }
 }

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Contracts;
 
+use Laudis\Neo4j\Databags\EagerResult;
 use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Types\CypherList;
@@ -45,4 +46,12 @@ interface DriverInterface
      * Closes all connections in the pool.
      */
     public function closeConnections(): void;
+
+    /**
+     * Run a query in a single auto-commit transaction and return an eager result.
+     *
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $config
+     */
+    public function executeQuery(string $cypher, array $parameters = [], array $config = []): EagerResult;
 }

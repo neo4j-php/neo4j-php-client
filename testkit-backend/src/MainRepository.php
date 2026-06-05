@@ -17,6 +17,7 @@ use Iterator;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
+use Laudis\Neo4j\Databags\EagerResult;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherMap;
@@ -45,6 +46,9 @@ final class MainRepository
 
     /** @var array<string, bool> After ResultPeek advanced the iterator, ResultNext must not advance again. */
     private array $peekPrimed = [];
+
+    /** @var array<string, EagerResult|SummarizedResult> */
+    private array $eagerResults = [];
 
     /**
      * Count of {@see Iterator::next()} calls owed before the next read: one per record already returned
@@ -242,5 +246,10 @@ final class MainRepository
     public function addBufferedRecords(string $id, array $records): void
     {
         $this->records[$id] = $records;
+    }
+
+    public function addEagerResult(Uuid $id, EagerResult|SummarizedResult $eagerResult): void
+    {
+        $this->eagerResults[$id->toRfc4122()] = $eagerResult;
     }
 }

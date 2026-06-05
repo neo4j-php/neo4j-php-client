@@ -22,6 +22,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\TransactionState;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
@@ -100,6 +101,12 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     public function rollback(): void
     {
+        if ($this->state === TransactionState::TERMINATED) {
+            $this->state = TransactionState::ROLLED_BACK;
+
+            return;
+        }
+
         if ($this->isFinished()) {
             if ($this->state === TransactionState::COMMITTED) {
                 throw new TransactionException("Can't rollback a committed transaction.");
@@ -165,9 +172,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             );
         } catch (Throwable $e) {
             $this->state = TransactionState::TERMINATED;
-            if ($this->pool !== null) {
-                $this->pool->release($this->connection);
-            }
+            $this->releaseConnectionAfterFailure($e);
             throw $e;
         }
         $run = microtime(true);
@@ -225,10 +230,26 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->beginSent = true;
         } catch (Throwable $e) {
             $this->state = TransactionState::TERMINATED;
-            if ($this->pool !== null) {
-                $this->pool->release($this->connection);
-            }
+            $this->releaseConnectionAfterFailure($e);
             throw $e;
         }
+    }
+
+    private function releaseConnectionAfterFailure(Throwable $e): void
+    {
+        if ($this->pool === null) {
+            return;
+        }
+
+        if ($e instanceof Neo4jException && $e->getClassification() === 'TransientError') {
+            return;
+        }
+
+        try {
+            $this->connection->invalidate();
+        } catch (Throwable) {
+        }
+
+        $this->pool->release($this->connection);
     }
 }

@@ -16,6 +16,7 @@ namespace Laudis\Neo4j\Basic;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
+use Laudis\Neo4j\Databags\EagerResult;
 use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\DriverFactory;
@@ -60,5 +61,10 @@ final class Driver implements DriverInterface
     public function closeConnections(): void
     {
         $this->driver->closeConnections();
+    }
+
+    public function executeQuery(string $cypher, array $parameters = [], array $config = []): EagerResult
+    {
+        return $this->driver->executeQuery($cypher, $parameters, $config);
     }
 }
