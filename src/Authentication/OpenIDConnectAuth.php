@@ -43,7 +43,7 @@ class OpenIDConnectAuth implements AuthenticateInterface
     /**
      * @throws Exception
      *
-     * @return array{server: string, connection_id: string, hints: list}
+     * @return array{server: string, connection_id: string, hints?: array<string, mixed>}
      */
     public function authenticateBolt(BoltConnection $connection, string $userAgent): array
     {
@@ -61,7 +61,7 @@ class OpenIDConnectAuth implements AuthenticateInterface
         ])->send()->getResponse();
 
         /**
-         * @var array{server: string, connection_id: string, hints: list}
+         * @var array{server: string, connection_id: string, hints?: array<string, mixed>}
          */
         return $response->content;
     }

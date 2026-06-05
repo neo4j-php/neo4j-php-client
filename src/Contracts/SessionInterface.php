@@ -76,4 +76,6 @@ interface SessionInterface extends TransactionInterface
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
 
     public function getLastBookmark(): Bookmark;
+
+    public function close(): void;
 }

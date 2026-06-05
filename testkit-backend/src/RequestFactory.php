@@ -104,7 +104,7 @@ final class RequestFactory
 
         if ($name === 'NewDriver') {
             $authToken = new AuthorizationTokenRequest('basic', '', '', '');
-            if (isset($data['authorizationToken']) && is_array($data['authorizationToken'])) {
+            if (array_key_exists('authorizationToken', $data) && is_array($data['authorizationToken'])) {
                 $tokenData = $data['authorizationToken'];
                 if (isset($tokenData['name'], $tokenData['data'])) {
                     /** @var AuthorizationTokenRequest $authToken */
