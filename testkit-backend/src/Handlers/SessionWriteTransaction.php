@@ -21,11 +21,11 @@ use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\DriverExceptionHelper;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
+use Throwable;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionWriteTransactionRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
 use Symfony\Component\Uid\Uuid;
-use Throwable;
 use Throwable;
 
 /**

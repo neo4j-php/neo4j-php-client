@@ -575,7 +575,7 @@ class BoltConnection implements ConnectionInterface
 
     public function hasSentTelemetry(TelemetryAPI $api): bool
     {
-        return array_key_exists($api->value, $this->sentTelemetryApis);
+        return isset($this->sentTelemetryApis[$api->value]);
     }
 
     public function sendTelemetry(TelemetryAPI $api): void
