@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Responses;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
+use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
 
 /**
  * Represents a record from a result.
@@ -35,10 +36,18 @@ final class RecordResponse implements TestkitResponseInterface
 
     public function jsonSerialize(): array
     {
+        $serializedValues = [];
+        foreach ($this->values as $v) {
+            if (!$v instanceof TestkitResponseInterface) {
+                $v = CypherObject::autoDetect($v);
+            }
+            $serializedValues[] = $v->jsonSerialize();
+        }
+
         return [
             'name' => 'Record',
             'data' => [
-                'values' => $this->values,
+                'values' => $serializedValues,
             ],
         ];
     }

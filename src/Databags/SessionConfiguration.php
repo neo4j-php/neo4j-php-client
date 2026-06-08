@@ -27,7 +27,6 @@ use Psr\Http\Message\UriInterface;
  */
 final class SessionConfiguration
 {
-    public const DEFAULT_DATABASE = 'neo4j';
     public const DEFAULT_FETCH_SIZE = 1000;
     public const DEFAULT_ACCESS_MODE = 'WRITE';
     public const DEFAULT_BOOKMARKS = '[]';
@@ -152,10 +151,10 @@ final class SessionConfiguration
     public function merge(SessionConfiguration $config): self
     {
         return new self(
-            $this->database ?? $config->database,
-            $this->fetchSize ?? $config->fetchSize,
-            $this->accessMode ?? $config->accessMode,
-            $this->bookmarks ?? $config->bookmarks
+            $config->database ?? $this->database,
+            $config->fetchSize ?? $this->fetchSize,
+            $config->accessMode ?? $this->accessMode,
+            $config->bookmarks ?? $this->bookmarks
         );
     }
 
