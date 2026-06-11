@@ -61,7 +61,8 @@ final class ConnectionPool implements ConnectionPoolInterface
                 $auth,
                 $conf->getUserAgent(),
                 $conf->getSslConfiguration(),
-                $conf->getSocketTimeoutSecondsExplicit()
+                $conf->getSocketTimeoutSecondsExplicit(),
+                $conf->isTelemetryDisabled(),
             ),
             $conf->getLogger(),
             $conf->getAcquireConnectionTimeout()
@@ -145,9 +146,14 @@ final class ConnectionPool implements ConnectionPoolInterface
 
     public function close(): void
     {
+        $activeCount = count($this->activeConnections);
         foreach ($this->activeConnections as $activeConnection) {
             $activeConnection->close();
         }
         $this->activeConnections = [];
+
+        for ($i = 0; $i < $activeCount; ++$i) {
+            $this->semaphore->post();
+        }
     }
 }

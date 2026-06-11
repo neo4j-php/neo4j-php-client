@@ -80,10 +80,7 @@ final class ExecuteQuery implements RequestHandlerInterface
             $config
         );
 
-        $resultId = Uuid::v4();
-        $this->repository->addEagerResult($resultId, $eagerResult);
-
-        return new EagerResultResponse($resultId, $eagerResult);
+        return new EagerResultResponse($eagerResult);
     }
 
     private function handleWithSession($driver, ExecuteQueryRequest $request): TestkitResponseInterface
@@ -109,11 +106,9 @@ final class ExecuteQuery implements RequestHandlerInterface
                 $request->getCypher(),
                 $request->getParams() ?? []
             );
+            $result->preload();
 
-            $resultId = Uuid::v4();
-            $this->repository->addEagerResult($resultId, $result);
-
-            return new EagerResultResponse($resultId, $result);
+            return new EagerResultResponse($result);
         } finally {
             $session->close();
         }

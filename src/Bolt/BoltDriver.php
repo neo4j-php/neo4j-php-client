@@ -27,6 +27,7 @@ use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\ServerInfo;
 use Laudis\Neo4j\Databags\SessionConfiguration;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
@@ -118,5 +119,20 @@ final class BoltDriver implements DriverInterface
     public function closeConnections(): void
     {
         $this->pool->close();
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $config
+     */
+    public function executeQuery(string $cypher, array $parameters = [], array $config = []): SummarizedResult
+    {
+        $session = $this->createSession();
+
+        try {
+            return $session->executeQuery($cypher, $parameters);
+        } finally {
+            $session->close();
+        }
     }
 }

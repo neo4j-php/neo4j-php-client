@@ -24,6 +24,7 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Exception;
+use Laudis\Neo4j\Bolt\Messages\BoltTelemetryMessage;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -70,6 +71,13 @@ class BoltConnection implements ConnectionInterface
     private ?float $recvTimeoutHint = null;
 
     private ?float $originalTimeout = null;
+
+    private bool $telemetryDisabled = false;
+
+    private bool $serverTelemetryEnabled = false;
+
+    /** @var array<int, true> */
+    private array $acknowledgedTelemetryApis = [];
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -548,5 +556,44 @@ class BoltConnection implements ConnectionInterface
     public function setOriginalTimeout(?float $timeout): void
     {
         $this->originalTimeout = $timeout;
+    }
+
+    public function configureTelemetry(bool $disabled, bool $serverEnabled): void
+    {
+        $this->telemetryDisabled = $disabled;
+        $this->serverTelemetryEnabled = $serverEnabled;
+    }
+
+    public function sendTelemetryIfNeeded(int $api): void
+    {
+        if ($this->telemetryDisabled || !$this->serverTelemetryEnabled || array_key_exists($api, $this->acknowledgedTelemetryApis)) {
+            return;
+        }
+
+        if (!$this->boltProtocol instanceof V5_4) {
+            return;
+        }
+
+        if ($this->protocol()->serverState !== ServerState::READY) {
+            return;
+        }
+
+        try {
+            $message = new BoltTelemetryMessage($this, $api, $this->logger);
+            $message->send();
+            if ($message->tryAcknowledge()) {
+                $this->acknowledgedTelemetryApis[$api] = true;
+            }
+        } catch (Throwable) {
+        }
+    }
+
+    public function discardPendingTelemetryFromPipeline(): void
+    {
+        if (!$this->boltProtocol instanceof V5_4) {
+            return;
+        }
+
+        BoltProtocolPipeline::discardPendingTelemetry($this->boltProtocol);
     }
 }

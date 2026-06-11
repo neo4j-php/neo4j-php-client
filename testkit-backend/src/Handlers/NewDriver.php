@@ -51,6 +51,10 @@ final class NewDriver implements RequestHandlerInterface
             $config = $config->withUserAgent($ua);
         }
 
+        if ($request->telemetryDisabled === true) {
+            $config = $config->withTelemetryDisabled(true);
+        }
+
         $authenticate = Authenticate::basic($user, $pass);
         $driver = DriverFactory::create($request->uri, $config, $authenticate);
 

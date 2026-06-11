@@ -22,6 +22,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\TransactionState;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
@@ -164,9 +165,11 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->tsxConfig->getMetaData()
             );
         } catch (Throwable $e) {
-            $this->state = TransactionState::TERMINATED;
-            if ($this->pool !== null) {
-                $this->pool->release($this->connection);
+            if (!$this->isTransientError($e)) {
+                $this->state = TransactionState::TERMINATED;
+                if ($this->pool !== null) {
+                    $this->pool->release($this->connection);
+                }
             }
             throw $e;
         }
@@ -215,6 +218,21 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         return $this->state != TransactionState::ACTIVE;
     }
 
+    /**
+     * Resets the connection and transaction state for a managed-transaction retry
+     * on the same Bolt connection (e.g. after a transient error).
+     */
+    public function prepareForRetry(): void
+    {
+        try {
+            $this->connection->reset();
+        } catch (Throwable) {
+        }
+
+        $this->state = TransactionState::ACTIVE;
+        $this->beginSent = false;
+    }
+
     private function ensureBeginSent(): void
     {
         if ($this->isInstantTransaction || $this->beginSent) {
@@ -224,11 +242,18 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
             $this->beginSent = true;
         } catch (Throwable $e) {
-            $this->state = TransactionState::TERMINATED;
-            if ($this->pool !== null) {
-                $this->pool->release($this->connection);
+            if (!$this->isTransientError($e)) {
+                $this->state = TransactionState::TERMINATED;
+                if ($this->pool !== null) {
+                    $this->pool->release($this->connection);
+                }
             }
             throw $e;
         }
+    }
+
+    private function isTransientError(Throwable $e): bool
+    {
+        return $e instanceof Neo4jException && $e->getClassification() === 'TransientError';
     }
 }

@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\SummarizedResultFormatter
  *
  * @template T of \Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest|\Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest
  *
@@ -113,7 +113,10 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 return new DriverErrorResponse($request->getSessionId(), $wrapped);
             }
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $wrapped);
+                $response = new DriverErrorResponse($request->getTxId(), $wrapped);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));

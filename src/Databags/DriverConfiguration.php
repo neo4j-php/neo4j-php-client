@@ -67,6 +67,7 @@ final class DriverConfiguration
         ?LoggerInterface $logger,
         ?SocketType $socketType = null,
         private ?float $socketTimeoutSeconds = null,
+        private bool $telemetryDisabled = false,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
@@ -318,6 +319,19 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->socketTimeoutSeconds = $seconds;
+
+        return $tbr;
+    }
+
+    public function isTelemetryDisabled(): bool
+    {
+        return $this->telemetryDisabled;
+    }
+
+    public function withTelemetryDisabled(bool $disabled = true): self
+    {
+        $tbr = clone $this;
+        $tbr->telemetryDisabled = $disabled;
 
         return $tbr;
     }

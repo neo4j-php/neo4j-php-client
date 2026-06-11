@@ -62,10 +62,11 @@ final class SessionReadTransaction implements RequestHandlerInterface
         $id = Uuid::v4();
         try {
             // TODO - Create beginReadTransaction and beginWriteTransaction
-            $transaction = $session->beginTransaction(null, $config);
+            $transaction = $session->beginReadTransaction($config);
 
             $this->repository->addTransaction($id, $transaction);
             $this->repository->bindTransactionToSession($request->getSessionId(), $id);
+            $this->repository->setSessionRetryContext($request->getSessionId(), $config, false);
         } catch (Neo4jException $exception) {
             $this->repository->addRecords($id, new DriverErrorResponse(
                 $id,
