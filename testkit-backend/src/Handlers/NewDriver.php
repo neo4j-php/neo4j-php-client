@@ -20,6 +20,9 @@ use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Psr\Log\LogLevel;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -44,15 +47,19 @@ final class NewDriver implements RequestHandlerInterface
 
         $ua = $request->userAgent;
         $timeout = $request->connectionTimeoutMs;
+        $logger = new Logger('neo4j-driver');
+        $logger->pushHandler(new StreamHandler('php://stdout', LogLevel::DEBUG));
+
         $config = DriverConfiguration::default()
-            ->withAcquireConnectionTimeout($timeout);
+            ->withAcquireConnectionTimeout($timeout)
+            ->withLogger(LogLevel::DEBUG, $logger);
 
         if ($ua) {
             $config = $config->withUserAgent($ua);
         }
 
         if ($request->telemetryDisabled === true) {
-            $config = $config->withTelemetryDisabled(true);
+            $config = $config->withTelemetryEnabled(false);
         }
 
         $authenticate = Authenticate::basic($user, $pass);

@@ -94,7 +94,7 @@ class BoltFactory
 
         $hints = $response['hints'] ?? [];
         $connection->configureTelemetry(
-            $data->isTelemetryDisabled(),
+            $data->isTelemetryEnabled(),
             ($hints['telemetry.enabled'] ?? false) === true,
         );
 

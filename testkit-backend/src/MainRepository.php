@@ -16,15 +16,17 @@ namespace Laudis\Neo4j\TestkitBackend;
 use Iterator;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherMap;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\SummarizedResultFormatter
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  */
 final class MainRepository
 {
@@ -61,6 +63,10 @@ final class MainRepository
      * @var array<string, int>
      */
     private array $pendingIteratorNextCount = [];
+    /**
+     * @var array<string, TransactionConfiguration>
+     */
+    private array $transactionConfigs = [];
 
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
@@ -224,7 +230,7 @@ final class MainRepository
         return $this->records[$id->toRfc4122()] ?? null;
     }
 
-    public function addTransaction(Uuid $id, SessionInterface|UnmanagedTransactionInterface $transaction): void
+    public function addTransaction(Uuid $id, TransactionInterface $transaction): void
     {
         $this->transactions[$id->toRfc4122()] = $transaction;
     }
@@ -256,7 +262,7 @@ final class MainRepository
         unset($this->transactions[$id->toRfc4122()]);
     }
 
-    public function getTransaction(Uuid $id): UnmanagedTransactionInterface|SessionInterface|null
+    public function getTransaction(Uuid $id): ?TransactionInterface
     {
         return $this->transactions[$id->toRfc4122()];
     }
@@ -279,10 +285,5 @@ final class MainRepository
     public function tryGetTsxIdFromSession(Uuid $sessionId): ?Uuid
     {
         return $this->sessionToTransactions[$sessionId->toRfc4122()] ?? null;
-    }
-
-    public function addBufferedRecords(string $id, array $records): void
-    {
-        $this->records[$id] = $records;
     }
 }

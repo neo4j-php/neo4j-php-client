@@ -13,10 +13,13 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
-final class TelemetryApi
+/**
+ * Telemetry API identifiers sent via Bolt TELEMETRY message.
+ */
+enum TelemetryAPIEnum: int
 {
-    public const TRANSACTION_FUNCTION = 0;
-    public const UNMANAGED_TRANSACTION = 1;
-    public const SESSION_RUN = 2;
-    public const EXECUTE_QUERY = 3;
+    case TRANSACTION_FUNCTION = 0;
+    case UNMANAGED_TRANSACTION = 1;
+    case SESSION_RUN = 2;
+    case EXECUTE_QUERY = 3;
 }

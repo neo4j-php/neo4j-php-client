@@ -65,7 +65,7 @@ return [
     // This method is supposed to always exhaust the result stream.
     'Feature:API:Result.SingleOptional' => true,
     // The driver offers a way to determine if exceptions are retryable or not.
-    'Feature:API:RetryableExceptions' => true,
+    'Feature:API:RetryableExceptions' => false,
     // The session configuration allows to switch the authentication context
     // by supplying new credentials. This new context is only valid for the
     // current session.

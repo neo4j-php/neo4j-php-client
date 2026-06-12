@@ -17,8 +17,8 @@ use Bolt\error\ConnectException as BoltConnectException;
 use Exception;
 use Laudis\Neo4j\Common\GeneratorHelper;
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
-use Laudis\Neo4j\Contracts\CypherSequence;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
@@ -42,7 +42,7 @@ use Throwable;
  */
 final class Session implements SessionInterface
 {
-    private const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'TransientError', 'DatabaseError'];
+    private const ROLLBACK_CLASSIFICATIONS = ['ClientError', 'DatabaseError'];
 
     /** @var list<BoltConnection> */
     private array $usedConnections = [];
@@ -118,7 +118,7 @@ final class Session implements SessionInterface
             },
             $this->mergeTsxConfig(null),
             $this->config,
-            TelemetryApi::EXECUTE_QUERY,
+            TelemetryAPIEnum::EXECUTE_QUERY,
         );
     }
 
@@ -131,6 +131,7 @@ final class Session implements SessionInterface
             $tsxHandler,
             $config,
             $this->config->withAccessMode(AccessMode::WRITE()),
+            TelemetryAPIEnum::TRANSACTION_FUNCTION
         );
     }
 
@@ -143,6 +144,7 @@ final class Session implements SessionInterface
             $tsxHandler,
             $config,
             $this->config->withAccessMode(AccessMode::READ()),
+            TelemetryAPIEnum::TRANSACTION_FUNCTION
         );
     }
 
@@ -157,98 +159,54 @@ final class Session implements SessionInterface
         callable $tsxHandler,
         TransactionConfiguration $config,
         SessionConfiguration $sessionConfig,
-        int $telemetryApi = TelemetryApi::TRANSACTION_FUNCTION,
+        TelemetryAPIEnum $telemetryApi,
     ) {
-        $reuseTransaction = null;
-
-        while (true) {
-            $transaction = null;
+        $transaction = null;
+        $maxRetries = 3;
+        $error = null;
+        while ($maxRetries > 0) {
+            --$maxRetries;
             try {
-                if ($reuseTransaction !== null) {
-                    $transaction = $reuseTransaction;
-                    $reuseTransaction = null;
-                } else {
+                if ($transaction === null) {
                     $transaction = $this->startTransaction($config, $sessionConfig, $telemetryApi);
                 }
                 $tbr = $tsxHandler($transaction);
-                self::triggerLazyResult($tbr);
+
                 $transaction->commit();
 
                 return $tbr;
             } catch (Neo4jException $e) {
                 if ($e->getClassification() === 'TransientError' && $transaction instanceof BoltUnmanagedTransaction) {
-                    $transaction->prepareForRetry();
-                    $reuseTransaction = $transaction;
+                    usleep(100_000); // transient errors mean we have to retry later. For now we wait 100 ms, later we'll make this configurable, non-blocking
+                    $error = $e;
 
                     continue;
                 }
 
-                $this->handleManagedTransactionError($transaction, $e);
-            } catch (Throwable $e) {
-                if (!$this->isConnectionError($e)) {
-                    throw $e;
+                $transaction = null;
+                if ($e->getTitle() === 'NotALeader' || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader') {
+                    if ($this->pool instanceof Neo4jConnectionPool) {
+                        $this->pool->clearRoutingTable($this->config);
+                    }
+                    $error = $e;
+
+                    continue;
                 }
-                $this->handleConnectionFailure();
+
+                throw $e;
+            } catch (Throwable $e) {
+                if ($this->isConnectionError($e)) {
+                    $transaction = null;
+                    $error = $e;
+
+                    continue;
+                }
+
+                throw $e;
             }
         }
-    }
 
-    /**
-     * Handle Neo4jException in managed transaction - either rollback and retry or throw.
-     *
-     * @param Neo4jException $e The exception that occurred
-     */
-    private function handleManagedTransactionError(?UnmanagedTransactionInterface $transaction, Neo4jException $e): void
-    {
-        if ($transaction !== null
-            && !$transaction->isFinished()
-            && !in_array($e->getClassification(), self::ROLLBACK_CLASSIFICATIONS, true)
-        ) {
-            $transaction->rollback();
-        }
-
-        if ($this->shouldRetryManagedTransaction($e)) {
-            $this->handleConnectionFailure();
-
-            return;
-        }
-
-        throw $e;
-    }
-
-    /**
-     * Determine if a Neo4jException should trigger retry of managed transaction.
-     */
-    private function shouldRetryManagedTransaction(Neo4jException $e): bool
-    {
-        if ($e->getTitle() === 'NotALeader' || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader') {
-            return true;
-        }
-
-        return $this->isConnectionError($e);
-    }
-
-    /**
-     * Handle connection failure by clearing routing table and closing pool.
-     * This forces fresh connection acquisition and routing table refresh on next attempt.
-     */
-    private function handleConnectionFailure(): void
-    {
-        if ($this->pool instanceof Neo4jConnectionPool) {
-            $this->pool->clearRoutingTable($this->config);
-        }
-        $this->pool->close();
-    }
-
-    public function resetConnectionPool(): void
-    {
-        if ($this->pool instanceof Neo4jConnectionPool) {
-            $this->pool->closeBoltPools();
-
-            return;
-        }
-
-        $this->pool->close();
+        throw new Exception('Failed to execute transaction', 0, $error);
     }
 
     /**
@@ -319,14 +277,14 @@ final class Session implements SessionInterface
      * - Without it: user must manually retry or wrap every session.run() in try-catch
      * - With it: driver handles recovery automatically = better UX and reliability
      */
-    private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config, int $telemetryApi = TelemetryApi::SESSION_RUN): SummarizedResult
+    private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
     {    // Retry instant transactions up to 3 times on connection/routing errors; catch distinguishes retryable errors from client errors (syntax, auth) and clears routing table for cluster failover.
         $maxRetries = 3;
         $retries = 0;
 
         while ($retries < $maxRetries) {
             try {
-                return $this->beginInstantTransaction($this->config, $config, $telemetryApi)->runStatement($statement);
+                return $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
             } catch (Neo4jException $e) {
                 if (!$this->shouldClearRoutingTable($e)) {
                     throw $e;
@@ -354,18 +312,11 @@ final class Session implements SessionInterface
             'retry' => $retries + 1,
         ]);
 
-        $this->handleConnectionFailure();
+        $this->pool->close();
 
         ++$retries;
         if ($retries >= $maxRetries) {
             throw $e;
-        }
-    }
-
-    private static function triggerLazyResult(mixed $tbr): void
-    {
-        if ($tbr instanceof CypherSequence) {
-            $tbr->preload();
         }
     }
 
@@ -381,7 +332,7 @@ final class Session implements SessionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
         $config = $this->mergeTsxConfig($config);
-        $tsx = $this->startTransaction($config, $this->config, TelemetryApi::UNMANAGED_TRANSACTION);
+        $tsx = $this->startTransaction($config, $this->config, TelemetryAPIEnum::UNMANAGED_TRANSACTION);
 
         $tsx->runStatements($statements ?? []);
 
@@ -392,14 +343,14 @@ final class Session implements SessionInterface
     {
         $config = $this->mergeTsxConfig($config);
 
-        return $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()), TelemetryApi::TRANSACTION_FUNCTION);
+        return $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()), TelemetryAPIEnum::TRANSACTION_FUNCTION);
     }
 
     public function beginWriteTransaction(?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         $config = $this->mergeTsxConfig($config);
 
-        return $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE()), TelemetryApi::TRANSACTION_FUNCTION);
+        return $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE()), TelemetryAPIEnum::TRANSACTION_FUNCTION);
     }
 
     /**
@@ -408,13 +359,11 @@ final class Session implements SessionInterface
     private function beginInstantTransaction(
         SessionConfiguration $config,
         TransactionConfiguration $tsxConfig,
-        int $telemetryApi = TelemetryApi::SESSION_RUN,
     ): TransactionInterface {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
-        $connection->sendTelemetryIfNeeded($telemetryApi);
 
-        /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
+        /** @var ConnectionPoolInterface<ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
@@ -426,6 +375,7 @@ final class Session implements SessionInterface
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
             true,
+            TelemetryAPIEnum::SESSION_RUN,
             $pool,
         );
     }
@@ -456,17 +406,16 @@ final class Session implements SessionInterface
         return $connection;
     }
 
-    private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig, int $telemetryApi): UnmanagedTransactionInterface
+    private function startTransaction(TransactionConfiguration $config, SessionConfiguration $sessionConfig, TelemetryAPIEnum $telemetryApi): UnmanagedTransactionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting transaction', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         $connection = $this->acquireConnection($config, $sessionConfig);
-        $connection->sendTelemetryIfNeeded($telemetryApi);
 
         // Defer BEGIN to first run/commit/rollback. The driver does not support OPT_EAGER_TX_BEGIN,
         // so BEGIN is sent on first run/commit/rollback. This matches test_disconnect_on_tx_begin,
         // which expects the error at "after run" when the stub disconnects on BEGIN.
 
-        /** @var ConnectionPoolInterface<\Laudis\Neo4j\Contracts\ConnectionInterface>|null $pool */
+        /** @var ConnectionPoolInterface<ConnectionInterface>|null $pool */
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
@@ -478,6 +427,7 @@ final class Session implements SessionInterface
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
             false,
+            $telemetryApi,
             $pool,
             false, // BEGIN sent on first run/commit/rollback
         );

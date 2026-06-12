@@ -98,7 +98,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 $conf->getUserAgent(),
                 $conf->getSslConfiguration(),
                 $conf->getSocketTimeoutSecondsExplicit(),
-                $conf->isTelemetryDisabled(),
+                $conf->isTelemetryEnabled(),
             ),
             Cache::getInstance(),
             $resolver,
@@ -116,7 +116,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $this->data->getUserAgent(),
             $this->data->getSslConfig(),
             $this->data->getSocketTimeoutSeconds(),
-            $this->data->isTelemetryDisabled(),
+            $this->data->isTelemetryEnabled(),
         );
 
         $key = $this->createKey($data);
@@ -383,7 +383,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         ], '|', $key);
     }
 
-    public function closeBoltPools(): void
+    private function closeBoltPools(): void
     {
         $this->getLogger()?->log(LogLevel::DEBUG, 'Closing bolt connection pools');
 

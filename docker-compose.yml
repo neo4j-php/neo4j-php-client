@@ -133,6 +133,9 @@ services:
       TEST_DRIVER_REPO: /opt/project
       TEST_BACKEND_HOST: testkit_backend
       TEST_STUB_HOST: testkit
+#      TEST_DEBUG_REQRES: "1"
+#      TEST_DEBUG_NO_BACKEND_TIMEOUT: "1"
+#      TEST_RUN_ALL_TESTS: "1"
     depends_on:
       - testkit_backend
 

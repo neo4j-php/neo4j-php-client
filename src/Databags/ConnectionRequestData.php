@@ -28,7 +28,7 @@ final class ConnectionRequestData
         private readonly string $userAgent,
         private readonly SslConfiguration $config,
         private readonly ?float $socketTimeoutSeconds = null,
-        private readonly bool $telemetryDisabled = false,
+        private readonly bool $telemetryEnabled = true,
     ) {
     }
 
@@ -62,8 +62,8 @@ final class ConnectionRequestData
         return $this->socketTimeoutSeconds;
     }
 
-    public function isTelemetryDisabled(): bool
+    public function isTelemetryEnabled(): bool
     {
-        return $this->telemetryDisabled;
+        return $this->telemetryEnabled;
     }
 }

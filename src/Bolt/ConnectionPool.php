@@ -62,7 +62,7 @@ final class ConnectionPool implements ConnectionPoolInterface
                 $conf->getUserAgent(),
                 $conf->getSslConfiguration(),
                 $conf->getSocketTimeoutSecondsExplicit(),
-                $conf->isTelemetryDisabled(),
+                $conf->isTelemetryEnabled(),
             ),
             $conf->getLogger(),
             $conf->getAcquireConnectionTimeout()
@@ -114,11 +114,11 @@ final class ConnectionPool implements ConnectionPoolInterface
 
     public function release(ConnectionInterface $connection): void
     {
-        $this->semaphore->post();
-
         foreach ($this->activeConnections as $i => $activeConnection) {
             if ($connection === $activeConnection) {
                 array_splice($this->activeConnections, $i, 1);
+
+                $this->semaphore->post();
 
                 return;
             }

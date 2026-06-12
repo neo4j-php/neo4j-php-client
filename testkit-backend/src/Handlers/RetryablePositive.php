@@ -13,15 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Exception\Neo4jException;
-use Laudis\Neo4j\Exception\TransactionException;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\RetryablePositiveRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableDoneResponse;
 use Throwable;
 
@@ -52,14 +49,8 @@ final class RetryablePositive implements RequestHandlerInterface
 
         $tsx = $this->repository->getTransaction($transactionId);
 
-        if (!$tsx instanceof UnmanagedTransactionInterface) {
+        if (!$tsx instanceof TransactionInterface) {
             return new BackendErrorResponse('Transaction not found '.$transactionId->toRfc4122());
-        }
-
-        try {
-            $tsx->commit();
-        } catch (Neo4jException|TransactionException $e) {
-            return new DriverErrorResponse($transactionId, $e);
         }
 
         return new RetryableDoneResponse();
