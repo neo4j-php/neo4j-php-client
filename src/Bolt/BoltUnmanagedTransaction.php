@@ -22,6 +22,7 @@ use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Enum\TransactionState;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\ParameterHelper;
@@ -55,6 +56,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly BookmarkHolder $bookmarkHolder,
         private readonly BoltMessageFactory $messageFactory,
         private readonly bool $isInstantTransaction,
+        private readonly TelemetryAPIEnum $telemetryApi,
         private readonly ?ConnectionPoolInterface $pool = null,
         bool $beginAlreadySent = false,
     ) {
@@ -92,7 +94,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $list->preload();
         });
 
-        $this->messageFactory->createCommitMessage($this->bookmarkHolder)->send()->getResponse();
+        $this->connection->consumeResults();
+
+        try {
+            $response = $this->messageFactory->createCommitMessage($this->bookmarkHolder)->send()->getResponse();
+            $this->connection->assertNoFailure($response);
+        } catch (Throwable $e) {
+            $this->terminateOrRetry($e);
+        }
+
         $this->state = TransactionState::COMMITTED;
 
         return $tbr;
@@ -112,7 +122,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         $this->ensureBeginSent();
 
-        $this->messageFactory->createRollbackMessage()->send();
+        $this->connection->consumeResults();
+
+        try {
+            $response = $this->messageFactory->createRollbackMessage()->send()->getResponse();
+            $this->connection->assertNoFailure($response);
+        } catch (Throwable $e) {
+            $this->terminateOrRetry($e);
+        }
+
         $this->state = TransactionState::ROLLED_BACK;
     }
 
@@ -161,16 +179,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->tsxConfig->getTimeout(),
                 $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
                 null, // mode is never sent in RUN messages - it comes from session configuration
-                $this->tsxConfig->getMetaData()
+                $this->tsxConfig->getMetaData(),
+                $this->telemetryApi,
             );
         } catch (Throwable $e) {
-            $this->state = TransactionState::TERMINATED;
-            if ($this->pool !== null) {
-                $this->pool->release($this->connection);
-            }
-            throw $e;
+            $this->terminateOrRetry($e);
         }
         $run = microtime(true);
+
+        $meta ??= ['t_first' => 0];
 
         return $this->formatter->formatBoltResult(
             $meta,
@@ -215,20 +232,62 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         return $this->state != TransactionState::ACTIVE;
     }
 
+    /**
+     * Resets the connection and transaction state for a managed-transaction retry
+     * on the same Bolt connection (e.g. after a transient error).
+     */
+    private function prepareForRetry(): void
+    {
+        $this->connection->reset();
+        $this->state = TransactionState::ACTIVE;
+        $this->beginSent = false;
+    }
+
     private function ensureBeginSent(): void
     {
         if ($this->isInstantTransaction || $this->beginSent) {
             return;
         }
         try {
+            $this->connection->sendTelemetryIfNeeded($this->telemetryApi);
             $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
             $this->beginSent = true;
         } catch (Throwable $e) {
-            $this->state = TransactionState::TERMINATED;
-            if ($this->pool !== null) {
-                $this->pool->release($this->connection);
-            }
-            throw $e;
+            $this->terminateOrRetry($e);
         }
+    }
+
+    private function isTransientError(Throwable $e): bool
+    {
+        return $e instanceof Neo4jException && $e->getClassification() === 'TransientError';
+    }
+
+    private function terminateOrRetry(Throwable $e): void
+    {
+        if ($this->isTransientError($e)) {
+            $this->prepareForRetry();
+        } elseif ($this->isSyntaxError($e)) {
+            $this->state = TransactionState::TERMINATED;
+            throw $e; // syntax errors are semi-recoverable, we don't need to reset anything
+        } elseif ($this->isClientError($e)) {
+            $this->state = TransactionState::TERMINATED;
+            $this->connection->reset();
+            throw $e;
+        } else {
+            $this->state = TransactionState::TERMINATED;
+            $this->pool?->release($this->connection);
+        }
+
+        throw $e;
+    }
+
+    public function isClientError(Throwable $e): bool
+    {
+        return $e instanceof Neo4jException && $e->getClassification() === 'ClientError';
+    }
+
+    private function isSyntaxError(Throwable $e): bool
+    {
+        return $e instanceof Neo4jException && $e->getTitle() === 'SyntaxError';
     }
 }

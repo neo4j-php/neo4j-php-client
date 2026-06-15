@@ -22,6 +22,7 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Exception\TransactionException;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
@@ -35,9 +36,9 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  *
- * @template T of \Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest|\Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest
+ * @template T of SessionRunRequest|TransactionRunRequest
  *
  * @implements RequestHandlerInterface<T>
  */
@@ -113,7 +114,10 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 return new DriverErrorResponse($request->getSessionId(), $wrapped);
             }
             if ($request instanceof TransactionRunRequest) {
-                return new DriverErrorResponse($request->getTxId(), $wrapped);
+                $response = new DriverErrorResponse($request->getTxId(), $wrapped);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
             }
 
             throw new Exception('Unhandled connection exception for run request of type: '.get_class($request));

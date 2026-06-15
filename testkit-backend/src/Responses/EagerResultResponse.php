@@ -13,109 +13,72 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Responses;
 
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
-use Symfony\Component\Uid\Uuid;
-use Traversable;
+use Laudis\Neo4j\TestkitBackend\Responses\Types\CypherObject;
+use stdClass;
 
 /**
  * Response for ExecuteQuery containing an eager result.
+ *
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\SummarizedResultFormatter
  */
 final class EagerResultResponse implements TestkitResponseInterface
 {
-    private Uuid $id;
-    private array $keys;
-    private array $records;
-
-    public function __construct(Uuid $id, $eagerResult)
-    {
-        $this->id = $id;
-
-        $this->keys = $eagerResult->getKeys()->toArray();
-
-        $this->records = [];
-        foreach ($eagerResult as $record) {
-            $values = [];
-            foreach ($record->values() as $value) {
-                $values[] = $this->convertValue($value);
-            }
-            $this->records[] = ['values' => $values];
-        }
+    public function __construct(
+        private readonly SummarizedResult $result,
+    ) {
     }
 
     public function jsonSerialize(): array
     {
+        $records = [];
+        foreach ($this->result->list() as $row) {
+            $values = [];
+            foreach ($row->values() as $value) {
+                $values[] = CypherObject::autoDetect($value);
+            }
+            $records[] = ['values' => $values];
+        }
+
+        $summary = $this->result->getSummary();
+
         return [
             'name' => 'EagerResult',
             'data' => [
-                'id' => $this->id->toRfc4122(),
-                'keys' => $this->keys,
-                'records' => $this->records,
+                'keys' => $this->result->keys(),
+                'records' => $records,
+                'summary' => [
+                    'counters' => $summary->getCounters()->toArray(),
+                    'database' => $summary->getDatabaseInfo()->getName(),
+                    'notifications' => $summary->getNotifications(),
+                    'plan' => $summary->getPlan(),
+                    'profile' => $summary->getProfiledPlan(),
+                    'query' => [
+                        'text' => $summary->getStatement()->getText(),
+                        'parameters' => $this->toCypherObjects($summary->getStatement()->getParameters()),
+                    ],
+                    'queryType' => $summary->getQueryType(),
+                    'resultAvailableAfter' => $summary->getResultAvailableAfter(),
+                    'resultConsumedAfter' => $summary->getResultConsumedAfter(),
+                    'serverInfo' => $summary->getServerInfo(),
+                ],
             ],
         ];
     }
 
-    /**
-     * Convert Neo4j values to testkit format.
-     */
-    private function convertValue($value)
+    private function toCypherObjects(iterable $toArray): array|stdClass
     {
-        if ($value === null) {
-            return [
-                'name' => 'CypherNull',
-                'data' => ['value' => null],
-            ];
+        $cypherObjects = [];
+        foreach ($toArray as $name => $value) {
+            /** @var OGMTypes $value */
+            $cypherObjects[$name] = CypherObject::autoDetect($value);
         }
 
-        if (is_int($value)) {
-            return [
-                'name' => 'CypherInt',
-                'data' => ['value' => $value],
-            ];
+        if (count($cypherObjects) === 0) {
+            return new stdClass();
         }
 
-        if (is_float($value)) {
-            return [
-                'name' => 'CypherFloat',
-                'data' => ['value' => $value],
-            ];
-        }
-
-        if (is_string($value)) {
-            return [
-                'name' => 'CypherString',
-                'data' => ['value' => $value],
-            ];
-        }
-
-        if (is_bool($value)) {
-            return [
-                'name' => 'CypherBool',
-                'data' => ['value' => $value],
-            ];
-        }
-
-        if (is_array($value) || $value instanceof Traversable) {
-            $values = [];
-            foreach ($value as $item) {
-                $values[] = $this->convertValue($item);
-            }
-
-            return [
-                'name' => 'CypherList',
-                'data' => ['value' => $values],
-            ];
-        }
-
-        if (is_object($value)) {
-            return [
-                'name' => 'CypherMap',
-                'data' => ['value' => (array) $value],
-            ];
-        }
-
-        return [
-            'name' => 'CypherString',
-            'data' => ['value' => (string) $value],
-        ];
+        return $cypherObjects;
     }
 }

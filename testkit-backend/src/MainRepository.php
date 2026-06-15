@@ -16,14 +16,17 @@ namespace Laudis\Neo4j\TestkitBackend;
 use Iterator;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
+use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherMap;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from SummarizedResultFormatter
  */
 final class MainRepository
 {
@@ -46,6 +49,12 @@ final class MainRepository
     /** @var array<string, bool> After ResultPeek advanced the iterator, ResultNext must not advance again. */
     private array $peekPrimed = [];
 
+    /** @var array<string, TransactionConfiguration> */
+    private array $sessionRetryConfigs = [];
+
+    /** @var array<string, bool> */
+    private array $sessionRetryWrite = [];
+
     /**
      * Count of {@see Iterator::next()} calls owed before the next read: one per record already returned
      * to TestKit without advancing the shared iterator (advancing immediately would run the next Bolt pull
@@ -54,6 +63,10 @@ final class MainRepository
      * @var array<string, int>
      */
     private array $pendingIteratorNextCount = [];
+    /**
+     * @var array<string, TransactionConfiguration>
+     */
+    private array $transactionConfigs = [];
 
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
@@ -209,9 +222,39 @@ final class MainRepository
         return $this->records[$id->toRfc4122()];
     }
 
-    public function addTransaction(Uuid $id, SessionInterface|UnmanagedTransactionInterface $transaction): void
+    /**
+     * @return SummarizedResult|TestkitResponseInterface|null
+     */
+    public function tryGetRecords(Uuid $id)
+    {
+        return $this->records[$id->toRfc4122()] ?? null;
+    }
+
+    public function addTransaction(Uuid $id, TransactionInterface $transaction): void
     {
         $this->transactions[$id->toRfc4122()] = $transaction;
+    }
+
+    public function replaceTransaction(Uuid $id, UnmanagedTransactionInterface $transaction): void
+    {
+        $this->transactions[$id->toRfc4122()] = $transaction;
+    }
+
+    public function setSessionRetryContext(Uuid $sessionId, TransactionConfiguration $config, bool $write): void
+    {
+        $key = $sessionId->toRfc4122();
+        $this->sessionRetryConfigs[$key] = $config;
+        $this->sessionRetryWrite[$key] = $write;
+    }
+
+    public function getSessionRetryConfig(Uuid $sessionId): ?TransactionConfiguration
+    {
+        return $this->sessionRetryConfigs[$sessionId->toRfc4122()] ?? null;
+    }
+
+    public function isSessionRetryWrite(Uuid $sessionId): bool
+    {
+        return $this->sessionRetryWrite[$sessionId->toRfc4122()] ?? false;
     }
 
     public function removeTransaction(Uuid $id): void
@@ -219,7 +262,7 @@ final class MainRepository
         unset($this->transactions[$id->toRfc4122()]);
     }
 
-    public function getTransaction(Uuid $id): UnmanagedTransactionInterface|SessionInterface|null
+    public function getTransaction(Uuid $id): ?TransactionInterface
     {
         return $this->transactions[$id->toRfc4122()];
     }
@@ -239,8 +282,8 @@ final class MainRepository
         return $this->sessionToTransactions[$sessionId->toRfc4122()];
     }
 
-    public function addBufferedRecords(string $id, array $records): void
+    public function tryGetTsxIdFromSession(Uuid $sessionId): ?Uuid
     {
-        $this->records[$id] = $records;
+        return $this->sessionToTransactions[$sessionId->toRfc4122()] ?? null;
     }
 }

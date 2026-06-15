@@ -83,6 +83,6 @@
     "scripts": {
         "fix-cs": "./vendor/bin/php-cs-fixer fix",
         "check-cs": "./vendor/bin/php-cs-fixer fix --dry-run",
-        "psalm": "./vendor/bin/psalm --show-info"
+        "psalm": "./vendor/bin/psalm --show-info=true"
     }
 }
