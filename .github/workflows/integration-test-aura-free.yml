@@ -1,0 +1,54 @@
+name: Integration Tests (Aura Free)
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: integration-tests-aura-free
+  cancel-in-progress: false
+
+jobs:
+  aura-free:
+    runs-on: ubuntu-latest
+    name: "Running integration tests against Aura Free"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build & cache client image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: PHP_VERSION=8.1.31
+          tags: integration-client:8.1.31
+
+      - name: Populate .env
+        run: |
+          echo "PHP_VERSION=8.1.31" > .env
+          echo "CONNECTION=\"${{ secrets.AURA_FREE }}\"" >> .env
+          echo "CI=true" >> .env
+
+      - name: Cache PHP deps
+        id: cache-php-deps
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-8.1.31-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.1.31-
+
+      - name: Install PHP deps
+        if: steps.cache-php-deps.outputs.cache-hit != 'true'
+        run: docker compose run --rm client composer install
+
+      - name: Run integration tests (Aura Free)
+        run: docker compose run --rm client ./vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration --teamcity

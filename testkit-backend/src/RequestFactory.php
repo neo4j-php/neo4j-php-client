@@ -19,6 +19,7 @@ use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\CheckMultiDBSupportRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DomainNameResolutionCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\ExecuteQueryRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ForcedRoutingTableUpdateRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetRoutingTableRequest;
@@ -82,6 +83,7 @@ final class RequestFactory
         'ForcedRoutingTableUpdate' => ForcedRoutingTableUpdateRequest::class,
         'GetRoutingTable' => GetRoutingTableRequest::class,
         'GetServerInfo' => GetServerInfoRequest::class,
+        'ExecuteQuery' => ExecuteQueryRequest::class,
     ];
 
     /**
@@ -97,6 +99,26 @@ final class RequestFactory
                 $data['realm'] ?? '',
                 $data['principal'],
                 $data['credentials']
+            );
+        }
+
+        if ($name === 'NewDriver') {
+            return new NewDriverRequest(
+                uri: $data['uri'],
+                authToken: $this->create('AuthorizationToken', $data['authorizationToken']['data']),
+                authTokenManagerId: $data['authTokenManagerId'] ?? null,
+                userAgent: $data['userAgent'] ?? null,
+                resolverRegistered: $data['resolverRegistered'] ?? null,
+                domainNameResolverRegistered: $data['domainNameResolverRegistered'] ?? null,
+                connectionTimeoutMs: $data['connectionTimeoutMs'] ?? null,
+                fetchSize: $data['fetchSize'] ?? null,
+                maxTxRetryTimeMs: $data['maxTxRetryTimeMs'] ?? null,
+                livenessCheckTimeoutMs: $data['livenessCheckTimeoutMs'] ?? null,
+                maxConnectionPoolSize: $data['maxConnectionPoolSize'] ?? null,
+                connectionAcquisitionTimeoutMs: $data['connectionAcquisitionTimeoutMs'] ?? null,
+                clientCertificate: $data['clientCertificate'] ?? null,
+                clientCertificateProviderId: $data['clientCertificateProviderId'] ?? null,
+                telemetryDisabled: $data['telemetryDisabled'] ?? null,
             );
         }
 

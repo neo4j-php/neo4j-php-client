@@ -92,6 +92,12 @@ class BoltFactory
             $connection->setRecvTimeoutHint((float) $response['hints']['connection.recv_timeout_seconds']);
         }
 
+        $hints = $response['hints'] ?? [];
+        $connection->configureTelemetry(
+            $data->isTelemetryEnabled(),
+            ($hints['telemetry.enabled'] ?? false) === true,
+        );
+
         return $connection;
     }
 

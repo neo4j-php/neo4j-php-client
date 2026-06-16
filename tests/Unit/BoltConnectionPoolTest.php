@@ -103,7 +103,17 @@ class BoltConnectionPoolTest extends TestCase
 
     public function testRelease(): void
     {
+        $generator = $this->pool->acquire(SessionConfiguration::default());
+        $connection = GeneratorHelper::getReturnFromGenerator($generator);
+
         $this->semaphore->expects(self::once())->method('post');
+
+        $this->pool->release($connection);
+    }
+
+    public function testReleaseUnknownConnectionDoesNotPost(): void
+    {
+        $this->semaphore->expects(self::never())->method('post');
 
         $this->pool->release($this->createMock(ConnectionInterface::class));
     }

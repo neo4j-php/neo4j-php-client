@@ -13,17 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Requests;
 
-/*
- * This file is part of the Laudis Neo4j package.
- *
- * (c) Laudis technologies <http://laudis.tech>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Laudis\Neo4j\TestkitBackend\Requests;
-
 final class NewDriverRequest
 {
     public function __construct(
@@ -41,6 +30,7 @@ final class NewDriverRequest
         public readonly ?int $connectionAcquisitionTimeoutMs = null,
         public readonly mixed $clientCertificate = null,
         public readonly ?string $clientCertificateProviderId = null,
+        public readonly ?bool $telemetryDisabled = null,
     ) {
     }
 }
