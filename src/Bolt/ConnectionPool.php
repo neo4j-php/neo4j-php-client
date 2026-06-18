@@ -123,10 +123,6 @@ final class ConnectionPool implements ConnectionPoolInterface
                 return;
             }
         }
-        // Return a permit only — keep the connection in {@see $activeConnections} so it stays
-        // pooled for reuse and is still closed by {@see close()}. Removing it here orphaned
-        // sockets (no GOODBYE on driver close), which breaks TestKit stubs after errors.
-        $this->semaphore->post();
     }
 
     public function getLogger(): ?Neo4jLogger

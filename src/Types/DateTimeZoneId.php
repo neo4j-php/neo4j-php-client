@@ -15,18 +15,17 @@ namespace Laudis\Neo4j\Types;
 
 use Bolt\protocol\IStructure;
 use DateTimeImmutable;
-use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 use function sprintf;
 
 use UnexpectedValueException;
 
 /**
- * Bolt {@code DateTimeZoneId} (≤4.4) first field: SI seconds from {@code 1970-01-01T00:00:00} as UTC-naive
- * to the zone wall clock (same rule as TestKit simple_jolt {@code JoltDateTime.seconds_nanoseconds}).
+ * A date represented by seconds and nanoseconds since unix epoch, enriched with a timezone identifier.
  *
  * @psalm-immutable
  *
@@ -47,7 +46,7 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
     }
 
     /**
-     * Bolt {@code DateTimeZoneId} “civil” seconds field (see class docblock).
+     * Returns the amount of seconds since unix epoch.
      */
     public function getSeconds(): int
     {
@@ -64,6 +63,8 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
 
     /**
      * Returns the timezone identifier.
+     *
+     * @return non-empty-string
      */
     public function getTimezoneIdentifier(): string
     {
@@ -74,54 +75,17 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
      * Casts to an immutable date time.
      *
      * @throws Exception
-     *
-     * @psalm-suppress ImpureMethodCall
      */
     public function toDateTime(): DateTimeImmutable
     {
-        return self::toDateTimeFromBoltCivilSeconds($this->seconds, $this->nanoseconds, $this->tzId);
-    }
+        $dateTimeImmutable = (new DateTimeImmutable(sprintf('@%s', $this->getSeconds())))
+            ->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
 
-    /**
-     * Encodes a zoned instant into Bolt ≤4.4 {@code DateTimeZoneId} first integer (TestKit/simple_jolt compatible).
-     */
-    public static function encodeBoltCivilSecondsForInstant(DateTimeInterface $instant, DateTimeZone $tz): int
-    {
-        $immutable = $instant instanceof DateTimeImmutable
-            ? $instant->setTimezone($tz)
-            : DateTimeImmutable::createFromMutable($instant)->setTimezone($tz);
-        $wall = $immutable->format('Y-m-d H:i:s');
-        $naiveWallAsUtc = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $wall, new DateTimeZone('UTC'));
-        if ($naiveWallAsUtc === false) {
-            throw new UnexpectedValueException('Expected DateTimeImmutable');
-        }
-        $naiveEpoch = new DateTimeImmutable('1970-01-01 00:00:00', new DateTimeZone('UTC'));
-
-        return $naiveWallAsUtc->getTimestamp() - $naiveEpoch->getTimestamp();
-    }
-
-    /**
-     * @param non-empty-string $tzId
-     */
-    public static function toDateTimeFromBoltCivilSeconds(int $seconds, int $nanoseconds, string $tzId): DateTimeImmutable
-    {
-        $tz = new DateTimeZone($tzId);
-        $naiveUtc = (new DateTimeImmutable('1970-01-01 00:00:00', new DateTimeZone('UTC')))
-            ->modify(sprintf('%+d seconds', $seconds));
-        if ($naiveUtc === false) {
-            throw new UnexpectedValueException('Expected DateTimeImmutable');
-        }
-        $wall = $naiveUtc->format('Y-m-d H:i:s');
-        $instant = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $wall, $tz);
-        if ($instant === false) {
-            throw new UnexpectedValueException('Expected DateTimeImmutable');
-        }
-        $withNanos = $instant->modify(sprintf('%+d microseconds', intdiv($nanoseconds, 1000)));
-        if ($withNanos === false) {
+        if ($dateTimeImmutable === false) {
             throw new UnexpectedValueException('Expected DateTimeImmutable');
         }
 
-        return $withNanos;
+        return $dateTimeImmutable->setTimezone(new DateTimeZone($this->tzId));
     }
 
     /**
@@ -147,5 +111,31 @@ final class DateTimeZoneId extends AbstractPropertyObject implements BoltConvert
     public function convertToBolt(): IStructure
     {
         return new \Bolt\protocol\v1\structures\DateTimeZoneId($this->getSeconds(), $this->getNanoseconds(), $this->getTimezoneIdentifier());
+    }
+
+    public function convertToBoltWithProtocol(
+        ConnectionProtocol $protocol,
+        bool $boltUtcPatchNegotiated = false,
+    ): IStructure {
+        /** @psalm-suppress ImpureMethodCall */
+        $isLegacyWire = $protocol->compare(ConnectionProtocol::BOLT_V5()) < 0 && !$boltUtcPatchNegotiated;
+        if ($isLegacyWire) {
+            $utc = (new DateTimeImmutable(sprintf('@%d', $this->getSeconds())))
+                ->modify(sprintf('+%d microseconds', intdiv($this->getNanoseconds(), 1000)));
+            $local = $utc->setTimezone(new DateTimeZone($this->getTimezoneIdentifier()));
+            $legacySeconds = $this->getSeconds() + $local->getOffset();
+
+            return new \Bolt\protocol\v1\structures\DateTimeZoneId(
+                $legacySeconds,
+                $this->getNanoseconds(),
+                $this->getTimezoneIdentifier(),
+            );
+        }
+
+        return new \Bolt\protocol\v5\structures\DateTimeZoneId(
+            $this->getSeconds(),
+            $this->getNanoseconds(),
+            $this->getTimezoneIdentifier(),
+        );
     }
 }

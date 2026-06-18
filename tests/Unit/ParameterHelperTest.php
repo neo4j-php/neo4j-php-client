@@ -13,9 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
-use Bolt\protocol\v1\structures\DateTime as BoltV1DateTime;
 use Bolt\protocol\v1\structures\DateTimeZoneId;
-use Bolt\protocol\v5\structures\DateTime as BoltV5DateTimeStruct;
 use DateTime;
 use DateTimeZone;
 use InvalidArgumentException;
@@ -176,21 +174,5 @@ final class ParameterHelperTest extends TestCase
         $date = ParameterHelper::asParameter(new DateTime('now', new DateTimeZone('Europe/Brussels')), ConnectionProtocol::BOLT_V5());
 
         self::assertInstanceOf(\Bolt\protocol\v5\structures\DateTimeZoneId::class, $date);
-    }
-
-    public function testOffsetDateTimeWithBoltUtcPatchOn44UsesV5Structure(): void
-    {
-        $dt = new DateTime('2022-06-07 11:52:05', new DateTimeZone('+02:00'));
-        $p = ParameterHelper::asParameter($dt, ConnectionProtocol::BOLT_V44(), true);
-
-        self::assertInstanceOf(BoltV5DateTimeStruct::class, $p);
-    }
-
-    public function testOffsetDateTimeWithoutPatchOn44UsesLegacyStructure(): void
-    {
-        $dt = new DateTime('2022-06-07 11:52:05', new DateTimeZone('+02:00'));
-        $p = ParameterHelper::asParameter($dt, ConnectionProtocol::BOLT_V44(), false);
-
-        self::assertInstanceOf(BoltV1DateTime::class, $p);
     }
 }

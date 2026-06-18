@@ -30,9 +30,7 @@ use Bolt\protocol\v5\structures\DateTimeZoneId as BoltV5DateTimeZoneId;
 use Bolt\protocol\v6\structures\Vector as BoltVector;
 use DateTimeImmutable;
 use DateTimeZone;
-use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\VectorTypeMarker;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\Abstract3DPoint;
 use Laudis\Neo4j\Types\AbstractPoint;
@@ -54,7 +52,6 @@ use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\Vector;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
-use Throwable;
 use UnexpectedValueException;
 
 /**
@@ -144,37 +141,32 @@ final class BoltOGMTranslator
 
     private function makeBoltTimezoneIdentifier(BoltDateTimeZoneId $time): DateTimeZoneId
     {
+        /** @var non-empty-string $tzId */
         $tzId = $time->tz_id;
-        if ($tzId === '') {
-            $msg = 'Time zone ID must not be empty';
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Statement.TypeError', $msg)]);
-        }
-
-        try {
-            $tz = new DateTimeZone($tzId);
-        } catch (Throwable $e) {
-            $msg = sprintf('Unknown time zone ID: %s', $time->tz_id);
-            throw new Neo4jException([Neo4jError::fromMessageAndCode('Neo.ClientError.Statement.TypeError', $msg)], $e);
-        }
 
         if ($time instanceof BoltV5DateTimeZoneId) {
-            $micros = intdiv($time->nanoseconds, 1000);
-            $utc = (new DateTimeImmutable('@'.$time->seconds))->modify(sprintf('%+d microseconds', $micros));
-            if ($utc === false) {
-                throw new UnexpectedValueException('Expected DateTimeImmutable');
-            }
-            /** @psalm-suppress ImpureMethodCall */
-            $inZone = $utc->setTimezone($tz);
-
-            /** @psalm-suppress ImpureMethodCall */
-            return new DateTimeZoneId(
-                DateTimeZoneId::encodeBoltCivilSecondsForInstant($inZone, $tz),
-                $time->nanoseconds,
-                $tzId
-            );
+            return new DateTimeZoneId($time->seconds, $time->nanoseconds, $tzId);
         }
 
-        return new DateTimeZoneId($time->seconds, $time->nanoseconds, $tzId);
+        // Legacy 0x66: wire seconds are UTC epoch + zone offset at that instant.
+        $legacySeconds = $time->seconds;
+        $utcSeconds = $legacySeconds;
+        $tz = new DateTimeZone($tzId);
+        for ($i = 0; $i < 8; ++$i) {
+            $instant = (new DateTimeImmutable('@'.$utcSeconds))
+                ->modify(sprintf('+%d microseconds', intdiv($time->nanoseconds, 1000)));
+            if ($instant === false) {
+                throw new UnexpectedValueException('Invalid Bolt legacy DateTimeZoneId');
+            }
+            $offset = $tz->getOffset($instant);
+            $nextUtc = $legacySeconds - $offset;
+            if ($nextUtc === $utcSeconds) {
+                break;
+            }
+            $utcSeconds = $nextUtc;
+        }
+
+        return new DateTimeZoneId($utcSeconds, $time->nanoseconds, $tzId);
     }
 
     private function makeFromBoltDuration(BoltDuration $duration): Duration
@@ -333,13 +325,11 @@ final class BoltOGMTranslator
         }
         /** @var list<int> $ids */
         $ids = $path->indices;
-        /** @var list<int> $indices */
-        $indices = $path->indices;
 
         return new Path(
             new CypherList($nodes),
             new CypherList($relationships),
-            new CypherList($indices),
+            new CypherList($ids),
         );
     }
 

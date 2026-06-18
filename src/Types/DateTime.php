@@ -17,10 +17,8 @@ use Bolt\protocol\IStructure;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
-
-use function intdiv;
-
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 use function sprintf;
 
@@ -82,8 +80,8 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
     {
         $dateTime = new DateTimeImmutable(sprintf('@%s', $this->getSeconds()));
         $dateTime = $dateTime->modify(sprintf('+%s microseconds', $this->nanoseconds / 1000));
-        /** @psalm-suppress ImpureMethodCall, ArgumentTypeCoercion */
-        $dateTime = $dateTime->setTimezone(new DateTimeZone(self::fixedOffsetTimezoneIdFromSeconds($this->getTimeZoneOffsetSeconds())));
+        /** @psalm-suppress PossiblyFalseReference */
+        $dateTime = $dateTime->setTimezone(new DateTimeZone(sprintf("%+'05d", $this->getTimeZoneOffsetSeconds() / 3600 * 100)));
 
         if ($this->legacy) {
             /**
@@ -96,25 +94,6 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
 
         /** @var DateTimeImmutable */
         return $dateTime;
-    }
-
-    /**
-     * PHP {@see DateTimeZone} accepts fixed offsets like {@code +00:30}; the old {@code sprintf("%+'05d", …)}
-     * encoding only worked for whole-hour offsets and broke civil time for e.g. +30 minutes.
-     */
-    private static function fixedOffsetTimezoneIdFromSeconds(int $offsetSeconds): string
-    {
-        $sign = $offsetSeconds >= 0 ? '+' : '-';
-        $abs = abs($offsetSeconds);
-        $h = intdiv($abs, 3600);
-        $remainder = $abs % 3600;
-        $m = intdiv($remainder, 60);
-        $s = $remainder % 60;
-        if ($s !== 0) {
-            return sprintf('%s%02d:%02d:%02d', $sign, $h, $m, $s);
-        }
-
-        return sprintf('%s%02d:%02d', $sign, $h, $m);
     }
 
     /**
@@ -141,5 +120,26 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
         }
 
         return new \Bolt\protocol\v5\structures\DateTime($this->getSeconds(), $this->getNanoseconds(), $this->getTimeZoneOffsetSeconds());
+    }
+
+    public function convertToBoltWithProtocol(
+        ConnectionProtocol $protocol,
+        bool $boltUtcPatchNegotiated = false,
+    ): IStructure {
+        /** @psalm-suppress ImpureMethodCall */
+        $isLegacyWire = $protocol->compare(ConnectionProtocol::BOLT_V5()) < 0 && !$boltUtcPatchNegotiated;
+        if ($isLegacyWire) {
+            return new \Bolt\protocol\v1\structures\DateTime(
+                $this->getSeconds() + $this->getTimeZoneOffsetSeconds(),
+                $this->getNanoseconds(),
+                $this->getTimeZoneOffsetSeconds(),
+            );
+        }
+
+        return new \Bolt\protocol\v5\structures\DateTime(
+            $this->getSeconds(),
+            $this->getNanoseconds(),
+            $this->getTimeZoneOffsetSeconds(),
+        );
     }
 }

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Bolt\error\ConnectException as BoltConnectException;
-use DateTimeImmutable;
 use Exception;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
@@ -32,7 +31,6 @@ use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\AbstractCypherObject;
-use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -63,7 +61,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
             $params = [];
             if ($request->getParams() !== null) {
                 foreach ($request->getParams() as $key => $value) {
-                    $params[$key] = NutkitValueDecoder::decode($value);
+                    $params[$key] = self::decodeToValue($value);
                 }
             }
 
@@ -72,7 +70,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
                 $actualMeta = [];
                 if ($metaData !== null) {
                     foreach ($metaData as $key => $meta) {
-                        $actualMeta[$key] = NutkitValueDecoder::decode($meta);
+                        $actualMeta[$key] = self::decodeToValue($meta);
                     }
                 }
                 $config = TransactionConfiguration::default()->withMetadata($actualMeta)->withTimeout($request->getTimeout());
@@ -129,7 +127,7 @@ abstract class AbstractRunner implements RequestHandlerInterface
     /**
      * @param array{name: string, data: array<string, mixed>} $param
      *
-     * @return scalar|AbstractCypherObject|DateTimeImmutable|iterable|null
+     * @return scalar|AbstractCypherObject|iterable|null
      */
     public static function decodeToValue(array $param)
     {

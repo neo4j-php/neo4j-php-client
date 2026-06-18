@@ -35,7 +35,7 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @throws Exception
      *
-     * @return array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>}
+     * @return array{server: string, connection_id: string, hints: list}
      */
     public function authenticateBolt(BoltConnection $connection, string $userAgent): array
     {
@@ -43,7 +43,7 @@ final class BasicAuth implements AuthenticateInterface
 
         $protocol = $connection->protocol();
         if (method_exists($protocol, 'logon')) {
-            $helloMetadata = BoltHelloMetadata::withUtcPatchIfSupported($connection, ['user_agent' => $userAgent]);
+            $helloMetadata = ['user_agent' => $userAgent];
 
             $responseHello = $factory->createHelloMessage($helloMetadata)->send()->getResponse();
 
@@ -55,20 +55,20 @@ final class BasicAuth implements AuthenticateInterface
 
             $response = $factory->createLogonMessage($credentials)->send()->getResponse();
 
-            /** @var array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>} */
+            /** @var array{server: string, connection_id: string, hints: list} */
             return array_merge($responseHello->content, $response->content);
         }
 
-        $helloMetadata = BoltHelloMetadata::withUtcPatchIfSupported($connection, [
+        $helloMetadata = [
             'user_agent' => $userAgent,
             'scheme' => 'basic',
             'principal' => $this->username,
             'credentials' => $this->password,
-        ]);
+        ];
 
         $response = $factory->createHelloMessage($helloMetadata)->send()->getResponse();
 
-        /** @var array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>} */
+        /** @var array{server: string, connection_id: string, hints: list} */
         return $response->content;
     }
 

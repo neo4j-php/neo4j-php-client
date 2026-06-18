@@ -37,7 +37,7 @@ final class KerberosAuth implements AuthenticateInterface
     /**
      * @throws Exception
      *
-     * @return array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>}
+     * @return array{server: string, connection_id: string, hints: list}
      */
     public function authenticateBolt(BoltConnection $connection, string $userAgent): array
     {
@@ -45,9 +45,7 @@ final class KerberosAuth implements AuthenticateInterface
 
         $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent]);
 
-        $helloMetadata = BoltHelloMetadata::withUtcPatchIfSupported($connection, ['user_agent' => $userAgent]);
-
-        $factory->createHelloMessage($helloMetadata)->send()->getResponse();
+        $factory->createHelloMessage(['user_agent' => $userAgent])->send()->getResponse();
 
         $this->logger?->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'kerberos', 'principal' => '']);
 
@@ -58,7 +56,7 @@ final class KerberosAuth implements AuthenticateInterface
         ])->send()->getResponse();
 
         /**
-         * @var array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>}
+         * @var array{server: string, connection_id: string, hints: list}
          */
         return $response->content;
     }

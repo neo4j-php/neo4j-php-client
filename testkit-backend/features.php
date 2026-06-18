@@ -99,7 +99,7 @@ return [
     // notified when the server reports a token expired.
     'Feature:Auth:Managed' => false,
     // The driver supports Bolt protocol version 3
-    'Feature:Bolt:3.0' => false,
+    'Feature:Bolt:3.0' => true,
     // The driver supports Bolt protocol version 4.1
     'Feature:Bolt:4.1' => true,
     // The driver supports Bolt protocol version 4.2

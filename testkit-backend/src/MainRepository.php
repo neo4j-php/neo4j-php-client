@@ -22,7 +22,6 @@ use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
-use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\Types\CypherMap;
 use Symfony\Component\Uid\Uuid;
 
@@ -68,14 +67,6 @@ final class MainRepository
      * @var array<string, TransactionConfiguration>
      */
     private array $transactionConfigs = [];
-
-    /**
-     * {@see DriverErrorResponse} for a result id when the live {@see SummarizedResult} must stay in
-     * {@see $records} (RowDecodeFailure path) so {@see RetryableNegative} can still resolve {@code errorId}.
-     *
-     * @var array<string, DriverErrorResponse>
-     */
-    private array $resultDriverErrors = [];
 
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
@@ -210,37 +201,17 @@ final class MainRepository
      */
     public function addRecords(Uuid $id, $result): void
     {
-        $key = $id->toRfc4122();
-        $this->records[$key] = $result;
+        $this->records[$id->toRfc4122()] = $result;
         if ($result instanceof SummarizedResult) {
             /** @var SummarizedResult<CypherMap<OGMTypes>> $result */
-            $this->recordIterators[$key] = $result;
-        } else {
-            unset($this->recordIterators[$key]);
+            $this->recordIterators[$id->toRfc4122()] = $result;
         }
     }
 
     public function removeRecords(Uuid $id): void
     {
         $key = $id->toRfc4122();
-        unset(
-            $this->records[$key],
-            $this->recordIterators[$key],
-            $this->iteratorFetchedFirst[$key],
-            $this->peekPrimed[$key],
-            $this->pendingIteratorNextCount[$key],
-            $this->resultDriverErrors[$key]
-        );
-    }
-
-    public function rememberResultDriverError(Uuid $id, DriverErrorResponse $response): void
-    {
-        $this->resultDriverErrors[$id->toRfc4122()] = $response;
-    }
-
-    public function peekResultDriverError(Uuid $id): ?DriverErrorResponse
-    {
-        return $this->resultDriverErrors[$id->toRfc4122()] ?? null;
+        unset($this->records[$key], $this->iteratorFetchedFirst[$key], $this->peekPrimed[$key], $this->pendingIteratorNextCount[$key]);
     }
 
     /**

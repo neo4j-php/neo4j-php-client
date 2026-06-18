@@ -33,31 +33,31 @@ final class NoAuth implements AuthenticateInterface
     /**
      * @throws Exception
      *
-     * @return array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>}
+     * @return array{server: string, connection_id: string, hints: list}
      */
     public function authenticateBolt(BoltConnection $connection, string $userAgent): array
     {
         $factory = $this->createMessageFactory($connection);
 
         if ($connection->getProtocol()->compare(ConnectionProtocol::BOLT_V5_1()) >= 0) {
-            $helloMetadata = BoltHelloMetadata::withUtcPatchIfSupported($connection, ['user_agent' => $userAgent]);
+            $helloMetadata = ['user_agent' => $userAgent];
 
             $factory->createHelloMessage($helloMetadata)->send()->getResponse();
 
             $response = $factory->createLogonMessage(['scheme' => 'none'])->send()->getResponse();
 
-            /** @var array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>} */
+            /** @var array{server: string, connection_id: string, hints: list} */
             return $response->content;
         }
 
-        $helloMetadata = BoltHelloMetadata::withUtcPatchIfSupported($connection, [
+        $helloMetadata = [
             'user_agent' => $userAgent,
             'scheme' => 'none',
-        ]);
+        ];
 
         $response = $factory->createHelloMessage($helloMetadata)->send()->getResponse();
 
-        /** @var array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>} */
+        /** @var array{server: string, connection_id: string, hints: list} */
         return $response->content;
     }
 

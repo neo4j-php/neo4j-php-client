@@ -106,6 +106,8 @@ class BoltConnectionPoolTest extends TestCase
         $generator = $this->pool->acquire(SessionConfiguration::default());
         $connection = GeneratorHelper::getReturnFromGenerator($generator);
 
+        self::assertInstanceOf(ConnectionInterface::class, $connection);
+
         $this->semaphore->expects(self::once())->method('post');
 
         $this->pool->release($connection);
@@ -132,9 +134,7 @@ class BoltConnectionPoolTest extends TestCase
 
         $this->pool->release($connection);
 
-        // Release returns the permit but keeps the connection in the pool for reuse and for
-        // {@see ConnectionPool::close()} — it must not drop the pool's reference.
-        static::assertEquals($refCount, $this->refCount($connection));
+        static::assertEquals($refCount - 1, $this->refCount($connection));
     }
 
     /**

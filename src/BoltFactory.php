@@ -30,7 +30,7 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Enum\SocketType;
 
 /**
- * Small wrapper around the bolt library to create and authenticate Bolt connections (protocol 4.2+).
+ * Small wrapper around the bolt library to easily guarantee only bolt version 3 and up will be created and authenticated.
  */
 class BoltFactory
 {
@@ -83,11 +83,6 @@ class BoltFactory
 
         $response = $data->getAuth()->authenticateBolt($connection, $data->getUserAgent());
 
-        $patchBolt = $response['patch_bolt'] ?? null;
-        $connection->setBoltUtcPatchNegotiated(
-            is_array($patchBolt) && in_array('utc', $patchBolt, true)
-        );
-
         $config->setServerAgent($response['server'] ?? '');
 
         // Timeout precedence: 1) driver config, 2) server hint, 3) default 30s.
@@ -101,6 +96,11 @@ class BoltFactory
         $connection->configureTelemetry(
             $data->isTelemetryEnabled(),
             ($hints['telemetry.enabled'] ?? false) === true,
+        );
+
+        $patchBolt = $response['patch_bolt'] ?? null;
+        $config->setBoltUtcPatchNegotiated(
+            is_array($patchBolt) && in_array('utc', $patchBolt, true)
         );
 
         return $connection;

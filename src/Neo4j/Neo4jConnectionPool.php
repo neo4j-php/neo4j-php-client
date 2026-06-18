@@ -15,8 +15,6 @@ namespace Laudis\Neo4j\Neo4j;
 
 use Bolt\enum\Signature;
 use Bolt\error\ConnectException;
-use Bolt\protocol\V4_2;
-use Bolt\protocol\V4_3;
 
 use function count;
 
@@ -180,8 +178,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
-                // Return permit; keep the connection pooled for reuse (Optimization:ConnectionReuse). TestKit
-                // routing stubs expect no router <HANGUP> until driver/session teardown sends GOODBYE.
+                // TODO: release probably logs off the connection, it is not preferable
                 $pool->release($connection);
                 break;
             }
@@ -331,21 +328,6 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         if (!array_key_exists('rt', $route)) {
             throw new RuntimeException('Routing table missing from ROUTE response');
         }
-        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
-
-        if ($bolt instanceof V4_2) {
-            throw new RuntimeException('Neo4j routing requires Bolt protocol 4.3 or newer (ROUTE message).');
-        }
-
-        $db = $config->getDatabase();
-        $routeMessage = $bolt instanceof V4_3
-            ? $bolt->route([], [], $db)
-            : $bolt->route([], [], ['db' => $db]);
-
-        /** @var array{rt: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
-        $route = $routeMessage
-            ->getResponse()
-            ->content;
 
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();

@@ -13,18 +13,21 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Responses\Types;
 
-use DateTimeInterface;
-
 use function get_debug_type;
 
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
-use Laudis\Neo4j\Types\DateTime as Neo4jDateTime;
-use Laudis\Neo4j\Types\DateTimeZoneId as Neo4jDateTimeZoneId;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId;
+use Laudis\Neo4j\Types\Duration;
+use Laudis\Neo4j\Types\LocalDateTime;
+use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Node;
 use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
+use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
 use Laudis\Neo4j\Types\Vector;
 use RuntimeException;
@@ -97,19 +100,6 @@ final class CypherObject implements TestkitResponseInterface
                 }
                 $tbr = new CypherObject('Vector', new CypherList($list));
                 break;
-            case Neo4jDateTime::class:
-                /** @var Neo4jDateTime $value */
-                $tbr = NutkitFlatCypherValue::cypherDateTimeFromNeo4jDateTime($value);
-                break;
-            case Neo4jDateTimeZoneId::class:
-                /** @var Neo4jDateTimeZoneId $value */
-                $tbr = NutkitFlatCypherValue::cypherDateTimeFromNeo4jDateTimeZoneId($value);
-                break;
-            case 'DateTimeImmutable':
-            case 'DateTime':
-                /** @var DateTimeInterface $value */
-                $tbr = NutkitFlatCypherValue::cypherDateTimeFromDateTimeInterface($value);
-                break;
             case 'int':
                 $tbr = new CypherObject('CypherInt', $value);
                 break;
@@ -122,6 +112,20 @@ final class CypherObject implements TestkitResponseInterface
             case 'string':
                 $tbr = new CypherObject('CypherString', $value);
                 break;
+            case Date::class:
+                return NutkitFlatCypherValue::cypherDateFromNeo4jDate($value);
+            case Time::class:
+                return NutkitFlatCypherValue::cypherTimeFromNeo4jTime($value);
+            case LocalTime::class:
+                return NutkitFlatCypherValue::cypherTimeFromNeo4jLocalTime($value);
+            case DateTime::class:
+                return NutkitFlatCypherValue::cypherDateTimeFromNeo4jDateTime($value);
+            case DateTimeZoneId::class:
+                return NutkitFlatCypherValue::cypherDateTimeFromNeo4jDateTimeZoneId($value);
+            case LocalDateTime::class:
+                return NutkitFlatCypherValue::cypherDateTimeFromNeo4jLocalDateTime($value);
+            case Duration::class:
+                return NutkitFlatCypherValue::cypherDurationFromNeo4jDuration($value);
             case Node::class:
                 $labels = [];
                 foreach ($value->getLabels() as $label) {
@@ -261,13 +265,43 @@ final class CypherObject implements TestkitResponseInterface
         return $tbr;
     }
 
+    /**
+     * @return array{name: string, data: array{value: mixed}}
+     */
     public function jsonSerialize(): array
     {
         return [
             'name' => $this->name,
             'data' => [
-                'value' => $this->value,
+                'value' => self::serializeNestedValue($this->value),
             ],
         ];
+    }
+
+    private static function serializeNestedValue(mixed $value)
+    {
+        if ($value instanceof TestkitResponseInterface) {
+            return $value->jsonSerialize();
+        }
+
+        if ($value instanceof CypherList) {
+            $list = [];
+            foreach ($value as $item) {
+                $list[] = self::serializeNestedValue($item);
+            }
+
+            return $list;
+        }
+
+        if ($value instanceof CypherMap) {
+            $map = [];
+            foreach ($value as $key => $item) {
+                $map[$key] = self::serializeNestedValue($item);
+            }
+
+            return $map;
+        }
+
+        return $value;
     }
 }

@@ -18,6 +18,13 @@ use DateTimeZone;
 use InvalidArgumentException;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
+use Laudis\Neo4j\Types\Date;
+use Laudis\Neo4j\Types\DateTime;
+use Laudis\Neo4j\Types\DateTimeZoneId;
+use Laudis\Neo4j\Types\Duration;
+use Laudis\Neo4j\Types\LocalDateTime;
+use Laudis\Neo4j\Types\LocalTime;
+use Laudis\Neo4j\Types\Time;
 
 /**
  * Decodes nutkit JSON parameter payloads ({@see \nutkit\backend\Encoder}) into PHP values for the driver.
@@ -34,7 +41,10 @@ final class NutkitValueDecoder
 
         return match ($name) {
             'CypherNull' => null,
+            'CypherDate' => self::decodeCypherDate($data),
+            'CypherTime' => self::decodeCypherTime($data),
             'CypherDateTime' => self::decodeCypherDateTime($data),
+            'CypherDuration' => self::decodeCypherDuration($data),
             'CypherMap' => self::decodeCypherMap($data),
             'CypherList' => self::decodeCypherList($data),
             default => self::decodeScalarWrapper($name, $data),
@@ -94,7 +104,45 @@ final class NutkitValueDecoder
     /**
      * @param array<string, mixed> $data
      */
-    private static function decodeCypherDateTime(array $data): DateTimeImmutable
+    private static function decodeCypherDate(array $data): Date
+    {
+        $y = (int) ($data['year'] ?? 0);
+        $m = (int) ($data['month'] ?? 0);
+        $d = (int) ($data['day'] ?? 0);
+
+        $dt = DateTimeImmutable::createFromFormat(
+            '!Y-m-d',
+            sprintf('%04d-%02d-%02d', $y, $m, $d),
+            new DateTimeZone('UTC')
+        );
+        if ($dt === false) {
+            throw new InvalidArgumentException('Invalid CypherDate');
+        }
+
+        return new Date(intdiv($dt->getTimestamp(), 86400));
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private static function decodeCypherTime(array $data): Time|LocalTime
+    {
+        $nanosecondsSinceMidnight = self::composeNanosecondsSinceMidnight($data);
+        $utcOffsetS = array_key_exists('utc_offset_s', $data) && $data['utc_offset_s'] !== null
+            ? (int) $data['utc_offset_s']
+            : null;
+
+        if ($utcOffsetS === null) {
+            return new LocalTime($nanosecondsSinceMidnight);
+        }
+
+        return new Time($nanosecondsSinceMidnight, $utcOffsetS);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private static function decodeCypherDateTime(array $data): LocalDateTime|DateTime|DateTimeZoneId
     {
         $y = (int) ($data['year'] ?? 0);
         $m = (int) ($data['month'] ?? 0);
@@ -120,6 +168,9 @@ final class NutkitValueDecoder
             if ($dt === false) {
                 throw new InvalidArgumentException('Invalid CypherDateTime (timezone_id)');
             }
+            if ($utcOffsetS !== null && $dt->getOffset() !== $utcOffsetS) {
+                throw new InvalidArgumentException('CypherDateTime offset does not match timezone_id');
+            }
         } elseif ($utcOffsetS !== null) {
             $tz = self::timezoneFromOffsetSeconds($utcOffsetS);
             $dt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $base, $tz);
@@ -134,7 +185,44 @@ final class NutkitValueDecoder
             $dt = $dt->modify(sprintf('+%d microseconds', $micro));
         }
 
-        return $dt;
+        if (is_string($timezoneId)) {
+            return new DateTimeZoneId($dt->getTimestamp(), $ns, $timezoneId);
+        }
+
+        if ($utcOffsetS !== null) {
+            return new DateTime($dt->getTimestamp(), $ns, $utcOffsetS, false);
+        }
+
+        return new LocalDateTime($dt->getTimestamp(), $ns);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private static function decodeCypherDuration(array $data): Duration
+    {
+        return new Duration(
+            (int) ($data['months'] ?? 0),
+            (int) ($data['days'] ?? 0),
+            (int) ($data['seconds'] ?? 0),
+            (int) ($data['nanoseconds'] ?? 0),
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private static function composeNanosecondsSinceMidnight(array $data): int
+    {
+        $hour = (int) ($data['hour'] ?? 0);
+        $minute = (int) ($data['minute'] ?? 0);
+        $second = (int) ($data['second'] ?? 0);
+        $nanosecond = (int) ($data['nanosecond'] ?? 0);
+
+        return $hour * 3_600_000_000_000
+            + $minute * 60_000_000_000
+            + $second * 1_000_000_000
+            + $nanosecond;
     }
 
     private static function timezoneFromOffsetSeconds(int $offsetSec): DateTimeZone
