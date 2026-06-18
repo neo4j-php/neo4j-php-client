@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
+use Bolt\enum\Signature;
 use Bolt\error\ConnectException;
 use Bolt\protocol\V4_2;
 use Bolt\protocol\V4_3;
@@ -42,6 +43,7 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
@@ -61,6 +63,7 @@ use function time;
  *
  * @implements ConnectionPoolInterface<BoltConnection>
  */
+/** @implements ConnectionPoolInterface<BoltConnection> */
 final class Neo4jConnectionPool implements ConnectionPoolInterface
 {
     /** @var array<string, ConnectionPool> */
@@ -96,7 +99,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 $auth,
                 $conf->getUserAgent(),
                 $conf->getSslConfiguration(),
-                $conf->getSocketTimeoutSecondsExplicit()
+                $conf->getSocketTimeoutSecondsExplicit(),
+                $conf->isTelemetryEnabled(),
             ),
             Cache::getInstance(),
             $resolver,
@@ -113,7 +117,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
             $this->data->getAuth(),
             $this->data->getUserAgent(),
             $this->data->getSslConfig(),
-            $this->data->getSocketTimeoutSeconds()
+            $this->data->getSocketTimeoutSeconds(),
+            $this->data->isTelemetryEnabled(),
         );
 
         $key = $this->createKey($data);
@@ -126,6 +131,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
     /**
      * @throws Exception
+     *
+     * @return Generator<int, float, bool, BoltConnection>
      */
     public function acquire(SessionConfiguration $config): Generator
     {
@@ -176,7 +183,6 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 // Return permit; keep the connection pooled for reuse (Optimization:ConnectionReuse). TestKit
                 // routing stubs expect no router <HANGUP> until driver/session teardown sends GOODBYE.
                 $pool->release($connection);
-
                 break;
             }
         }
@@ -312,6 +318,19 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     {
         $bolt = $connection->protocol();
 
+        $routeExtra = $this->buildRouteExtra($config);
+        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $routeExtra['db'] ?? null]);
+        $response = $bolt->route([], [], $routeExtra)->getResponse();
+
+        if ($response->signature === Signature::FAILURE) {
+            throw Neo4jException::fromBoltResponse($response);
+        }
+
+        /** @var array{rt?: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
+        $route = $response->content;
+        if (!array_key_exists('rt', $route)) {
+            throw new RuntimeException('Routing table missing from ROUTE response');
+        }
         $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $config->getDatabase()]);
 
         if ($bolt instanceof V4_2) {
@@ -332,6 +351,19 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $ttl += time();
 
         return new RoutingTable($servers, $ttl);
+    }
+
+    /**
+     * @return array{db?: string}
+     */
+    private function buildRouteExtra(SessionConfiguration $config): array
+    {
+        $database = $config->getDatabase();
+        if ($database === null) {
+            return [];
+        }
+
+        return ['db' => $database];
     }
 
     public function release(ConnectionInterface $connection): void
@@ -369,14 +401,21 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         ], '|', $key);
     }
 
-    public function close(): void
+    private function closeBoltPools(): void
     {
-        $this->getLogger()?->log(LogLevel::INFO, 'Closing all connection pools');
+        $this->getLogger()?->log(LogLevel::DEBUG, 'Closing bolt connection pools');
 
         foreach (self::$pools as $pool) {
             $pool->close();
         }
         self::$pools = [];
+    }
+
+    public function close(): void
+    {
+        $this->getLogger()?->log(LogLevel::INFO, 'Closing all connection pools');
+
+        $this->closeBoltPools();
         $this->cache->clear();
     }
 
@@ -385,7 +424,14 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     private function getAddresses(string $host): Generator
     {
-        yield gethostbyname($host);
+        // Prefer the DNS name for TLS (Aura rejects IP-only peer names).
+        yield $host;
+
+        $resolved = gethostbyname($host);
+        if ($resolved !== $host) {
+            yield $resolved;
+        }
+
         yield from $this->resolver->getAddresses($host);
     }
 }

@@ -13,14 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Laudis\Neo4j\Contracts\SessionInterface;
+use Laudis\Neo4j\Contracts\TransactionInterface;
+use Laudis\Neo4j\Databags\Statement;
+use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionReadTransactionRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
+use Laudis\Neo4j\Types\CypherList;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -60,20 +63,36 @@ final class SessionReadTransaction implements RequestHandlerInterface
         }
 
         $id = Uuid::v4();
-        try {
-            // TODO - Create beginReadTransaction and beginWriteTransaction
-            $transaction = $session->beginTransaction(null, $config);
+        $this->repository->addTransaction($id, new class($session, $config) implements TransactionInterface {
+            public function __construct(
+                private readonly SessionInterface $session,
+                private readonly TransactionConfiguration $config,
+            ) {
+            }
 
-            $this->repository->addTransaction($id, $transaction);
-            $this->repository->bindTransactionToSession($request->getSessionId(), $id);
-        } catch (Neo4jException $exception) {
-            $this->repository->addRecords($id, new DriverErrorResponse(
-                $id,
-                $exception
-            ));
+            public function run(string $statement, iterable $parameters = []): SummarizedResult
+            {
+                return $this->session->readTransaction(static function (TransactionInterface $tx) use ($statement, $parameters): SummarizedResult {
+                    return $tx->run($statement, $parameters);
+                }, $this->config);
+            }
 
-            return new DriverErrorResponse($id, $exception);
-        }
+            public function runStatement(Statement $statement): SummarizedResult
+            {
+                return $this->run($statement->getText(), $statement->getParameters());
+            }
+
+            public function runStatements(iterable $statements): CypherList
+            {
+                $list = [];
+                foreach ($statements as $statement) {
+                    $list[] = $this->runStatement($statement);
+                }
+
+                return new CypherList($list);
+            }
+        });
+        $this->repository->bindTransactionToSession($request->getSessionId(), $id);
 
         return new RetryableTryResponse($id);
     }

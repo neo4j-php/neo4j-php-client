@@ -31,6 +31,7 @@ use function shuffle;
 /**
  * @implements ConnectionPoolInterface<BoltConnection>
  */
+/** @implements ConnectionPoolInterface<BoltConnection> */
 final class ConnectionPool implements ConnectionPoolInterface
 {
     /** @var list<BoltConnection> */
@@ -60,7 +61,8 @@ final class ConnectionPool implements ConnectionPoolInterface
                 $auth,
                 $conf->getUserAgent(),
                 $conf->getSslConfiguration(),
-                $conf->getSocketTimeoutSecondsExplicit()
+                $conf->getSocketTimeoutSecondsExplicit(),
+                $conf->isTelemetryEnabled(),
             ),
             $conf->getLogger(),
             $conf->getAcquireConnectionTimeout()
@@ -112,6 +114,15 @@ final class ConnectionPool implements ConnectionPoolInterface
 
     public function release(ConnectionInterface $connection): void
     {
+        foreach ($this->activeConnections as $i => $activeConnection) {
+            if ($connection === $activeConnection) {
+                array_splice($this->activeConnections, $i, 1);
+
+                $this->semaphore->post();
+
+                return;
+            }
+        }
         // Return a permit only — keep the connection in {@see $activeConnections} so it stays
         // pooled for reuse and is still closed by {@see close()}. Removing it here orphaned
         // sockets (no GOODBYE on driver close), which breaks TestKit stubs after errors.
@@ -139,9 +150,14 @@ final class ConnectionPool implements ConnectionPoolInterface
 
     public function close(): void
     {
+        $activeCount = count($this->activeConnections);
         foreach ($this->activeConnections as $activeConnection) {
             $activeConnection->close();
         }
         $this->activeConnections = [];
+
+        for ($i = 0; $i < $activeCount; ++$i) {
+            $this->semaphore->post();
+        }
     }
 }

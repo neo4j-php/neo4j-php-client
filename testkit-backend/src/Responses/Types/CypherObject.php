@@ -30,7 +30,7 @@ use Laudis\Neo4j\Types\Vector;
 use RuntimeException;
 
 /**
- * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\OGMFormatter
+ * @psalm-import-type OGMTypes from \Laudis\Neo4j\Formatter\SummarizedResultFormatter
  */
 final class CypherObject implements TestkitResponseInterface
 {

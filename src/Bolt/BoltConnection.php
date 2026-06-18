@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Bolt;
 
 use Bolt\enum\ServerState;
 use Bolt\enum\Signature;
+use Bolt\error\BoltException;
 use Bolt\error\ConnectException as BoltConnectException;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_2;
@@ -26,6 +27,7 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Exception;
+use Laudis\Neo4j\Bolt\Messages\BoltTelemetryMessage;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -33,7 +35,6 @@ use Laudis\Neo4j\Contracts\ConnectionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
 use Laudis\Neo4j\Databags\DatabaseInfo;
 use Laudis\Neo4j\Databags\DriverConfiguration;
-use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
@@ -72,6 +73,15 @@ class BoltConnection implements ConnectionInterface
     private ?float $recvTimeoutHint = null;
 
     private ?float $originalTimeout = null;
+
+    private bool $clientTelemetryEnabled = true;
+
+    private bool $serverTelemetryEnabled = false;
+
+    /** @var array<int, true> */
+    private array $sentTelemetryApis = [];
+
+    private int $messagesInPipeline = 0;
 
     /**
      * When one PULL yields RECORD(s) then FAILURE, {@see assertNoFailure()} runs RESET on the FAILURE before we
@@ -259,12 +269,17 @@ class BoltConnection implements ConnectionInterface
      */
     public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData): void
     {
-        $this->consumeResults();
+        $this->consumeResults(); // todo - move this before sending telemetry
 
         $extra = $this->buildRunExtra($database, $timeout, $holder, null, $txMetaData);
-        $message = $this->messageFactory->createBeginMessage($extra);
-        $response = $message->send()->getResponse();
-        $this->assertNoFailure($response);
+        $this->messageFactory->createBeginMessage($extra)->send();
+        ++$this->messagesInPipeline;
+
+        while ($this->messagesInPipeline > 0) {
+            $response = $this->getProtocolResponseWithTimeout();
+            --$this->messagesInPipeline;
+            $this->assertNoFailure($response);
+        }
     }
 
     /**
@@ -296,8 +311,18 @@ class BoltConnection implements ConnectionInterface
         ?BookmarkHolder $holder,
         ?AccessMode $mode,
         ?iterable $tsxMetadata,
+        TelemetryAPIEnum $api,
     ): array {
+        $this->sendTelemetryIfNeeded($api);
         $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $tsxMetadata);
+        $this->messageFactory->createRunMessage($text, $parameters, $extra)->send();
+        ++$this->messagesInPipeline;
+
+        do {
+            $response = $this->getProtocolResponseWithTimeout();
+            --$this->messagesInPipeline;
+            $this->assertNoFailure($response);
+        } while ($this->messagesInPipeline > 0);
 
         $message = $this->messageFactory->createRunMessage($text, $parameters, $extra);
         $response = $message->send()->getResponse();
@@ -521,21 +546,9 @@ class BoltConnection implements ConnectionInterface
     public function assertNoFailure(Response $response): void
     {
         if ($response->signature === Signature::FAILURE) {
-            $this->logger?->log(LogLevel::ERROR, 'FAILURE');
-            $message = $this->messageFactory->createResetMessage();
-
-            try {
-                $resetResponse = $message->send()->getResponse();
-            } catch (Throwable $e) {
-                $this->subscribedResults = [];
-                throw Neo4jException::fromBoltResponse($response);
-            }
+            $this->logger?->log(LogLevel::ERROR, 'FAILURE', $response->content);
 
             $this->subscribedResults = [];
-
-            if ($resetResponse->signature === Signature::FAILURE) {
-                throw new Neo4jException([Neo4jError::fromBoltResponse($resetResponse), Neo4jError::fromBoltResponse($response)]);
-            }
 
             throw Neo4jException::fromBoltResponse($response);
         }
@@ -569,6 +582,65 @@ class BoltConnection implements ConnectionInterface
 
             $this->subscribedResults = [];
         }
+    }
+
+    /**
+     * Reads the next pipelined Bolt response with recv_timeout hint applied.
+     */
+    private function getProtocolResponseWithTimeout(): Response
+    {
+        $this->applyRecvTimeoutTemporarily();
+
+        if ($this->recvTimeoutHint === null && $this->originalTimeout === null) {
+            $this->setOriginalTimeout($this->getTimeout());
+            $this->setTimeout($this->defaultRecvTimeout);
+        }
+
+        try {
+            $response = $this->protocol()->getResponse();
+        } catch (BoltException $e) {
+            $this->restoreOriginalTimeout();
+            $this->invalidate();
+
+            throw $e;
+        } catch (Throwable $e) {
+            $this->restoreOriginalTimeout();
+            if ($this->isTimeoutException($e) || $this->isSocketException($e)) {
+                $this->invalidate();
+            }
+
+            throw $e;
+        }
+
+        $this->restoreOriginalTimeout();
+
+        return $response;
+    }
+
+    private function isTimeoutException(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'timeout') || str_contains($message, 'time out');
+    }
+
+    private function isSocketException(Throwable $e): bool
+    {
+        if ($e instanceof BoltException) {
+            return true;
+        }
+
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'broken pipe')
+            || str_contains($message, 'connection reset')
+            || str_contains($message, 'connection refused')
+            || str_contains($message, 'connection closed')
+            || str_contains($message, 'interrupted system call')
+            || str_contains($message, 'i/o error')
+            || str_contains($message, 'network read incomplete')
+            || str_contains($message, 'network write incomplete')
+            || str_contains($message, 'broken');
     }
 
     public function setRecvTimeoutHint(?float $timeout): void
@@ -610,5 +682,37 @@ class BoltConnection implements ConnectionInterface
     public function setOriginalTimeout(?float $timeout): void
     {
         $this->originalTimeout = $timeout;
+    }
+
+    public function configureTelemetry(bool $clientTelemetryEnabled, bool $serverTelemetryEnabled): void
+    {
+        $this->clientTelemetryEnabled = $clientTelemetryEnabled;
+        $this->serverTelemetryEnabled = $serverTelemetryEnabled;
+    }
+
+    public function sendTelemetryIfNeeded(TelemetryAPIEnum $api): void
+    {
+        if (!$this->clientTelemetryEnabled || !$this->serverTelemetryEnabled) {
+            return;
+        }
+
+        if (array_key_exists($api->value, $this->sentTelemetryApis)) {
+            return;
+        }
+
+        if (!$this->boltProtocol instanceof V5_4) {
+            return;
+        }
+
+        if (!in_array($this->protocol()->serverState, [ServerState::READY, ServerState::TX_READY])) {
+            return;
+        }
+
+        $message = new BoltTelemetryMessage($this, $api, $this->logger);
+        $message->send(); // telemetry messages don't wait for a response to reduce latency. We pipeline this message
+        // with the message that triggered the telemetry (RUN & BEGIN)
+
+        $this->sentTelemetryApis[$api->value] = true;
+        ++$this->messagesInPipeline;
     }
 }

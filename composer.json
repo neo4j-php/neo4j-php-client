@@ -28,8 +28,7 @@
         "psr/http-factory": "^1.0",
         "psr/http-client": "^1.0",
         "php-http/message": "^1.0",
-        "stefanak-michal/bolt": "^7.4",
-        "symfony/polyfill-php80": "^1.2",
+        "stefanak-michal/bolt": "^7.4.0",
         "psr/simple-cache": ">=2.0",
         "ext-json": "*",
         "ext-mbstring": "*"
@@ -84,6 +83,6 @@
     "scripts": {
         "fix-cs": "./vendor/bin/php-cs-fixer fix",
         "check-cs": "./vendor/bin/php-cs-fixer fix --dry-run",
-        "psalm": "./vendor/bin/psalm --show-info"
+        "psalm": "./vendor/bin/psalm --show-info=true"
     }
 }

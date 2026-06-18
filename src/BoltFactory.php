@@ -52,7 +52,9 @@ class BoltFactory
 
     public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig): BoltConnection
     {
-        [$sslLevel, $sslConfig] = $this->sslConfigurationFactory->create($data->getUri()->withHost($data->getHostname()), $data->getSslConfig());
+        // SSL peer name must match the host we connect to (cluster member), not the routing
+        // contact-point hostname stored in ConnectionRequestData::getHostname().
+        [$sslLevel, $sslConfig] = $this->sslConfigurationFactory->create($data->getUri(), $data->getSslConfig());
 
         $socketTimeout = $data->getSocketTimeoutSeconds() ?? DriverConfiguration::DEFAULT_SOCKET_TIMEOUT;
 
@@ -94,6 +96,12 @@ class BoltFactory
         if (!$driverHasExplicitTimeout && array_key_exists('hints', $response) && array_key_exists('connection.recv_timeout_seconds', $response['hints'])) {
             $connection->setRecvTimeoutHint((float) $response['hints']['connection.recv_timeout_seconds']);
         }
+
+        $hints = $response['hints'] ?? [];
+        $connection->configureTelemetry(
+            $data->isTelemetryEnabled(),
+            ($hints['telemetry.enabled'] ?? false) === true,
+        );
 
         return $connection;
     }

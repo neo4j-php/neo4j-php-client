@@ -50,6 +50,14 @@ final class Session implements SessionInterface
         return $this->session->run($statement, $parameters, $config);
     }
 
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    public function executeQuery(string $cypher, array $parameters = []): SummarizedResult
+    {
+        return $this->session->executeQuery($cypher, $parameters);
+    }
+
     public function beginTransaction(?iterable $statements = null, ?TransactionConfiguration $config = null): UnmanagedTransaction
     {
         return new UnmanagedTransaction($this->session->beginTransaction($statements, $config));
@@ -73,5 +81,10 @@ final class Session implements SessionInterface
     public function getLastBookmark(): Bookmark
     {
         return $this->session->getLastBookmark();
+    }
+
+    public function close(): void
+    {
+        $this->session->close();
     }
 }

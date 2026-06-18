@@ -13,97 +13,21 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
-use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
-use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\RetryableNegativeRequest;
-use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\FrontendErrorResponse;
-use Laudis\Neo4j\TestkitBackend\Responses\RetryableTryResponse;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
-use Throwable;
+use Laudis\Neo4j\TestkitBackend\Responses\SkipTestResponse;
 
 /**
  * @implements RequestHandlerInterface<RetryableNegativeRequest>
  */
 final class RetryableNegative implements RequestHandlerInterface
 {
-    public function __construct(
-        private readonly MainRepository $repository,
-        private readonly LoggerInterface $logger,
-    ) {
-    }
-
     /**
      * @param RetryableNegativeRequest $request
      */
     public function handle($request): TestkitResponseInterface
     {
-        $sessionId = $request->getSessionId();
-
-        try {
-            $transactionId = $this->repository->getTsxIdFromSession($sessionId);
-        } catch (Throwable $e) {
-            return new BackendErrorResponse('Transaction not found for session '.$sessionId->toRfc4122());
-        }
-
-        $tsx = $this->repository->getTransaction($transactionId);
-
-        if (!$tsx instanceof UnmanagedTransactionInterface) {
-            return new BackendErrorResponse('Transaction not found '.$transactionId->toRfc4122());
-        }
-
-        $errorId = $request->getErrorId();
-        $resolvedException = null;
-        if ($errorId !== '' && $errorId !== null) {
-            try {
-                $errorUuid = $errorId instanceof Uuid ? $errorId : Uuid::fromString($errorId);
-                $errorResponse = $this->repository->getRecords($errorUuid);
-                if ($errorResponse instanceof DriverErrorResponse) {
-                    $resolvedException = $errorResponse->getException();
-                } else {
-                    $buffered = $this->repository->peekResultDriverError($errorUuid);
-                    if ($buffered instanceof DriverErrorResponse) {
-                        $resolvedException = $buffered->getException();
-                    }
-                }
-            } catch (Throwable $e) {
-                $this->logger->debug('Could not retrieve error for RetryableNegative', ['exception' => $e->getMessage()]);
-            }
-        }
-
-        // Transient errors after PULL (e.g. tx_error_on_pull.script): connection is RESET to READY and the
-        // same transaction object is retried — do not ROLLBACK/BEGIN here; the next RUN will send BEGIN.
-        // Client errors (e.g. unknown zone) need a real ROLLBACK on the wire.
-        $skipRollback = $resolvedException instanceof Neo4jException
-            && $resolvedException->getClassification() === 'TransientError';
-
-        if (!$skipRollback) {
-            try {
-                $tsx->rollback();
-            } catch (Throwable $e) {
-                $this->logger->debug('Rollback failed during RetryableNegative', ['exception' => $e->getMessage()]);
-            }
-        }
-
-        if ($resolvedException instanceof Neo4jException) {
-            if ($resolvedException->getClassification() === 'TransientError') {
-                return new RetryableTryResponse($transactionId);
-            }
-
-            return new DriverErrorResponse($transactionId, $resolvedException);
-        }
-
-        if ($resolvedException !== null) {
-            return new DriverErrorResponse($transactionId, $resolvedException);
-        }
-
-        // If no specific error was provided or couldn't be retrieved,
-        // client code caused the rollback (e.g. ApplicationCodeError) - return FrontendError
-        return new FrontendErrorResponse('Client code caused transaction to be rolled back');
+        return new SkipTestResponse('We can\'t support retryable negative tests without moving towards futures');
     }
 }

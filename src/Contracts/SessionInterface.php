@@ -42,6 +42,15 @@ interface SessionInterface extends TransactionInterface
     public function run(string $statement, iterable $parameters = [], ?TransactionConfiguration $config = null): SummarizedResult;
 
     /**
+     * Executes a query with the given parameters and retries in case of transient errors.
+     *
+     * @param array<string, mixed> $parameters
+     *
+     * @throws Neo4jException
+     */
+    public function executeQuery(string $cypher, array $parameters = []): SummarizedResult;
+
+    /**
      * @psalm-param iterable<Statement>|null $statements
      *
      * @throws Neo4jException
@@ -76,4 +85,6 @@ interface SessionInterface extends TransactionInterface
     public function transaction(callable $tsxHandler, ?TransactionConfiguration $config = null);
 
     public function getLastBookmark(): Bookmark;
+
+    public function close(): void;
 }
