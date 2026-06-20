@@ -43,6 +43,12 @@ echo ""
 
 ### Failing/error tests
 #python3 -m unittest -vvv \
+#      tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
+#      tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
+#      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
+#      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
+#      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time \
+#
 #    tests.neo4j.test_tx_run.TestTxRun.test_should_not_run_valid_query_in_invalid_tx \
 #    tests.neo4j.test_tx_run.TestTxRun.test_should_not_commit_a_failure \
 #    tests.neo4j.test_tx_run.TestTxRun.test_should_be_able_to_rollback_a_failure \
@@ -57,7 +63,7 @@ echo ""
 #    tests.neo4j.test_tx_run.TestTxRun.test_should_be_able_to_rollback_a_failure \
 #    tests.stub.basic_query.test_basic_query.TestBasicQuery.test_4x4_populates_path_element_ids_with_long \
 #    tests.stub.basic_query.test_basic_query.TestBasicQuery.test_5x0_populates_path_element_ids_with_string
-
+#
 #
 # Excluded: tests whose flow sends RetryableNegative (tx function raises inside
 # execute_read/execute_write), which the backend cannot support without futures.
@@ -196,7 +202,12 @@ python3 -m unittest -vvv \
     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query \
     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_read_retry \
     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_write_retry \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query_retry
+    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query_retry \
+     tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
+     tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
+     tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
+     tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
+     tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time
 
 EXIT_CODE="$?"
 

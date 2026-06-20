@@ -145,6 +145,14 @@ class BoltConnection implements ConnectionInterface
     /**
      * @psalm-mutation-free
      */
+    public function isBoltUtcPatchNegotiated(): bool
+    {
+        return $this->config->isBoltUtcPatchNegotiated();
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
     public function getAccessMode(): ?AccessMode
     {
         return $this->config->getAccessMode();

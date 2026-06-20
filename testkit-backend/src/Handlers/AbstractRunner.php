@@ -25,13 +25,12 @@ use Laudis\Neo4j\Exception\TransactionException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
+use Laudis\Neo4j\TestkitBackend\NutkitValueDecoder;
 use Laudis\Neo4j\TestkitBackend\Requests\SessionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\TransactionRunRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\ResultResponse;
 use Laudis\Neo4j\Types\AbstractCypherObject;
-use Laudis\Neo4j\Types\CypherList;
-use Laudis\Neo4j\Types\CypherMap;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -126,44 +125,13 @@ abstract class AbstractRunner implements RequestHandlerInterface
     }
 
     /**
-     * @param array{name: string, data: array{value: iterable|scalar|null}} $param
+     * @param array{name: string, data: array<string, mixed>} $param
      *
      * @return scalar|AbstractCypherObject|iterable|null
      */
     public static function decodeToValue(array $param)
     {
-        $value = $param['data']['value'];
-        if (is_iterable($value)) {
-            if ($param['name'] === 'CypherMap') {
-                /** @psalm-suppress MixedArgumentTypeCoercion */
-                $map = [];
-                /**
-                 * @var numeric $k
-                 * @var mixed   $v
-                 */
-                foreach ($value as $k => $v) {
-                    /** @psalm-suppress MixedArgument */
-                    $map[(string) $k] = self::decodeToValue($v);
-                }
-
-                return new CypherMap($map);
-            }
-
-            if ($param['name'] === 'CypherList') {
-                $list = [];
-                /**
-                 * @var mixed $v
-                 */
-                foreach ($value as $v) {
-                    /** @psalm-suppress MixedArgument */
-                    $list[] = self::decodeToValue($v);
-                }
-
-                return new CypherList($list);
-            }
-        }
-
-        return $value;
+        return NutkitValueDecoder::decode($param);
     }
 
     /**

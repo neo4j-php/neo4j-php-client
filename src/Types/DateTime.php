@@ -18,6 +18,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 use Laudis\Neo4j\Contracts\BoltConvertibleInterface;
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 
 use function sprintf;
 
@@ -119,5 +120,26 @@ final class DateTime extends AbstractPropertyObject implements BoltConvertibleIn
         }
 
         return new \Bolt\protocol\v5\structures\DateTime($this->getSeconds(), $this->getNanoseconds(), $this->getTimeZoneOffsetSeconds());
+    }
+
+    public function convertToBoltWithProtocol(
+        ConnectionProtocol $protocol,
+        bool $boltUtcPatchNegotiated = false,
+    ): IStructure {
+        /** @psalm-suppress ImpureMethodCall */
+        $isLegacyWire = $protocol->compare(ConnectionProtocol::BOLT_V5()) < 0 && !$boltUtcPatchNegotiated;
+        if ($isLegacyWire) {
+            return new \Bolt\protocol\v1\structures\DateTime(
+                $this->getSeconds() + $this->getTimeZoneOffsetSeconds(),
+                $this->getNanoseconds(),
+                $this->getTimeZoneOffsetSeconds(),
+            );
+        }
+
+        return new \Bolt\protocol\v5\structures\DateTime(
+            $this->getSeconds(),
+            $this->getNanoseconds(),
+            $this->getTimeZoneOffsetSeconds(),
+        );
     }
 }

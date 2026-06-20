@@ -98,6 +98,11 @@ class BoltFactory
             ($hints['telemetry.enabled'] ?? false) === true,
         );
 
+        $patchBolt = $response['patch_bolt'] ?? null;
+        $config->setBoltUtcPatchNegotiated(
+            is_array($patchBolt) && in_array('utc', $patchBolt, true)
+        );
+
         return $connection;
     }
 

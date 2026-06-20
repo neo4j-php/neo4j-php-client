@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Laudis\Neo4j\Authentication\BoltHelloMetadata;
 use Laudis\Neo4j\Bolt\Messages\BoltBeginMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltCommitMessage;
 use Laudis\Neo4j\Bolt\Messages\BoltDiscardMessage;
@@ -73,9 +74,12 @@ class BoltMessageFactory
         return new BoltPullMessage($this->connection, $extra, $this->logger);
     }
 
+    /**
+     * @param array<string, mixed> $extra
+     */
     public function createHelloMessage(array $extra): BoltHelloMessage
     {
-        /** @var array<string, mixed> $extra */
+        $extra = BoltHelloMetadata::withUtcPatchIfSupported($this->connection, $extra);
 
         return new BoltHelloMessage($this->connection, $extra, $this->logger);
     }
