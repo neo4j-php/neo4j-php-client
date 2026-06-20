@@ -26,7 +26,10 @@ use Bolt\protocol\v1\structures\Point3D as BoltPoint3D;
 use Bolt\protocol\v1\structures\Relationship as BoltRelationship;
 use Bolt\protocol\v1\structures\Time as BoltTime;
 use Bolt\protocol\v1\structures\UnboundRelationship as BoltUnboundRelationship;
+use Bolt\protocol\v5\structures\DateTimeZoneId as BoltV5DateTimeZoneId;
 use Bolt\protocol\v6\structures\Vector as BoltVector;
+use DateTimeImmutable;
+use DateTimeZone;
 use Laudis\Neo4j\Enum\VectorTypeMarker;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\Abstract3DPoint;
@@ -141,7 +144,29 @@ final class BoltOGMTranslator
         /** @var non-empty-string $tzId */
         $tzId = $time->tz_id;
 
-        return new DateTimeZoneId($time->seconds, $time->nanoseconds, $tzId);
+        if ($time instanceof BoltV5DateTimeZoneId) {
+            return new DateTimeZoneId($time->seconds, $time->nanoseconds, $tzId);
+        }
+
+        // Legacy 0x66: wire seconds are UTC epoch + zone offset at that instant.
+        $legacySeconds = $time->seconds;
+        $utcSeconds = $legacySeconds;
+        $tz = new DateTimeZone($tzId);
+        for ($i = 0; $i < 8; ++$i) {
+            $instant = (new DateTimeImmutable('@'.$utcSeconds))
+                ->modify(sprintf('+%d microseconds', intdiv($time->nanoseconds, 1000)));
+            if ($instant === false) {
+                throw new UnexpectedValueException('Invalid Bolt legacy DateTimeZoneId');
+            }
+            $offset = $tz->getOffset($instant);
+            $nextUtc = $legacySeconds - $offset;
+            if ($nextUtc === $utcSeconds) {
+                break;
+            }
+            $utcSeconds = $nextUtc;
+        }
+
+        return new DateTimeZoneId($utcSeconds, $time->nanoseconds, $tzId);
     }
 
     private function makeFromBoltDuration(BoltDuration $duration): Duration

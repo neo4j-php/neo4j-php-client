@@ -106,6 +106,8 @@ class BoltConnectionPoolTest extends TestCase
         $generator = $this->pool->acquire(SessionConfiguration::default());
         $connection = GeneratorHelper::getReturnFromGenerator($generator);
 
+        self::assertInstanceOf(ConnectionInterface::class, $connection);
+
         $this->semaphore->expects(self::once())->method('post');
 
         $this->pool->release($connection);

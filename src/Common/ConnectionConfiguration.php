@@ -30,6 +30,7 @@ final class ConnectionConfiguration
         private readonly ?AccessMode $accessMode,
         private readonly ?DatabaseInfo $databaseInfo,
         private readonly string $encryptionLevel,
+        private bool $boltUtcPatchNegotiated = false,
     ) {
     }
 
@@ -70,5 +71,15 @@ final class ConnectionConfiguration
     public function getEncryptionLevel(): string
     {
         return $this->encryptionLevel;
+    }
+
+    public function isBoltUtcPatchNegotiated(): bool
+    {
+        return $this->boltUtcPatchNegotiated;
+    }
+
+    public function setBoltUtcPatchNegotiated(bool $boltUtcPatchNegotiated): void
+    {
+        $this->boltUtcPatchNegotiated = $boltUtcPatchNegotiated;
     }
 }
