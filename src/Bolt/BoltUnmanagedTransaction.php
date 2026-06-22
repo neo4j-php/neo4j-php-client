@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt;
 
+use Bolt\enum\ServerState;
 use Laudis\Neo4j\Contracts\ConnectionPoolInterface;
 use Laudis\Neo4j\Contracts\UnmanagedTransactionInterface;
 use Laudis\Neo4j\Databags\BookmarkHolder;
@@ -87,8 +88,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         $this->ensureBeginSent();
 
-        $this->connection->consumeResults();
-
         // Force the results to pull all the results.
         // After a commit, the connection will be in the ready state, making it impossible to use PULL
         $tbr = $this->runStatements($statements)->each(static function (CypherList $list) {
@@ -112,11 +111,6 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
     public function rollback(): void
     {
         if ($this->isFinished()) {
-            if ($this->state === TransactionState::TERMINATED) {
-                // Run/pull already failed; connection may have been RESET — nothing to send.
-                return;
-            }
-
             if ($this->state === TransactionState::COMMITTED) {
                 throw new TransactionException("Can't rollback a committed transaction.");
             }
@@ -174,10 +168,8 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         );
         $start = microtime(true);
 
-        // Only drain an outstanding autocommit result (STREAMING). In an explicit transaction (TX_STREAMING)
-        // several RUN streams may be open; consumeResults() would preload other streams and reorder PULLs
-        // vs RUN (TestKit tx_pull_1_nested*, Neo4j parallel/nested tx tests).
-        if ($this->connection->getServerState() === 'STREAMING') {
+        $serverState = $this->connection->protocol()->serverState;
+        if ($serverState === ServerState::STREAMING) {
             $this->connection->consumeResults();
         }
 
@@ -257,15 +249,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
     private function ensureBeginSent(): void
     {
-        if ($this->isInstantTransaction) {
-            return;
-        }
-        // FAILURE on PULL triggers RESET in BoltConnection — server is READY with no tx, but we may still
-        // have beginSent=true (e.g. execute_read retry). Must send BEGIN again before RUN.
-        if ($this->beginSent && $this->state === TransactionState::ACTIVE && $this->connection->getServerState() === 'READY') {
-            $this->beginSent = false;
-        }
-        if ($this->beginSent) {
+        if ($this->isInstantTransaction || $this->beginSent) {
             return;
         }
         try {
