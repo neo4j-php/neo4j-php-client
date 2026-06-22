@@ -35,7 +35,7 @@ final class BasicAuth implements AuthenticateInterface
     /**
      * @throws Exception
      *
-     * @return array{server: string, connection_id: string, hints: list, patch_bolt?: list<string>}
+     * @return array{server: string, connection_id: string, hints: list}
      */
     public function authenticateBolt(BoltConnection $connection, string $userAgent): array
     {
@@ -43,7 +43,7 @@ final class BasicAuth implements AuthenticateInterface
 
         $protocol = $connection->protocol();
         if (method_exists($protocol, 'logon')) {
-            $helloMetadata = BoltHelloMetadata::withUtcPatchIfSupported($connection, ['user_agent' => $userAgent]);
+            $helloMetadata = ['user_agent' => $userAgent];
 
             $responseHello = $factory->createHelloMessage($helloMetadata)->send()->getResponse();
 
