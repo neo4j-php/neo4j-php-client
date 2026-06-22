@@ -27,6 +27,7 @@ use function in_array;
 use function is_array;
 
 use Iterator;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Throwable;
 
@@ -60,6 +61,8 @@ final class BoltResult implements Iterator
      * cached generator before the first pull, but must not reset after next()+list() or rows replay.
      */
     private bool $networkPullOccurred = false;
+
+    private ?Neo4jException $pendingException = null;
 
     public function prepareForResultListFetchAll(): void
     {
@@ -110,6 +113,10 @@ final class BoltResult implements Iterator
     {
         $i = 0;
         while ($this->meta === null) {
+            if ($this->pendingException !== null) {
+                throw $this->pendingException;
+            }
+
             $this->fetchResults();
             foreach ($this->rows as $row) {
                 yield $i => $row;
@@ -147,13 +154,18 @@ final class BoltResult implements Iterator
 
         try {
             $meta = $this->connection->pull($this->qid, $this->effectivePullSize());
+        } catch (PullPartialFailureException $e) {
+            $this->rows = $e->getRows();
+            $this->pendingException = $e->getFailure();
+
+            return;
         } catch (BoltConnectException|BoltException $e) {
             // Invalidate connection on socket/network errors so pool does not reuse it.
             // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
             $this->connection->invalidate();
             throw $e;
         }
-        // Neo4jException and other Throwable propagate naturally - no invalidate needed for server errors
+        // Neo4jException (without buffered rows) and other Throwable propagate naturally - no invalidate needed for server errors
         // $meta is non-empty: {@see BoltConnection::pull()} is contractually non-empty-list<list>.
 
         /** @var list<list> $rows */

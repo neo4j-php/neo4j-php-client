@@ -43,11 +43,6 @@ echo ""
 
 ### Failing/error tests
 #python3 -m unittest -vvv \
-#      tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
-#      tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
-#      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
-#      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
-#      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time \
 #
 #    tests.neo4j.test_tx_run.TestTxRun.test_should_not_run_valid_query_in_invalid_tx \
 #    tests.neo4j.test_tx_run.TestTxRun.test_should_not_commit_a_failure \
@@ -179,21 +174,28 @@ python3 -m unittest -vvv \
      tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_0_records \
      tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_1_records \
      tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_2_records \
-     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_full_batch \
-     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_half_batch \
-     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_empty_batch \
-     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all \
+     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_error \
      tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch \
      tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all \
-     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
-     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_read \
-     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_write \
-     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_begin_transaction \
-     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_session_run \
-     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_query \
-     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_read_retry \
-     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_write_retry \
-     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_query_retry \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all_slow_connection \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
+    tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested_using_list \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_full_batch \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_half_batch \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_empty_batch \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_error \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all_slow_connection \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested \
+    tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested_using_list \
+    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_read \
+    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_write \
+    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_begin_transaction \
+    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_session_run \
+    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_query \
+    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_read_retry \
+    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_write_retry \
+    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_query_retry \
     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query_retry \
     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_read \
     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_write \
@@ -203,11 +205,11 @@ python3 -m unittest -vvv \
     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_read_retry \
     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_write_retry \
     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query_retry \
-     tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
-     tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
-     tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
-     tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
-     tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time
+    tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
+    tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
+    tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time
 
 EXIT_CODE="$?"
 
