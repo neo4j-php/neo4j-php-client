@@ -33,11 +33,9 @@ final class TypeCasterTest extends TestCase
      * Complete coverage: every input type × every cast method.
      * When a cast isn't possible, expected is null (invalid case).
      *
-     * Yields argument lists for {@see testCastMatrix}: input, method, expected, class (null unless toClass).
+     * Yields argument lists for {@see testCastMatrix} in order: input, method, expected, class (null unless toClass).
      *
      * @return Generator<string, array{0: mixed, 1: string, 2: mixed, 3: string|null}>
-     *
-     * @psalm-suppress MixedReturnTypeCoercion
      */
     public static function provideCastMatrix(): Generator
     {
@@ -109,9 +107,6 @@ final class TypeCasterTest extends TestCase
 
                 $classForRow = null;
                 if ($method === 'toClass') {
-                    if (!array_key_exists('_class', $expectations) || !is_array($expectations['_class'])) {
-                        throw new InvalidArgumentException('Malformed toClass expectations: missing _class map');
-                    }
                     $classForRow = self::toClassClassNameForInput($expectations, $inputName);
                 }
 

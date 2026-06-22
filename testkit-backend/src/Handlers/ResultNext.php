@@ -73,25 +73,22 @@ final class ResultNext implements RequestHandlerInterface
 
             return new RecordResponse($values);
         } catch (Neo4jException $e) {
-            $response = new DriverErrorResponse($request->getResultId(), $e);
-            $this->repository->addRecords($request->getResultId(), $response);
+            $this->repository->removeRecords($request->getResultId());
 
-            return $response;
+            return new DriverErrorResponse($request->getResultId(), $e);
         } catch (BoltException $e) {
+            $this->repository->removeRecords($request->getResultId());
             $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
             $wrapped = new Neo4jException([$neo4jError], $e);
-            $response = new DriverErrorResponse($request->getResultId(), $wrapped);
-            $this->repository->addRecords($request->getResultId(), $response);
 
-            return $response;
+            return new DriverErrorResponse($request->getResultId(), $wrapped);
         } catch (Throwable $e) {
+            $this->repository->removeRecords($request->getResultId());
             if ($this->isConnectionOrSocketError($e)) {
                 $neo4jError = Neo4jError::fromMessageAndCode('Neo.ClientError.General.ConnectionError', $e->getMessage());
                 $wrapped = new Neo4jException([$neo4jError], $e);
-                $response = new DriverErrorResponse($request->getResultId(), $wrapped);
-                $this->repository->addRecords($request->getResultId(), $response);
 
-                return $response;
+                return new DriverErrorResponse($request->getResultId(), $wrapped);
             }
             throw $e;
         }
@@ -111,7 +108,6 @@ final class ResultNext implements RequestHandlerInterface
             || str_contains($message, 'network read incomplete')
             || str_contains($message, 'network write incomplete')
             || str_contains($message, 'socket')
-            || str_contains($message, 'broken')
-            || str_contains($message, 'already been closed');
+            || str_contains($message, 'broken');
     }
 }

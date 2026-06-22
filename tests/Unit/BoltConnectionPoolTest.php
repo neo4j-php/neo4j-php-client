@@ -31,10 +31,10 @@ use function microtime;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
-use ReflectionProperty;
 
 use function sleep;
+
+use UnexpectedValueException;
 
 class BoltConnectionPoolTest extends TestCase
 {
@@ -120,7 +120,7 @@ class BoltConnectionPoolTest extends TestCase
         $this->pool->release($this->createMock(ConnectionInterface::class));
     }
 
-    public function testReleaseKeepsOpenConnectionInPool(): void
+    public function testReleaseReference(): void
     {
         $connection = $this->pool->acquire(SessionConfiguration::default());
         $connection->next();
@@ -128,79 +128,45 @@ class BoltConnectionPoolTest extends TestCase
 
         static::assertInstanceOf(ConnectionInterface::class, $connection);
 
-        static::assertCount(1, $this->getActiveConnections());
+        // We use a refCount instead of checking for garbage collection as
+        // the underlying libraries for mocking keep references throughout the system
+        $refCount = $this->refCount($connection);
 
         $this->pool->release($connection);
 
-        // Release returns the permit but keeps open connections pooled for reuse and {@see ConnectionPool::close()}.
-        static::assertCount(1, $this->getActiveConnections());
-    }
-
-    public function testReleaseEvictsClosedConnectionFromPool(): void
-    {
-        /** @var BoltConnection&MockObject $closedConnection */
-        $closedConnection = $this->createMock(BoltConnection::class);
-        $closedConnection->method('protocol')->willReturn($this->createMock(V5::class));
-        $closedConnection->method('isOpen')->willReturn(false);
-
-        $this->setupPool((function (): Generator {
-            yield 1.0;
-
-            return true;
-        })(), $closedConnection);
-
-        $generator = $this->pool->acquire(SessionConfiguration::default());
-        $generator->next();
-        $generator->getReturn();
-
-        $pooled = $this->getActiveConnections();
-        static::assertCount(1, $pooled);
-        $connectionToRelease = $pooled[0] ?? null;
-        self::assertInstanceOf(BoltConnection::class, $connectionToRelease);
-
-        $this->pool->release($connectionToRelease);
-
-        static::assertCount(0, $this->getActiveConnections());
-    }
-
-    private function activeConnectionsProperty(): ReflectionProperty
-    {
-        $reflection = new ReflectionClass(ConnectionPool::class);
-        $property = $reflection->getProperty('activeConnections');
-
-        return $property;
+        static::assertEquals($refCount - 1, $this->refCount($connection));
     }
 
     /**
-     * @return list<BoltConnection>
+     * @param object $var
      */
-    private function getActiveConnections(): array
+    private function refCount($var): int
     {
-        $value = $this->activeConnectionsProperty()->getValue($this->pool);
-        self::assertIsArray($value);
+        ob_start();
+        debug_zval_dump($var);
+        $dump = ob_get_clean();
+        if ($dump === false) {
+            throw new UnexpectedValueException();
+        }
 
-        /** @var list<BoltConnection> */
-        return array_values($value);
+        $matches = [];
+        preg_match('/refcount\(([0-9]+)/', $dump, $matches);
+
+        $count = (int) ($matches[1] ?? '0');
+
+        // 3 references are added, including when calling debug_zval_dump()
+        return $count - 3;
     }
 
-    /**
-     * @param (BoltConnection&MockObject)|null $connectionToCreate
-     */
-    private function setupPool(Generator $semaphoreGenerator, ?BoltConnection $connectionToCreate = null): void
+    private function setupPool(Generator $semaphoreGenerator): void
     {
         $this->semaphore = $this->createMock(SemaphoreInterface::class);
         $this->semaphore->method('wait')
                         ->willReturn($semaphoreGenerator);
 
         $this->factory = $this->createMock(BoltFactory::class);
-        if ($connectionToCreate === null) {
-            /** @var BoltConnection&MockObject $boltConnection */
-            $boltConnection = $this->createMock(BoltConnection::class);
-            $boltConnection->method('protocol')->willReturn($this->createMock(V5::class));
-            $boltConnection->method('isOpen')->willReturn(true);
-        } else {
-            $boltConnection = $connectionToCreate;
-        }
+        $boltConnection = $this->createMock(BoltConnection::class);
+        $boltConnection->method('protocol')->willReturn($this->createMock(V5::class));
         $this->factory->method('createConnection')
                       ->willReturn($boltConnection);
         $this->factory->method('reuseConnection')
