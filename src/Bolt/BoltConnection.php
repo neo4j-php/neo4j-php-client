@@ -25,6 +25,7 @@ use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
 use Exception;
+use Laudis\Neo4j\Bolt\Messages\BoltTelemetryMessage;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
@@ -72,6 +73,13 @@ class BoltConnection implements ConnectionInterface
     private ?float $originalTimeout = null;
 
     private bool $clientTelemetryEnabled = true;
+
+    private bool $serverTelemetryEnabled = false;
+
+    /** @var array<int, true> */
+    private array $sentTelemetryApis = [];
+
+    private int $messagesInPipeline = 0;
 
     /**
      * When one PULL yields RECORD(s) then FAILURE, {@see assertNoFailure()} runs RESET on the FAILURE before we

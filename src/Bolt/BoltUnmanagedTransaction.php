@@ -295,11 +295,15 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             throw $e;
         } else {
             $this->state = TransactionState::TERMINATED;
-            if ($this->pool !== null) {
-                $this->pool->release($this->connection);
-            }
-            throw $e;
+            $this->pool?->release($this->connection);
         }
+
+        throw $e;
+    }
+
+    public function isClientError(Throwable $e): bool
+    {
+        return $e instanceof Neo4jException && $e->getClassification() === 'ClientError';
     }
 
     private function isSyntaxError(Throwable $e): bool
