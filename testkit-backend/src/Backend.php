@@ -24,6 +24,8 @@ use const JSON_THROW_ON_ERROR;
 
 use JsonException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\TestkitCallbackResponseInterface;
+use Laudis\Neo4j\TestkitBackend\Contracts\TestkitCallbackResultInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
 
@@ -40,17 +42,20 @@ final class Backend
     private LoggerInterface $logger;
     private ContainerInterface $container;
     private RequestFactory $factory;
+    private TestkitCallbackDispatcher $callbackDispatcher;
 
     public function __construct(
         Socket $socket,
         LoggerInterface $logger,
         ContainerInterface $container,
         RequestFactory $factory,
+        TestkitCallbackDispatcher $callbackDispatcher,
     ) {
         $this->socket = $socket;
         $this->logger = $logger;
         $this->container = $container;
         $this->factory = $factory;
+        $this->callbackDispatcher = $callbackDispatcher;
     }
 
     /**
@@ -66,7 +71,13 @@ final class Backend
         $logger = $container->get(LoggerInterface::class);
         $logger->info('Booting testkit backend ...');
         Socket::setupEnvironment();
-        $tbr = new self(Socket::fromEnvironment(), $logger, $container, new RequestFactory());
+        $tbr = new self(
+            $container->get(Socket::class),
+            $logger,
+            $container,
+            $container->get(RequestFactory::class),
+            $container->get(TestkitCallbackDispatcher::class),
+        );
         $logger->info('Testkit booted');
 
         return $tbr;
@@ -87,12 +98,27 @@ final class Backend
 
             [$handler, $request] = $this->extractRequest($message);
             try {
-                $this->properSendoff($handler->handle($request));
+                $this->sendHandlerResponse($handler->handle($request));
             } catch (Throwable $e) {
                 $this->logger->error($e->__toString());
 
                 $this->properSendoff(new BackendErrorResponse($e->getMessage()));
             }
+        }
+    }
+
+    /**
+     * Sends a callback response to the frontend and blocks until the matching completion request arrives.
+     */
+    public function dispatchCallback(TestkitCallbackResponseInterface $callbackResponse): TestkitCallbackResultInterface
+    {
+        return $this->callbackDispatcher->dispatch($callbackResponse);
+    }
+
+    private function sendHandlerResponse(?TestkitResponseInterface $response): void
+    {
+        if ($response !== null) {
+            $this->properSendoff($response);
         }
     }
 

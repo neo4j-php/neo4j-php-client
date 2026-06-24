@@ -16,6 +16,9 @@ namespace Laudis\Neo4j\TestkitBackend;
 use function is_string;
 
 use Laudis\Neo4j\TestkitBackend\Requests\AuthorizationTokenRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\BookmarkManagerCloseRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\BookmarksConsumerCompletedRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\BookmarksSupplierCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\CheckMultiDBSupportRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DomainNameResolutionCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
@@ -24,6 +27,7 @@ use Laudis\Neo4j\TestkitBackend\Requests\ForcedRoutingTableUpdateRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetRoutingTableRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetServerInfoRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\NewBookmarkManagerRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\NewDriverRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\NewSessionRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ResolverResolutionCompletedRequest;
@@ -55,6 +59,8 @@ final class RequestFactory
         'StartTest' => StartTestRequest::class,
         'GetFeatures' => GetFeaturesRequest::class,
         'NewDriver' => NewDriverRequest::class,
+        'NewBookmarkManager' => NewBookmarkManagerRequest::class,
+        'BookmarkManagerClose' => BookmarkManagerCloseRequest::class,
         'AuthorizationToken' => AuthorizationTokenRequest::class,
         'VerifyConnectivity' => VerifyConnectivityRequest::class,
         'CheckMultiDBSupport' => CheckMultiDBSupportRequest::class,
@@ -84,6 +90,8 @@ final class RequestFactory
         'GetRoutingTable' => GetRoutingTableRequest::class,
         'GetServerInfo' => GetServerInfoRequest::class,
         'ExecuteQuery' => ExecuteQueryRequest::class,
+        'BookmarksSupplierCompleted' => BookmarksSupplierCompletedRequest::class,
+        'BookmarksConsumerCompleted' => BookmarksConsumerCompletedRequest::class,
     ];
 
     /**
@@ -99,6 +107,45 @@ final class RequestFactory
                 $data['realm'] ?? '',
                 $data['principal'],
                 $data['credentials']
+            );
+        }
+
+        if ($name === 'BookmarksSupplierCompleted') {
+            return new BookmarksSupplierCompletedRequest(
+                (string) $data['requestId'],
+                $data['bookmarks'] ?? [],
+            );
+        }
+
+        if ($name === 'BookmarksConsumerCompleted') {
+            return new BookmarksConsumerCompletedRequest(
+                (string) $data['requestId'],
+            );
+        }
+
+        if ($name === 'NewBookmarkManager') {
+            return new NewBookmarkManagerRequest(
+                $data['initialBookmarks'] ?? null,
+                (bool) ($data['bookmarksSupplierRegistered'] ?? false),
+                (bool) ($data['bookmarksConsumerRegistered'] ?? false),
+            );
+        }
+
+        if ($name === 'BookmarkManagerClose') {
+            return new BookmarkManagerCloseRequest(
+                (string) $data['id'],
+            );
+        }
+
+        if ($name === 'NewSession') {
+            return new NewSessionRequest(
+                Uuid::fromString((string) $data['driverId']),
+                (string) $data['accessMode'],
+                $data['bookmarks'] ?? null,
+                $data['database'] ?? null,
+                $data['fetchSize'] ?? null,
+                $data['impersonatedUser'] ?? null,
+                array_key_exists('bookmarkManagerId', $data) ? (string) $data['bookmarkManagerId'] : null,
             );
         }
 

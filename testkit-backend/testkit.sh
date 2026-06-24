@@ -44,6 +44,7 @@ echo ""
 ### Failing/error tests
 #python3 -m unittest -vvv \
 #       tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_error
+#       tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_keep_track_of_session_run \
 #      tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
 #      tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
 #      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
@@ -220,8 +221,8 @@ python3 -m unittest -vvv \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x2.test_custom_user_agent \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_default_user_agent \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_custom_user_agent \
-     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_bolt_agent
-
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_bolt_agent \
+     tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_keep_track_of_session_run
 
 EXIT_CODE="$?"
 

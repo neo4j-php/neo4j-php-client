@@ -56,7 +56,8 @@ final class BoltCommitMessage extends BoltMessage
         $bookmark = $content['bookmark'] ?? '';
 
         if (trim($bookmark) !== '') {
-            $this->bookmarks->setBookmark(new Bookmark([$bookmark]));
+            // Propagate the committed bookmark to the shared BookmarkManager, not only the session holder.
+            $this->bookmarks->setBookmarkFromServer(new Bookmark([$bookmark]));
         }
 
         $this->connection->protocol()->serverState = ServerState::READY;
