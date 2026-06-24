@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Contracts\BookmarkManagerInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 
 use function parse_str;
@@ -33,6 +34,7 @@ final class SessionConfiguration
 
     /**
      * @param list<Bookmark>|null $bookmarks
+     * @param list<string>|null   $routingBookmarks
      */
     public function __construct(
         private readonly ?string $database = null,
@@ -40,6 +42,8 @@ final class SessionConfiguration
         private readonly ?AccessMode $accessMode = null,
         private readonly ?array $bookmarks = null,
         private readonly ?Neo4jLogger $logger = null,
+        private readonly ?BookmarkManagerInterface $bookmarkManager = null,
+        private readonly ?array $routingBookmarks = null,
     ) {
     }
 
@@ -66,7 +70,7 @@ final class SessionConfiguration
      */
     public function withDatabase(?string $database): self
     {
-        return new self($database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger);
+        return new self($database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -74,7 +78,7 @@ final class SessionConfiguration
      */
     public function withFetchSize(?int $size): self
     {
-        return new self($this->database, $size, $this->accessMode, $this->bookmarks, $this->logger);
+        return new self($this->database, $size, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -82,7 +86,7 @@ final class SessionConfiguration
      */
     public function withAccessMode(?AccessMode $defaultAccessMode): self
     {
-        return new self($this->database, $this->fetchSize, $defaultAccessMode, $this->bookmarks, $this->logger);
+        return new self($this->database, $this->fetchSize, $defaultAccessMode, $this->bookmarks, $this->logger, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -92,7 +96,7 @@ final class SessionConfiguration
      */
     public function withBookmarks(?array $bookmarks): self
     {
-        return new self($this->database, $this->fetchSize, $this->accessMode, $bookmarks, $this->logger);
+        return new self($this->database, $this->fetchSize, $this->accessMode, $bookmarks, $this->logger, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -100,7 +104,23 @@ final class SessionConfiguration
      */
     public function withLogger(?Neo4jLogger $logger): self
     {
-        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $logger);
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $logger, $this->bookmarkManager, $this->routingBookmarks);
+    }
+
+    /**
+     * Creates a new session with the provided bookmark manager.
+     */
+    public function withBookmarkManager(?BookmarkManagerInterface $bookmarkManager): self
+    {
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $bookmarkManager, $this->routingBookmarks);
+    }
+
+    /**
+     * @param list<string>|null $routingBookmarks
+     */
+    public function withRoutingBookmarks(?array $routingBookmarks): self
+    {
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarkManager, $routingBookmarks);
     }
 
     /**
@@ -144,6 +164,19 @@ final class SessionConfiguration
         return $this->logger;
     }
 
+    public function getBookmarkManager(): ?BookmarkManagerInterface
+    {
+        return $this->bookmarkManager;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getRoutingBookmarks(): array
+    {
+        return $this->routingBookmarks ?? [];
+    }
+
     /**
      * Creates a new configuration by merging the provided configuration with the current one.
      * The set values of the provided configuration will override the values of this configuration.
@@ -154,7 +187,10 @@ final class SessionConfiguration
             $config->database ?? $this->database,
             $config->fetchSize ?? $this->fetchSize,
             $config->accessMode ?? $this->accessMode,
-            $config->bookmarks ?? $this->bookmarks
+            $config->bookmarks ?? $this->bookmarks,
+            $config->logger ?? $this->logger,
+            $config->bookmarkManager ?? $this->bookmarkManager,
+            $config->routingBookmarks ?? $this->routingBookmarks,
         );
     }
 

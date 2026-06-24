@@ -14,12 +14,9 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Contracts;
 
 /**
- * @template T
+ * Response that instructs the TestKit frontend to run a callback and reply with a completion request.
  */
-interface RequestHandlerInterface
+interface TestkitCallbackResponseInterface extends TestkitResponseInterface
 {
-    /**
-     * @param T $request
-     */
-    public function handle($request): ?TestkitResponseInterface;
+    public function getCallbackId(): string;
 }

@@ -33,6 +33,7 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
+use Laudis\Neo4j\NoOpBookmarkManager;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Log\LogLevel;
 use Throwable;
@@ -46,23 +47,30 @@ final class Session implements SessionInterface
 
     /** @var list<BoltConnection> */
     private array $usedConnections = [];
-    /** @psalm-readonly */
     private readonly BookmarkHolder $bookmarkHolder;
+    private readonly SessionBookmarkTracker $bookmarkTracker;
+    private readonly SessionConfiguration $sessionConfig;
 
     /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
-     *
-     * @psalm-mutation-free
      */
     public function __construct(
-        private readonly SessionConfiguration $config,
+        SessionConfiguration $config,
         private readonly ConnectionPoolInterface $pool,
         /**
          * @psalm-readonly
          */
         private readonly SummarizedResultFormatter $formatter,
     ) {
+        $bookmarkManager = $config->getBookmarkManager() ?? NoOpBookmarkManager::instance();
         $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
+        $this->bookmarkTracker = new SessionBookmarkTracker(
+            $this->bookmarkHolder,
+            $bookmarkManager,
+            $config->getBookmarks(),
+        );
+        $this->bookmarkHolder->onServerBookmark($this->bookmarkTracker->handleNewBookmark(...));
+        $this->sessionConfig = $config->withRoutingBookmarks($this->bookmarkTracker->getRediscoveryBookmarkValues());
     }
 
     /**
@@ -117,7 +125,7 @@ final class Session implements SessionInterface
                 return $result;
             },
             $this->mergeTsxConfig(null),
-            $this->config,
+            $this->sessionConfig,
             TelemetryAPIEnum::EXECUTE_QUERY,
         );
     }
@@ -130,7 +138,7 @@ final class Session implements SessionInterface
         return $this->retry(
             $tsxHandler,
             $config,
-            $this->config->withAccessMode(AccessMode::WRITE()),
+            $this->sessionConfig->withAccessMode(AccessMode::WRITE()),
             TelemetryAPIEnum::TRANSACTION_FUNCTION
         );
     }
@@ -143,7 +151,7 @@ final class Session implements SessionInterface
         return $this->retry(
             $tsxHandler,
             $config,
-            $this->config->withAccessMode(AccessMode::READ()),
+            $this->sessionConfig->withAccessMode(AccessMode::READ()),
             TelemetryAPIEnum::TRANSACTION_FUNCTION
         );
     }
@@ -186,7 +194,7 @@ final class Session implements SessionInterface
                 $transaction = null;
                 if ($e->getTitle() === 'NotALeader' || $e->getNeo4jCode() === 'Neo.ClientError.Cluster.NotALeader') {
                     if ($this->pool instanceof Neo4jConnectionPool) {
-                        $this->pool->clearRoutingTable($this->config);
+                        $this->pool->clearRoutingTable($this->sessionConfig);
                     }
                     $error = $e;
 
@@ -284,7 +292,7 @@ final class Session implements SessionInterface
 
         while ($retries < $maxRetries) {
             try {
-                return $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+                return $this->beginInstantTransaction($this->sessionConfig, $config)->runStatement($statement);
             } catch (Neo4jException $e) {
                 if (!$this->shouldClearRoutingTable($e)) {
                     throw $e;
@@ -332,7 +340,7 @@ final class Session implements SessionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Beginning transaction', ['statements' => $statements, 'config' => $config]);
         $config = $this->mergeTsxConfig($config);
-        $tsx = $this->startTransaction($config, $this->config, TelemetryAPIEnum::UNMANAGED_TRANSACTION);
+        $tsx = $this->startTransaction($config, $this->sessionConfig, TelemetryAPIEnum::UNMANAGED_TRANSACTION);
 
         $tsx->runStatements($statements ?? []);
 
@@ -343,14 +351,14 @@ final class Session implements SessionInterface
     {
         $config = $this->mergeTsxConfig($config);
 
-        return $this->startTransaction($config, $this->config->withAccessMode(AccessMode::READ()), TelemetryAPIEnum::TRANSACTION_FUNCTION);
+        return $this->startTransaction($config, $this->sessionConfig->withAccessMode(AccessMode::READ()), TelemetryAPIEnum::TRANSACTION_FUNCTION);
     }
 
     public function beginWriteTransaction(?TransactionConfiguration $config = null): UnmanagedTransactionInterface
     {
         $config = $this->mergeTsxConfig($config);
 
-        return $this->startTransaction($config, $this->config->withAccessMode(AccessMode::WRITE()), TelemetryAPIEnum::TRANSACTION_FUNCTION);
+        return $this->startTransaction($config, $this->sessionConfig->withAccessMode(AccessMode::WRITE()), TelemetryAPIEnum::TRANSACTION_FUNCTION);
     }
 
     /**
@@ -367,16 +375,18 @@ final class Session implements SessionInterface
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $this->sessionConfig->getDatabase(),
             $this->formatter,
             $connection,
-            $this->config,
+            $this->sessionConfig,
             $tsxConfig,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
             true,
             TelemetryAPIEnum::SESSION_RUN,
             $pool,
+            false,
+            $this->bookmarkTracker,
         );
     }
 
@@ -419,17 +429,18 @@ final class Session implements SessionInterface
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $this->sessionConfig->getDatabase(),
             $this->formatter,
             $connection,
-            $this->config,
+            $this->sessionConfig,
             $config,
             $this->bookmarkHolder,
             new BoltMessageFactory($connection, $this->getLogger()),
             false,
             $telemetryApi,
             $pool,
-            false, // BEGIN sent on first run/commit/rollback
+            false,
+            $this->bookmarkTracker,
         );
     }
 

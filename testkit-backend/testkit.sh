@@ -43,6 +43,7 @@ echo ""
 
 ### Failing/error tests
 #python3 -m unittest -vvv \
+#       tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_keep_track_of_session_run \
 #      tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
 #      tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
 #      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
@@ -71,7 +72,7 @@ echo ""
 #
 # Passing tests (commented out)
 # python3 -m unittest -vvv \
-
+#
 python3 -m unittest -vvv \
      tests.neo4j.test_authentication.TestAuthenticationBasic.test_error_on_incorrect_credentials \
      tests.neo4j.test_authentication.TestAuthenticationBasic.test_success_on_basic_token \
@@ -194,20 +195,26 @@ python3 -m unittest -vvv \
      tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_read_retry \
      tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_write_retry \
      tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_query_retry \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query_retry \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_read \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_write \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_begin_transaction \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_session_run \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_read_retry \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_write_retry \
-    tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query_retry \
+     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query_retry \
+     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_read \
+     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_write \
+     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_begin_transaction \
+     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_session_run \
+     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query \
+     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_read_retry \
+     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_write_retry \
+     tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetryRouting.test_execute_query_retry \
      tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
      tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
-     tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time
+     tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time \
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x2.test_default_user_agent \
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x2.test_custom_user_agent \
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_default_user_agent \
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_custom_user_agent \
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_bolt_agent \
+     tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_keep_track_of_session_run
 
 EXIT_CODE="$?"
 

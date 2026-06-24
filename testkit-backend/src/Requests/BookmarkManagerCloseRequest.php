@@ -11,15 +11,12 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Laudis\Neo4j\TestkitBackend\Contracts;
+namespace Laudis\Neo4j\TestkitBackend\Requests;
 
-/**
- * @template T
- */
-interface RequestHandlerInterface
+final class BookmarkManagerCloseRequest
 {
-    /**
-     * @param T $request
-     */
-    public function handle($request): ?TestkitResponseInterface;
+    public function __construct(
+        public string $id,
+    ) {
+    }
 }
