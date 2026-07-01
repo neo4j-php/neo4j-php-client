@@ -14,19 +14,16 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use function array_key_exists;
-use function array_splice;
 
 use Bolt\error\BoltException;
 use Bolt\error\ConnectException as BoltConnectException;
-
-use function count;
-
 use Generator;
 
 use function in_array;
 use function is_array;
 
 use Iterator;
+use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Throwable;
 
@@ -40,6 +37,7 @@ final class BoltResult implements Iterator
     /** @var list<list> */
     private array $rows = [];
     private ?array $meta = null;
+    private ?Neo4jException $deferredFailure = null;
     /** @var list<(callable(array):void)> */
     private array $finishedCallbacks = [];
 
@@ -143,10 +141,14 @@ final class BoltResult implements Iterator
 
     private function fetchResults(): void
     {
+        if ($this->deferredFailure !== null) {
+            throw $this->deferredFailure;
+        }
+
         $this->networkPullOccurred = true;
 
         try {
-            $meta = $this->connection->pull($this->qid, $this->effectivePullSize());
+            $pullResult = $this->connection->pull($this->qid, $this->effectivePullSize());
         } catch (BoltConnectException|BoltException $e) {
             // Invalidate connection on socket/network errors so pool does not reuse it.
             // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
@@ -154,13 +156,17 @@ final class BoltResult implements Iterator
             throw $e;
         }
         // Neo4jException and other Throwable propagate naturally - no invalidate needed for server errors
-        // $meta is non-empty: {@see BoltConnection::pull()} is contractually non-empty-list<list>.
 
-        /** @var list<list> $rows */
-        $rows = array_splice($meta, 0, count($meta) - 1);
-        $this->rows = $rows;
+        $this->rows = $pullResult->getRecordRows();
 
-        $summarySlot = $meta[0] ?? null;
+        $deferredFailure = $pullResult->getDeferredFailure();
+        if ($deferredFailure !== null) {
+            $this->deferredFailure = $deferredFailure;
+
+            return;
+        }
+
+        $summarySlot = $pullResult->getSummary();
         if (!is_array($summarySlot)) {
             // No summary received (connection closed before summary)
             $this->meta = null;
@@ -169,7 +175,7 @@ final class BoltResult implements Iterator
         }
 
         $summaryEmpty = $summarySlot === [];
-        $hasDataRows = $rows !== [];
+        $hasDataRows = $this->rows !== [];
 
         if ($summaryEmpty && !$hasDataRows) {
             // Normal completion with no records

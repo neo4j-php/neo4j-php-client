@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Laudis\Neo4j\Exception\Neo4jException;
+use LogicException;
 
 /**
  * Internal result of a Bolt PULL. May carry a deferred server failure when
@@ -27,8 +28,8 @@ final class PullResult
     private readonly array $recordRows;
 
     /**
-     * @param list<list<mixed>>              $recordRows
-     * @param array<string, mixed>|null     $summary
+     * @param list<list<mixed>>         $recordRows
+     * @param array<string, mixed>|null $summary
      */
     private function __construct(
         array $recordRows,
@@ -44,7 +45,7 @@ final class PullResult
     public static function complete(array $content): self
     {
         if ($content === []) {
-            throw new \LogicException('PULL response must not be empty');
+            throw new LogicException('PULL response must not be empty');
         }
 
         /** @var array<string, mixed> $summary */
