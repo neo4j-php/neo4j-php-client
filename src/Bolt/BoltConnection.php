@@ -341,7 +341,7 @@ class BoltConnection implements ConnectionInterface
     {
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
-        /** @var list<list<mixed>> $tbr */
+        /** @var list<array<array-key, mixed>> $tbr */
         $tbr = [];
         $message = $this->messageFactory->createPullMessage($extra);
 
@@ -373,6 +373,10 @@ class BoltConnection implements ConnectionInterface
             }
 
             $this->restoreOriginalTimeout();
+
+            if ($tbr === []) {
+                throw new Exception('PULL returned no responses');
+            }
 
             return PullResult::complete($tbr);
         } catch (Throwable $e) {

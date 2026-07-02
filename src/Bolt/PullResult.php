@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Bolt;
 
 use Laudis\Neo4j\Exception\Neo4jException;
-use LogicException;
 
 /**
  * Internal result of a Bolt PULL. May carry a deferred server failure when
@@ -24,38 +23,26 @@ use LogicException;
  */
 final class PullResult
 {
-    /** @var list<list<mixed>> */
-    private readonly array $recordRows;
-
     /**
-     * @param list<list<mixed>>         $recordRows
-     * @param array<string, mixed>|null $summary
+     * @param list<array<array-key, mixed>> $recordRows
+     * @param array<string, mixed>|null     $summary
      */
     private function __construct(
-        array $recordRows,
+        private readonly array $recordRows,
         private readonly ?array $summary,
         private readonly ?Neo4jException $deferredFailure,
     ) {
-        $this->recordRows = $recordRows;
     }
 
     /**
-     * @param list<array<array-key, mixed>> $content
+     * @param non-empty-list<array<array-key, mixed>> $content record rows followed by a summary map
      */
     public static function complete(array $content): self
     {
-        if ($content === []) {
-            throw new LogicException('PULL response must not be empty');
-        }
-
         /** @var array<string, mixed> $summary */
         $summary = array_pop($content);
 
-        return new self(
-            self::normalizeRows($content),
-            $summary,
-            null,
-        );
+        return new self($content, $summary, null);
     }
 
     /**
@@ -63,11 +50,11 @@ final class PullResult
      */
     public static function withDeferredFailure(array $bufferedRows, Neo4jException $failure): self
     {
-        return new self(self::normalizeRows($bufferedRows), null, $failure);
+        return new self($bufferedRows, null, $failure);
     }
 
     /**
-     * @return list<list<mixed>>
+     * @return list<array<array-key, mixed>>
      */
     public function getRecordRows(): array
     {
@@ -85,20 +72,5 @@ final class PullResult
     public function getDeferredFailure(): ?Neo4jException
     {
         return $this->deferredFailure;
-    }
-
-    /**
-     * @param list<array<array-key, mixed>> $rows
-     *
-     * @return list<list<mixed>>
-     */
-    private static function normalizeRows(array $rows): array
-    {
-        $normalized = [];
-        foreach ($rows as $row) {
-            $normalized[] = array_is_list($row) ? $row : array_values($row);
-        }
-
-        return $normalized;
     }
 }

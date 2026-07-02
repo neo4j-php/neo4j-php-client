@@ -30,11 +30,11 @@ use Throwable;
 /**
  * @psalm-import-type BoltCypherStats from SummarizedResultFormatter
  *
- * @implements Iterator<int, list<mixed>>
+ * @implements Iterator<int, array<array-key, mixed>>
  */
 final class BoltResult implements Iterator
 {
-    /** @var list<list> */
+    /** @var list<array<array-key, mixed>> */
     private array $rows = [];
     private ?array $meta = null;
     private ?Neo4jException $deferredFailure = null;
@@ -90,7 +90,7 @@ final class BoltResult implements Iterator
     }
 
     /**
-     * @return Generator<int, list>
+     * @return Generator<int, array<array-key, mixed>>
      */
     public function getIt(): Generator
     {
@@ -102,7 +102,7 @@ final class BoltResult implements Iterator
     }
 
     /**
-     * @return Generator<int, list<mixed>>
+     * @return Generator<int, array<array-key, mixed>>
      */
     public function iterator(): Generator
     {
@@ -194,7 +194,7 @@ final class BoltResult implements Iterator
     /**
      * @psalm-suppress InvalidNullableReturnType
      *
-     * @return list<mixed>
+     * @return array<array-key, mixed>
      */
     public function current(): array
     {
