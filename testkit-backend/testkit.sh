@@ -43,6 +43,7 @@ echo ""
 
 ### Failing/error tests
 #python3 -m unittest -vvv \
+#       tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_error
 #      tests.stub.datatypes.test_vector_types.TestVectorTypes.test_vector \
 #      tests.stub.datatypes.test_unsupported_type.TestUnsupportedTypes.test_unsupported_type \
 #      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
@@ -71,7 +72,7 @@ echo ""
 #
 # Passing tests (commented out)
 # python3 -m unittest -vvv \
-
+#
 python3 -m unittest -vvv \
      tests.neo4j.test_authentication.TestAuthenticationBasic.test_error_on_incorrect_credentials \
      tests.neo4j.test_authentication.TestAuthenticationBasic.test_success_on_basic_token \
@@ -179,13 +180,20 @@ python3 -m unittest -vvv \
      tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_0_records \
      tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_1_records \
      tests.stub.iteration.test_result_peek.TestResultPeek.test_result_peek_with_2_records \
+     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_error \
+     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch \
+     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all \
+     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all_slow_connection \
+     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
+     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested_using_list \
      tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_full_batch \
      tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_half_batch \
      tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_empty_batch \
+     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_error \
      tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all \
-     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_batch \
-     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_all \
-     tests.stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested \
+     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_all_slow_connection \
+     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested \
+     tests.stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested_using_list \
      tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_read \
      tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_execute_write \
      tests.stub.driver_parameters.telemetry.test_telemetry.TestTelemetry.test_begin_transaction \

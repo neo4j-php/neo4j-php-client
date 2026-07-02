@@ -336,13 +336,12 @@ class BoltConnection implements ConnectionInterface
      * Pulls a result set.
      *
      * Any of the preconditioned states are: 'TX_READY', 'INTERRUPTED'.
-     *
-     * @return non-empty-list<list>
      */
-    public function pull(?int $qid, ?int $fetchSize): array
+    public function pull(?int $qid, ?int $fetchSize): PullResult
     {
         $extra = $this->buildResultExtra($fetchSize, $qid);
 
+        /** @var list<array<array-key, mixed>> $tbr */
         $tbr = [];
         $message = $this->messageFactory->createPullMessage($extra);
 
@@ -357,25 +356,39 @@ class BoltConnection implements ConnectionInterface
             }
 
             foreach ($message->send()->getResponses() as $response) {
-                $this->assertNoFailure($response);
+                if ($response->signature === Signature::FAILURE) {
+                    $this->logger?->log(LogLevel::ERROR, 'FAILURE', $response->content);
+                    $this->subscribedResults = [];
+                    $failure = Neo4jException::fromBoltResponse($response);
+                    if ($tbr !== []) {
+                        $this->reset();
+
+                        return PullResult::withDeferredFailure($tbr, $failure);
+                    }
+
+                    throw $failure;
+                }
+
                 $tbr[] = $response->content;
             }
 
             $this->restoreOriginalTimeout();
 
-            /** @var non-empty-list<list> */
-            return $tbr;
+            if ($tbr === []) {
+                throw new Exception('PULL returned no responses');
+            }
+
+            return PullResult::complete($tbr);
         } catch (Throwable $e) {
             $this->restoreOriginalTimeout();
             // If we've received some records before the disconnect, return them so first next() succeeds.
             // Second next() must pull again and fail with a connection error (TestKit exit_after_record scripts).
             // Do not append []: BoltResult treats trailing empty SUCCESS as stream completion, so the iterator
             // would stop cleanly instead of surfacing the disconnect. A synthetic has_more:true means "not done".
-            if (!empty($tbr)) {
+            if ($tbr !== []) {
                 $tbr[] = ['has_more' => true];
 
-                /** @var non-empty-list<list> */
-                return $tbr;
+                return PullResult::complete($tbr);
             }
             throw $e;
         }
