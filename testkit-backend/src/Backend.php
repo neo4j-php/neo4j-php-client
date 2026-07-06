@@ -24,8 +24,6 @@ use const JSON_THROW_ON_ERROR;
 
 use JsonException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
-use Laudis\Neo4j\TestkitBackend\Contracts\TestkitCallbackResponseInterface;
-use Laudis\Neo4j\TestkitBackend\Contracts\TestkitCallbackResultInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Responses\BackendErrorResponse;
 
@@ -105,14 +103,6 @@ final class Backend
                 $this->properSendoff(new BackendErrorResponse($e->getMessage()));
             }
         }
-    }
-
-    /**
-     * Sends a callback response to the frontend and blocks until the matching completion request arrives.
-     */
-    public function dispatchCallback(TestkitCallbackResponseInterface $callbackResponse): TestkitCallbackResultInterface
-    {
-        return $this->callbackDispatcher->dispatch($callbackResponse);
     }
 
     private function sendHandlerResponse(?TestkitResponseInterface $response): void

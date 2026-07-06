@@ -439,7 +439,7 @@ final class Session implements SessionInterface
             false,
             $telemetryApi,
             $pool,
-            false,
+            false, // BEGIN sent on first run/commit/rollback
             $this->bookmarkTracker,
         );
     }
