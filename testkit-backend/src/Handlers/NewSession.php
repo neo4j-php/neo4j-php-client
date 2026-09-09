@@ -61,6 +61,12 @@ final class NewSession implements RequestHandlerInterface
             $config = $config->withFetchSize($request->fetchSize);
         }
 
+        if ($request->bookmarkManagerId !== null) {
+            $config = $config->withBookmarkManager(
+                $this->repository->getBookmarkManager($request->bookmarkManagerId),
+            );
+        }
+
         $session = $driver->createSession($config);
         $id = Uuid::v4();
         $this->repository->addSession($id, $session);

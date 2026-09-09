@@ -59,6 +59,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         private readonly TelemetryAPIEnum $telemetryApi,
         private readonly ?ConnectionPoolInterface $pool = null,
         bool $beginAlreadySent = false,
+        private readonly ?SessionBookmarkTracker $bookmarkTracker = null,
     ) {
         $this->beginSent = $beginAlreadySent;
     }
@@ -173,6 +174,10 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $this->connection->consumeResults();
         }
 
+        if ($this->isInstantTransaction) {
+            $this->bookmarkTracker?->prepareForSend(true);
+        }
+
         $this->ensureBeginSent();
 
         try {
@@ -183,7 +188,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
                 $this->tsxConfig->getTimeout(),
                 $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
                 null, // mode is never sent in RUN messages - it comes from session configuration
-                $this->tsxConfig->getMetaData(),
+                $this->isInstantTransaction ? $this->tsxConfig->getMetaData() : null,
                 $this->telemetryApi,
             );
         } catch (Throwable $e) {
@@ -253,6 +258,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             return;
         }
         try {
+            $this->bookmarkTracker?->prepareForSend(true);
             $this->connection->sendTelemetryIfNeeded($this->telemetryApi);
             $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
             $this->beginSent = true;

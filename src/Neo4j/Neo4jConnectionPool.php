@@ -336,16 +336,22 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @return array{db?: string}
+     * @return array{db?: string, bookmarks?: list<string>}
      */
     private function buildRouteExtra(SessionConfiguration $config): array
     {
+        $extra = [];
         $database = $config->getDatabase();
-        if ($database === null) {
-            return [];
+        if ($database !== null) {
+            $extra['db'] = $database;
         }
 
-        return ['db' => $database];
+        $bookmarks = $config->getRoutingBookmarks();
+        if ($bookmarks !== []) {
+            $extra['bookmarks'] = array_values(array_unique($bookmarks));
+        }
+
+        return $extra;
     }
 
     public function release(ConnectionInterface $connection): void
