@@ -120,7 +120,11 @@ class DriverSetupManager implements Countable
         }
 
         $urisTried = [];
-        foreach ($this->driverSetups[$alias] as $setup) {
+        // SplPriorityQueue iteration extracts nodes. Clone so a failed verifyConnectivity
+        // pass does not drain setups (next getDriver would otherwise report Uris: ('')).
+        /** @var SplPriorityQueue<int, DriverSetup> $setups */
+        $setups = clone $this->driverSetups[$alias];
+        foreach ($setups as $setup) {
             $uri = $setup->getUri();
             $auth = $setup->getAuth();
 
