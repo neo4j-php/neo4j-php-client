@@ -25,6 +25,8 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Exception\ConnectionPoolException;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LogLevel;
+use Throwable;
 
 use function shuffle;
 
@@ -43,6 +45,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         private readonly ConnectionRequestData $data,
         private readonly ?Neo4jLogger $logger,
         private readonly float $acquireConnectionTimeout,
+        private readonly ?float $connectionLivenessCheckTimeout = null,
     ) {
     }
 
@@ -65,7 +68,8 @@ final class ConnectionPool implements ConnectionPoolInterface
                 $conf->isTelemetryEnabled(),
             ),
             $conf->getLogger(),
-            $conf->getAcquireConnectionTimeout()
+            $conf->getAcquireConnectionTimeout(),
+            $conf->getConnectionLivenessCheckTimeout(),
         );
     }
 
@@ -105,6 +109,7 @@ final class ConnectionPool implements ConnectionPoolInterface
             }
 
             $connection = $this->factory->createConnection($this->data, $config);
+            $connection->touch();
 
             $this->activeConnections[] = $connection;
 
@@ -135,16 +140,79 @@ final class ConnectionPool implements ConnectionPoolInterface
         // Ensure random connection reuse before picking one.
         shuffle($this->activeConnections);
 
-        foreach ($this->activeConnections as $activeConnection) {
-            // Only reuse READY connections. STREAMING connections must stay open so nested
-            // session.run can use a second connection (TestKit nested iteration). Batch
-            // runStatements already releases locks on one connection via Session (#283).
-            if ($activeConnection->getServerState() === 'READY' && $this->factory->canReuseConnection($activeConnection, $config)) {
-                return $this->factory->reuseConnection($activeConnection, $config);
+        // Iterate a snapshot so destroyConnection() can safely mutate activeConnections.
+        // Only reuse READY connections. STREAMING connections must stay open so nested
+        // session.run can use a second connection (TestKit nested iteration). Batch
+        // runStatements already releases locks on one connection via Session (#283).
+        foreach ([...$this->activeConnections] as $activeConnection) {
+            if (!$activeConnection->isOpen() || $activeConnection->getServerState() !== 'READY') {
+                if (!$activeConnection->isOpen()) {
+                    $this->destroyConnection($activeConnection);
+                }
+
+                continue;
             }
+
+            if (!$this->factory->canReuseConnection($activeConnection, $config)) {
+                continue;
+            }
+
+            if ($this->needsLivenessCheck($activeConnection)) {
+                if (!$this->ensureConnectionIsAlive($activeConnection)) {
+                    continue;
+                }
+            }
+
+            $reused = $this->factory->reuseConnection($activeConnection, $config);
+            $reused->touch();
+
+            return $reused;
         }
 
         return null;
+    }
+
+    private function needsLivenessCheck(BoltConnection $connection): bool
+    {
+        if ($this->connectionLivenessCheckTimeout === null) {
+            return false;
+        }
+
+        return $connection->getIdleTimeSeconds() >= $this->connectionLivenessCheckTimeout;
+    }
+
+    /**
+     * Probes the connection with RESET. On failure the connection is discarded from the pool.
+     */
+    private function ensureConnectionIsAlive(BoltConnection $connection): bool
+    {
+        try {
+            $this->logger?->log(LogLevel::DEBUG, 'Running connection liveness check', [
+                'idle_seconds' => $connection->getIdleTimeSeconds(),
+                'threshold' => $this->connectionLivenessCheckTimeout,
+            ]);
+            $connection->reset();
+
+            return true;
+        } catch (Throwable $e) {
+            $this->logger?->log(LogLevel::WARNING, 'Connection failed liveness check, discarding', [
+                'error' => $e->getMessage(),
+            ]);
+            $this->destroyConnection($connection);
+
+            return false;
+        }
+    }
+
+    private function destroyConnection(BoltConnection $connection): void
+    {
+        try {
+            $connection->invalidate();
+        } catch (Throwable) {
+            // Already broken; still free the pool slot below.
+        }
+
+        $this->release($connection);
     }
 
     public function close(): void

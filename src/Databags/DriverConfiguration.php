@@ -20,6 +20,7 @@ use Composer\InstalledVersions;
 use function function_exists;
 use function is_callable;
 
+use InvalidArgumentException;
 use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\SemaphoreFactory;
@@ -68,6 +69,7 @@ final class DriverConfiguration
         ?SocketType $socketType = null,
         private ?float $socketTimeoutSeconds = null,
         private bool $telemetryEnabled = true,
+        private ?float $connectionLivenessCheckTimeout = null,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
@@ -332,6 +334,40 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->telemetryEnabled = $enabled;
+
+        return $tbr;
+    }
+
+    /**
+     * Seconds a pooled connection may stay idle before a liveness probe (RESET) is required.
+     *
+     * Null disables liveness checks (default, matches other Neo4j drivers).
+     * Zero means every reused connection is probed.
+     * Negative values are not allowed.
+     *
+     * For long-running PHP workers (Horizon, Octane, RoadRunner), set this below the
+     * idle timeout of Neo4j, load balancers or firewalls to avoid Broken pipe errors.
+     *
+     * @psalm-mutation-free
+     */
+    public function getConnectionLivenessCheckTimeout(): ?float
+    {
+        return $this->connectionLivenessCheckTimeout;
+    }
+
+    /**
+     * @throws InvalidArgumentException When $seconds is negative
+     *
+     * @psalm-immutable
+     */
+    public function withConnectionLivenessCheckTimeout(?float $seconds): self
+    {
+        if ($seconds !== null && $seconds < 0) {
+            throw new InvalidArgumentException('Connection liveness check timeout must be null or >= 0');
+        }
+
+        $tbr = clone $this;
+        $tbr->connectionLivenessCheckTimeout = $seconds;
 
         return $tbr;
     }
