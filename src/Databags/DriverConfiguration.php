@@ -18,9 +18,11 @@ use function call_user_func;
 use Composer\InstalledVersions;
 
 use function function_exists;
-use function is_callable;
 
 use InvalidArgumentException;
+
+use function is_callable;
+
 use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\SemaphoreFactory;

@@ -26,9 +26,10 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Exception\ConnectionPoolException;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
-use Throwable;
 
 use function shuffle;
+
+use Throwable;
 
 /**
  * @implements ConnectionPoolInterface<BoltConnection>
