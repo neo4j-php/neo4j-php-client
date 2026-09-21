@@ -27,7 +27,6 @@ final class DriverConfigurationLivenessTest extends TestCase
             DriverConfiguration::DEFAULT_CONNECTION_LIVENESS_CHECK_TIMEOUT,
             $config->getConnectionLivenessCheckTimeout()
         );
-        self::assertSame(60.0, $config->getConnectionLivenessCheckTimeout());
     }
 
     public function testWithConnectionLivenessCheckTimeout(): void

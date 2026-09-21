@@ -84,7 +84,7 @@ class BoltConnection implements ConnectionInterface
 
     private int $messagesInPipeline = 0;
 
-    private float $lastUsedTimestamp;
+    private float $lastUsedTimestamp = 0.0;
 
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
@@ -108,7 +108,6 @@ class BoltConnection implements ConnectionInterface
         private readonly float $defaultRecvTimeout = DriverConfiguration::DEFAULT_SOCKET_TIMEOUT,
     ) {
         $this->messageFactory = new BoltMessageFactory($this, $this->logger);
-        $this->lastUsedTimestamp = microtime(true);
     }
 
     public function getEncryptionLevel(): string
