@@ -416,6 +416,7 @@ A driver, session and transaction can be configured using configuration objects.
 | fetch size        | session     | The amount of rows to fetch at once.                                             | `SessionConfiguration`     |
 | access mode       | session     | The default mode when accessing the server.                                      | `SessionConfiguration`     |
 | bookmarks         | session     | The bookmarks used in the session. (experimental)                                | `SessionConfiguration`     |
+| bookmarks enabled | session     | Whether bookmarks are tracked and sent to the server. Defaults to `true`.        | `SessionConfiguration`     |
 | metadata          | transaction | The metadata used during the transaction. (experimental)                         | `TransactionConfiguration` |
 | timeout           | transaction | The maximum amount of time before timing out.                                    | `TransactionConfiguration` |
 
@@ -428,7 +429,12 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 
 $client = \Laudis\Neo4j\ClientBuilder::create()
     ->withDefaultDriverConfiguration(DriverConfiguration::default()->withUserAgent('MyApp/1.0.0'))
-    ->withDefaultSessionConfiguration(SessionConfiguration::default()->withDatabase('app-database'))
+    ->withDefaultSessionConfiguration(
+        SessionConfiguration::default()
+            ->withDatabase('app-database')
+            // Optional: disable bookmarks for the whole client (e.g. to avoid BookmarkTimeout)
+            // ->withBookmarksEnabled(false)
+    )
     ->withDefaultTransactionConfiguration(TransactionConfiguration::default()->withTimeout(5.0))
     ->build();
 
