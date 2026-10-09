@@ -220,7 +220,9 @@ python3 -m unittest -vvv \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x2.test_custom_user_agent \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_default_user_agent \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_custom_user_agent \
-     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_bolt_agent
+     tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_bolt_agent \
+     tests.stub.driver_parameters.test_liveness_check.TestLivenessCheck.test_no_timeout \
+     tests.stub.driver_parameters.test_liveness_check.TestLivenessCheck.test_timeout
 
 
 EXIT_CODE="$?"
