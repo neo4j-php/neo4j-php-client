@@ -62,6 +62,12 @@ final class NewDriver implements RequestHandlerInterface
             $config = $config->withTelemetryEnabled(false);
         }
 
+        // TestKit sends null to disable the check. The driver default (60s) would
+        // still probe during tests that assert no extra RESET.
+        $config = $config->withConnectionLivenessCheckTimeout(
+            $request->livenessCheckTimeoutMs === null ? null : $request->livenessCheckTimeoutMs / 1000
+        );
+
         $authenticate = Authenticate::basic($user, $pass);
         $driver = DriverFactory::create($request->uri, $config, $authenticate);
 
