@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use function is_string;
 
+use Laudis\Neo4j\Common\MonotonicClock;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\TestkitBackend\Requests\StartTestRequest;
@@ -42,6 +43,8 @@ final class StartTest implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
+        MonotonicClock::uninstall();
+
         $section = $this->acceptedTests;
         foreach (explode('.', $request->getTestName()) as $key) {
             if (array_key_exists($key, $section)) {

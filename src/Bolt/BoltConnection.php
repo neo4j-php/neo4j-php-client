@@ -27,6 +27,7 @@ use Bolt\protocol\V5_4;
 use Exception;
 use Laudis\Neo4j\Bolt\Messages\BoltTelemetryMessage;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Common\MonotonicClock;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -38,9 +39,6 @@ use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Types\CypherList;
-
-use function microtime;
-
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 use Throwable;
@@ -194,7 +192,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function touch(): void
     {
-        $this->lastUsedTimestamp = microtime(true);
+        $this->lastUsedTimestamp = MonotonicClock::now();
     }
 
     /**
@@ -202,7 +200,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function getIdleTimeSeconds(): float
     {
-        return microtime(true) - $this->lastUsedTimestamp;
+        return MonotonicClock::now() - $this->lastUsedTimestamp;
     }
 
     public function isStreaming(): bool
