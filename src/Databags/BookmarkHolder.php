@@ -17,7 +17,11 @@ final class BookmarkHolder
 {
     public function __construct(
         private Bookmark $bookmark,
+        private readonly bool $enabled = true,
     ) {
+        if (!$this->enabled) {
+            $this->bookmark = new Bookmark();
+        }
     }
 
     public function getBookmark(): Bookmark
@@ -27,6 +31,15 @@ final class BookmarkHolder
 
     public function setBookmark(Bookmark $bookmark): void
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         $this->bookmark = $bookmark;
+    }
+
+    public function areBookmarksEnabled(): bool
+    {
+        return $this->enabled;
     }
 }
