@@ -143,4 +143,87 @@ class ConnectionPoolTest extends TestCase
 
         $this->assertNull($result);
     }
+
+    public function testReuseConsumesStreamingConnectionBeforeReuse(): void
+    {
+        $connection = $this->createMock(BoltConnection::class);
+        $connection->method('getServerState')->willReturn('STREAMING');
+        $connection->expects($this->once())->method('consumeResults');
+        $this->factory->method('canReuseConnection')->willReturn(true);
+        $this->factory->method('reuseConnection')->willReturn($connection);
+
+        $pool = new ConnectionPool(
+            $this->semaphore,
+            $this->factory,
+            $this->requestData,
+            $this->logger,
+            1.0
+        );
+
+        $reflection = new ReflectionClass(ConnectionPool::class);
+        $property = $reflection->getProperty('activeConnections');
+        $property->setValue($pool, [$connection]);
+
+        $method = $reflection->getMethod('reuseConnectionIfPossible');
+        $result = $method->invoke($pool, $this->sessionConfig);
+
+        $this->assertSame($connection, $result);
+    }
+
+    public function testReusePrefersReadyOverStreaming(): void
+    {
+        $streaming = $this->createMock(BoltConnection::class);
+        $streaming->method('getServerState')->willReturn('STREAMING');
+        $streaming->expects($this->never())->method('consumeResults');
+
+        $ready = $this->createMock(BoltConnection::class);
+        $ready->method('getServerState')->willReturn('READY');
+
+        $this->factory->method('canReuseConnection')->willReturn(true);
+        $this->factory->method('reuseConnection')->willReturnCallback(
+            static fn (BoltConnection $connection): BoltConnection => $connection
+        );
+
+        $pool = new ConnectionPool(
+            $this->semaphore,
+            $this->factory,
+            $this->requestData,
+            $this->logger,
+            1.0
+        );
+
+        $reflection = new ReflectionClass(ConnectionPool::class);
+        $property = $reflection->getProperty('activeConnections');
+        $property->setValue($pool, [$streaming, $ready]);
+
+        $method = $reflection->getMethod('reuseConnectionIfPossible');
+        $result = $method->invoke($pool, $this->sessionConfig);
+
+        $this->assertSame($ready, $result);
+    }
+
+    public function testReuseDoesNotForceConsumeTxStreaming(): void
+    {
+        $connection = $this->createMock(BoltConnection::class);
+        $connection->method('getServerState')->willReturn('TX_STREAMING');
+        $connection->expects($this->never())->method('consumeResults');
+        $this->factory->method('canReuseConnection')->willReturn(true);
+
+        $pool = new ConnectionPool(
+            $this->semaphore,
+            $this->factory,
+            $this->requestData,
+            $this->logger,
+            1.0
+        );
+
+        $reflection = new ReflectionClass(ConnectionPool::class);
+        $property = $reflection->getProperty('activeConnections');
+        $property->setValue($pool, [$connection]);
+
+        $method = $reflection->getMethod('reuseConnectionIfPossible');
+        $result = $method->invoke($pool, $this->sessionConfig);
+
+        $this->assertNull($result);
+    }
 }
