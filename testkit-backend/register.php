@@ -11,6 +11,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
+use Laudis\Neo4j\Common\MonotonicClock;
 use Laudis\Neo4j\TestkitBackend\Handlers\GetFeatures;
 use Laudis\Neo4j\TestkitBackend\Handlers\StartTest;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
@@ -32,10 +33,14 @@ return [
         return new GetFeatures($featuresConfig);
     },
 
-    StartTest::class => static function () {
+    MonotonicClock::class => static function () {
+        return new MonotonicClock();
+    },
+
+    StartTest::class => static function (MonotonicClock $clock) {
         $acceptedTests = require __DIR__.'/blacklist.php';
 
-        return new StartTest($acceptedTests);
+        return new StartTest($acceptedTests, $clock);
     },
 
     MainRepository::class => static function () {

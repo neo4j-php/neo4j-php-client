@@ -20,15 +20,17 @@ use ReflectionClass;
 
 final class MonotonicClockTest extends TestCase
 {
-    protected function tearDown(): void
+    private MonotonicClock $clock;
+
+    protected function setUp(): void
     {
-        MonotonicClock::uninstall();
+        $this->clock = new MonotonicClock();
     }
 
     public function testNowFollowsRealTimeWhenNotInstalled(): void
     {
         $before = microtime(true);
-        $now = MonotonicClock::now();
+        $now = $this->clock->now();
         $after = microtime(true);
 
         self::assertGreaterThanOrEqual($before, $now);
@@ -37,19 +39,19 @@ final class MonotonicClockTest extends TestCase
 
     public function testTickAdvancesFrozenClock(): void
     {
-        MonotonicClock::install();
-        $start = MonotonicClock::now();
+        $this->clock->install();
+        $start = $this->clock->now();
 
-        MonotonicClock::tick(2500);
+        $this->clock->tick(2500);
 
-        self::assertEqualsWithDelta(2.5, MonotonicClock::now() - $start, 0.000_001);
+        self::assertEqualsWithDelta(2.5, $this->clock->now() - $start, 0.000_001);
     }
 
     public function testTickIsIgnoredUntilInstalled(): void
     {
         $before = microtime(true);
-        MonotonicClock::tick(60_000);
-        $now = MonotonicClock::now();
+        $this->clock->tick(60_000);
+        $now = $this->clock->now();
 
         self::assertLessThan(1.0, $now - $before);
     }
@@ -57,13 +59,26 @@ final class MonotonicClockTest extends TestCase
     public function testConnectionIdleTimeFollowsFakeClock(): void
     {
         $connection = (new ReflectionClass(BoltConnection::class))->newInstanceWithoutConstructor();
+        (new ReflectionClass(BoltConnection::class))->getProperty('clock')->setValue($connection, $this->clock);
 
-        MonotonicClock::install();
+        $this->clock->install();
         $connection->touch();
         self::assertEqualsWithDelta(0.0, $connection->getIdleTimeSeconds(), 0.000_001);
 
-        MonotonicClock::tick(5000);
+        $this->clock->tick(5000);
 
         self::assertEqualsWithDelta(5.0, $connection->getIdleTimeSeconds(), 0.000_001);
+    }
+
+    public function testSeparateInstancesDoNotShareFakeTime(): void
+    {
+        $other = new MonotonicClock();
+        $this->clock->install();
+        $this->clock->tick(5000);
+
+        $before = microtime(true);
+        $now = $other->now();
+
+        self::assertLessThan(1.0, $now - $before);
     }
 }

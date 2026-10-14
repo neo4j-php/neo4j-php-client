@@ -24,12 +24,16 @@ use Laudis\Neo4j\TestkitBackend\Responses\FakeTimeAckResponse;
  */
 final class FakeTimeInstall implements RequestHandlerInterface
 {
+    public function __construct(private readonly MonotonicClock $clock)
+    {
+    }
+
     /**
      * @param FakeTimeInstallRequest $request
      */
     public function handle($request): TestkitResponseInterface
     {
-        MonotonicClock::install();
+        $this->clock->install();
 
         return new FakeTimeAckResponse();
     }

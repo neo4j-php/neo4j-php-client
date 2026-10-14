@@ -33,7 +33,7 @@ final class StartTest implements RequestHandlerInterface
     /**
      * @param array<string, array|string|bool> $acceptedTests
      */
-    public function __construct(array $acceptedTests)
+    public function __construct(array $acceptedTests, private readonly MonotonicClock $clock)
     {
         $this->acceptedTests = $acceptedTests;
     }
@@ -43,7 +43,7 @@ final class StartTest implements RequestHandlerInterface
      */
     public function handle($request): TestkitResponseInterface
     {
-        MonotonicClock::uninstall();
+        $this->clock->uninstall();
 
         $section = $this->acceptedTests;
         foreach (explode('.', $request->getTestName()) as $key) {

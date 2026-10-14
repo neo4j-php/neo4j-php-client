@@ -16,47 +16,48 @@ namespace Laudis\Neo4j\Common;
 use function microtime;
 
 /**
- * Process-wide clock used for connection idle time.
+ * Clock used for connection idle time.
  *
- * TestKit can freeze it with FakeTimeInstall and advance it with FakeTimeTick.
- * Outside those requests it follows microtime().
+ * Share one instance across a driver when time must be controlled.
+ * TestKit freezes that instance with install() and advances it with tick().
+ * Until install() is called, now() follows microtime().
  */
 final class MonotonicClock
 {
-    private static bool $installed = false;
+    private bool $installed = false;
 
-    private static float $frozenAt = 0.0;
+    private float $frozenAt = 0.0;
 
-    private static float $offsetSeconds = 0.0;
+    private float $offsetSeconds = 0.0;
 
-    public static function now(): float
+    public function now(): float
     {
-        if (self::$installed) {
-            return self::$frozenAt + self::$offsetSeconds;
+        if ($this->installed) {
+            return $this->frozenAt + $this->offsetSeconds;
         }
 
         return microtime(true);
     }
 
-    public static function install(): void
+    public function install(): void
     {
-        self::$frozenAt = microtime(true);
-        self::$offsetSeconds = 0.0;
-        self::$installed = true;
+        $this->frozenAt = microtime(true);
+        $this->offsetSeconds = 0.0;
+        $this->installed = true;
     }
 
-    public static function tick(int $incrementMs): void
+    public function tick(int $incrementMs): void
     {
-        if (!self::$installed) {
+        if (!$this->installed) {
             return;
         }
 
-        self::$offsetSeconds += $incrementMs / 1000;
+        $this->offsetSeconds += $incrementMs / 1000;
     }
 
-    public static function uninstall(): void
+    public function uninstall(): void
     {
-        self::$installed = false;
-        self::$offsetSeconds = 0.0;
+        $this->installed = false;
+        $this->offsetSeconds = 0.0;
     }
 }
