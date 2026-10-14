@@ -33,8 +33,10 @@ final class StartTest implements RequestHandlerInterface
     /**
      * @param array<string, array|string|bool> $acceptedTests
      */
-    public function __construct(array $acceptedTests, private readonly MonotonicClock $clock)
-    {
+    public function __construct(
+        array $acceptedTests,
+        private readonly MonotonicClock $clock,
+    ) {
         $this->acceptedTests = $acceptedTests;
     }
 

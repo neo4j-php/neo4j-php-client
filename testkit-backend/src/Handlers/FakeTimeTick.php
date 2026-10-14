@@ -24,8 +24,9 @@ use Laudis\Neo4j\TestkitBackend\Responses\FakeTimeAckResponse;
  */
 final class FakeTimeTick implements RequestHandlerInterface
 {
-    public function __construct(private readonly MonotonicClock $clock)
-    {
+    public function __construct(
+        private readonly MonotonicClock $clock,
+    ) {
     }
 
     /**
