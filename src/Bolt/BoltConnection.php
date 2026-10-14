@@ -103,6 +103,7 @@ class BoltConnection implements ConnectionInterface
         /** @psalm-readonly */
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
+        private readonly MonotonicClock $clock,
         private readonly float $defaultRecvTimeout = DriverConfiguration::DEFAULT_SOCKET_TIMEOUT,
     ) {
         $this->messageFactory = new BoltMessageFactory($this, $this->logger);
@@ -192,7 +193,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function touch(): void
     {
-        $this->lastUsedTimestamp = MonotonicClock::now();
+        $this->lastUsedTimestamp = $this->clock->now();
     }
 
     /**
@@ -200,7 +201,7 @@ class BoltConnection implements ConnectionInterface
      */
     public function getIdleTimeSeconds(): float
     {
-        return MonotonicClock::now() - $this->lastUsedTimestamp;
+        return $this->clock->now() - $this->lastUsedTimestamp;
     }
 
     public function isStreaming(): bool

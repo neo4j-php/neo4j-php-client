@@ -24,6 +24,7 @@ use InvalidArgumentException;
 use function is_callable;
 
 use Laudis\Neo4j\Common\Cache;
+use Laudis\Neo4j\Common\MonotonicClock;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Contracts\SemaphoreFactoryInterface;
@@ -52,6 +53,7 @@ final class DriverConfiguration
     private $semaphoreFactory;
     private ?Neo4jLogger $logger;
     private ?SocketType $socketType;
+    private ?MonotonicClock $clock;
 
     /**
      * @param callable():(CacheInterface|null)|CacheInterface|null                       $cache
@@ -74,6 +76,7 @@ final class DriverConfiguration
         private ?float $socketTimeoutSeconds = null,
         private bool $telemetryEnabled = true,
         private ?float $connectionLivenessCheckTimeout = self::DEFAULT_CONNECTION_LIVENESS_CHECK_TIMEOUT,
+        ?MonotonicClock $clock = null,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
@@ -83,6 +86,7 @@ final class DriverConfiguration
             $this->logger = null;
         }
         $this->socketType = $socketType;
+        $this->clock = $clock;
     }
 
     /**
@@ -373,6 +377,27 @@ final class DriverConfiguration
 
         $tbr = clone $this;
         $tbr->connectionLivenessCheckTimeout = $seconds;
+
+        return $tbr;
+    }
+
+    /**
+     * Clock used to measure how long pooled connections have been idle.
+     *
+     * The same instance is shared by every connection created from this configuration.
+     */
+    public function getClock(): MonotonicClock
+    {
+        return $this->clock ??= new MonotonicClock();
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function withClock(MonotonicClock $clock): self
+    {
+        $tbr = clone $this;
+        $tbr->clock = $clock;
 
         return $tbr;
     }

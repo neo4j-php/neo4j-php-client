@@ -91,7 +91,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     ): self {
         return new self(
             $semaphore,
-            BoltFactory::create($conf->getLogger()),
+            BoltFactory::create($conf->getLogger(), null, $conf->getClock()),
             new ConnectionRequestData(
                 $uri->getHost(),
                 $uri,
