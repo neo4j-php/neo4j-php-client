@@ -18,9 +18,13 @@ use function call_user_func;
 use Composer\InstalledVersions;
 
 use function function_exists;
+
+use InvalidArgumentException;
+
 use function is_callable;
 
 use Laudis\Neo4j\Common\Cache;
+use Laudis\Neo4j\Common\MonotonicClock;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Common\SemaphoreFactory;
 use Laudis\Neo4j\Contracts\SemaphoreFactoryInterface;
@@ -41,12 +45,15 @@ final class DriverConfiguration
     public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
     public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
     public const DEFAULT_SOCKET_TIMEOUT = 30.0;
+    /** Idle seconds before a pooled connection is probed with RESET. */
+    public const DEFAULT_CONNECTION_LIVENESS_CHECK_TIMEOUT = 60.0;
     /** @var callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
     /** @var callable():(SemaphoreFactoryInterface|null)|SemaphoreFactoryInterface|null */
     private $semaphoreFactory;
     private ?Neo4jLogger $logger;
     private ?SocketType $socketType;
+    private ?MonotonicClock $clock;
 
     /**
      * @param callable():(CacheInterface|null)|CacheInterface|null                       $cache
@@ -68,6 +75,8 @@ final class DriverConfiguration
         ?SocketType $socketType = null,
         private ?float $socketTimeoutSeconds = null,
         private bool $telemetryEnabled = true,
+        private ?float $connectionLivenessCheckTimeout = self::DEFAULT_CONNECTION_LIVENESS_CHECK_TIMEOUT,
+        ?MonotonicClock $clock = null,
     ) {
         $this->cache = $cache;
         $this->semaphoreFactory = $semaphore;
@@ -77,6 +86,7 @@ final class DriverConfiguration
             $this->logger = null;
         }
         $this->socketType = $socketType;
+        $this->clock = $clock;
     }
 
     /**
@@ -332,6 +342,62 @@ final class DriverConfiguration
     {
         $tbr = clone $this;
         $tbr->telemetryEnabled = $enabled;
+
+        return $tbr;
+    }
+
+    /**
+     * Seconds a pooled connection may stay idle before a liveness probe (RESET) is required.
+     *
+     * Defaults to 60 seconds so long-running PHP workers (Horizon, Octane, RoadRunner)
+     * do not reuse sockets that Neo4j or a load balancer already closed.
+     * Null disables liveness checks.
+     * Zero means every reused connection is probed.
+     * Negative values are not allowed.
+     *
+     * @psalm-mutation-free
+     */
+    public function getConnectionLivenessCheckTimeout(): ?float
+    {
+        return $this->connectionLivenessCheckTimeout;
+    }
+
+    /**
+     * @param float|null $seconds Idle threshold in seconds, null to disable, 0 to always probe
+     *
+     * @throws InvalidArgumentException When $seconds is negative
+     *
+     * @psalm-immutable
+     */
+    public function withConnectionLivenessCheckTimeout(?float $seconds): self
+    {
+        if ($seconds !== null && $seconds < 0) {
+            throw new InvalidArgumentException('Connection liveness check timeout must be null or >= 0');
+        }
+
+        $tbr = clone $this;
+        $tbr->connectionLivenessCheckTimeout = $seconds;
+
+        return $tbr;
+    }
+
+    /**
+     * Clock used to measure how long pooled connections have been idle.
+     *
+     * The same instance is shared by every connection created from this configuration.
+     */
+    public function getClock(): MonotonicClock
+    {
+        return $this->clock ??= new MonotonicClock();
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    public function withClock(MonotonicClock $clock): self
+    {
+        $tbr = clone $this;
+        $tbr->clock = $clock;
 
         return $tbr;
     }

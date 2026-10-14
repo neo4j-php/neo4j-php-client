@@ -27,6 +27,7 @@ use Bolt\protocol\V5_4;
 use Exception;
 use Laudis\Neo4j\Bolt\Messages\BoltTelemetryMessage;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Common\MonotonicClock;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -81,6 +82,8 @@ class BoltConnection implements ConnectionInterface
 
     private int $messagesInPipeline = 0;
 
+    private float $lastUsedTimestamp = 0.0;
+
     /**
      * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
      */
@@ -100,6 +103,7 @@ class BoltConnection implements ConnectionInterface
         /** @psalm-readonly */
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
+        private readonly MonotonicClock $clock,
         private readonly float $defaultRecvTimeout = DriverConfiguration::DEFAULT_SOCKET_TIMEOUT,
     ) {
         $this->messageFactory = new BoltMessageFactory($this, $this->logger);
@@ -184,6 +188,22 @@ class BoltConnection implements ConnectionInterface
         );
     }
 
+    /**
+     * Marks the connection as recently used (for pool liveness checks).
+     */
+    public function touch(): void
+    {
+        $this->lastUsedTimestamp = $this->clock->now();
+    }
+
+    /**
+     * Seconds since the connection was last successfully used.
+     */
+    public function getIdleTimeSeconds(): float
+    {
+        return $this->clock->now() - $this->lastUsedTimestamp;
+    }
+
     public function isStreaming(): bool
     {
         return in_array(
@@ -239,6 +259,7 @@ class BoltConnection implements ConnectionInterface
         $response = $message->send()->getResponse();
         $this->assertNoFailure($response);
         $this->subscribedResults = [];
+        $this->touch();
     }
 
     /**
@@ -304,6 +325,8 @@ class BoltConnection implements ConnectionInterface
             --$this->messagesInPipeline;
             $this->assertNoFailure($response);
         } while ($this->messagesInPipeline > 0);
+
+        $this->touch();
 
         /** @var BoltMeta */
         return $response->content;
