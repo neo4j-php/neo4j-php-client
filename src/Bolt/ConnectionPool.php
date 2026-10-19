@@ -134,8 +134,11 @@ final class ConnectionPool implements ConnectionPoolInterface
     {
         // Ensure random connection reuse before picking one.
         shuffle($this->activeConnections);
+
         foreach ($this->activeConnections as $activeConnection) {
-            // We prefer a connection that is just ready
+            // Only reuse READY connections. STREAMING connections must stay open so nested
+            // session.run can use a second connection (TestKit nested iteration). Batch
+            // runStatements already releases locks on one connection via Session (#283).
             if ($activeConnection->getServerState() === 'READY' && $this->factory->canReuseConnection($activeConnection, $config)) {
                 return $this->factory->reuseConnection($activeConnection, $config);
             }

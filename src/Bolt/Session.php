@@ -75,16 +75,14 @@ final class Session implements SessionInterface
      */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
-        $tbr = [];
-
         $this->getLogger()?->log(LogLevel::INFO, 'Running statements', ['statements' => $statements]);
         $config = $this->mergeTsxConfig($config);
 
-        foreach ($statements as $statement) {
-            $tbr[] = $this->executeStatementWithRetry($statement, $config);
-        }
-
-        return new CypherList($tbr);
+        // Run the whole batch on one connection. Each auto-commit statement consumes its
+        // result before the next RUN, so locks from earlier statements are released first.
+        // Opening a new connection per statement left earlier TXs streaming and caused
+        // LockAcquisitionTimeout when later statements touched the same nodes (#283).
+        return $this->executeStatementsWithRetry($statements, $config);
     }
 
     /**
@@ -282,12 +280,22 @@ final class Session implements SessionInterface
      */
     private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
     {    // Retry instant transactions up to 3 times on connection/routing errors; catch distinguishes retryable errors from client errors (syntax, auth) and clears routing table for cluster failover.
+        return $this->executeStatementsWithRetry([$statement], $config)->first();
+    }
+
+    /**
+     * @param iterable<Statement> $statements
+     *
+     * @return CypherList<SummarizedResult>
+     */
+    private function executeStatementsWithRetry(iterable $statements, TransactionConfiguration $config): CypherList
+    {
         $maxRetries = 3;
         $retries = 0;
 
         while ($retries < $maxRetries) {
             try {
-                return $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
+                return $this->beginInstantTransaction($this->config, $config)->runStatements($statements);
             } catch (Neo4jException $e) {
                 if (!$this->shouldClearRoutingTable($e)) {
                     throw $e;

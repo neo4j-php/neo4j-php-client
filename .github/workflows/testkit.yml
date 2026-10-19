@@ -68,7 +68,7 @@ jobs:
         run: |
           docker compose run --rm client composer install
 
-      - name: Run integration tests
+      - name: Run Testkit tests
         run: |
           docker compose up -d --remove-orphans --wait --no-build testkit_backend neo4j
-          docker compose up testkit
+          docker compose up --abort-on-container-exit --exit-code-from testkit testkit
