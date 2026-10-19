@@ -307,6 +307,25 @@ CYPHER,
         $this->fetchSize(10);
     }
 
+    /**
+     * fetchSize -1 means PULL n=-1 (pull all records in one go), not batching.
+     */
+    public function testFetchSizePullAll(): void
+    {
+        $session = $this->getDriver()->createSession(SessionConfiguration::default()->withFetchSize(-1));
+
+        $nodesAmount = 25;
+        $results = $session->run('UNWIND range(1, $x) AS id RETURN id', ['x' => $nodesAmount]);
+
+        $userIds = [];
+        foreach ($results as $result) {
+            $userIds[] = $result->get('id');
+        }
+
+        $this->assertCount($nodesAmount, $userIds);
+        $this->assertCount($nodesAmount, array_unique($userIds));
+    }
+
     public function fetchSize(int $fetchSize): void
     {
         $session = $this->getDriver()->createSession(SessionConfiguration::default()->withFetchSize($fetchSize));
