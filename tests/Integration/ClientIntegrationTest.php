@@ -308,22 +308,19 @@ CYPHER,
     }
 
     /**
-     * fetchSize -1 means PULL n=-1 (pull all records in one go), not batching.
+     * fetchSize -1 means PULL n=-1 (pull all records in one go).
+     * Use result sets larger than the default fetch size (1000) and run two
+     * statements back to back so a second large pull still works after the first.
      */
     public function testFetchSizePullAll(): void
     {
         $session = $this->getDriver()->createSession(SessionConfiguration::default()->withFetchSize(-1));
 
-        $nodesAmount = 25;
-        $results = $session->run('UNWIND range(1, $x) AS id RETURN id', ['x' => $nodesAmount]);
+        $first = $session->run('UNWIND range(1, $x) AS id RETURN id', ['x' => 10_000]);
+        $second = $session->run('UNWIND range(1, $x) AS id RETURN id', ['x' => 11_000]);
 
-        $userIds = [];
-        foreach ($results as $result) {
-            $userIds[] = $result->get('id');
-        }
-
-        $this->assertCount($nodesAmount, $userIds);
-        $this->assertCount($nodesAmount, array_unique($userIds));
+        self::assertEquals(10_000, $first->count());
+        self::assertEquals(11_000, $second->count());
     }
 
     public function fetchSize(int $fetchSize): void
