@@ -266,6 +266,7 @@ class ConnectionPoolTest extends TestCase
         $this->assertNull($result);
         $this->assertSame([], $property->getValue($pool));
     }
+
     public function testReuseDoesNotConsumeStreamingConnection(): void
     {
         $connection = $this->createMock(BoltConnection::class);
