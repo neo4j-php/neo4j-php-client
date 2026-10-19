@@ -135,32 +135,13 @@ final class ConnectionPool implements ConnectionPoolInterface
         // Ensure random connection reuse before picking one.
         shuffle($this->activeConnections);
 
-        $streamingConnection = null;
-
         foreach ($this->activeConnections as $activeConnection) {
-            // Prefer a connection that is already READY.
+            // Only reuse READY connections. STREAMING connections must stay open so nested
+            // session.run can use a second connection (TestKit nested iteration). Batch
+            // runStatements already releases locks on one connection via Session (#283).
             if ($activeConnection->getServerState() === 'READY' && $this->factory->canReuseConnection($activeConnection, $config)) {
                 return $this->factory->reuseConnection($activeConnection, $config);
             }
-
-            // Fall back to STREAMING auto-commit connections: force-consume their results so
-            // the connection becomes READY again. This prevents opening a second connection
-            // while the first still holds locks (LockAcquisitionTimeout).
-            // See https://github.com/neo4j-php/neo4j-php-client/issues/146
-            // and https://github.com/neo4j-php/neo4j-php-client/issues/283
-            // NOTE: we cannot work with TX_STREAMING as we cannot force the transaction to close.
-            if ($streamingConnection === null
-                && $activeConnection->getServerState() === 'STREAMING'
-                && $this->factory->canReuseConnection($activeConnection, $config)
-            ) {
-                $streamingConnection = $activeConnection;
-            }
-        }
-
-        if ($streamingConnection !== null) {
-            $streamingConnection->consumeResults(); // State should now be READY
-
-            return $this->factory->reuseConnection($streamingConnection, $config);
         }
 
         return null;

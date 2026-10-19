@@ -144,13 +144,12 @@ class ConnectionPoolTest extends TestCase
         $this->assertNull($result);
     }
 
-    public function testReuseConsumesStreamingConnectionBeforeReuse(): void
+    public function testReuseDoesNotConsumeStreamingConnection(): void
     {
         $connection = $this->createMock(BoltConnection::class);
         $connection->method('getServerState')->willReturn('STREAMING');
-        $connection->expects($this->once())->method('consumeResults');
+        $connection->expects($this->never())->method('consumeResults');
         $this->factory->method('canReuseConnection')->willReturn(true);
-        $this->factory->method('reuseConnection')->willReturn($connection);
 
         $pool = new ConnectionPool(
             $this->semaphore,
@@ -167,7 +166,7 @@ class ConnectionPoolTest extends TestCase
         $method = $reflection->getMethod('reuseConnectionIfPossible');
         $result = $method->invoke($pool, $this->sessionConfig);
 
-        $this->assertSame($connection, $result);
+        $this->assertNull($result);
     }
 
     public function testReusePrefersReadyOverStreaming(): void
