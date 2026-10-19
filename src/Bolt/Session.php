@@ -75,21 +75,11 @@ final class Session implements SessionInterface
         $this->getLogger()?->log(LogLevel::INFO, 'Running statements', ['statements' => $statements]);
         $config = $this->mergeTsxConfig($config);
 
-        /** @var list<Statement> $statementList */
-        $statementList = [];
-        foreach ($statements as $statement) {
-            $statementList[] = $statement;
-        }
-
-        if ($statementList === []) {
-            return new CypherList([]);
-        }
-
         // Run the whole batch on one connection. Each auto-commit statement consumes its
         // result before the next RUN, so locks from earlier statements are released first.
         // Opening a new connection per statement left earlier TXs streaming and caused
         // LockAcquisitionTimeout when later statements touched the same nodes (#283).
-        return $this->executeStatementsWithRetry($statementList, $config);
+        return $this->executeStatementsWithRetry($statements, $config);
     }
 
     /**
@@ -291,11 +281,11 @@ final class Session implements SessionInterface
     }
 
     /**
-     * @param non-empty-list<Statement> $statements
+     * @param iterable<Statement> $statements
      *
      * @return CypherList<SummarizedResult>
      */
-    private function executeStatementsWithRetry(array $statements, TransactionConfiguration $config): CypherList
+    private function executeStatementsWithRetry(iterable $statements, TransactionConfiguration $config): CypherList
     {
         $maxRetries = 3;
         $retries = 0;
