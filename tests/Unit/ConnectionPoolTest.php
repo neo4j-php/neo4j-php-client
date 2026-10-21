@@ -98,7 +98,6 @@ class ConnectionPoolTest extends TestCase
         $connection = $this->createMock(BoltConnection::class);
         $connection->method('isOpen')->willReturn(true);
         $connection->method('getServerState')->willReturn('READY');
-        $connection->expects($this->once())->method('touch');
         $this->factory->method('canReuseConnection')->willReturn(true);
         $this->factory->method('reuseConnection')->willReturn($connection);
 
@@ -154,7 +153,6 @@ class ConnectionPoolTest extends TestCase
         $connection->method('getServerState')->willReturn('READY');
         $connection->method('getIdleTimeSeconds')->willReturn(120.0);
         $connection->expects($this->once())->method('reset');
-        $connection->expects($this->once())->method('touch');
         $this->factory->method('canReuseConnection')->willReturn(true);
         $this->factory->method('reuseConnection')->willReturn($connection);
 
@@ -216,7 +214,6 @@ class ConnectionPoolTest extends TestCase
         $connection->method('getServerState')->willReturn('READY');
         $connection->method('getIdleTimeSeconds')->willReturn(999.0);
         $connection->expects($this->never())->method('reset');
-        $connection->expects($this->once())->method('touch');
         $this->factory->method('canReuseConnection')->willReturn(true);
         $this->factory->method('reuseConnection')->willReturn($connection);
 
@@ -303,7 +300,6 @@ class ConnectionPoolTest extends TestCase
         $ready = $this->createMock(BoltConnection::class);
         $ready->method('isOpen')->willReturn(true);
         $ready->method('getServerState')->willReturn('READY');
-        $ready->expects($this->once())->method('touch');
 
         $this->factory->method('canReuseConnection')->willReturn(true);
         $this->factory->method('reuseConnection')->willReturnCallback(

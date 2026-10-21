@@ -378,7 +378,7 @@ final class Session implements SessionInterface
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $this->databaseForTransaction(),
             $this->formatter,
             $connection,
             $this->config,
@@ -430,7 +430,7 @@ final class Session implements SessionInterface
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $this->databaseForTransaction(),
             $this->formatter,
             $connection,
             $this->config,
@@ -455,6 +455,19 @@ final class Session implements SessionInterface
         }
         // Release connection back to pool for reuse
         $this->pool->release($connection);
+    }
+
+    /**
+     * Session database, or the database ROUTE resolved when the session did not name one.
+     */
+    private function databaseForTransaction(): ?string
+    {
+        $database = $this->config->getDatabase();
+        if ($database !== null || !$this->pool instanceof Neo4jConnectionPool) {
+            return $database;
+        }
+
+        return $this->pool->getRoutingTable($this->config)?->getDatabase();
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration

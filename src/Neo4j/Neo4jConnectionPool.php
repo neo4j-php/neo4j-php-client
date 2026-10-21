@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Neo4j;
 
-use Bolt\enum\Signature;
 use Bolt\error\ConnectException;
 
 use function count;
@@ -22,6 +21,7 @@ use Exception;
 use Generator;
 
 use function implode;
+use function is_string;
 
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\ConnectionPool;
@@ -41,7 +41,6 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\RoutingRoles;
-use Laudis\Neo4j\Exception\Neo4jException;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
@@ -151,8 +150,12 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $latestError = null;
 
-        if ($table == null) {
-            $this->getLogger()?->log(LogLevel::DEBUG, 'Routing table not found in cache, fetching new routing table');
+        // A session with no database resolves its home database on every acquire.
+        // The router connection stays in the pool so a later acquire can liveness-check it.
+        if ($table == null || $config->getDatabase() === null) {
+            $this->getLogger()?->log(LogLevel::DEBUG, 'Fetching routing table', [
+                'database' => $config->getDatabase(),
+            ]);
 
             $addresses = $this->getAddresses($this->data->getUri()->getHost());
             foreach ($addresses as $address) {
@@ -173,6 +176,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
                     $this->getLogger()?->log(LogLevel::DEBUG, 'Successfully fetched routing table', [
                         'ttl' => $table->getTtl(),
+                        'database' => $table->getDatabase(),
                         'leaders' => $table->getWithRole(RoutingRoles::LEADER()),
                         'followers' => $table->getWithRole(RoutingRoles::FOLLOWER()),
                         'routers' => $table->getWithRole(RoutingRoles::ROUTE()),
@@ -187,8 +191,6 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
-                // TODO: release probably logs off the connection, it is not preferable
-                $pool->release($connection);
                 break;
             }
         }
@@ -327,12 +329,9 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $routeExtra = $this->buildRouteExtra($config);
         $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $routeExtra['db'] ?? null]);
         $response = $bolt->route([], [], $routeExtra)->getResponse();
+        $connection->handleResponse($response);
 
-        if ($response->signature === Signature::FAILURE) {
-            throw Neo4jException::fromBoltResponse($response);
-        }
-
-        /** @var array{rt?: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int}} $route */
+        /** @var array{rt?: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int, db?: string}} $route */
         $route = $response->content;
         if (!array_key_exists('rt', $route)) {
             throw new RuntimeException('Routing table missing from ROUTE response');
@@ -340,8 +339,12 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         ['servers' => $servers, 'ttl' => $ttl] = $route['rt'];
         $ttl += time();
+        $database = $route['rt']['db'] ?? null;
+        if (!is_string($database) || $database === '') {
+            $database = null;
+        }
 
-        return new RoutingTable($servers, $ttl);
+        return new RoutingTable($servers, $ttl, $database);
     }
 
     /**
