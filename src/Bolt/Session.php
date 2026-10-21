@@ -252,8 +252,7 @@ final class Session implements SessionInterface
      * Execute a statement with automatic retry on connection errors.
      * Retries up to 3 times on connection failures, clearing routing table between attempts.
      *
-     * @param Statement                $statement The statement to execute
-     * @param TransactionConfiguration $config    Transaction configuration
+     * @param TransactionConfiguration $config Transaction configuration
      *
      * @return SummarizedResult The result of the statement
      */
@@ -277,13 +276,7 @@ final class Session implements SessionInterface
      * - All Neo4j drivers (Java, Python, JavaScript) have this pattern
      * - Without it: user must manually retry or wrap every session.run() in try-catch
      * - With it: driver handles recovery automatically = better UX and reliability
-     */
-    private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
-    {    // Retry instant transactions up to 3 times on connection/routing errors; catch distinguishes retryable errors from client errors (syntax, auth) and clears routing table for cluster failover.
-        return $this->executeStatementsWithRetry([$statement], $config)->first();
-    }
-
-    /**
+     *
      * @param iterable<Statement> $statements
      *
      * @return CypherList<SummarizedResult>
@@ -378,7 +371,7 @@ final class Session implements SessionInterface
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $this->databaseForTransaction(),
             $this->formatter,
             $connection,
             $this->config,
@@ -430,7 +423,7 @@ final class Session implements SessionInterface
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
-            $this->config->getDatabase(),
+            $this->databaseForTransaction(),
             $this->formatter,
             $connection,
             $this->config,
@@ -455,6 +448,19 @@ final class Session implements SessionInterface
         }
         // Release connection back to pool for reuse
         $this->pool->release($connection);
+    }
+
+    /**
+     * Session database, or the database ROUTE resolved when the session did not name one.
+     */
+    private function databaseForTransaction(): ?string
+    {
+        $database = $this->config->getDatabase();
+        if ($database !== null || !$this->pool instanceof Neo4jConnectionPool) {
+            return $database;
+        }
+
+        return $this->pool->getRoutingTable($this->config)?->getDatabase();
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration

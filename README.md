@@ -412,6 +412,7 @@ A driver, session and transaction can be configured using configuration objects.
 | name              | concept     | description                                                                      | class                      |
 |-------------------|-------------|----------------------------------------------------------------------------------|----------------------------|
 | user agent        | driver      | The user agent used to identify the client to the neo4j server.                  | `DriverConfiguration`      |
+| liveness timeout  | driver      | Idle seconds before a pooled connection is probed with `RESET` (`null` = off).   | `DriverConfiguration`      |
 | database          | session     | The database to connect to.                                                      | `SessionConfiguration`     |
 | fetch size        | session     | The amount of rows to fetch at once.                                             | `SessionConfiguration`     |
 | access mode       | session     | The default mode when accessing the server.                                      | `SessionConfiguration`     |
@@ -428,7 +429,14 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 
 $client = \Laudis\Neo4j\ClientBuilder::create()
-    ->withDefaultDriverConfiguration(DriverConfiguration::default()->withUserAgent('MyApp/1.0.0'))
+    // Liveness checks are off by default, matching the official drivers.
+    // Long-running workers (Horizon/Octane) should probe idle pooled connections
+    // so a closed socket is not reused. Pass 0 to probe on every reuse.
+    ->withDefaultDriverConfiguration(
+        DriverConfiguration::default()
+            ->withUserAgent('MyApp/1.0.0')
+            ->withConnectionLivenessCheckTimeout(60.0)
+    )
     ->withDefaultSessionConfiguration(
         SessionConfiguration::default()
             ->withDatabase('app-database')
