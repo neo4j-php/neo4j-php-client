@@ -34,7 +34,6 @@ use Throwable;
 /**
  * @implements ConnectionPoolInterface<BoltConnection>
  */
-/** @implements ConnectionPoolInterface<BoltConnection> */
 final class ConnectionPool implements ConnectionPoolInterface
 {
     /** @var list<BoltConnection> */
@@ -110,7 +109,6 @@ final class ConnectionPool implements ConnectionPoolInterface
             }
 
             $connection = $this->factory->createConnection($this->data, $config);
-            $connection->touch();
 
             $this->activeConnections[] = $connection;
 
@@ -158,40 +156,28 @@ final class ConnectionPool implements ConnectionPoolInterface
                 continue;
             }
 
-            if ($this->needsLivenessCheck($activeConnection)) {
-                if (!$this->ensureConnectionIsAlive($activeConnection)) {
-                    continue;
-                }
+            if (!$this->resetIfIdle($activeConnection)) {
+                continue;
             }
 
-            $reused = $this->factory->reuseConnection($activeConnection, $config);
-            $reused->touch();
-
-            return $reused;
+            return $this->factory->reuseConnection($activeConnection, $config);
         }
 
         return null;
     }
 
-    private function needsLivenessCheck(BoltConnection $connection): bool
+    /**
+     * When the connection has been idle past the liveness timeout, probe it with RESET.
+     * Returns false after a failed probe; that connection is already removed from the pool.
+     */
+    private function resetIfIdle(BoltConnection $connection): bool
     {
-        if ($this->connectionLivenessCheckTimeout === null) {
-            return false;
+        $timeout = $this->connectionLivenessCheckTimeout;
+        if ($timeout === null || $connection->getIdleTimeSeconds() < $timeout) {
+            return true;
         }
 
-        return $connection->getIdleTimeSeconds() >= $this->connectionLivenessCheckTimeout;
-    }
-
-    /**
-     * Probes the connection with RESET. On failure the connection is discarded from the pool.
-     */
-    private function ensureConnectionIsAlive(BoltConnection $connection): bool
-    {
         try {
-            $this->logger?->log(LogLevel::DEBUG, 'Running connection liveness check', [
-                'idle_seconds' => $connection->getIdleTimeSeconds(),
-                'threshold' => $this->connectionLivenessCheckTimeout,
-            ]);
             $connection->reset();
 
             return true;
@@ -207,12 +193,7 @@ final class ConnectionPool implements ConnectionPoolInterface
 
     private function destroyConnection(BoltConnection $connection): void
     {
-        try {
-            $connection->invalidate();
-        } catch (Throwable) {
-            // Already broken; still free the pool slot below.
-        }
-
+        $connection->invalidate();
         $this->release($connection);
     }
 

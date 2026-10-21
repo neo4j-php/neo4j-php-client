@@ -84,7 +84,7 @@ class BoltFactory
             $sslLevel
         );
 
-        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger, $this->clock, $socketTimeout);
+        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger, $socketTimeout, $this->clock);
 
         $response = $data->getAuth()->authenticateBolt($connection, $data->getUserAgent());
 

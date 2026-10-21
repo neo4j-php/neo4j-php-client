@@ -13,14 +13,17 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Common;
 
-use function microtime;
+use function hrtime;
 
 /**
  * Clock used for connection idle time.
  *
+ * Uses the OS monotonic clock (hrtime) so NTP / system clock adjustments
+ * cannot make idle time jump backwards or skip ahead.
+ *
  * Share one instance across a driver when time must be controlled.
  * TestKit freezes that instance with install() and advances it with tick().
- * Until install() is called, now() follows microtime().
+ * Until install() is called, now() follows hrtime.
  */
 final class MonotonicClock
 {
@@ -36,12 +39,12 @@ final class MonotonicClock
             return $this->frozenAt + $this->offsetSeconds;
         }
 
-        return microtime(true);
+        return hrtime(true) / 1_000_000_000;
     }
 
     public function install(): void
     {
-        $this->frozenAt = microtime(true);
+        $this->frozenAt = hrtime(true) / 1_000_000_000;
         $this->offsetSeconds = 0.0;
         $this->installed = true;
     }

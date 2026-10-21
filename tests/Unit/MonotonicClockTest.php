@@ -29,9 +29,9 @@ final class MonotonicClockTest extends TestCase
 
     public function testNowFollowsRealTimeWhenNotInstalled(): void
     {
-        $before = microtime(true);
+        $before = hrtime(true) / 1_000_000_000;
         $now = $this->clock->now();
-        $after = microtime(true);
+        $after = hrtime(true) / 1_000_000_000;
 
         self::assertGreaterThanOrEqual($before, $now);
         self::assertLessThanOrEqual($after, $now);
@@ -49,7 +49,7 @@ final class MonotonicClockTest extends TestCase
 
     public function testTickIsIgnoredUntilInstalled(): void
     {
-        $before = microtime(true);
+        $before = hrtime(true) / 1_000_000_000;
         $this->clock->tick(60_000);
         $now = $this->clock->now();
 
@@ -76,7 +76,7 @@ final class MonotonicClockTest extends TestCase
         $this->clock->install();
         $this->clock->tick(5000);
 
-        $before = microtime(true);
+        $before = hrtime(true) / 1_000_000_000;
         $now = $other->now();
 
         self::assertLessThan(1.0, $now - $before);

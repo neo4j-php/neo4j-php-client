@@ -45,7 +45,7 @@ final class DriverConfiguration
     public const DEFAULT_CACHE_IMPLEMENTATION = Cache::class;
     public const DEFAULT_ACQUIRE_CONNECTION_TIMEOUT = 2.0;
     public const DEFAULT_SOCKET_TIMEOUT = 30.0;
-    /** Idle seconds before a pooled connection is probed with RESET. */
+    /** Suggested idle seconds before a pooled connection is probed. The check is off unless set. */
     public const DEFAULT_CONNECTION_LIVENESS_CHECK_TIMEOUT = 60.0;
     /** @var callable():(CacheInterface|null)|CacheInterface|null */
     private $cache;
@@ -75,7 +75,7 @@ final class DriverConfiguration
         ?SocketType $socketType = null,
         private ?float $socketTimeoutSeconds = null,
         private bool $telemetryEnabled = true,
-        private ?float $connectionLivenessCheckTimeout = self::DEFAULT_CONNECTION_LIVENESS_CHECK_TIMEOUT,
+        private ?float $connectionLivenessCheckTimeout = null,
         ?MonotonicClock $clock = null,
     ) {
         $this->cache = $cache;
@@ -349,9 +349,10 @@ final class DriverConfiguration
     /**
      * Seconds a pooled connection may stay idle before a liveness probe (RESET) is required.
      *
-     * Defaults to 60 seconds so long-running PHP workers (Horizon, Octane, RoadRunner)
-     * do not reuse sockets that Neo4j or a load balancer already closed.
-     * Null disables liveness checks.
+     * Off by default (`null`), matching the official drivers.
+     * Long-running PHP workers (Horizon, Octane, RoadRunner) should set this
+     * (60 seconds is a reasonable starting point) so they do not reuse sockets
+     * that Neo4j or a load balancer already closed.
      * Zero means every reused connection is probed.
      * Negative values are not allowed.
      *

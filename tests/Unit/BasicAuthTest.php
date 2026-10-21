@@ -17,6 +17,7 @@ use Bolt\enum\Message;
 use Bolt\enum\Signature;
 use Bolt\protocol\Response;
 use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
 use Laudis\Neo4j\Authentication\BasicAuth;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
@@ -91,9 +92,54 @@ class BasicAuthTest extends TestCase
 
         $error = Neo4jError::fromMessageAndCode('Neo.ClientError.Security.Unauthorized', 'Invalid credentials');
         $exception = new Neo4jException([$error]);
-        $mockConnection->method('assertNoFailure')->will($this->throwException($exception));
+        $mockConnection->method('handleResponse')->will($this->throwException($exception));
 
         $this->auth->authenticateBolt($mockConnection, 'neo4j-client/1.0');
+    }
+
+    /**
+     * HELLO and LOGON must both be sent before reading responses (AuthPipelining).
+     */
+    public function testAuthenticateBoltPipelinesHelloAndLogon(): void
+    {
+        $callOrder = [];
+
+        $mockProtocol = $this->createMock(V5_1::class);
+        $mockProtocol->expects($this->once())->method('hello')->willReturnCallback(
+            static function () use (&$callOrder, $mockProtocol) {
+                $callOrder[] = 'hello';
+
+                return $mockProtocol;
+            }
+        );
+        $mockProtocol->expects($this->once())->method('logon')->willReturnCallback(
+            static function () use (&$callOrder, $mockProtocol) {
+                $callOrder[] = 'logon';
+
+                return $mockProtocol;
+            }
+        );
+        $mockProtocol->expects($this->exactly(2))->method('getResponse')->willReturnCallback(
+            static function () use (&$callOrder): Response {
+                $callOrder[] = 'getResponse';
+
+                return new Response(
+                    Message::HELLO,
+                    Signature::SUCCESS,
+                    ['server' => 'neo4j-server', 'connection_id' => '12345', 'hints' => [
+                        'connection.recv_timeout_seconds' => 2,
+                    ]]
+                );
+            }
+        );
+
+        $mockConnection = $this->createMock(BoltConnection::class);
+        $mockConnection->method('protocol')->willReturn($mockProtocol);
+
+        $result = $this->auth->authenticateBolt($mockConnection, 'neo4j-client/1.0');
+
+        $this->assertSame(['hello', 'logon', 'getResponse', 'getResponse'], $callOrder);
+        $this->assertSame(['connection.recv_timeout_seconds' => 2], $result['hints']);
     }
 
     public function testEmptyCredentials(): void

@@ -19,14 +19,16 @@ use PHPUnit\Framework\TestCase;
 
 final class DriverConfigurationLivenessTest extends TestCase
 {
-    public function testDefaultLivenessTimeoutIsSixtySeconds(): void
+    public function testDefaultLivenessCheckIsDisabled(): void
     {
         $config = DriverConfiguration::default();
 
-        self::assertSame(
-            DriverConfiguration::DEFAULT_CONNECTION_LIVENESS_CHECK_TIMEOUT,
-            $config->getConnectionLivenessCheckTimeout()
-        );
+        self::assertNull($config->getConnectionLivenessCheckTimeout());
+    }
+
+    public function testSuggestedWorkerLivenessTimeoutIsSixtySeconds(): void
+    {
+        self::assertSame(60.0, DriverConfiguration::DEFAULT_CONNECTION_LIVENESS_CHECK_TIMEOUT);
     }
 
     public function testWithConnectionLivenessCheckTimeout(): void

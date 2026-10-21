@@ -98,7 +98,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         try {
             $response = $this->messageFactory->createCommitMessage($this->bookmarkHolder)->send()->getResponse();
-            $this->connection->assertNoFailure($response);
+            $this->connection->handleResponse($response);
         } catch (Throwable $e) {
             $this->terminateOrRetry($e);
         }
@@ -126,7 +126,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
 
         try {
             $response = $this->messageFactory->createRollbackMessage()->send()->getResponse();
-            $this->connection->assertNoFailure($response);
+            $this->connection->handleResponse($response);
         } catch (Throwable $e) {
             $this->terminateOrRetry($e);
         }
