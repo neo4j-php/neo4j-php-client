@@ -38,7 +38,6 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 use Throwable;
@@ -65,7 +64,7 @@ class BoltConnection implements ConnectionInterface
      *       A great moment to do this would be when neo4j 5 is released as it will presumably allow us to do more
      *       stuff with PULL and DISCARD messages.
      *
-     * @var list<WeakReference<CypherList>>
+     * @var list<WeakReference<BoltResult>>
      */
     private array $subscribedResults = [];
 
@@ -241,10 +240,7 @@ class BoltConnection implements ConnectionInterface
         }
 
         foreach ($this->subscribedResults as $result) {
-            $result = $result->get();
-            if ($result) {
-                $result->preload();
-            }
+            $result->get()?->buffer();
         }
 
         $this->subscribedResults = [];
@@ -512,7 +508,7 @@ class BoltConnection implements ConnectionInterface
         return $this->protocol()->serverState->name;
     }
 
-    public function subscribeResult(CypherList $result): void
+    public function subscribeResult(BoltResult $result): void
     {
         $this->subscribedResults[] = WeakReference::create($result);
     }

@@ -107,26 +107,30 @@ final class BoltResult implements Iterator
     public function iterator(): Generator
     {
         $i = 0;
-        while ($this->meta === null) {
-            $this->fetchResults();
-            foreach ($this->rows as $row) {
+        do {
+            if ($this->rows === [] && $this->meta === null) {
+                $this->fetchResults();
+            }
+
+            // Take the pending rows so buffer() can append to $this->rows while this batch is being yielded.
+            $rows = $this->rows;
+            $this->rows = [];
+            foreach ($rows as $row) {
                 yield $i => $row;
                 ++$i;
             }
-            // If meta is set to empty array (normal completion with no records), exit immediately
-            if ($this->meta === []) {
-                break;
-            }
-        }
+        } while ($this->meta === null || $this->rows !== []);
+    }
 
-        $meta = $this->meta;
-        // Finished callbacks are callable(array): void and read summary keys (e.g. db, bookmark); passing null
-        // would error at runtime. We only run them when we have a real completion summary—if meta is still null
-        // (e.g. partial pull / more fetches pending), there is nothing to hand to the callback yet.
-        if ($meta !== null) {
-            foreach ($this->finishedCallbacks as $finishedCallback) {
-                $finishedCallback($meta);
-            }
+    /**
+     * Pulls all remaining records into memory, so the connection can be reused before they are read.
+     *
+     * A deferred failure stops the pull without throwing; it is raised once the buffered records are read.
+     */
+    public function buffer(): void
+    {
+        while ($this->meta === null && $this->deferredFailure === null) {
+            $this->fetchResults();
         }
     }
 
@@ -157,7 +161,8 @@ final class BoltResult implements Iterator
         }
         // Neo4jException and other Throwable propagate naturally - no invalidate needed for server errors
 
-        $this->rows = $pullResult->getRecordRows();
+        $batch = $pullResult->getRecordRows();
+        array_push($this->rows, ...$batch);
 
         $deferredFailure = $pullResult->getDeferredFailure();
         if ($deferredFailure !== null) {
@@ -175,7 +180,7 @@ final class BoltResult implements Iterator
         }
 
         $summaryEmpty = $summarySlot === [];
-        $hasDataRows = $this->rows !== [];
+        $hasDataRows = $batch !== [];
 
         if ($summaryEmpty && !$hasDataRows) {
             // Normal completion with no records
@@ -188,6 +193,12 @@ final class BoltResult implements Iterator
         } else {
             // Empty summary slot with data rows: Bolt SUCCESS {} after RECORDs — stream complete (no has_more keys).
             $this->meta = $summarySlot;
+        }
+
+        if ($this->meta !== null) {
+            foreach ($this->finishedCallbacks as $finishedCallback) {
+                $finishedCallback($this->meta);
+            }
         }
     }
 

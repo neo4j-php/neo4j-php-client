@@ -46,6 +46,7 @@ final class Session implements SessionInterface
 
     /** @var list<BoltConnection> */
     private array $usedConnections = [];
+    private ?BoltConnection $autoCommitConnection = null;
     /** @psalm-readonly */
     private readonly BookmarkHolder $bookmarkHolder;
 
@@ -75,14 +76,16 @@ final class Session implements SessionInterface
      */
     public function runStatements(iterable $statements, ?TransactionConfiguration $config = null): CypherList
     {
+        $tbr = [];
+
         $this->getLogger()?->log(LogLevel::INFO, 'Running statements', ['statements' => $statements]);
         $config = $this->mergeTsxConfig($config);
 
-        // Run the whole batch on one connection. Each auto-commit statement consumes its
-        // result before the next RUN, so locks from earlier statements are released first.
-        // Opening a new connection per statement left earlier TXs streaming and caused
-        // LockAcquisitionTimeout when later statements touched the same nodes (#283).
-        return $this->executeStatementsWithRetry($statements, $config);
+        foreach ($statements as $statement) {
+            $tbr[] = $this->executeStatementWithRetry($statement, $config);
+        }
+
+        return new CypherList($tbr);
     }
 
     /**
@@ -252,7 +255,8 @@ final class Session implements SessionInterface
      * Execute a statement with automatic retry on connection errors.
      * Retries up to 3 times on connection failures, clearing routing table between attempts.
      *
-     * @param TransactionConfiguration $config Transaction configuration
+     * @param Statement                $statement The statement to execute
+     * @param TransactionConfiguration $config    Transaction configuration
      *
      * @return SummarizedResult The result of the statement
      */
@@ -276,19 +280,15 @@ final class Session implements SessionInterface
      * - All Neo4j drivers (Java, Python, JavaScript) have this pattern
      * - Without it: user must manually retry or wrap every session.run() in try-catch
      * - With it: driver handles recovery automatically = better UX and reliability
-     *
-     * @param iterable<Statement> $statements
-     *
-     * @return CypherList<SummarizedResult>
      */
-    private function executeStatementsWithRetry(iterable $statements, TransactionConfiguration $config): CypherList
+    private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
     {
         $maxRetries = 3;
         $retries = 0;
 
         while ($retries < $maxRetries) {
             try {
-                return $this->beginInstantTransaction($this->config, $config)->runStatements($statements);
+                return $this->beginInstantTransaction($this->config, $config)->runStatement($statement);
             } catch (Neo4jException $e) {
                 if (!$this->shouldClearRoutingTable($e)) {
                     throw $e;
@@ -366,6 +366,7 @@ final class Session implements SessionInterface
     ): TransactionInterface {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
+        $this->autoCommitConnection = $connection;
 
         /** @var ConnectionPoolInterface<ConnectionInterface>|null $pool */
         $pool = $this->pool;
@@ -390,6 +391,7 @@ final class Session implements SessionInterface
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Acquiring connection', ['config' => $config, 'sessionConfig' => $sessionConfig]);
+        $this->bufferAutoCommitResult();
         $connectionGenerator = $this->pool->acquire($sessionConfig);
         /**
          * @var BoltConnection $connection
@@ -449,6 +451,20 @@ final class Session implements SessionInterface
         }
         // Release connection back to pool for reuse
         $this->pool->release($connection);
+    }
+
+    /**
+     * Pulls the previous auto-commit result of this session into memory, so its transaction
+     * completes (releasing its locks and making its writes visible) and its connection can be
+     * reused before the next query starts.
+     */
+    private function bufferAutoCommitResult(): void
+    {
+        $connection = $this->autoCommitConnection;
+        $this->autoCommitConnection = null;
+        if ($connection !== null && $connection->getServerState() === 'STREAMING') {
+            $connection->consumeResults();
+        }
     }
 
     /**
