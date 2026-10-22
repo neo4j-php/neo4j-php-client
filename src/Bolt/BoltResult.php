@@ -112,14 +112,24 @@ final class BoltResult implements Iterator
                 $this->fetchResults();
             }
 
-            // Take the pending rows so buffer() can append to $this->rows while this batch is being yielded.
-            $rows = $this->rows;
-            $this->rows = [];
-            foreach ($rows as $row) {
+            foreach ($this->takeRows() as $row) {
                 yield $i => $row;
                 ++$i;
             }
         } while ($this->meta === null || $this->rows !== []);
+    }
+
+    /**
+     * Takes the pending rows, so buffer() can append new ones while these are being yielded.
+     *
+     * @return list<array<array-key, mixed>>
+     */
+    private function takeRows(): array
+    {
+        $rows = $this->rows;
+        $this->rows = [];
+
+        return $rows;
     }
 
     /**
