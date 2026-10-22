@@ -19,6 +19,7 @@ use Bolt\protocol\Response;
 use Bolt\protocol\V5_4;
 use Generator;
 use Laudis\Neo4j\Bolt\BoltConnection;
+use Laudis\Neo4j\Bolt\Session;
 use Laudis\Neo4j\BoltFactory;
 use Laudis\Neo4j\Common\Cache;
 use Laudis\Neo4j\Common\Uri;
@@ -29,6 +30,7 @@ use Laudis\Neo4j\Databags\ConnectionRequestData;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SslMode;
+use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
 use Laudis\Neo4j\Neo4j\RoutingTable;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -98,18 +100,30 @@ final class Neo4jConnectionPoolTest extends TestCase
         $this->pool->close();
     }
 
-    public function testRoutingTableIsCachedForSessionWithoutDatabase(): void
+    public function testHomeDatabaseRoutingTableIsCachedUnderResolvedDatabase(): void
     {
         $config = SessionConfiguration::default();
 
         $this->protocol->expects($this->once())->method('route')->willReturnSelf();
 
         $this->acquire($config);
-        $this->acquire($config);
+        $this->acquire($config->withDatabase('home-db'));
 
         $table = $this->pool->getRoutingTable($config);
         $this->assertInstanceOf(RoutingTable::class, $table);
         $this->assertSame('home-db', $table->getDatabase());
+    }
+
+    public function testSessionResolvesHomeDatabaseOncePerSession(): void
+    {
+        $this->protocol->expects($this->exactly(2))->method('route')->willReturnSelf();
+
+        $session = new Session(SessionConfiguration::default(), $this->pool, SummarizedResultFormatter::create());
+        $session->beginTransaction();
+        $session->beginTransaction();
+
+        $other = new Session(SessionConfiguration::default(), $this->pool, SummarizedResultFormatter::create());
+        $other->beginTransaction();
     }
 
     public function testRoutingTableIsCachedForSessionWithDatabase(): void

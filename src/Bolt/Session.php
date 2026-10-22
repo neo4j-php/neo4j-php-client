@@ -55,7 +55,7 @@ final class Session implements SessionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly SessionConfiguration $config,
+        private SessionConfiguration $config,
         private readonly ConnectionPoolInterface $pool,
         /**
          * @psalm-readonly
@@ -371,7 +371,7 @@ final class Session implements SessionInterface
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
-            $this->databaseForTransaction(),
+            $this->config->getDatabase(),
             $this->formatter,
             $connection,
             $this->config,
@@ -397,6 +397,7 @@ final class Session implements SessionInterface
          * @psalm-suppress UnnecessaryVarAnnotation
          */
         $connection = GeneratorHelper::getReturnFromGenerator($connectionGenerator);
+        $this->pinResolvedDatabase();
 
         // We try and let the server do the timeout management.
         // Since the client should not run indefinitely, we just add the client side by two, just in case
@@ -423,7 +424,7 @@ final class Session implements SessionInterface
         $pool = $this->pool;
 
         return new BoltUnmanagedTransaction(
-            $this->databaseForTransaction(),
+            $this->config->getDatabase(),
             $this->formatter,
             $connection,
             $this->config,
@@ -451,16 +452,19 @@ final class Session implements SessionInterface
     }
 
     /**
-     * Session database, or the database ROUTE resolved when the session did not name one.
+     * Pins the home database ROUTE resolved when the session did not name one, so it is
+     * resolved once per session rather than on every acquire.
      */
-    private function databaseForTransaction(): ?string
+    private function pinResolvedDatabase(): void
     {
-        $database = $this->config->getDatabase();
-        if ($database !== null || !$this->pool instanceof Neo4jConnectionPool) {
-            return $database;
+        if ($this->config->getDatabase() !== null || !$this->pool instanceof Neo4jConnectionPool) {
+            return;
         }
 
-        return $this->pool->getRoutingTable($this->config)?->getDatabase();
+        $database = $this->pool->getRoutingTable($this->config)?->getDatabase();
+        if ($database !== null) {
+            $this->config = $this->config->withDatabase($database);
+        }
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration
