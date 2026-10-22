@@ -150,10 +150,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $latestError = null;
 
-        // A session with no database resolves its home database on every acquire.
+        // A session with no database caches the table under a database-less key; the table
+        // carries the home database ROUTE resolved, so it is not re-fetched on every acquire.
         // The router connection stays in the pool so a later acquire can liveness-check it.
-        if ($table == null || $config->getDatabase() === null) {
-            $this->getLogger()?->log(LogLevel::DEBUG, 'Fetching routing table', [
+        if ($table == null) {
+            $this->getLogger()?->log(LogLevel::DEBUG, 'Routing table not found in cache, fetching new routing table', [
                 'database' => $config->getDatabase(),
             ]);
 
