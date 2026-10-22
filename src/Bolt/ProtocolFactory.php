@@ -33,7 +33,9 @@ class ProtocolFactory
         }
 
         $bolt = new Bolt($connection);
-        // Offer protocol versions from newest to oldest (only 4.4 and above are supported)
+        // Offer 5.4 down to 4.4. php-bolt-driver 7.5 selects PackStream from the negotiated
+        // Bolt version, so this client does not set a PackStream version itself.
+        // Bolt 6.1 (PackStream 1.1 UUID) stays outside the supported range.
         $bolt->setProtocolVersions('5.4.4', 4.4);
         $protocol = $bolt->build();
 

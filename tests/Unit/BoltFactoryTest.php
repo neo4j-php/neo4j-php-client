@@ -31,6 +31,10 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\SslConfiguration;
 use Laudis\Neo4j\Enum\SocketType;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+use ReflectionMethod;
+use ReflectionNamedType;
+use RuntimeException;
 
 final class BoltFactoryTest extends TestCase
 {
@@ -45,8 +49,8 @@ final class BoltFactoryTest extends TestCase
 
         $protocolFactory = $this->createMock(ProtocolFactory::class);
         $protocolFactory->method('createProtocol')
-            ->willReturnCallback(static function (IConnection $connection) {
-                $protocol = new V5(1, $connection);
+            ->willReturnCallback(static function (IConnection $connection): V5 {
+                $protocol = self::createBoltV5($connection);
                 $protocol->serverState = ServerState::READY;
 
                 return $protocol;
@@ -136,5 +140,30 @@ final class BoltFactoryTest extends TestCase
         );
 
         self::assertInstanceOf(BoltConnection::class, $connection);
+    }
+
+    /**
+     * php-bolt-driver 7.4 requires (int $packStreamVersion, IConnection $connection).
+     * 7.5 derives PackStream from the protocol and accepts only the connection.
+     */
+    private static function createBoltV5(IConnection $connection): V5
+    {
+        $arguments = [];
+        foreach ((new ReflectionMethod(V5::class, '__construct'))->getParameters() as $parameter) {
+            $type = $parameter->getType();
+            if ($type instanceof ReflectionNamedType && $type->getName() === 'int') {
+                $arguments[] = 1;
+                continue;
+            }
+
+            $arguments[] = $connection;
+        }
+
+        $protocol = (new ReflectionClass(V5::class))->newInstanceArgs($arguments);
+        if (!$protocol instanceof V5) {
+            throw new RuntimeException('Bolt V5 protocol could not be constructed');
+        }
+
+        return $protocol;
     }
 }
