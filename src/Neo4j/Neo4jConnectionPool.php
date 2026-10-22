@@ -150,7 +150,8 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $latestError = null;
 
-        // A session with no database resolves its home database on every acquire.
+        // A session with no database resolves its home database here. Session pins the
+        // resolved database afterwards, so this happens once per session, not per acquire.
         // The router connection stays in the pool so a later acquire can liveness-check it.
         if ($table == null || $config->getDatabase() === null) {
             $this->getLogger()?->log(LogLevel::DEBUG, 'Fetching routing table', [
@@ -191,6 +192,11 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                 }
 
                 $this->cache->set($key, $table, $table->getTtl());
+                $resolvedDatabase = $table->getDatabase();
+                if ($config->getDatabase() === null && $resolvedDatabase !== null) {
+                    $resolvedKey = $this->createKey($this->data, $config->withDatabase($resolvedDatabase));
+                    $this->cache->set($resolvedKey, $table, $table->getTtl());
+                }
                 break;
             }
         }
