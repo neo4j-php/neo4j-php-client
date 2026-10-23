@@ -268,7 +268,7 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 |----------------------|----------------|
 | Authentication       | Yes            |
 | Transactions         | Yes            |
-| Bolt Protocol        | Yes            |
+| Bolt Protocol        | Yes, 4.4 through 6.1 |
 | Cluster              | Yes            |
 | Aura                 | Yes            |
 | Jolt Protocol        | Yes            |

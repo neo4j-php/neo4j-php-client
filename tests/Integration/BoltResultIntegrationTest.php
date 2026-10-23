@@ -71,6 +71,6 @@ final class BoltResultIntegrationTest extends EnvironmentAwareIntegrationTest
             SessionConfiguration::default()
         );
 
-        self::assertContains($connection->protocol()->getVersion(), ['4.4', '5', '5.1', '5.2', '5.3', '5.4']);
+        self::assertContains($connection->protocol()->getVersion(), ['4.4', '5', '5.1', '5.2', '5.3', '5.4', '5.6', '5.7', '5.8', '6', '6.1']);
     }
 }

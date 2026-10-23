@@ -16,30 +16,30 @@ namespace Laudis\Neo4j\Tests\Unit;
 use Bolt\connection\IConnection;
 use Laudis\Neo4j\Bolt\ProtocolFactory;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 final class ProtocolFactoryTest extends TestCase
 {
     public function testOfferedProtocolVersionsCoverBolt6DownTo44(): void
     {
-        self::assertSame(['6.1.1', '5.4.4', '4.4'], (new ProtocolFactory())->offeredProtocolVersions());
+        self::assertSame(['6.1.1', '5.8.8', '4.4'], (new ProtocolFactory())->offeredProtocolVersions());
         self::assertSame(
-            ['6.1', '6', '5.4', '5.3', '5.2', '5.1', '5', '4.4'],
+            ['6.1', '6', '5.8', '5.7', '5.6', '5.5', '5.4', '5.3', '5.2', '5.1', '5', '4.4'],
             $this->expandOffers((new ProtocolFactory())->offeredProtocolVersions())
         );
     }
-    public function testCreateProtocolRejectsBolt61(): void
+
+    public function testCreateProtocolAcceptsBolt61(): void
     {
         $connection = $this->createMock(IConnection::class);
         $connection->method('connect')->willReturn(true);
         // Handshake response for Bolt 6.1: 00 00 01 06
         $connection->method('read')->willReturn("\x00\x00\x01\x06");
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Client only supports bolt version 4.4 to 5.4');
+        $protocol = (new ProtocolFactory())->createProtocol($connection);
 
-        (new ProtocolFactory())->createProtocol($connection);
+        self::assertSame('6.1', $protocol->getVersion());
     }
+
     /**
      * @param list<string> $offers
      *
