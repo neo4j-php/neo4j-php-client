@@ -172,7 +172,7 @@ final class SummarizedResultFormatter
                 /** @var string $db */
                 $db = $response['db'] ?? '';
 
-                $notifications = array_map($this->formatNotification(...), $response['notifications'] ?? []);
+                $notifications = array_map($this->formatNotification(...), $this->boltNotifications($response));
                 $profiledPlan = array_key_exists('profile', $response) ? $this->formatProfiledPlan($response['profile']) : null;
                 $plan = array_key_exists('plan', $response) ? $this->formatPlan($response['plan']) : null;
 
@@ -245,6 +245,66 @@ final class SummarizedResultFormatter
         );
     }
 
+    /**
+     * Bolt 5.4 and earlier send `notifications`. Bolt 5.6+ sends `statuses`,
+     * which also includes ordinary completion records such as 00000.
+     *
+     * @param array<string, mixed> $response
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function boltNotifications(array $response): array
+    {
+        $notifications = $response['notifications'] ?? null;
+        if (is_array($notifications) && $notifications !== []) {
+            /** @var list<array<string, mixed>> $notifications */
+            return $notifications;
+        }
+
+        $statuses = $response['statuses'] ?? [];
+        if (!is_array($statuses)) {
+            return [];
+        }
+
+        $mapped = [];
+        foreach ($statuses as $status) {
+            if (!is_array($status) || !$this->isNotificationStatus($status)) {
+                continue;
+            }
+
+            $diagnostic = is_array($status['diagnostic_record'] ?? null) ? $status['diagnostic_record'] : [];
+            $position = $diagnostic['_position'] ?? $status['position'] ?? [];
+            $mapped[] = [
+                'severity' => $diagnostic['_severity'] ?? $status['severity'] ?? '',
+                'description' => $status['status_description'] ?? $status['description'] ?? '',
+                'code' => $status['neo4j_code'] ?? $status['code'] ?? '',
+                'position' => is_array($position) ? $position : [],
+                'title' => $status['title'] ?? '',
+                'category' => $diagnostic['_classification'] ?? $status['category'] ?? '',
+            ];
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * @param array<string, mixed> $status
+     */
+    private function isNotificationStatus(array $status): bool
+    {
+        $diagnostic = $status['diagnostic_record'] ?? null;
+        if (is_array($diagnostic) && array_key_exists('_severity', $diagnostic)) {
+            return true;
+        }
+
+        $code = $status['neo4j_code'] ?? $status['code'] ?? '';
+
+        return is_string($code) && str_starts_with($code, 'Neo.ClientNotification.');
+    }
+
+    /**
+     * @param array<string, mixed> $notifications
+     */
     private function formatNotification(array $notifications): Notification
     {
         return new Notification(

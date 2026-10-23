@@ -24,6 +24,10 @@ use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
+use Bolt\protocol\V5_6;
+use Bolt\protocol\V5_7;
+use Bolt\protocol\V5_8;
+use Bolt\protocol\V6;
 use Exception;
 use Laudis\Neo4j\Bolt\Messages\BoltTelemetryMessage;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
@@ -45,7 +49,7 @@ use Traversable;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6|null, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from SummarizedResultFormatter
  */
@@ -86,7 +90,7 @@ class BoltConnection implements ConnectionInterface
     private readonly MonotonicClock $clock;
 
     /**
-     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
+     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6|null, 1: Connection}
      */
     public function getImplementation(): array
     {
@@ -97,7 +101,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
+        private V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6|null $boltProtocol,
         private readonly Connection $connection,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
@@ -342,7 +346,7 @@ class BoltConnection implements ConnectionInterface
         $this->handleResponse($response);
     }
 
-    public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
+    public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6
     {
         if (!isset($this->boltProtocol)) {
             throw new Exception('Connection is closed');
@@ -671,7 +675,7 @@ class BoltConnection implements ConnectionInterface
             return;
         }
 
-        if (!$this->boltProtocol instanceof V5_4) {
+        if (!$this->supportsTelemetry($this->boltProtocol)) {
             return;
         }
 
@@ -685,6 +689,15 @@ class BoltConnection implements ConnectionInterface
 
         $this->sentTelemetryApis[$api->value] = true;
         ++$this->messagesInPipeline;
+    }
+
+    private function supportsTelemetry(V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6|null $protocol): bool
+    {
+        return $protocol instanceof V5_4
+            || $protocol instanceof V5_6
+            || $protocol instanceof V5_7
+            || $protocol instanceof V5_8
+            || $protocol instanceof V6;
     }
 
     private function assertNoFailure(Response $response): void

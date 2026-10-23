@@ -122,11 +122,13 @@ return [
     // to a bug in the spec
     'Feature:Bolt:5.5' => false,
     // The driver supports Bolt protocol version 5.6
-    'Feature:Bolt:5.6' => false,
+    'Feature:Bolt:5.6' => true,
     // The driver supports Bolt protocol version 5.7
-    'Feature:Bolt:5.7' => false,
+    'Feature:Bolt:5.7' => true,
     // The driver supports Bolt protocol version 5.8
-    'Feature:Bolt:5.8' => false,
+    'Feature:Bolt:5.8' => true,
+    // The driver supports Bolt protocol version 6.0
+    'Feature:Bolt:6.0' => true,
     // The driver supports negotiating the Bolt protocol version with the server
     // using handshake manifest v1.
     'Feature:Bolt:HandshakeManifestV1' => true,
