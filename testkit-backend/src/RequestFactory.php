@@ -23,6 +23,9 @@ use Laudis\Neo4j\TestkitBackend\Requests\CheckMultiDBSupportRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DomainNameResolutionCompletedRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\DriverCloseRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ExecuteQueryRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\FakeTimeInstallRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\FakeTimeTickRequest;
+use Laudis\Neo4j\TestkitBackend\Requests\FakeTimeUninstallRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\ForcedRoutingTableUpdateRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetFeaturesRequest;
 use Laudis\Neo4j\TestkitBackend\Requests\GetRoutingTableRequest;
@@ -92,6 +95,9 @@ final class RequestFactory
         'ExecuteQuery' => ExecuteQueryRequest::class,
         'BookmarksSupplierCompleted' => BookmarksSupplierCompletedRequest::class,
         'BookmarksConsumerCompleted' => BookmarksConsumerCompletedRequest::class,
+        'FakeTimeInstall' => FakeTimeInstallRequest::class,
+        'FakeTimeTick' => FakeTimeTickRequest::class,
+        'FakeTimeUninstall' => FakeTimeUninstallRequest::class,
     ];
 
     /**

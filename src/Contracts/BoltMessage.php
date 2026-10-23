@@ -60,7 +60,7 @@ abstract class BoltMessage
         // Restore timeout after successful response retrieval
         $this->connection->restoreOriginalTimeout();
 
-        $this->connection->assertNoFailure($response);
+        $this->connection->handleResponse($response);
 
         return $response;
     }

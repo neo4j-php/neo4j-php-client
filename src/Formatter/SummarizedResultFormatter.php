@@ -291,7 +291,7 @@ final class SummarizedResultFormatter
             }
         }))->withCacheLimit($this->clientSideCacheLimitFromBoltFetchSize($result->getFetchSize()));
 
-        $connection->subscribeResult($tbr);
+        $connection->subscribeResult($result);
         $result->addFinishedCallback(function (array $response) use ($holder) {
             if (array_key_exists('bookmark', $response) && is_string($response['bookmark']) && trim($response['bookmark']) !== '') {
                 $holder->setBookmarkFromServer(new Bookmark([$response['bookmark']]));
