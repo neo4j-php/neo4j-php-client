@@ -33,10 +33,8 @@ class ProtocolFactory
         }
 
         $bolt = new Bolt($connection);
-        // Offer 5.4 down to 4.4. php-bolt-driver 7.5 selects PackStream from the negotiated
-        // Bolt version, so this client does not set a PackStream version itself.
-        // Bolt 6.1 (PackStream 1.1 UUID) stays outside the supported range.
-        $bolt->setProtocolVersions('5.4.4', 4.4);
+        // php-bolt-driver 7.5 selects PackStream from the negotiated Bolt version.
+        $bolt->setProtocolVersions(...$this->offeredProtocolVersions());
         $protocol = $bolt->build();
 
         if (!($protocol instanceof V4_4 || $protocol instanceof V5 || $protocol instanceof V5_1 || $protocol instanceof V5_2 || $protocol instanceof V5_3 || $protocol instanceof V5_4)) {
@@ -44,5 +42,19 @@ class ProtocolFactory
         }
 
         return $protocol;
+    }
+
+    /**
+     * Bolt versions offered during the handshake.
+     *
+     * Each entry is major.minor.range. 6.1.1 offers 6.1 and 6.0, 5.4.4 offers 5.4
+     * down through 5.0, and 4.4 is exactly 4.4. 5.6 through 5.8 are left out:
+     * Neo4j 5.26 would negotiate 5.8, and this client still only accepts 4.4 to 5.4.
+     *
+     * @return list<string>
+     */
+    public function offeredProtocolVersions(): array
+    {
+        return ['6.1.1', '5.4.4', '4.4'];
     }
 }
