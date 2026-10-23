@@ -37,7 +37,6 @@ final class SessionBookmarkTracker
         array $sessionBookmarks,
     ) {
         $this->lastReceivedBookmarks = $sessionBookmarks;
-        $this->syncHolder(false);
     }
 
     public function prepareForSend(bool $updateLastUsed): void

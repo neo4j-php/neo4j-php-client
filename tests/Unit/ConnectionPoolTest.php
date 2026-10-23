@@ -146,6 +146,36 @@ class ConnectionPoolTest extends TestCase
         $this->assertNull($result);
     }
 
+    public function testRoutingAcquireReusesConnectionWhenSessionDatabaseDiffers(): void
+    {
+        $connection = $this->createMock(BoltConnection::class);
+        $connection->method('isOpen')->willReturn(true);
+        $connection->method('getServerState')->willReturn('READY');
+        $this->factory->expects($this->never())->method('createConnection');
+        $this->factory->method('canReuseConnection')->willReturn(false);
+        $this->factory->method('reuseConnection')->willReturn($connection);
+
+        $pool = new ConnectionPool(
+            $this->semaphore,
+            $this->factory,
+            $this->requestData,
+            $this->logger,
+            1.0
+        );
+
+        $reflection = new ReflectionClass(ConnectionPool::class);
+        $property = $reflection->getProperty('activeConnections');
+        $property->setValue($pool, [$connection]);
+
+        $homeDatabase = SessionConfiguration::default();
+        $generator = $pool->acquire($homeDatabase, true);
+        while ($generator->valid()) {
+            $generator->send(true);
+        }
+
+        $this->assertSame($connection, $generator->getReturn());
+    }
+
     public function testReuseRunsLivenessCheckWhenIdleBeyondThreshold(): void
     {
         $connection = $this->createMock(BoltConnection::class);

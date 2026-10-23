@@ -172,7 +172,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                      *
                      * @psalm-suppress UnnecessaryVarAnnotation
                      */
-                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
+                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config, true));
                     $table = $this->routingTable($connection, $config);
 
                     $this->getLogger()?->log(LogLevel::DEBUG, 'Successfully fetched routing table', [

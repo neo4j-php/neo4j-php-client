@@ -267,11 +267,11 @@ class BoltConnection implements ConnectionInterface
      *
      * @param iterable<string, scalar|array|null>|null $txMetaData
      */
-    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData): void
+    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData, ?AccessMode $mode = null): void
     {
         $this->consumeResults(); // todo - move this before sending telemetry
 
-        $extra = $this->buildRunExtra($database, $timeout, $holder, null, $txMetaData);
+        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $txMetaData);
         $this->messageFactory->createBeginMessage($extra)->send();
         ++$this->messagesInPipeline;
 

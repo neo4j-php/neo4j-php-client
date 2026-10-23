@@ -21,6 +21,7 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\Statement;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
+use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\TransactionState;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Exception\TransactionException;
@@ -182,7 +183,7 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
             $meta = $this->connection->run(
                 $statement->getText(),
                 $parameters->toArray(),
-                $this->database,
+                $this->isInstantTransaction ? $this->database : null,
                 $this->tsxConfig->getTimeout(),
                 $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
                 null, // mode is never sent in RUN messages - it comes from session configuration
@@ -258,11 +259,30 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         try {
             $this->bookmarkTracker?->prepareForSend(true);
             $this->connection->sendTelemetryIfNeeded($this->telemetryApi);
-            $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
+            $this->connection->begin(
+                $this->database,
+                $this->tsxConfig->getTimeout(),
+                $this->bookmarkHolder,
+                $this->tsxConfig->getMetaData(),
+                $this->beginAccessMode(),
+            );
             $this->beginSent = true;
         } catch (Throwable $e) {
             $this->terminateOrRetry($e);
         }
+    }
+
+    /**
+     * Write is the Bolt default, so it is omitted. Read transactions must send mode "r".
+     */
+    private function beginAccessMode(): ?AccessMode
+    {
+        $mode = $this->config->getAccessMode();
+        if ($mode === null || AccessMode::WRITE() === $mode) {
+            return null;
+        }
+
+        return $mode;
     }
 
     private function isTransientError(Throwable $e): bool

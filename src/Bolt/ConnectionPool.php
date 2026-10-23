@@ -73,13 +73,13 @@ final class ConnectionPool implements ConnectionPoolInterface
         );
     }
 
-    public function acquire(SessionConfiguration $config): Generator
+    public function acquire(SessionConfiguration $config, bool $forRouting = false): Generator
     {
         /**
          * @var Generator<int, float, bool, BoltConnection>
          */
-        return (function () use ($config) {
-            $connection = $this->reuseConnectionIfPossible($config);
+        return (function () use ($config, $forRouting) {
+            $connection = $this->reuseConnectionIfPossible($config, $forRouting);
             if ($connection !== null) {
                 return $connection;
             }
@@ -92,7 +92,7 @@ final class ConnectionPool implements ConnectionPoolInterface
                 if ($waitTime <= $this->acquireConnectionTimeout) {
                     yield $waitTime;
 
-                    $connection = $this->reuseConnectionIfPossible($config);
+                    $connection = $this->reuseConnectionIfPossible($config, $forRouting);
                     if ($connection !== null) {
                         return $connection;
                     }
@@ -103,7 +103,7 @@ final class ConnectionPool implements ConnectionPoolInterface
                 }
             }
 
-            $connection = $this->reuseConnectionIfPossible($config);
+            $connection = $this->reuseConnectionIfPossible($config, $forRouting);
             if ($connection !== null) {
                 return $connection;
             }
@@ -134,7 +134,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         return $this->logger;
     }
 
-    private function reuseConnectionIfPossible(SessionConfiguration $config): ?BoltConnection
+    private function reuseConnectionIfPossible(SessionConfiguration $config, bool $forRouting = false): ?BoltConnection
     {
         // Ensure random connection reuse before picking one.
         shuffle($this->activeConnections);
@@ -152,7 +152,10 @@ final class ConnectionPool implements ConnectionPoolInterface
                 continue;
             }
 
-            if (!$this->factory->canReuseConnection($activeConnection, $config)) {
+            // ROUTE is not bound to the session database or access mode that opened the
+            // socket. A later session with no database must reuse this router connection:
+            // the contact-point stub accepts one connection, and a second handshake fails.
+            if (!$forRouting && !$this->factory->canReuseConnection($activeConnection, $config)) {
                 continue;
             }
 
