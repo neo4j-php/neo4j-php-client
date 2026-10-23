@@ -33,6 +33,7 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\Neo4j\Neo4jConnectionPool;
+use Laudis\Neo4j\NoOpBookmarkManager;
 use Laudis\Neo4j\Types\CypherList;
 use Psr\Log\LogLevel;
 use Throwable;
@@ -46,23 +47,35 @@ final class Session implements SessionInterface
 
     /** @var list<BoltConnection> */
     private array $usedConnections = [];
-    /** @psalm-readonly */
+    private ?BoltConnection $autoCommitConnection = null;
     private readonly BookmarkHolder $bookmarkHolder;
+    private readonly SessionBookmarkTracker $bookmarkTracker;
 
     /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
-     *
-     * @psalm-mutation-free
      */
     public function __construct(
-        private readonly SessionConfiguration $config,
+        private SessionConfiguration $config,
         private readonly ConnectionPoolInterface $pool,
         /**
          * @psalm-readonly
          */
         private readonly SummarizedResultFormatter $formatter,
     ) {
-        $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
+        $bookmarkManager = $config->getBookmarkManager() ?? NoOpBookmarkManager::instance();
+        $this->bookmarkHolder = new BookmarkHolder(
+            Bookmark::from($config->getBookmarks()),
+            $config->areBookmarksEnabled(),
+        );
+        $this->bookmarkTracker = new SessionBookmarkTracker(
+            $this->bookmarkHolder,
+            $bookmarkManager,
+            $config->getBookmarks(),
+        );
+        $this->bookmarkHolder->onServerBookmark($this->bookmarkTracker->handleNewBookmark(...));
+        if ($config->areBookmarksEnabled()) {
+            $this->config = $config->withRoutingBookmarks($this->bookmarkTracker->getRediscoveryBookmarkValues());
+        }
     }
 
     /**
@@ -278,7 +291,7 @@ final class Session implements SessionInterface
      * - With it: driver handles recovery automatically = better UX and reliability
      */
     private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
-    {    // Retry instant transactions up to 3 times on connection/routing errors; catch distinguishes retryable errors from client errors (syntax, auth) and clears routing table for cluster failover.
+    {
         $maxRetries = 3;
         $retries = 0;
 
@@ -362,6 +375,7 @@ final class Session implements SessionInterface
     ): TransactionInterface {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
+        $this->autoCommitConnection = $connection;
 
         /** @var ConnectionPoolInterface<ConnectionInterface>|null $pool */
         $pool = $this->pool;
@@ -377,6 +391,8 @@ final class Session implements SessionInterface
             true,
             TelemetryAPIEnum::SESSION_RUN,
             $pool,
+            false,
+            $this->bookmarkTracker,
         );
     }
 
@@ -386,6 +402,7 @@ final class Session implements SessionInterface
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Acquiring connection', ['config' => $config, 'sessionConfig' => $sessionConfig]);
+        $this->bufferAutoCommitResult();
         $connectionGenerator = $this->pool->acquire($sessionConfig);
         /**
          * @var BoltConnection $connection
@@ -393,6 +410,7 @@ final class Session implements SessionInterface
          * @psalm-suppress UnnecessaryVarAnnotation
          */
         $connection = GeneratorHelper::getReturnFromGenerator($connectionGenerator);
+        $this->pinResolvedDatabase();
 
         // We try and let the server do the timeout management.
         // Since the client should not run indefinitely, we just add the client side by two, just in case
@@ -430,6 +448,7 @@ final class Session implements SessionInterface
             $telemetryApi,
             $pool,
             false, // BEGIN sent on first run/commit/rollback
+            $this->bookmarkTracker,
         );
     }
 
@@ -444,6 +463,36 @@ final class Session implements SessionInterface
         }
         // Release connection back to pool for reuse
         $this->pool->release($connection);
+    }
+
+    /**
+     * Pulls the previous auto-commit result of this session into memory, so its transaction
+     * completes (releasing its locks and making its writes visible) and its connection can be
+     * reused before the next query starts.
+     */
+    private function bufferAutoCommitResult(): void
+    {
+        $connection = $this->autoCommitConnection;
+        $this->autoCommitConnection = null;
+        if ($connection !== null && $connection->getServerState() === 'STREAMING') {
+            $connection->consumeResults();
+        }
+    }
+
+    /**
+     * Pins the home database ROUTE resolved when the session did not name one, so it is
+     * resolved once per session rather than on every acquire.
+     */
+    private function pinResolvedDatabase(): void
+    {
+        if ($this->config->getDatabase() !== null || !$this->pool instanceof Neo4jConnectionPool) {
+            return;
+        }
+
+        $database = $this->pool->getRoutingTable($this->config)?->getDatabase();
+        if ($database !== null) {
+            $this->config = $this->config->withDatabase($database);
+        }
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration

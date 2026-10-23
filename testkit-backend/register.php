@@ -11,9 +11,15 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
+use Laudis\Neo4j\Common\MonotonicClock;
+use Laudis\Neo4j\TestkitBackend\CallbackRegistry;
 use Laudis\Neo4j\TestkitBackend\Handlers\GetFeatures;
 use Laudis\Neo4j\TestkitBackend\Handlers\StartTest;
+use Laudis\Neo4j\TestkitBackend\IdGenerator;
 use Laudis\Neo4j\TestkitBackend\MainRepository;
+use Laudis\Neo4j\TestkitBackend\RequestFactory;
+use Laudis\Neo4j\TestkitBackend\Socket;
+use Laudis\Neo4j\TestkitBackend\TestkitCallbackDispatcher;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
@@ -32,10 +38,14 @@ return [
         return new GetFeatures($featuresConfig);
     },
 
-    StartTest::class => static function () {
+    MonotonicClock::class => static function () {
+        return new MonotonicClock();
+    },
+
+    StartTest::class => static function (MonotonicClock $clock) {
         $acceptedTests = require __DIR__.'/blacklist.php';
 
-        return new StartTest($acceptedTests);
+        return new StartTest($acceptedTests, $clock);
     },
 
     MainRepository::class => static function () {
@@ -44,6 +54,32 @@ return [
             [],
             [],
             [],
+        );
+    },
+
+    IdGenerator::class => static function () {
+        return new IdGenerator();
+    },
+
+    CallbackRegistry::class => static function () {
+        return new CallbackRegistry();
+    },
+
+    Socket::class => static function () {
+        return Socket::fromEnvironment();
+    },
+
+    RequestFactory::class => static function () {
+        return new RequestFactory();
+    },
+
+    TestkitCallbackDispatcher::class => static function (Psr\Container\ContainerInterface $c) {
+        return new TestkitCallbackDispatcher(
+            $c->get(Socket::class),
+            $c->get(LoggerInterface::class),
+            $c->get(CallbackRegistry::class),
+            $c,
+            $c->get(RequestFactory::class),
         );
     },
 ];

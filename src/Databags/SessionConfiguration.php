@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Contracts\BookmarkManagerInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 
 use function parse_str;
@@ -30,9 +31,11 @@ final class SessionConfiguration
     public const DEFAULT_FETCH_SIZE = 1000;
     public const DEFAULT_ACCESS_MODE = 'WRITE';
     public const DEFAULT_BOOKMARKS = '[]';
+    public const DEFAULT_BOOKMARKS_ENABLED = true;
 
     /**
      * @param list<Bookmark>|null $bookmarks
+     * @param list<string>|null   $routingBookmarks
      */
     public function __construct(
         private readonly ?string $database = null,
@@ -40,6 +43,9 @@ final class SessionConfiguration
         private readonly ?AccessMode $accessMode = null,
         private readonly ?array $bookmarks = null,
         private readonly ?Neo4jLogger $logger = null,
+        private readonly ?bool $bookmarksEnabled = null,
+        private readonly ?BookmarkManagerInterface $bookmarkManager = null,
+        private readonly ?array $routingBookmarks = null,
     ) {
     }
 
@@ -48,9 +54,9 @@ final class SessionConfiguration
      *
      * @param list<Bookmark>|null $bookmarks
      */
-    public static function create(?string $database = null, ?int $fetchSize = null, ?AccessMode $defaultAccessMode = null, ?array $bookmarks = null, ?Neo4jLogger $logger = null): self
+    public static function create(?string $database = null, ?int $fetchSize = null, ?AccessMode $defaultAccessMode = null, ?array $bookmarks = null, ?Neo4jLogger $logger = null, ?bool $bookmarksEnabled = null): self
     {
-        return new self($database, $fetchSize, $defaultAccessMode, $bookmarks, $logger);
+        return new self($database, $fetchSize, $defaultAccessMode, $bookmarks, $logger, $bookmarksEnabled);
     }
 
     /**
@@ -66,7 +72,7 @@ final class SessionConfiguration
      */
     public function withDatabase(?string $database): self
     {
-        return new self($database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger);
+        return new self($database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -74,7 +80,7 @@ final class SessionConfiguration
      */
     public function withFetchSize(?int $size): self
     {
-        return new self($this->database, $size, $this->accessMode, $this->bookmarks, $this->logger);
+        return new self($this->database, $size, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -82,7 +88,7 @@ final class SessionConfiguration
      */
     public function withAccessMode(?AccessMode $defaultAccessMode): self
     {
-        return new self($this->database, $this->fetchSize, $defaultAccessMode, $this->bookmarks, $this->logger);
+        return new self($this->database, $this->fetchSize, $defaultAccessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -92,7 +98,19 @@ final class SessionConfiguration
      */
     public function withBookmarks(?array $bookmarks): self
     {
-        return new self($this->database, $this->fetchSize, $this->accessMode, $bookmarks, $this->logger);
+        return new self($this->database, $this->fetchSize, $this->accessMode, $bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
+    }
+
+    /**
+     * Creates a new session with bookmarks enabled or disabled.
+     *
+     * When disabled, bookmarks are never sent to the server and never updated from responses.
+     * This can help avoid BookmarkTimeout errors in environments where causal consistency
+     * across sessions is not required.
+     */
+    public function withBookmarksEnabled(bool $enabled = true): self
+    {
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $enabled, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -100,7 +118,23 @@ final class SessionConfiguration
      */
     public function withLogger(?Neo4jLogger $logger): self
     {
-        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $logger);
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
+    }
+
+    /**
+     * Creates a new session with the provided bookmark manager.
+     */
+    public function withBookmarkManager(?BookmarkManagerInterface $bookmarkManager): self
+    {
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $bookmarkManager, $this->routingBookmarks);
+    }
+
+    /**
+     * @param list<string>|null $routingBookmarks
+     */
+    public function withRoutingBookmarks(?array $routingBookmarks): self
+    {
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $routingBookmarks);
     }
 
     /**
@@ -139,9 +173,30 @@ final class SessionConfiguration
         return $this->bookmarks ?? [];
     }
 
+    /**
+     * Whether bookmarks are tracked and sent to the server.
+     */
+    public function areBookmarksEnabled(): bool
+    {
+        return $this->bookmarksEnabled ?? self::DEFAULT_BOOKMARKS_ENABLED;
+    }
+
     public function getLogger(): ?Neo4jLogger
     {
         return $this->logger;
+    }
+
+    public function getBookmarkManager(): ?BookmarkManagerInterface
+    {
+        return $this->bookmarkManager;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getRoutingBookmarks(): array
+    {
+        return $this->routingBookmarks ?? [];
     }
 
     /**
@@ -154,7 +209,11 @@ final class SessionConfiguration
             $config->database ?? $this->database,
             $config->fetchSize ?? $this->fetchSize,
             $config->accessMode ?? $this->accessMode,
-            $config->bookmarks ?? $this->bookmarks
+            $config->bookmarks ?? $this->bookmarks,
+            $config->logger ?? $this->logger,
+            $config->bookmarksEnabled ?? $this->bookmarksEnabled,
+            $config->bookmarkManager ?? $this->bookmarkManager,
+            $config->routingBookmarks ?? $this->routingBookmarks,
         );
     }
 
