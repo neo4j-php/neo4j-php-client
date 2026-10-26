@@ -81,6 +81,8 @@
         }
     },
     "scripts": {
+        "post-install-cmd": "@php bin/patch-bolt-uuid-unpacker.php",
+        "post-update-cmd": "@php bin/patch-bolt-uuid-unpacker.php",
         "fix-cs": "./vendor/bin/php-cs-fixer fix",
         "check-cs": "./vendor/bin/php-cs-fixer fix --dry-run",
         "psalm": "./vendor/bin/psalm --show-info=true"
