@@ -25,6 +25,7 @@ use Laudis\Neo4j\Types\Duration;
 use Laudis\Neo4j\Types\LocalDateTime;
 use Laudis\Neo4j\Types\LocalTime;
 use Laudis\Neo4j\Types\Time;
+use Laudis\Neo4j\Types\Uuid;
 
 /**
  * Decodes nutkit JSON parameter payloads ({@see \nutkit\backend\Encoder}) into PHP values for the driver.
@@ -47,6 +48,7 @@ final class NutkitValueDecoder
             'CypherDuration' => self::decodeCypherDuration($data),
             'CypherMap' => self::decodeCypherMap($data),
             'CypherList' => self::decodeCypherList($data),
+            'CypherUUID' => self::decodeCypherUuid($data),
             default => self::decodeScalarWrapper($name, $data),
         };
     }
@@ -99,6 +101,19 @@ final class NutkitValueDecoder
         }
 
         return new CypherList($list);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private static function decodeCypherUuid(array $data): Uuid
+    {
+        $value = $data['value'] ?? null;
+        if (!is_string($value)) {
+            throw new InvalidArgumentException('CypherUUID.value must be a string');
+        }
+
+        return new Uuid($value);
     }
 
     /**
