@@ -73,6 +73,10 @@ echo ""
 # Passing tests (commented out)
 # python3 -m unittest -vvv \
 #
+# tests.neo4j.datatypes.test_uuid.TestUuidTypes skips on Neo4j 5.26.
+# UUID coverage here is the stub tests below. Those integration tests need
+# Enterprise or Aura Neo4j 2026.08 or newer, which negotiates Bolt 6.1.
+#
 python3 -m unittest -vvv \
      tests.neo4j.test_authentication.TestAuthenticationBasic.test_error_on_incorrect_credentials \
      tests.neo4j.test_authentication.TestAuthenticationBasic.test_success_on_basic_token \
@@ -84,7 +88,7 @@ python3 -m unittest -vvv \
      tests.neo4j.test_bookmarks.TestBookmarks.test_fails_on_invalid_bookmark \
      tests.neo4j.test_bookmarks.TestBookmarks.test_no_bookmark_after_rollback \
      tests.neo4j.test_direct_driver.TestDirectDriver.test_custom_resolver \
-     tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_http_port \
+     tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_wrong_port \
      tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db \
      tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_non_existing \
      tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_various_databases \
@@ -216,6 +220,12 @@ python3 -m unittest -vvv \
      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_date_time_with_patch \
      tests.stub.datatypes.test_temporal_types.TestTemporalTypesV4x4.test_zoned_date_time \
+     tests.stub.datatypes.test_uuid.TestUuid6x1.test_uuid \
+     tests.stub.datatypes.test_uuid.TestUuid6x1.test_uuid_in_list \
+     tests.stub.datatypes.test_uuid.TestUuid6x1.test_uuid_in_map \
+     tests.stub.datatypes.test_uuid.TestUuid6x1.test_uuid_as_node_property \
+     tests.stub.datatypes.test_uuid.TestUuid6x0.test_rejects_uuid_parameter \
+     tests.stub.datatypes.test_uuid.TestUuid6x0.test_rejects_uuid_result \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x2.test_default_user_agent \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x2.test_custom_user_agent \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_default_user_agent \

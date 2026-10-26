@@ -152,7 +152,12 @@ final class BoltResult implements Iterator
         } catch (BoltConnectException|BoltException $e) {
             // Invalidate connection on socket/network errors so pool does not reuse it.
             // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
-            $this->connection->invalidate();
+            // disconnect() can itself fail after the protocol error already closed the socket.
+            try {
+                $this->connection->invalidate();
+            } catch (Throwable) {
+                // The protocol error is the one callers need. Cleanup may see a closed socket.
+            }
             throw $e;
         }
         // Neo4jException and other Throwable propagate naturally - no invalidate needed for server errors

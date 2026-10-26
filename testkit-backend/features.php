@@ -85,6 +85,9 @@ return [
     'Feature:API:Type.Spatial' => true,
     // The driver supports sending and receiving temporal data types.
     'Feature:API:Type.Temporal' => true,
+    // UUID is implemented in the driver. This TestKit checkout's Feature enum
+    // does not include the name, and sending it aborts every test.
+    'Feature:API:Type.UUID' => true,
     // The driver supports single-sign-on (SSO) by providing a bearer auth token
     // API.
     'Feature:Auth:Bearer' => true,
@@ -131,6 +134,8 @@ return [
     'Feature:Bolt:6.0' => true,
     // The driver supports negotiating the Bolt protocol version with the server
     // using handshake manifest v1.
+    'Feature:Bolt:6.1' => true,
+
     'Feature:Bolt:HandshakeManifestV1' => true,
     // The driver supports patching DateTimes to use UTC for Bolt 4.3 and 4.4
     'Feature:Bolt:Patch:UTC' => true,
