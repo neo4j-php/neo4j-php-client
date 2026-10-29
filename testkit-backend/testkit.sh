@@ -85,7 +85,7 @@ python3 -m unittest -vvv \
      tests.neo4j.test_bookmarks.TestBookmarks.test_fails_on_invalid_bookmark \
      tests.neo4j.test_bookmarks.TestBookmarks.test_no_bookmark_after_rollback \
      tests.neo4j.test_direct_driver.TestDirectDriver.test_custom_resolver \
-     tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_http_port \
+     tests.neo4j.test_direct_driver.TestDirectDriver.test_fail_nicely_when_using_wrong_port \
      tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db \
      tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_non_existing \
      tests.neo4j.test_direct_driver.TestDirectDriver.test_multi_db_various_databases \

@@ -333,8 +333,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $bolt = $connection->protocol();
 
         $routeExtra = $this->buildRouteExtra($config);
-        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $routeExtra['db'] ?? null]);
-        $response = $bolt->route([], [], $routeExtra)->getResponse();
+        $bookmarks = array_values(array_unique($config->getRoutingBookmarks()));
+        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', [
+            'db' => $routeExtra['db'] ?? null,
+            'bookmarks' => $bookmarks,
+        ]);
+        // Bookmarks are the 2nd ROUTE argument; extra only carries db/imp_user.
+        $response = $bolt->route([], $bookmarks, $routeExtra)->getResponse();
         $connection->handleResponse($response);
 
         /** @var array{rt?: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int, db?: string}} $route */
@@ -354,7 +359,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @return array{db?: string, bookmarks?: list<string>}
+     * @return array{db?: string}
      */
     private function buildRouteExtra(SessionConfiguration $config): array
     {
@@ -362,11 +367,6 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $database = $config->getDatabase();
         if ($database !== null) {
             $extra['db'] = $database;
-        }
-
-        $bookmarks = $config->getRoutingBookmarks();
-        if ($bookmarks !== []) {
-            $extra['bookmarks'] = array_values(array_unique($bookmarks));
         }
 
         return $extra;
