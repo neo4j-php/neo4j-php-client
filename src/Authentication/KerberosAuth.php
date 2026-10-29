@@ -44,21 +44,23 @@ final class KerberosAuth implements AuthenticateInterface
         $factory = $this->createMessageFactory($connection);
 
         $this->logger?->log(LogLevel::DEBUG, 'HELLO', ['user_agent' => $userAgent]);
-
-        $factory->createHelloMessage(['user_agent' => $userAgent])->send()->getResponse();
-
         $this->logger?->log(LogLevel::DEBUG, 'LOGON', ['scheme' => 'kerberos', 'principal' => '']);
 
-        $response = $factory->createLogonMessage([
+        // Pipeline HELLO + LOGON (Optimization:AuthPipelining).
+        $hello = $factory->createHelloMessage(['user_agent' => $userAgent])->send();
+        $logon = $factory->createLogonMessage([
             'scheme' => 'kerberos',
             'principal' => '',
             'credentials' => $this->token,
-        ])->send()->getResponse();
+        ])->send();
+
+        $responseHello = $hello->getResponse();
+        $response = $logon->getResponse();
 
         /**
          * @var array{server: string, connection_id: string, hints: list}
          */
-        return $response->content;
+        return array_merge($responseHello->content, $response->content);
     }
 
     public function toString(UriInterface $uri): string

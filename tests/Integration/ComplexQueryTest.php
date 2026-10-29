@@ -267,10 +267,18 @@ CYPHER
         }
 
         try {
+            // apoc.util.sleep returns early on client tx timeout without failing the query.
+            // Use a long-running write so Neo4j terminates with TransactionTimedOut*.
             $this->getSession(['bolt', 'neo4j'])
-                ->run('CALL apoc.util.sleep(2000000) RETURN 5 as x', [], TransactionConfiguration::default()->withTimeout(2))
+                ->run(
+                    'UNWIND range(1, 100000) AS id MERGE (x:DiscardTimeoutNode {id: id}) RETURN count(*) AS x',
+                    [],
+                    TransactionConfiguration::default()->withTimeout(1)
+                )
                 ->first()
                 ->get('x');
+
+            self::fail('Expected Neo4jException due to transaction timeout');
         } catch (Neo4jException $e) {
             self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
         }

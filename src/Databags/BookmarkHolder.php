@@ -15,9 +15,16 @@ namespace Laudis\Neo4j\Databags;
 
 final class BookmarkHolder
 {
+    /** @var callable(Bookmark): void|null */
+    private $serverBookmarkListener;
+
     public function __construct(
         private Bookmark $bookmark,
+        private readonly bool $enabled = true,
     ) {
+        if (!$this->enabled) {
+            $this->bookmark = new Bookmark();
+        }
     }
 
     public function getBookmark(): Bookmark
@@ -25,8 +32,44 @@ final class BookmarkHolder
         return $this->bookmark;
     }
 
+    /**
+     * Sets the outgoing bookmark to send on the next BEGIN or RUN.
+     */
     public function setBookmark(Bookmark $bookmark): void
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         $this->bookmark = $bookmark;
+    }
+
+    /**
+     * @param callable(Bookmark): void|null $listener
+     */
+    public function onServerBookmark(?callable $listener): void
+    {
+        $this->serverBookmarkListener = $listener;
+    }
+
+    /**
+     * Handles an incoming bookmark from the server and propagates it to the BookmarkManager via the registered listener.
+     */
+    public function setBookmarkFromServer(Bookmark $bookmark): void
+    {
+        if (!$this->enabled) {
+            return;
+        }
+
+        $this->bookmark = $bookmark;
+
+        if ($this->serverBookmarkListener !== null && !$bookmark->isEmpty()) {
+            ($this->serverBookmarkListener)($bookmark);
+        }
+    }
+
+    public function areBookmarksEnabled(): bool
+    {
+        return $this->enabled;
     }
 }
