@@ -29,6 +29,7 @@ use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
+use Laudis\Neo4j\Types\Uuid;
 use Laudis\Neo4j\Types\Vector;
 use RuntimeException;
 
@@ -99,6 +100,9 @@ final class CypherObject implements TestkitResponseInterface
                     $list[] = self::autoDetect($item);
                 }
                 $tbr = new CypherObject('Vector', new CypherList($list));
+                break;
+            case Uuid::class:
+                $tbr = new CypherObject('CypherUUID', $value->getValue());
                 break;
             case 'int':
                 $tbr = new CypherObject('CypherInt', $value);

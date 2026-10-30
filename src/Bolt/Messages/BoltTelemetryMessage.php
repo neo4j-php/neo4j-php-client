@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Bolt\Messages;
 
-use Bolt\protocol\V5_4;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Bolt\TelemetryAPIEnum;
 use Laudis\Neo4j\Common\Neo4jLogger;
@@ -35,9 +34,9 @@ final class BoltTelemetryMessage extends BoltMessage
     {
         $this->logger?->log(LogLevel::DEBUG, 'TELEMETRY', ['api' => $this->api->value]);
 
-        $protocol = $this->connection->protocol();
-        if (!$protocol instanceof V5_4) {
-            throw new LogicException('Telemetry requires Bolt protocol V5.4');
+        $protocol = $this->connection->telemetryProtocol();
+        if ($protocol === null) {
+            throw new LogicException('Telemetry requires Bolt protocol 5.4 or newer');
         }
 
         $protocol->telemetry($this->api->value);

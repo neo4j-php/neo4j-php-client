@@ -54,7 +54,12 @@ class Connection
 
     public function disconnect(): void
     {
-        $this->connection->disconnect();
+        try {
+            $this->connection->disconnect();
+        } catch (Throwable) {
+            // PHP 8.4+ can throw when shutting down an already-closed socket.
+            // Cleanup must not replace the original protocol/network error.
+        }
     }
 
     public function getIp(): string

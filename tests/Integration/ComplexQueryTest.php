@@ -266,14 +266,21 @@ CYPHER
             $this->markTestSkipped('Memory bug in CI');
         }
 
+        $session = $this->getSession(['bolt', 'neo4j']);
+        $started = microtime(true);
         try {
-            $this->getSession(['bolt', 'neo4j'])
+            $value = $session
                 ->run('CALL apoc.util.sleep(2000000) RETURN 5 as x', [], TransactionConfiguration::default()->withTimeout(2))
                 ->first()
                 ->get('x');
+            // Neo4j 5 stops the sleep at the client timeout and still returns the row.
+            self::assertSame(5, $value);
         } catch (Neo4jException $e) {
             self::assertStringContainsString('Neo.ClientError.Transaction.TransactionTimedOut', $e->getNeo4jCode());
         }
+
+        self::assertLessThan(15.0, microtime(true) - $started);
+        self::assertSame(1, $session->run('RETURN 1 AS one')->first()->get('one'));
     }
 
     public function testTimeoutNoReturn(): void

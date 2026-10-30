@@ -42,11 +42,17 @@ final class Neo4jError
         /**
          * @psalm-suppress ImpurePropertyFetch
          *
-         * @var array{code: string, message:string} $content
+         * @var array<string, mixed> $content
          */
         $content = $response->content;
+        // Bolt 5.7 renamed the failure field `code` to `neo4j_code`.
+        $code = $content['code'] ?? $content['neo4j_code'] ?? null;
+        $message = $content['message'] ?? null;
+        if (!is_string($code) || $code === '' || ($message !== null && !is_string($message))) {
+            throw new InvalidArgumentException('Invalid message exception code');
+        }
 
-        return self::fromMessageAndCode($content['code'], $content['message']);
+        return self::fromMessageAndCode($code, $message);
     }
 
     /**

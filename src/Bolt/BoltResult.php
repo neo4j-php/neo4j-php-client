@@ -25,7 +25,6 @@ use function is_array;
 use Iterator;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use Throwable;
 
 /**
  * @psalm-import-type BoltCypherStats from SummarizedResultFormatter
@@ -166,6 +165,7 @@ final class BoltResult implements Iterator
         } catch (BoltConnectException|BoltException $e) {
             // Invalidate connection on socket/network errors so pool does not reuse it.
             // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
+            // Connection::disconnect() swallows closed-socket cleanup errors so they do not replace this.
             $this->connection->invalidate();
             throw $e;
         }

@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Bolt\error\ConnectException as BoltConnectException;
 use Exception;
+use InvalidArgumentException;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\Neo4jError;
@@ -95,6 +96,21 @@ abstract class AbstractRunner implements RequestHandlerInterface
             }
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
+        } catch (InvalidArgumentException $exception) {
+            $wrapped = new Neo4jException([
+                Neo4jError::fromMessageAndCode('Neo.ClientError.Statement.ArgumentError', $exception->getMessage()),
+            ], $exception);
+            if ($request instanceof SessionRunRequest) {
+                return new DriverErrorResponse($request->getSessionId(), $wrapped);
+            }
+            if ($request instanceof TransactionRunRequest) {
+                $response = new DriverErrorResponse($request->getTxId(), $wrapped);
+                $this->repository->addRecords($request->getTxId(), $response);
+
+                return $response;
+            }
+
+            throw new Exception('Unhandled argument exception for run request of type: '.get_class($request));
         } catch (TransactionException $exception) {
             if ($request instanceof TransactionRunRequest) {
                 $response = new DriverErrorResponse($request->getTxId(), $exception);
