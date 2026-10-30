@@ -703,9 +703,6 @@ class BoltConnection implements ConnectionInterface
         return $this->telemetryProtocol() !== null;
     }
 
-    /**
-     * @return V5_4|V5_6|V5_7|V5_8|V6|null
-     */
     public function telemetryProtocol(): V5_4|V5_6|V5_7|V5_8|V6|null
     {
         $protocol = $this->boltProtocol;
