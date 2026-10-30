@@ -68,6 +68,7 @@ final class Bolt57ResponseParserTest extends TestCase
                 [
                     'gql_status' => '03N90',
                     'status_description' => 'warn: cartesian product',
+                    'description' => 'This query builds a cartesian product between disconnected patterns.',
                     'neo4j_code' => 'Neo.ClientNotification.Statement.CartesianProduct',
                     'title' => 'Cartesian product',
                     'diagnostic_record' => [
@@ -82,12 +83,33 @@ final class Bolt57ResponseParserTest extends TestCase
         self::assertSame([
             [
                 'severity' => 'WARNING',
-                'description' => 'warn: cartesian product',
+                'description' => 'This query builds a cartesian product between disconnected patterns.',
                 'code' => 'Neo.ClientNotification.Statement.CartesianProduct',
                 'position' => ['offset' => 0, 'line' => 1, 'column' => 1],
                 'title' => 'Cartesian product',
                 'category' => 'PERFORMANCE',
             ],
         ], $notifications);
+    }
+
+    public function testStatusesFallBackToStatusDescriptionWhenLegacyDescriptionIsAbsent(): void
+    {
+        $method = new ReflectionMethod(SummarizedResultFormatter::class, 'boltNotifications');
+        $method->setAccessible(true);
+        $notifications = $method->invoke(SummarizedResultFormatter::create(), [
+            'statuses' => [
+                [
+                    'gql_status' => '03N90',
+                    'status_description' => 'warn: cartesian product',
+                    'neo4j_code' => 'Neo.ClientNotification.Statement.CartesianProduct',
+                    'diagnostic_record' => [
+                        '_severity' => 'WARNING',
+                        '_classification' => 'PERFORMANCE',
+                    ],
+                ],
+            ],
+        ]);
+
+        self::assertSame('warn: cartesian product', $notifications[0]['description']);
     }
 }

@@ -38,6 +38,7 @@ class ProtocolFactory
 
         $bolt = new Bolt($connection);
         // php-bolt-driver 7.5 selects PackStream from the negotiated Bolt version.
+        // Bolt 6.1 is accepted via instanceof V6 because V6_1 extends V6.
         $bolt->setProtocolVersions(...$this->offeredProtocolVersions());
         $protocol = $bolt->build();
 
@@ -51,13 +52,14 @@ class ProtocolFactory
     /**
      * Bolt versions offered during the handshake.
      *
-     * Each entry is major.minor.range. 6.1.1 offers 6.1 and 6.0, 5.8.8 offers 5.8
-     * down through 5.0, and 4.4 is exactly 4.4.
+     * Each entry is major.minor.range. 6.1.1 offers 6.1 and 6.0, 5.8.2 offers
+     * 5.8–5.6, 5.4.4 offers 5.4–5.0, and 4.4 is exactly 4.4. Bolt 5.5 is omitted
+     * on purpose (spec bug; Feature:Bolt:5.5 stays false).
      *
      * @return list<string>
      */
     public function offeredProtocolVersions(): array
     {
-        return ['6.1.1', '5.8.8', '4.4'];
+        return ['6.1.1', '5.8.2', '5.4.4', '4.4'];
     }
 }

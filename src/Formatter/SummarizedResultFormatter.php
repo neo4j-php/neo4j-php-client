@@ -277,7 +277,9 @@ final class SummarizedResultFormatter
             $position = $diagnostic['_position'] ?? $status['position'] ?? [];
             $mapped[] = [
                 'severity' => $diagnostic['_severity'] ?? $status['severity'] ?? '',
-                'description' => $status['status_description'] ?? $status['description'] ?? '',
+                // Legacy Notification.description is the human body (`description`), not the
+                // GQL status text (`status_description`). TestKit summary tests assert this order.
+                'description' => $status['description'] ?? $status['status_description'] ?? '',
                 'code' => $status['neo4j_code'] ?? $status['code'] ?? '',
                 'position' => is_array($position) ? $position : [],
                 'title' => $status['title'] ?? '',

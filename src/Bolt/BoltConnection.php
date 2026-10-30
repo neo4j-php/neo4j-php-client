@@ -679,7 +679,7 @@ class BoltConnection implements ConnectionInterface
             return;
         }
 
-        if (!$this->supportsTelemetry($this->boltProtocol)) {
+        if (!$this->supportsTelemetry()) {
             return;
         }
 
@@ -695,13 +695,28 @@ class BoltConnection implements ConnectionInterface
         ++$this->messagesInPipeline;
     }
 
-    private function supportsTelemetry(V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6|null $protocol): bool
+    /**
+     * TELEMETRY exists from Bolt 5.4 onward (V6_1 is covered because it extends V6).
+     */
+    public function supportsTelemetry(): bool
     {
+        return $this->telemetryProtocol() !== null;
+    }
+
+    /**
+     * @return V5_4|V5_6|V5_7|V5_8|V6|null
+     */
+    public function telemetryProtocol(): V5_4|V5_6|V5_7|V5_8|V6|null
+    {
+        $protocol = $this->boltProtocol;
+
         return $protocol instanceof V5_4
             || $protocol instanceof V5_6
             || $protocol instanceof V5_7
             || $protocol instanceof V5_8
-            || $protocol instanceof V6;
+            || $protocol instanceof V6
+            ? $protocol
+            : null;
     }
 
     private function assertNoFailure(Response $response): void

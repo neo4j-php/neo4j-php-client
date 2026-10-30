@@ -21,9 +21,9 @@ final class ProtocolFactoryTest extends TestCase
 {
     public function testOfferedProtocolVersionsCoverBolt6DownTo44(): void
     {
-        self::assertSame(['6.1.1', '5.8.8', '4.4'], (new ProtocolFactory())->offeredProtocolVersions());
+        self::assertSame(['6.1.1', '5.8.2', '5.4.4', '4.4'], (new ProtocolFactory())->offeredProtocolVersions());
         self::assertSame(
-            ['6.1', '6', '5.8', '5.7', '5.6', '5.5', '5.4', '5.3', '5.2', '5.1', '5', '4.4'],
+            ['6.1', '6', '5.8', '5.7', '5.6', '5.4', '5.3', '5.2', '5.1', '5', '4.4'],
             $this->expandOffers((new ProtocolFactory())->offeredProtocolVersions())
         );
     }
