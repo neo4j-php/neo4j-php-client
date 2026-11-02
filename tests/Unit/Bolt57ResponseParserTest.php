@@ -16,11 +16,11 @@ namespace Laudis\Neo4j\Tests\Unit;
 use Bolt\enum\Message;
 use Bolt\enum\Signature;
 use Bolt\protocol\Response;
-use InvalidArgumentException;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use UnexpectedValueException;
 
 final class Bolt57ResponseParserTest extends TestCase
 {
@@ -48,7 +48,7 @@ final class Bolt57ResponseParserTest extends TestCase
 
     public function testFailureWithoutACodeIsRejected(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(UnexpectedValueException::class);
 
         Neo4jError::fromBoltResponse(new Response(Message::LOGON, Signature::FAILURE, [
             'message' => 'wrong password',

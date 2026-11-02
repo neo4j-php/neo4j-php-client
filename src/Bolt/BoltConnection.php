@@ -461,8 +461,15 @@ class BoltConnection implements ConnectionInterface
     public function invalidate(): void
     {
         $this->subscribedResults = [];
-        $this->connection->disconnect();
+
+        // Already torn down (protocol gone and socket disconnected) — avoid a second
+        // disconnect() on the same socket, which is what throws during cleanup.
+        if (!isset($this->boltProtocol) && $this->connection->isDisconnected()) {
+            return;
+        }
+
         unset($this->boltProtocol);
+        $this->connection->disconnect();
     }
 
     private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array

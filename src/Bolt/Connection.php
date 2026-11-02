@@ -20,6 +20,8 @@ use Throwable;
 
 class Connection
 {
+    private bool $disconnected = false;
+
     /**
      * @param ''|'s'|'ssc' $ssl
      */
@@ -54,12 +56,20 @@ class Connection
 
     public function disconnect(): void
     {
-        try {
-            $this->connection->disconnect();
-        } catch (Throwable) {
-            // PHP 8.4+ can throw when shutting down an already-closed socket.
-            // Cleanup must not replace the original protocol/network error.
+        // Idempotent: calling disconnect twice on the same underlying socket is what
+        // throws (not "server already closed"). Mark before the call so a failed first
+        // attempt cannot be retried into a second shutdown on the same socket.
+        if ($this->disconnected) {
+            return;
         }
+
+        $this->disconnected = true;
+        $this->connection->disconnect();
+    }
+
+    public function isDisconnected(): bool
+    {
+        return $this->disconnected;
     }
 
     public function getIp(): string

@@ -151,7 +151,7 @@ final class BoltResult implements Iterator
         } catch (BoltConnectException|BoltException $e) {
             // Invalidate connection on socket/network errors so pool does not reuse it.
             // Rethrow as-is - Session retry logic inspects the actual exception via isConnectionError().
-            // Connection::disconnect() swallows closed-socket cleanup errors so they do not replace this.
+            // invalidate()/disconnect() are idempotent so cleanup cannot replace this error.
             $this->connection->invalidate();
             throw $e;
         }

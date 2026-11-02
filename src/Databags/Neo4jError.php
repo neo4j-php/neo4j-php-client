@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Databags;
 
 use Bolt\protocol\Response;
 use InvalidArgumentException;
+use UnexpectedValueException;
 
 /**
  * Contains the code and message of an error in a neo4j database.
@@ -49,7 +50,7 @@ final class Neo4jError
         $code = $content['code'] ?? $content['neo4j_code'] ?? null;
         $message = $content['message'] ?? null;
         if (!is_string($code) || $code === '' || ($message !== null && !is_string($message))) {
-            throw new InvalidArgumentException('Invalid message exception code');
+            throw new UnexpectedValueException('Invalid message exception code');
         }
 
         return self::fromMessageAndCode($code, $message);
