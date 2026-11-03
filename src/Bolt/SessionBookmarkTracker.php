@@ -57,11 +57,14 @@ final class SessionBookmarkTracker
     }
 
     /**
+     * Bookmarks already synced into the holder (e.g., at session construction).
+     * Avoids a second bookmarks-supplier call when capturing routing bookmarks.
+     *
      * @return list<string>
      */
     public function getRediscoveryBookmarkValues(): array
     {
-        return $this->determineBookmarks(false)->values();
+        return $this->bookmarkHolder->getBookmark()->values();
     }
 
     private function syncHolder(bool $updateLastUsed): void

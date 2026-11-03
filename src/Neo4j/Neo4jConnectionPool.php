@@ -172,7 +172,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                      *
                      * @psalm-suppress UnnecessaryVarAnnotation
                      */
-                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
+                    // Acquire with a database-agnostic config so the router connection can be
+                    // reused for later ROUTEs regardless of the requesting session database.
+                    $routerSessionConfig = SessionConfiguration::default();
+                    if ($config->getAccessMode() !== null) {
+                        $routerSessionConfig = $routerSessionConfig->withAccessMode($config->getAccessMode());
+                    }
+                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($routerSessionConfig));
                     $table = $this->routingTable($connection, $config);
 
                     $this->getLogger()?->log(LogLevel::DEBUG, 'Successfully fetched routing table', [
@@ -333,8 +339,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $bolt = $connection->protocol();
 
         $routeExtra = $this->buildRouteExtra($config);
-        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $routeExtra['db'] ?? null]);
-        $response = $bolt->route([], [], $routeExtra)->getResponse();
+        $bookmarks = array_values(array_unique($config->getRoutingBookmarks()));
+        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', [
+            'db' => $routeExtra['db'] ?? null,
+            'bookmarks' => $bookmarks,
+        ]);
+        // Bolt ROUTE is: routing map, bookmarks list, extra map (db/imp_user only).
+        $response = $bolt->route([], $bookmarks, $routeExtra)->getResponse();
         $connection->handleResponse($response);
 
         /** @var array{rt?: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int, db?: string}} $route */
@@ -354,7 +365,7 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
     }
 
     /**
-     * @return array{db?: string, bookmarks?: list<string>}
+     * @return array{db?: string}
      */
     private function buildRouteExtra(SessionConfiguration $config): array
     {
@@ -362,11 +373,6 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $database = $config->getDatabase();
         if ($database !== null) {
             $extra['db'] = $database;
-        }
-
-        $bookmarks = $config->getRoutingBookmarks();
-        if ($bookmarks !== []) {
-            $extra['bookmarks'] = array_values(array_unique($bookmarks));
         }
 
         return $extra;

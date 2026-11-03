@@ -179,12 +179,14 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         $this->ensureBeginSent();
 
         try {
+            // Explicit transactions send db/bookmarks/metadata on BEGIN only.
+            // Auto-commit (session.run) sends them on RUN.
             $meta = $this->connection->run(
                 $statement->getText(),
                 $parameters->toArray(),
-                $this->database,
-                $this->tsxConfig->getTimeout(),
-                $this->isInstantTransaction ? $this->bookmarkHolder : null, // let the begin transaction pass the bookmarks if it is a managed transaction
+                $this->isInstantTransaction ? $this->database : null,
+                $this->isInstantTransaction ? $this->tsxConfig->getTimeout() : null,
+                $this->isInstantTransaction ? $this->bookmarkHolder : null,
                 null, // mode is never sent in RUN messages - it comes from session configuration
                 $this->isInstantTransaction ? $this->tsxConfig->getMetaData() : null,
                 $this->telemetryApi,
@@ -258,7 +260,13 @@ final class BoltUnmanagedTransaction implements UnmanagedTransactionInterface
         try {
             $this->bookmarkTracker?->prepareForSend(true);
             $this->connection->sendTelemetryIfNeeded($this->telemetryApi);
-            $this->connection->begin($this->database, $this->tsxConfig->getTimeout(), $this->bookmarkHolder, $this->tsxConfig->getMetaData());
+            $this->connection->begin(
+                $this->database,
+                $this->tsxConfig->getTimeout(),
+                $this->bookmarkHolder,
+                $this->tsxConfig->getMetaData(),
+                $this->config->getAccessMode(),
+            );
             $this->beginSent = true;
         } catch (Throwable $e) {
             $this->terminateOrRetry($e);

@@ -271,11 +271,11 @@ class BoltConnection implements ConnectionInterface
      *
      * @param iterable<string, scalar|array|null>|null $txMetaData
      */
-    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData): void
+    public function begin(?string $database, ?float $timeout, BookmarkHolder $holder, ?iterable $txMetaData, ?AccessMode $mode = null): void
     {
         $this->consumeResults(); // todo - move this before sending telemetry
 
-        $extra = $this->buildRunExtra($database, $timeout, $holder, null, $txMetaData);
+        $extra = $this->buildRunExtra($database, $timeout, $holder, $mode, $txMetaData);
         $this->messageFactory->createBeginMessage($extra)->send();
         ++$this->messagesInPipeline;
 
@@ -476,8 +476,9 @@ class BoltConnection implements ConnectionInterface
             $extra['bookmarks'] = $holder->getBookmark()->values();
         }
 
-        if ($mode) {
-            $extra['mode'] = AccessMode::WRITE() === $mode ? 'w' : 'r';
+        // Bolt defaults to write; only send mode for explicit read transactions.
+        if ($mode !== null && AccessMode::READ() === $mode) {
+            $extra['mode'] = 'r';
         }
 
         if ($metadata !== null) {
