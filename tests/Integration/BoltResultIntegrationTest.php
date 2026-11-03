@@ -54,4 +54,23 @@ final class BoltResultIntegrationTest extends EnvironmentAwareIntegrationTest
         self::assertEquals(100000, $i + 1);
         self::assertIsArray($result->consume());
     }
+
+    public function testNegotiatedBoltVersionStaysInsideTheSupportedRange(): void
+    {
+        if ($this->getUri()->getScheme() !== 'bolt') {
+            self::markTestSkipped('No bolt uri provided');
+        }
+
+        $factory = new BoltFactory(
+            SystemWideConnectionFactory::getInstance(),
+            new ProtocolFactory(),
+            new SslConfigurationFactory()
+        );
+        $connection = $factory->createConnection(
+            new ConnectionRequestData($this->getUri()->getHost(), $this->getUri(), Authenticate::fromUrl($this->getUri()), 'a/b', new SslConfiguration(SslMode::FROM_URL(), false)),
+            SessionConfiguration::default()
+        );
+
+        self::assertContains($connection->protocol()->getVersion(), ['4.4', '5', '5.1', '5.2', '5.3', '5.4', '5.6', '5.7', '5.8', '6', '6.1']);
+    }
 }

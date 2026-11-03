@@ -85,6 +85,8 @@ return [
     'Feature:API:Type.Spatial' => true,
     // The driver supports sending and receiving temporal data types.
     'Feature:API:Type.Temporal' => true,
+    // Feature:API:Type.UUID is omitted until TestKit 6.x gains that Feature enum
+    // value (needs a TestKit PR). Driver UUID support still covered by unit/IT.
     // The driver supports single-sign-on (SSO) by providing a bearer auth token
     // API.
     'Feature:Auth:Bearer' => true,
@@ -122,11 +124,15 @@ return [
     // to a bug in the spec
     'Feature:Bolt:5.5' => false,
     // The driver supports Bolt protocol version 5.6
-    'Feature:Bolt:5.6' => false,
+    'Feature:Bolt:5.6' => true,
     // The driver supports Bolt protocol version 5.7
-    'Feature:Bolt:5.7' => false,
+    'Feature:Bolt:5.7' => true,
     // The driver supports Bolt protocol version 5.8
-    'Feature:Bolt:5.8' => false,
+    'Feature:Bolt:5.8' => true,
+    // The driver supports Bolt protocol version 6.0
+    'Feature:Bolt:6.0' => true,
+    // Feature:Bolt:6.1 is omitted until TestKit 6.x gains that Feature enum
+    // value (needs a TestKit PR). The client still offers/accepts Bolt 6.1.
     // The driver supports negotiating the Bolt protocol version with the server
     // using handshake manifest v1.
     'Feature:Bolt:HandshakeManifestV1' => true,

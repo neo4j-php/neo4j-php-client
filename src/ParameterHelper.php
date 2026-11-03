@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j;
 
+use Bolt\packstream\v1_1\Uuid as BoltUuid;
 use Bolt\protocol\IStructure;
 use Bolt\protocol\v1\structures\DateTimeZoneId;
 use Bolt\protocol\v1\structures\Duration;
@@ -38,6 +39,7 @@ use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\DateTime as Neo4jDateTime;
 use Laudis\Neo4j\Types\DateTimeZoneId as Neo4jDateTimeZoneId;
+use Laudis\Neo4j\Types\Uuid;
 use stdClass;
 
 /**
@@ -79,21 +81,39 @@ final class ParameterHelper
     }
 
     /**
-     * @return iterable|scalar|stdClass|IStructure|null
+     * @return iterable|scalar|stdClass|IStructure|BoltUuid|null
      */
     public static function asParameter(
         mixed $value,
         ConnectionProtocol $protocol,
         bool $boltUtcPatchNegotiated = false,
-    ): iterable|int|float|bool|string|stdClass|IStructure|null {
+    ): iterable|int|float|bool|string|stdClass|IStructure|BoltUuid|null {
         return self::passThroughBoltStructure($value) ??
-            self::cypherMapToStdClass($value) ??
+            self::convertUuid($value, $protocol) ??
+            self::cypherMapToStdClass($value, $protocol, $boltUtcPatchNegotiated) ??
             self::emptySequenceToArray($value) ??
             self::convertBoltConvertibles($value, $protocol, $boltUtcPatchNegotiated) ??
             self::convertTemporalTypes($value, $protocol, $boltUtcPatchNegotiated) ??
             self::filledIterableToArray($value, $protocol, $boltUtcPatchNegotiated) ??
             self::stringAbleToString($value) ??
             self::filterInvalidType($value);
+    }
+
+    private static function convertUuid(mixed $value, ConnectionProtocol $protocol): ?BoltUuid
+    {
+        if ($value instanceof Uuid) {
+            $boltUuid = new BoltUuid($value->getValue());
+        } elseif ($value instanceof BoltUuid) {
+            $boltUuid = $value;
+        } else {
+            return null;
+        }
+
+        if ($protocol->compare(ConnectionProtocol::BOLT_V6_1()) < 0) {
+            throw new InvalidArgumentException('UUID parameters require a Bolt 6.1 connection');
+        }
+
+        return $boltUuid;
     }
 
     private static function passThroughBoltStructure(mixed $value): ?IStructure
@@ -143,17 +163,15 @@ final class ParameterHelper
     }
 
     /**
-     * @pure
-     *
      * @psalm-suppress ImpureMethodCall
      * @psalm-suppress ImpurePropertyAssignment
      */
-    private static function cypherMapToStdClass(mixed $value): ?stdClass
+    private static function cypherMapToStdClass(mixed $value, ConnectionProtocol $protocol, bool $boltUtcPatchNegotiated): ?stdClass
     {
         if ($value instanceof CypherMap) {
             $tbr = new stdClass();
             foreach ($value as $key => $val) {
-                $tbr->$key = $val;
+                $tbr->$key = self::asParameter($val, $protocol, $boltUtcPatchNegotiated);
             }
 
             return $tbr;
@@ -174,14 +192,14 @@ final class ParameterHelper
     /**
      * @param iterable<array-key, mixed> $parameters
      *
-     * @return CypherMap<iterable|scalar|stdClass|null>
+     * @return CypherMap<iterable|scalar|stdClass|IStructure|BoltUuid|null>
      */
     public static function formatParameters(
         iterable $parameters,
         ConnectionProtocol $connection,
         bool $boltUtcPatchNegotiated = false,
     ): CypherMap {
-        /** @var array<string, iterable|scalar|stdClass|null> $tbr */
+        /** @var array<string, iterable|scalar|stdClass|IStructure|BoltUuid|null> $tbr */
         $tbr = [];
         /**
          * @var mixed $key
