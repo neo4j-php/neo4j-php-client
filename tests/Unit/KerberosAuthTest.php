@@ -17,7 +17,8 @@ use Bolt\enum\Message;
 use Bolt\enum\Signature;
 use Bolt\protocol\Response;
 use Bolt\protocol\V4_4;
-use Bolt\protocol\V5;
+use Bolt\protocol\V5_1;
+use Error;
 use Laudis\Neo4j\Authentication\KerberosAuth;
 use Laudis\Neo4j\Bolt\BoltConnection;
 use Laudis\Neo4j\Common\Neo4jLogger;
@@ -40,8 +41,9 @@ class KerberosAuthTest extends TestCase
     {
         $this->expectException(Neo4jException::class);
 
-        $mockProtocol = $this->createMock(V5::class);
+        $mockProtocol = $this->createMock(V5_1::class);
         $mockProtocol->method('hello');
+        $mockProtocol->method('logon');
         $mockProtocol->method('getResponse')->willReturn(new Response(
             Message::HELLO,
             Signature::FAILURE,
@@ -53,29 +55,20 @@ class KerberosAuthTest extends TestCase
 
         $error = Neo4jError::fromMessageAndCode('Neo.ClientError.Security.Unauthorized', 'Invalid credentials');
         $exception = new Neo4jException([$error]);
-        $mockConnection->method('assertNoFailure')->will($this->throwException($exception));
+        $mockConnection->method('handleResponse')->will($this->throwException($exception));
 
         $this->auth->authenticateBolt($mockConnection, 'neo4j-client/1.0');
     }
 
     public function testAuthenticateBoltFailureV4(): void
     {
-        $this->expectException(Neo4jException::class);
+        $this->expectException(Error::class);
 
         $mockProtocol = $this->createMock(V4_4::class);
         $mockProtocol->method('hello');
-        $mockProtocol->method('getResponse')->willReturn(new Response(
-            Message::HELLO,
-            Signature::FAILURE,
-            ['code' => 'Neo.ClientError.Security.Unauthorized', 'message' => 'Invalid credentials']
-        ));
 
         $mockConnection = $this->createMock(BoltConnection::class);
         $mockConnection->method('protocol')->willReturn($mockProtocol);
-
-        $error = Neo4jError::fromMessageAndCode('Neo.ClientError.Security.Unauthorized', 'Invalid credentials');
-        $exception = new Neo4jException([$error]);
-        $mockConnection->method('assertNoFailure')->will($this->throwException($exception));
 
         $this->auth->authenticateBolt($mockConnection, 'neo4j-client/1.0');
     }

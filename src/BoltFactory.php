@@ -19,6 +19,7 @@ use Laudis\Neo4j\Bolt\SslConfigurationFactory;
 use Laudis\Neo4j\Bolt\SystemWideConnectionFactory;
 use Laudis\Neo4j\Bolt\UriConfiguration;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Common\MonotonicClock;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\BasicConnectionFactoryInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -34,6 +35,8 @@ use Laudis\Neo4j\Enum\SocketType;
  */
 class BoltFactory
 {
+    private readonly MonotonicClock $clock;
+
     /**
      * @psalm-external-mutation-free
      */
@@ -42,12 +45,14 @@ class BoltFactory
         private readonly ProtocolFactory $protocolFactory,
         private readonly SslConfigurationFactory $sslConfigurationFactory,
         private readonly ?Neo4jLogger $logger = null,
+        ?MonotonicClock $clock = null,
     ) {
+        $this->clock = $clock ?? new MonotonicClock();
     }
 
-    public static function create(?Neo4jLogger $logger, ?SocketType $socketType = null): self
+    public static function create(?Neo4jLogger $logger, ?SocketType $socketType = null, ?MonotonicClock $clock = null): self
     {
-        return new self(SystemWideConnectionFactory::getInstance($socketType), new ProtocolFactory(), new SslConfigurationFactory(), $logger);
+        return new self(SystemWideConnectionFactory::getInstance($socketType), new ProtocolFactory(), new SslConfigurationFactory(), $logger, $clock);
     }
 
     public function createConnection(ConnectionRequestData $data, SessionConfiguration $sessionConfig): BoltConnection
@@ -79,7 +84,7 @@ class BoltFactory
             $sslLevel
         );
 
-        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger, $socketTimeout);
+        $connection = new BoltConnection($protocol, $connection, $data->getAuth(), $data->getUserAgent(), $config, $this->logger, $socketTimeout, $this->clock);
 
         $response = $data->getAuth()->authenticateBolt($connection, $data->getUserAgent());
 

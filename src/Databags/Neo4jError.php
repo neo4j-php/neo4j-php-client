@@ -15,6 +15,7 @@ namespace Laudis\Neo4j\Databags;
 
 use Bolt\protocol\Response;
 use InvalidArgumentException;
+use UnexpectedValueException;
 
 /**
  * Contains the code and message of an error in a neo4j database.
@@ -42,11 +43,41 @@ final class Neo4jError
         /**
          * @psalm-suppress ImpurePropertyFetch
          *
-         * @var array{code: string, message:string} $content
+         * @var array<string, mixed> $content
          */
         $content = $response->content;
+        // Bolt 5.7 renamed the failure field `code` to `neo4j_code`. When neither is
+        // present, match other official drivers and fall back to UnknownError instead
+        // of throwing and hiding the FAILURE payload.
+        /**
+         * @psalm-suppress MixedAssignment Bolt FAILURE metadata is untyped wire data.
+         */
+        $codeField = $content['code'] ?? null;
+        /**
+         * @psalm-suppress MixedAssignment Bolt FAILURE metadata is untyped wire data.
+         */
+        $neo4jCodeField = $content['neo4j_code'] ?? null;
+        if (is_string($codeField) && $codeField !== '') {
+            $code = $codeField;
+        } elseif (is_string($neo4jCodeField) && $neo4jCodeField !== '') {
+            $code = $neo4jCodeField;
+        } elseif ($codeField !== null && $codeField !== '' && !is_string($codeField)) {
+            throw new UnexpectedValueException('Invalid message exception code');
+        } elseif ($neo4jCodeField !== null && $neo4jCodeField !== '' && !is_string($neo4jCodeField)) {
+            throw new UnexpectedValueException('Invalid message exception code');
+        } else {
+            $code = 'Neo.DatabaseError.General.UnknownError';
+        }
 
-        return self::fromMessageAndCode($content['code'], $content['message']);
+        /**
+         * @psalm-suppress MixedAssignment Bolt FAILURE metadata is untyped wire data.
+         */
+        $message = $content['message'] ?? null;
+        if ($message !== null && !is_string($message)) {
+            throw new UnexpectedValueException('Invalid message exception code');
+        }
+
+        return self::fromMessageAndCode($code, $message);
     }
 
     /**

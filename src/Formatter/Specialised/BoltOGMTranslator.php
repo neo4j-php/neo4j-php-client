@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Formatter\Specialised;
 
+use Bolt\packstream\v1_1\Uuid as BoltUuid;
 use Bolt\protocol\v1\structures\Date as BoltDate;
 use Bolt\protocol\v1\structures\DateTime as BoltDateTime;
 use Bolt\protocol\v1\structures\DateTimeZoneId as BoltDateTimeZoneId;
@@ -49,6 +50,7 @@ use Laudis\Neo4j\Types\Path;
 use Laudis\Neo4j\Types\Relationship;
 use Laudis\Neo4j\Types\Time;
 use Laudis\Neo4j\Types\UnboundRelationship;
+use Laudis\Neo4j\Types\Uuid;
 use Laudis\Neo4j\Types\Vector;
 use Laudis\Neo4j\Types\WGS843DPoint;
 use Laudis\Neo4j\Types\WGS84Point;
@@ -88,6 +90,7 @@ final class BoltOGMTranslator
             BoltPoint3D::class => $this->makeFromBoltPoint3D(...),
             BoltDateTimeZoneId::class => $this->makeBoltTimezoneIdentifier(...),
             BoltVector::class => $this->makeFromBoltVector(...),
+            BoltUuid::class => $this->makeFromBoltUuid(...),
             'array' => $this->mapArray(...),
             'int' => static fn (int $x): int => $x,
             'null' => static fn (): ?object => null,
@@ -307,6 +310,11 @@ final class BoltOGMTranslator
         $typeMarker = $markerByte !== null ? VectorTypeMarker::tryFrom($markerByte) : null;
 
         return new Vector(array_values($decoded), $typeMarker);
+    }
+
+    private function makeFromBoltUuid(BoltUuid $value): Uuid
+    {
+        return new Uuid($value->value);
     }
 
     private function makeFromBoltPath(BoltPath $path): Path

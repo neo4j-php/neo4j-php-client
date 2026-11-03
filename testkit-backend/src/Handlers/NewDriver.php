@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
 use Laudis\Neo4j\Authentication\Authenticate;
+use Laudis\Neo4j\Common\MonotonicClock;
 use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\DriverFactory;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
@@ -32,9 +33,12 @@ final class NewDriver implements RequestHandlerInterface
 {
     private MainRepository $repository;
 
-    public function __construct(MainRepository $repository)
+    private MonotonicClock $clock;
+
+    public function __construct(MainRepository $repository, MonotonicClock $clock)
     {
         $this->repository = $repository;
+        $this->clock = $clock;
     }
 
     /**
@@ -61,6 +65,11 @@ final class NewDriver implements RequestHandlerInterface
         if ($request->telemetryDisabled === true) {
             $config = $config->withTelemetryEnabled(false);
         }
+
+        $config = $config->withConnectionLivenessCheckTimeout(
+            $request->livenessCheckTimeoutMs === null ? null : $request->livenessCheckTimeoutMs / 1000
+        );
+        $config = $config->withClock($this->clock);
 
         $authenticate = Authenticate::basic($user, $pass);
         $driver = DriverFactory::create($request->uri, $config, $authenticate);

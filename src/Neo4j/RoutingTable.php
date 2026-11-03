@@ -30,6 +30,7 @@ final class RoutingTable
     public function __construct(
         private readonly iterable $servers,
         private readonly int $ttl,
+        private readonly ?string $database = null,
     ) {
     }
 
@@ -39,6 +40,14 @@ final class RoutingTable
     public function getTtl(): int
     {
         return $this->ttl;
+    }
+
+    /**
+     * Database name returned by ROUTE when the session did not name one.
+     */
+    public function getDatabase(): ?string
+    {
+        return $this->database;
     }
 
     /**
@@ -104,6 +113,6 @@ final class RoutingTable
             return $this;
         }
 
-        return new self($newServers, $this->ttl);
+        return new self($newServers, $this->ttl, $this->database);
     }
 }

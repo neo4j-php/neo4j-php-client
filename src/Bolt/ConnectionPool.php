@@ -25,13 +25,15 @@ use Laudis\Neo4j\Databags\DriverConfiguration;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Exception\ConnectionPoolException;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LogLevel;
 
 use function shuffle;
+
+use Throwable;
 
 /**
  * @implements ConnectionPoolInterface<BoltConnection>
  */
-/** @implements ConnectionPoolInterface<BoltConnection> */
 final class ConnectionPool implements ConnectionPoolInterface
 {
     /** @var list<BoltConnection> */
@@ -43,6 +45,7 @@ final class ConnectionPool implements ConnectionPoolInterface
         private readonly ConnectionRequestData $data,
         private readonly ?Neo4jLogger $logger,
         private readonly float $acquireConnectionTimeout,
+        private readonly ?float $connectionLivenessCheckTimeout = null,
     ) {
     }
 
@@ -54,7 +57,7 @@ final class ConnectionPool implements ConnectionPoolInterface
     ): self {
         return new self(
             $semaphore,
-            BoltFactory::create($conf->getLogger(), $conf->getSocketType()),
+            BoltFactory::create($conf->getLogger(), $conf->getSocketType(), $conf->getClock()),
             new ConnectionRequestData(
                 $uri->getHost(),
                 $uri,
@@ -65,7 +68,8 @@ final class ConnectionPool implements ConnectionPoolInterface
                 $conf->isTelemetryEnabled(),
             ),
             $conf->getLogger(),
-            $conf->getAcquireConnectionTimeout()
+            $conf->getAcquireConnectionTimeout(),
+            $conf->getConnectionLivenessCheckTimeout(),
         );
     }
 
@@ -134,14 +138,63 @@ final class ConnectionPool implements ConnectionPoolInterface
     {
         // Ensure random connection reuse before picking one.
         shuffle($this->activeConnections);
-        foreach ($this->activeConnections as $activeConnection) {
-            // We prefer a connection that is just ready
-            if ($activeConnection->getServerState() === 'READY' && $this->factory->canReuseConnection($activeConnection, $config)) {
-                return $this->factory->reuseConnection($activeConnection, $config);
+
+        // Iterate a snapshot so destroyConnection() can safely mutate activeConnections.
+        // Only reuse READY connections. STREAMING connections must stay open so nested
+        // session.run can use a second connection (TestKit nested iteration). Batch
+        // runStatements already releases locks on one connection via Session (#283).
+        foreach ([...$this->activeConnections] as $activeConnection) {
+            if (!$activeConnection->isOpen() || $activeConnection->getServerState() !== 'READY') {
+                if (!$activeConnection->isOpen()) {
+                    $this->destroyConnection($activeConnection);
+                }
+
+                continue;
             }
+
+            if (!$this->factory->canReuseConnection($activeConnection, $config)) {
+                continue;
+            }
+
+            if (!$this->resetIfIdle($activeConnection)) {
+                continue;
+            }
+
+            return $this->factory->reuseConnection($activeConnection, $config);
         }
 
         return null;
+    }
+
+    /**
+     * When the connection has been idle past the liveness timeout, probe it with RESET.
+     * Returns false after a failed probe; that connection is already removed from the pool.
+     */
+    private function resetIfIdle(BoltConnection $connection): bool
+    {
+        $timeout = $this->connectionLivenessCheckTimeout;
+        if ($timeout === null || $connection->getIdleTimeSeconds() < $timeout) {
+            return true;
+        }
+
+        try {
+            $connection->reset();
+
+            return true;
+        } catch (Throwable $e) {
+            $this->logger?->log(LogLevel::WARNING, 'Connection failed liveness check, discarding', [
+                'error' => $e->getMessage(),
+            ]);
+            $this->destroyConnection($connection);
+
+            return false;
+        }
+    }
+
+    private function destroyConnection(BoltConnection $connection): void
+    {
+        $connection->invalidate();
+        $this->release($connection);
     }
 
     public function close(): void

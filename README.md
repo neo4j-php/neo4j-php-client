@@ -230,10 +230,13 @@ Cypher values and types map to these php types and classes:
 | Relationship   | `\Laudis\Neo4j\Types\Relationship`            |
 | Path           | `\Laudis\Neo4j\Types\Path`                    |
 | Vector         | `\Laudis\Neo4j\Types\Vector` ***              |
+| UUID           | * `\Laudis\Neo4j\Types\Uuid` ****             |
 
 (*) These items can also be used as parameters in the bolt protocol and will automatically be converted by the driver, so they can be used in Cypher.
 
 (***) Vector (e.g. embedding) is only produced when decoding results from the server; it is not supported as a query parameter.
+
+(****) UUID is a Bolt 6.1 value. A query parameter of this type requires a Bolt 6.1 connection.
 
 Besides these examples, `\DateTimeInterface` will map to `DateTimeZoneId` in Cypher. An empty or list-type `array` will be converted to a cypher `List`, and an `associative array` will be converted to a `map`.
 
@@ -268,7 +271,7 @@ $client->run('MATCH (x) WHERE x.slug in $listOrMap RETURN x', ['listOrMap' => []
 |----------------------|----------------|
 | Authentication       | Yes            |
 | Transactions         | Yes            |
-| Bolt Protocol        | Yes            |
+| Bolt Protocol        | Yes, 4.4 through 6.1 |
 | Cluster              | Yes            |
 | Aura                 | Yes            |
 | Jolt Protocol        | Yes            |
@@ -412,10 +415,12 @@ A driver, session and transaction can be configured using configuration objects.
 | name              | concept     | description                                                                      | class                      |
 |-------------------|-------------|----------------------------------------------------------------------------------|----------------------------|
 | user agent        | driver      | The user agent used to identify the client to the neo4j server.                  | `DriverConfiguration`      |
+| liveness timeout  | driver      | Idle seconds before a pooled connection is probed with `RESET` (`null` = off).   | `DriverConfiguration`      |
 | database          | session     | The database to connect to.                                                      | `SessionConfiguration`     |
 | fetch size        | session     | The amount of rows to fetch at once.                                             | `SessionConfiguration`     |
 | access mode       | session     | The default mode when accessing the server.                                      | `SessionConfiguration`     |
 | bookmarks         | session     | The bookmarks used in the session. (experimental)                                | `SessionConfiguration`     |
+| bookmarks enabled | session     | Whether bookmarks are tracked and sent. Defaults to `true`. `false` drops causal consistency. | `SessionConfiguration`     |
 | metadata          | transaction | The metadata used during the transaction. (experimental)                         | `TransactionConfiguration` |
 | timeout           | transaction | The maximum amount of time before timing out.                                    | `TransactionConfiguration` |
 
@@ -427,8 +432,19 @@ use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Databags\TransactionConfiguration;
 
 $client = \Laudis\Neo4j\ClientBuilder::create()
-    ->withDefaultDriverConfiguration(DriverConfiguration::default()->withUserAgent('MyApp/1.0.0'))
-    ->withDefaultSessionConfiguration(SessionConfiguration::default()->withDatabase('app-database'))
+    // Liveness checks are off by default, matching the official drivers.
+    // Long-running workers (Horizon/Octane) should probe idle pooled connections
+    // so a closed socket is not reused. Pass 0 to probe on every reuse.
+    ->withDefaultDriverConfiguration(
+        DriverConfiguration::default()
+            ->withUserAgent('MyApp/1.0.0')
+            ->withConnectionLivenessCheckTimeout(60.0)
+    )
+    ->withDefaultSessionConfiguration(
+        SessionConfiguration::default()
+            ->withDatabase('app-database')
+            // ->withBookmarksEnabled(false) // drop bookmark causal consistency for every session
+    )
     ->withDefaultTransactionConfiguration(TransactionConfiguration::default()->withTimeout(5.0))
     ->build();
 
@@ -445,4 +461,37 @@ $tsx = $client->getDriver('default')
 $tsx->run('SOME REALLY LONG MANAGEMENT QUERY');
 
 $tsx->commit();
+```
+
+### Disabling bookmarks
+
+Bookmarks stay enabled unless you turn them off. While they are enabled, the driver sends the session bookmark to Neo4j and stores the bookmark returned after each committed query. That is the client's bookmark-based causal consistency guarantee.
+
+Turn bookmarks off when a session does not need that guarantee, for example to avoid `Neo.TransientError.Transaction.BookmarkTimeout`:
+
+```php
+$session = $driver->createSession(
+    SessionConfiguration::default()->withBookmarksEnabled(false)
+);
+```
+
+The same flag can be the default for every session the client opens:
+
+```php
+$client = ClientBuilder::create()
+    ->withDriver('default', 'bolt://user:password@localhost')
+    ->withDefaultSessionConfiguration(
+        SessionConfiguration::default()->withBookmarksEnabled(false)
+    )
+    ->build();
+```
+
+With bookmarks disabled, bookmarks you pass in are not sent, and bookmarks Neo4j returns are not kept. A later session does not inherit them. `withBookmarksEnabled(true)` keeps the normal behavior.
+
+`tests/Integration/BookmarkConfigurationIntegrationTest.php` covers this against a real server. Point `CONNECTION` at the database. `phpunit.xml.dist` defaults to a local `neo4j://` URI, and an already exported `CONNECTION` takes precedence, so unit tests never need Aura credentials.
+
+```bash
+vendor/bin/phpunit --testsuite Unit --filter 'SessionConfigurationTest|BookmarkHolderTest'
+CONNECTION='neo4j://neo4j:testtest@localhost:7687' vendor/bin/phpunit --filter BookmarkConfigurationIntegrationTest
+CONNECTION='neo4j+s://user:password@xxxx.databases.neo4j.io' vendor/bin/phpunit --filter BookmarkConfigurationIntegrationTest
 ```

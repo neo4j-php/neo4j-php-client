@@ -40,14 +40,15 @@ final class NoAuth implements AuthenticateInterface
         $factory = $this->createMessageFactory($connection);
 
         if ($connection->getProtocol()->compare(ConnectionProtocol::BOLT_V5_1()) >= 0) {
-            $helloMetadata = ['user_agent' => $userAgent];
+            // Pipeline HELLO + LOGON (Optimization:AuthPipelining).
+            $hello = $factory->createHelloMessage(['user_agent' => $userAgent])->send();
+            $logon = $factory->createLogonMessage(['scheme' => 'none'])->send();
 
-            $factory->createHelloMessage($helloMetadata)->send()->getResponse();
-
-            $response = $factory->createLogonMessage(['scheme' => 'none'])->send()->getResponse();
+            $responseHello = $hello->getResponse();
+            $response = $logon->getResponse();
 
             /** @var array{server: string, connection_id: string, hints: list} */
-            return $response->content;
+            return array_merge($responseHello->content, $response->content);
         }
 
         $helloMetadata = [

@@ -307,6 +307,58 @@ CYPHER,
         $this->fetchSize(10);
     }
 
+    /**
+     * fetchSize -1 means PULL n=-1 (pull all records in one go).
+     * Use result sets larger than the default fetch size (1000) and run two
+     * statements back to back so a second large pull still works after the first.
+     */
+    public function testFetchSizePullAll(): void
+    {
+        $session = $this->getDriver()->createSession(SessionConfiguration::default()->withFetchSize(-1));
+
+        $first = $session->run('UNWIND range(1, $x) AS id RETURN id', ['x' => 10_000]);
+        $second = $session->run('UNWIND range(1, $x) AS id RETURN id', ['x' => 11_000]);
+
+        self::assertEquals(10_000, $first->count());
+        self::assertEquals(11_000, $second->count());
+    }
+
+    /**
+     * An unconsumed auto-commit result keeps its transaction open: its query may not have run yet,
+     * or may hold write locks until it is fully pulled. The next query in the session must run
+     * after it, seeing its writes without waiting on its locks (#283).
+     */
+    public function testUnconsumedRunDoesNotBlockNextRun(): void
+    {
+        $session = $this->getDriver()->createSession(SessionConfiguration::default()->withFetchSize(1));
+        $id = bin2hex(random_bytes(8));
+        $session->run('CREATE (:LockTest {id: $id})', ['id' => $id])->getSummary();
+
+        $first = $session->run('MATCH (n:LockTest {id: $id}) SET n.x = 1 WITH n UNWIND range(1, 10) AS i RETURN i', ['id' => $id]);
+        $session->run('MATCH (n:LockTest {id: $id}) SET n.x = 2', ['id' => $id])->getSummary();
+
+        self::assertCount(10, $first);
+        self::assertEquals(2, $session->run('MATCH (n:LockTest {id: $id}) RETURN n.x AS x', ['id' => $id])->first()->get('x'));
+    }
+
+    /**
+     * Each statement must see the writes of the earlier ones, and keep their records readable.
+     */
+    public function testRunStatementsSeesEarlierStatements(): void
+    {
+        $session = $this->getDriver()->createSession(SessionConfiguration::default()->withFetchSize(1));
+        $id = bin2hex(random_bytes(8));
+
+        $results = $session->runStatements([
+            Statement::create('MERGE (n:LockTest {id: $id}) SET n.x = 1 WITH n UNWIND range(1, 10) AS i RETURN i', ['id' => $id]),
+            Statement::create('MATCH (n:LockTest {id: $id}) SET n.x = 2', ['id' => $id]),
+        ]);
+        $results->last()->getSummary();
+
+        self::assertCount(10, $results->first());
+        self::assertEquals(2, $session->run('MATCH (n:LockTest {id: $id}) RETURN n.x AS x', ['id' => $id])->first()->get('x'));
+    }
+
     public function fetchSize(int $fetchSize): void
     {
         $session = $this->getDriver()->createSession(SessionConfiguration::default()->withFetchSize($fetchSize));

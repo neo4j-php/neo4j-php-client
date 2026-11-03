@@ -47,9 +47,10 @@ final class Session implements SessionInterface
 
     /** @var list<BoltConnection> */
     private array $usedConnections = [];
+    private ?BoltConnection $autoCommitConnection = null;
     private readonly BookmarkHolder $bookmarkHolder;
     private readonly SessionBookmarkTracker $bookmarkTracker;
-    private readonly SessionConfiguration $sessionConfig;
+    private SessionConfiguration $sessionConfig;
 
     /**
      * @param ConnectionPool|Neo4jConnectionPool $pool
@@ -63,7 +64,10 @@ final class Session implements SessionInterface
         private readonly SummarizedResultFormatter $formatter,
     ) {
         $bookmarkManager = $config->getBookmarkManager() ?? NoOpBookmarkManager::instance();
-        $this->bookmarkHolder = new BookmarkHolder(Bookmark::from($config->getBookmarks()));
+        $this->bookmarkHolder = new BookmarkHolder(
+            Bookmark::from($config->getBookmarks()),
+            $config->areBookmarksEnabled(),
+        );
         $this->bookmarkTracker = new SessionBookmarkTracker(
             $this->bookmarkHolder,
             $bookmarkManager,
@@ -286,7 +290,7 @@ final class Session implements SessionInterface
      * - With it: driver handles recovery automatically = better UX and reliability
      */
     private function executeStatementWithRetry(Statement $statement, TransactionConfiguration $config): SummarizedResult
-    {    // Retry instant transactions up to 3 times on connection/routing errors; catch distinguishes retryable errors from client errors (syntax, auth) and clears routing table for cluster failover.
+    {
         $maxRetries = 3;
         $retries = 0;
 
@@ -370,6 +374,7 @@ final class Session implements SessionInterface
     ): TransactionInterface {
         $this->getLogger()?->log(LogLevel::INFO, 'Starting instant transaction', ['config' => $tsxConfig]);
         $connection = $this->acquireConnection($tsxConfig, $config);
+        $this->autoCommitConnection = $connection;
 
         /** @var ConnectionPoolInterface<ConnectionInterface>|null $pool */
         $pool = $this->pool;
@@ -396,6 +401,7 @@ final class Session implements SessionInterface
     private function acquireConnection(TransactionConfiguration $config, SessionConfiguration $sessionConfig): BoltConnection
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Acquiring connection', ['config' => $config, 'sessionConfig' => $sessionConfig]);
+        $this->bufferAutoCommitResult();
         $connectionGenerator = $this->pool->acquire($sessionConfig);
         /**
          * @var BoltConnection $connection
@@ -403,6 +409,7 @@ final class Session implements SessionInterface
          * @psalm-suppress UnnecessaryVarAnnotation
          */
         $connection = GeneratorHelper::getReturnFromGenerator($connectionGenerator);
+        $this->pinResolvedDatabase();
 
         // We try and let the server do the timeout management.
         // Since the client should not run indefinitely, we just add the client side by two, just in case
@@ -455,6 +462,36 @@ final class Session implements SessionInterface
         }
         // Release connection back to pool for reuse
         $this->pool->release($connection);
+    }
+
+    /**
+     * Pulls the previous auto-commit result of this session into memory, so its transaction
+     * completes (releasing its locks and making its writes visible) and its connection can be
+     * reused before the next query starts.
+     */
+    private function bufferAutoCommitResult(): void
+    {
+        $connection = $this->autoCommitConnection;
+        $this->autoCommitConnection = null;
+        if ($connection !== null && $connection->getServerState() === 'STREAMING') {
+            $connection->consumeResults();
+        }
+    }
+
+    /**
+     * Pins the home database ROUTE resolved when the session did not name one, so it is
+     * resolved once per session rather than on every acquire.
+     */
+    private function pinResolvedDatabase(): void
+    {
+        if ($this->sessionConfig->getDatabase() !== null || !$this->pool instanceof Neo4jConnectionPool) {
+            return;
+        }
+
+        $database = $this->pool->getRoutingTable($this->sessionConfig)?->getDatabase();
+        if ($database !== null) {
+            $this->sessionConfig = $this->sessionConfig->withDatabase($database);
+        }
     }
 
     private function mergeTsxConfig(?TransactionConfiguration $config): TransactionConfiguration

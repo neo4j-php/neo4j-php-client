@@ -24,9 +24,14 @@ use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
+use Bolt\protocol\V5_6;
+use Bolt\protocol\V5_7;
+use Bolt\protocol\V5_8;
+use Bolt\protocol\V6;
 use Exception;
 use Laudis\Neo4j\Bolt\Messages\BoltTelemetryMessage;
 use Laudis\Neo4j\Common\ConnectionConfiguration;
+use Laudis\Neo4j\Common\MonotonicClock;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Contracts\AuthenticateInterface;
 use Laudis\Neo4j\Contracts\ConnectionInterface;
@@ -37,7 +42,6 @@ use Laudis\Neo4j\Enum\AccessMode;
 use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
-use Laudis\Neo4j\Types\CypherList;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LogLevel;
 use Throwable;
@@ -45,7 +49,7 @@ use Traversable;
 use WeakReference;
 
 /**
- * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}>
+ * @implements ConnectionInterface<array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6|null, 1: Connection}>
  *
  * @psalm-import-type BoltMeta from SummarizedResultFormatter
  */
@@ -64,7 +68,7 @@ class BoltConnection implements ConnectionInterface
      *       A great moment to do this would be when neo4j 5 is released as it will presumably allow us to do more
      *       stuff with PULL and DISCARD messages.
      *
-     * @var list<WeakReference<CypherList>>
+     * @var list<WeakReference<BoltResult>>
      */
     private array $subscribedResults = [];
 
@@ -81,8 +85,12 @@ class BoltConnection implements ConnectionInterface
 
     private int $messagesInPipeline = 0;
 
+    private float $lastUsedTimestamp = 0.0;
+
+    private readonly MonotonicClock $clock;
+
     /**
-     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|null, 1: Connection}
+     * @return array{0: V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6|null, 1: Connection}
      */
     public function getImplementation(): array
     {
@@ -93,7 +101,7 @@ class BoltConnection implements ConnectionInterface
      * @psalm-mutation-free
      */
     public function __construct(
-        private V4_4|V5|V5_1|V5_2|V5_3|V5_4|null $boltProtocol,
+        private V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6|null $boltProtocol,
         private readonly Connection $connection,
         private readonly AuthenticateInterface $auth,
         private readonly string $userAgent,
@@ -101,7 +109,9 @@ class BoltConnection implements ConnectionInterface
         private readonly ConnectionConfiguration $config,
         private readonly ?Neo4jLogger $logger,
         private readonly float $defaultRecvTimeout = DriverConfiguration::DEFAULT_SOCKET_TIMEOUT,
+        ?MonotonicClock $clock = null,
     ) {
+        $this->clock = $clock ?? new MonotonicClock();
         $this->messageFactory = new BoltMessageFactory($this, $this->logger);
     }
 
@@ -184,6 +194,22 @@ class BoltConnection implements ConnectionInterface
         );
     }
 
+    /**
+     * Marks the connection as recently used (for pool liveness checks).
+     */
+    public function touch(): void
+    {
+        $this->lastUsedTimestamp = $this->clock->now();
+    }
+
+    /**
+     * Seconds since the connection was last successfully used.
+     */
+    public function getIdleTimeSeconds(): float
+    {
+        return $this->clock->now() - $this->lastUsedTimestamp;
+    }
+
     public function isStreaming(): bool
     {
         return in_array(
@@ -218,10 +244,7 @@ class BoltConnection implements ConnectionInterface
         }
 
         foreach ($this->subscribedResults as $result) {
-            $result = $result->get();
-            if ($result) {
-                $result->preload();
-            }
+            $result->get()?->buffer();
         }
 
         $this->subscribedResults = [];
@@ -235,9 +258,9 @@ class BoltConnection implements ConnectionInterface
      */
     public function reset(): void
     {
-        $message = $this->messageFactory->createResetMessage();
-        $response = $message->send()->getResponse();
-        $this->assertNoFailure($response);
+        $this->messageFactory->createResetMessage()->send();
+        $response = $this->getProtocolResponseWithTimeout();
+        $this->handleResponse($response);
         $this->subscribedResults = [];
     }
 
@@ -259,7 +282,7 @@ class BoltConnection implements ConnectionInterface
         while ($this->messagesInPipeline > 0) {
             $response = $this->getProtocolResponseWithTimeout();
             --$this->messagesInPipeline;
-            $this->assertNoFailure($response);
+            $this->handleResponse($response);
         }
     }
 
@@ -274,7 +297,7 @@ class BoltConnection implements ConnectionInterface
 
         $message = $this->messageFactory->createDiscardMessage($extra);
         $response = $message->send()->getResponse();
-        $this->assertNoFailure($response);
+        $this->handleResponse($response);
     }
 
     /**
@@ -302,7 +325,7 @@ class BoltConnection implements ConnectionInterface
         do {
             $response = $this->getProtocolResponseWithTimeout();
             --$this->messagesInPipeline;
-            $this->assertNoFailure($response);
+            $this->handleResponse($response);
         } while ($this->messagesInPipeline > 0);
 
         /** @var BoltMeta */
@@ -320,10 +343,10 @@ class BoltConnection implements ConnectionInterface
 
         $message = $this->messageFactory->createRollbackMessage();
         $response = $message->send()->getResponse();
-        $this->assertNoFailure($response);
+        $this->handleResponse($response);
     }
 
-    public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4
+    public function protocol(): V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6
     {
         if (!isset($this->boltProtocol)) {
             throw new Exception('Connection is closed');
@@ -434,8 +457,9 @@ class BoltConnection implements ConnectionInterface
     public function invalidate(): void
     {
         $this->subscribedResults = [];
-        $this->connection->disconnect();
         unset($this->boltProtocol);
+        // Connection::disconnect() is already idempotent.
+        $this->connection->disconnect();
     }
 
     private function buildRunExtra(?string $database, ?float $timeout, ?BookmarkHolder $holder, ?AccessMode $mode, ?iterable $metadata): array
@@ -489,7 +513,7 @@ class BoltConnection implements ConnectionInterface
         return $this->protocol()->serverState->name;
     }
 
-    public function subscribeResult(CypherList $result): void
+    public function subscribeResult(BoltResult $result): void
     {
         $this->subscribedResults[] = WeakReference::create($result);
     }
@@ -499,15 +523,11 @@ class BoltConnection implements ConnectionInterface
         return $this->userAgent;
     }
 
-    public function assertNoFailure(Response $response): void
+    public function handleResponse(Response $response): void
     {
-        if ($response->signature === Signature::FAILURE) {
-            $this->logger?->log(LogLevel::ERROR, 'FAILURE', $response->content);
+        $this->assertNoFailure($response);
 
-            $this->subscribedResults = [];
-
-            throw Neo4jException::fromBoltResponse($response);
-        }
+        $this->touch();
     }
 
     /**
@@ -656,7 +676,7 @@ class BoltConnection implements ConnectionInterface
             return;
         }
 
-        if (!$this->boltProtocol instanceof V5_4) {
+        if (!$this->supportsTelemetry()) {
             return;
         }
 
@@ -670,5 +690,37 @@ class BoltConnection implements ConnectionInterface
 
         $this->sentTelemetryApis[$api->value] = true;
         ++$this->messagesInPipeline;
+    }
+
+    /**
+     * TELEMETRY exists from Bolt 5.4 onward (V6_1 is covered because it extends V6).
+     */
+    public function supportsTelemetry(): bool
+    {
+        return $this->telemetryProtocol() !== null;
+    }
+
+    public function telemetryProtocol(): V5_4|V5_6|V5_7|V5_8|V6|null
+    {
+        $protocol = $this->boltProtocol;
+
+        return $protocol instanceof V5_4
+            || $protocol instanceof V5_6
+            || $protocol instanceof V5_7
+            || $protocol instanceof V5_8
+            || $protocol instanceof V6
+            ? $protocol
+            : null;
+    }
+
+    private function assertNoFailure(Response $response): void
+    {
+        if ($response->signature === Signature::FAILURE) {
+            $this->logger?->log(LogLevel::ERROR, 'FAILURE', $response->content);
+
+            $this->subscribedResults = [];
+
+            throw Neo4jException::fromBoltResponse($response);
+        }
     }
 }

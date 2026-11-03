@@ -43,17 +43,17 @@ final class BasicAuth implements AuthenticateInterface
 
         $protocol = $connection->protocol();
         if (method_exists($protocol, 'logon')) {
-            $helloMetadata = ['user_agent' => $userAgent];
-
-            $responseHello = $factory->createHelloMessage($helloMetadata)->send()->getResponse();
-
-            $credentials = [
+            // Pipeline HELLO + LOGON (Optimization:AuthPipelining). Stubs such as
+            // liveness_check_recv_timeout.script wait for both before any SUCCESS.
+            $hello = $factory->createHelloMessage(['user_agent' => $userAgent])->send();
+            $logon = $factory->createLogonMessage([
                 'scheme' => 'basic',
                 'principal' => $this->username,
                 'credentials' => $this->password,
-            ];
+            ])->send();
 
-            $response = $factory->createLogonMessage($credentials)->send()->getResponse();
+            $responseHello = $hello->getResponse();
+            $response = $logon->getResponse();
 
             /** @var array{server: string, connection_id: string, hints: list} */
             return array_merge($responseHello->content, $response->content);

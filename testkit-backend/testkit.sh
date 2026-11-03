@@ -222,8 +222,13 @@ python3 -m unittest -vvv \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_default_user_agent \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_custom_user_agent \
      tests.stub.driver_parameters.test_client_agent_strings.TestClientAgentStringsV5x3.test_bolt_agent \
-     tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_keep_track_of_session_run
-
+     tests.stub.driver_parameters.test_bookmark_manager.TestNeo4jBookmarkManager.test_should_keep_track_of_session_run \
+     tests.stub.driver_parameters.test_liveness_check.TestLivenessCheck.test_no_timeout \
+     tests.stub.driver_parameters.test_liveness_check.TestLivenessCheck.test_timeout \
+     tests.stub.driver_parameters.test_liveness_check.TestLivenessCheck.test_timeout_with_re_auth \
+     tests.stub.driver_parameters.test_liveness_check.TestLivenessCheckRouting.test_no_timeout \
+     tests.stub.driver_parameters.test_liveness_check.TestLivenessCheckRouting.test_timeout \
+     tests.stub.driver_parameters.test_liveness_check.TestLivenessCheckRouting.test_timeout_with_re_auth
 EXIT_CODE="$?"
 
 echo ""

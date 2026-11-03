@@ -79,7 +79,7 @@ class NoAuthTest extends TestCase
 
         $error = Neo4jError::fromMessageAndCode('Neo.ClientError.Security.Unauthorized', 'Invalid credentials');
         $exception = new Neo4jException([$error]);
-        $mockConnection->method('assertNoFailure')->will($this->throwException($exception));
+        $mockConnection->method('handleResponse')->will($this->throwException($exception));
 
         $this->auth->authenticateBolt($mockConnection, 'neo4j-client/1.0');
     }

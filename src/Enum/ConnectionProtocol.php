@@ -24,6 +24,10 @@ use Bolt\protocol\V5_1;
 use Bolt\protocol\V5_2;
 use Bolt\protocol\V5_3;
 use Bolt\protocol\V5_4;
+use Bolt\protocol\V5_6;
+use Bolt\protocol\V5_7;
+use Bolt\protocol\V5_8;
+use Bolt\protocol\V6;
 use JsonSerializable;
 use Laudis\TypedEnum\TypedEnum;
 
@@ -41,6 +45,11 @@ use Laudis\TypedEnum\TypedEnum;
  * @method static ConnectionProtocol BOLT_V5_2()
  * @method static ConnectionProtocol BOLT_V5_3()
  * @method static ConnectionProtocol BOLT_V5_4()
+ * @method static ConnectionProtocol BOLT_V5_6()
+ * @method static ConnectionProtocol BOLT_V5_7()
+ * @method static ConnectionProtocol BOLT_V5_8()
+ * @method static ConnectionProtocol BOLT_V6()
+ * @method static ConnectionProtocol BOLT_V6_1()
  *
  * @extends TypedEnum<string>
  *
@@ -61,13 +70,18 @@ final class ConnectionProtocol extends TypedEnum implements JsonSerializable
     private const BOLT_V5_2 = '5.2';
     private const BOLT_V5_3 = '5.3';
     private const BOLT_V5_4 = '5.4';
+    private const BOLT_V5_6 = '5.6';
+    private const BOLT_V5_7 = '5.7';
+    private const BOLT_V5_8 = '5.8';
+    private const BOLT_V6 = '6';
+    private const BOLT_V6_1 = '6.1';
 
     /**
      * @pure
      *
      * @psalm-suppress ImpureMethodCall
      */
-    public static function determineBoltVersion(V3|V4|V4_1|V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4 $bolt): self
+    public static function determineBoltVersion(V3|V4|V4_1|V4_2|V4_3|V4_4|V5|V5_1|V5_2|V5_3|V5_4|V5_6|V5_7|V5_8|V6 $bolt): self
     {
         $version = self::resolve($bolt->getVersion());
 
