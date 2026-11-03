@@ -35,6 +35,13 @@ final class UuidTest extends TestCase
         new Uuid('not-a-uuid');
     }
 
+    public function testNormalisesUppercaseValues(): void
+    {
+        $uuid = new Uuid(strtoupper(self::SAMPLE));
+
+        self::assertSame(self::SAMPLE, $uuid->getValue());
+    }
+
     public function testMapsABoltUuidOntoTheDriverType(): void
     {
         $mapped = (new BoltOGMTranslator())->mapValueToType(new BoltUuid(self::SAMPLE));

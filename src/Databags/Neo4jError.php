@@ -46,10 +46,34 @@ final class Neo4jError
          * @var array<string, mixed> $content
          */
         $content = $response->content;
-        // Bolt 5.7 renamed the failure field `code` to `neo4j_code`.
-        $code = $content['code'] ?? $content['neo4j_code'] ?? null;
+        // Bolt 5.7 renamed the failure field `code` to `neo4j_code`. When neither is
+        // present, match other official drivers and fall back to UnknownError instead
+        // of throwing and hiding the FAILURE payload.
+        /**
+         * @psalm-suppress MixedAssignment Bolt FAILURE metadata is untyped wire data.
+         */
+        $codeField = $content['code'] ?? null;
+        /**
+         * @psalm-suppress MixedAssignment Bolt FAILURE metadata is untyped wire data.
+         */
+        $neo4jCodeField = $content['neo4j_code'] ?? null;
+        if (is_string($codeField) && $codeField !== '') {
+            $code = $codeField;
+        } elseif (is_string($neo4jCodeField) && $neo4jCodeField !== '') {
+            $code = $neo4jCodeField;
+        } elseif ($codeField !== null && $codeField !== '' && !is_string($codeField)) {
+            throw new UnexpectedValueException('Invalid message exception code');
+        } elseif ($neo4jCodeField !== null && $neo4jCodeField !== '' && !is_string($neo4jCodeField)) {
+            throw new UnexpectedValueException('Invalid message exception code');
+        } else {
+            $code = 'Neo.DatabaseError.General.UnknownError';
+        }
+
+        /**
+         * @psalm-suppress MixedAssignment Bolt FAILURE metadata is untyped wire data.
+         */
         $message = $content['message'] ?? null;
-        if (!is_string($code) || $code === '' || ($message !== null && !is_string($message))) {
+        if ($message !== null && !is_string($message)) {
             throw new UnexpectedValueException('Invalid message exception code');
         }
 

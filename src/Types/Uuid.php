@@ -30,12 +30,15 @@ use Stringable;
  */
 final class Uuid extends AbstractPropertyObject implements Stringable
 {
-    public function __construct(
-        private readonly string $value,
-    ) {
+    private readonly string $value;
+
+    public function __construct(string $value)
+    {
         if (preg_match('/^[a-f\d]{8}-([a-f\d]{4}-){3}[a-f\d]{12}$/i', $value) !== 1) {
             throw new InvalidArgumentException('UUID has invalid format');
         }
+
+        $this->value = strtolower($value);
     }
 
     public function getValue(): string

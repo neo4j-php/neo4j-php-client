@@ -173,7 +173,9 @@ final class SummarizedResultFormatter
                 /** @var string $db */
                 $db = $response['db'] ?? '';
 
-                $notifications = array_map($this->formatNotification(...), $this->boltNotifications($response));
+                /** @var array<string, mixed> $boltResponse */
+                $boltResponse = $response;
+                $notifications = array_map($this->formatNotification(...), $this->boltNotifications($boltResponse));
                 $profiledPlan = array_key_exists('profile', $response) ? $this->formatProfiledPlan($response['profile']) : null;
                 $plan = array_key_exists('plan', $response) ? $this->formatPlan($response['plan']) : null;
 
@@ -256,32 +258,52 @@ final class SummarizedResultFormatter
      */
     private function boltNotifications(array $response): array
     {
-        $notifications = $response['notifications'] ?? null;
-        if (is_array($notifications) && $notifications !== []) {
-            /** @var list<array<string, mixed>> $notifications */
-            return $notifications;
+        /**
+         * @psalm-suppress MixedAssignment Bolt SUCCESS metadata is untyped wire data.
+         */
+        $notificationsField = $response['notifications'] ?? null;
+        if (is_array($notificationsField) && $notificationsField !== []) {
+            /** @var list<array<string, mixed>> $notificationsField */
+            return $notificationsField;
         }
 
-        $statuses = $response['statuses'] ?? [];
-        if (!is_array($statuses)) {
+        /**
+         * @psalm-suppress MixedAssignment Bolt SUCCESS metadata is untyped wire data.
+         */
+        $statusesField = $response['statuses'] ?? [];
+        if (!is_array($statusesField)) {
             return [];
         }
 
         $mapped = [];
-        foreach ($statuses as $status) {
-            if (!is_array($status) || !$this->isNotificationStatus($status)) {
+        foreach ($statusesField as $statusField) {
+            if (!is_array($statusField)) {
                 continue;
             }
 
-            $diagnostic = is_array($status['diagnostic_record'] ?? null) ? $status['diagnostic_record'] : [];
-            $position = $diagnostic['_position'] ?? $status['position'] ?? [];
+            /** @var array<string, mixed> $status */
+            $status = $statusField;
+            if (!$this->isNotificationStatus($status)) {
+                continue;
+            }
+
+            /**
+             * @psalm-suppress MixedAssignment Bolt SUCCESS metadata is untyped wire data.
+             */
+            $diagnosticField = $status['diagnostic_record'] ?? null;
+            /** @var array<string, mixed> $diagnostic */
+            $diagnostic = is_array($diagnosticField) ? $diagnosticField : [];
+            /**
+             * @psalm-suppress MixedAssignment Bolt SUCCESS metadata is untyped wire data.
+             */
+            $positionField = $diagnostic['_position'] ?? $status['position'] ?? [];
             $mapped[] = [
                 'severity' => $diagnostic['_severity'] ?? $status['severity'] ?? '',
                 // Legacy Notification.description is the human body (`description`), not the
                 // GQL status text (`status_description`). TestKit summary tests assert this order.
                 'description' => $status['description'] ?? $status['status_description'] ?? '',
                 'code' => $status['neo4j_code'] ?? $status['code'] ?? '',
-                'position' => is_array($position) ? $position : [],
+                'position' => is_array($positionField) ? $positionField : [],
                 'title' => $status['title'] ?? '',
                 'category' => $diagnostic['_classification'] ?? $status['category'] ?? '',
             ];
@@ -295,14 +317,20 @@ final class SummarizedResultFormatter
      */
     private function isNotificationStatus(array $status): bool
     {
-        $diagnostic = $status['diagnostic_record'] ?? null;
-        if (is_array($diagnostic) && array_key_exists('_severity', $diagnostic)) {
+        /**
+         * @psalm-suppress MixedAssignment Bolt SUCCESS metadata is untyped wire data.
+         */
+        $diagnosticField = $status['diagnostic_record'] ?? null;
+        if (is_array($diagnosticField) && array_key_exists('_severity', $diagnosticField)) {
             return true;
         }
 
-        $code = $status['neo4j_code'] ?? $status['code'] ?? '';
+        /**
+         * @psalm-suppress MixedAssignment Bolt SUCCESS metadata is untyped wire data.
+         */
+        $codeField = $status['neo4j_code'] ?? $status['code'] ?? '';
 
-        return is_string($code) && str_starts_with($code, 'Neo.ClientNotification.');
+        return is_string($codeField) && str_starts_with($codeField, 'Neo.ClientNotification.');
     }
 
     /**

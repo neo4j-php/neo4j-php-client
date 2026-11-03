@@ -13,10 +13,12 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Integration;
 
+use Laudis\Neo4j\Enum\ConnectionProtocol;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Tests\EnvironmentAwareIntegrationTest;
 use Laudis\Neo4j\Types\Uuid;
 
+use function str_contains;
 use function str_starts_with;
 
 final class UuidReceiveIntegrationTest extends EnvironmentAwareIntegrationTest
@@ -29,10 +31,22 @@ final class UuidReceiveIntegrationTest extends EnvironmentAwareIntegrationTest
             $this->markTestSkipped('http does not support the UUID type');
         }
 
+        $serverInfo = $this->getDriver(['bolt', 'neo4j'])->getServerInfo();
+        if ($serverInfo->getProtocol()->compare(ConnectionProtocol::BOLT_V6_1()) < 0) {
+            $this->markTestSkipped(sprintf(
+                'UUID receive requires Bolt 6.1; negotiated %s',
+                $serverInfo->getProtocol()->getValue()
+            ));
+        }
+
         try {
             $value = $this->getSession()->run('RETURN uuid($value) AS id', ['value' => self::SAMPLE])->first()->get('id');
         } catch (Neo4jException $e) {
-            $this->markTestSkipped($e->getMessage());
+            if (str_contains($e->getMessage(), 'Unknown function')) {
+                $this->markTestSkipped('Server does not expose uuid(): '.$e->getMessage());
+            }
+
+            throw $e;
         }
 
         self::assertInstanceOf(Uuid::class, $value);

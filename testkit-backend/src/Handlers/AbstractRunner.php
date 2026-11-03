@@ -97,6 +97,11 @@ abstract class AbstractRunner implements RequestHandlerInterface
 
             throw new Exception('Unhandled neo4j exception for run request of type: '.get_class($request));
         } catch (InvalidArgumentException $exception) {
+            // Only map the known UUID protocol guard; other InvalidArgumentExceptions are bugs.
+            if (!str_contains($exception->getMessage(), 'UUID parameters require')) {
+                throw $exception;
+            }
+
             $wrapped = new Neo4jException([
                 Neo4jError::fromMessageAndCode('Neo.ClientError.Statement.ArgumentError', $exception->getMessage()),
             ], $exception);

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\TestkitBackend\Handlers;
 
+use Bolt\error\BoltException;
 use Laudis\Neo4j\Databags\Neo4jError;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\TestkitBackend\Contracts\RequestHandlerInterface;
@@ -21,7 +22,6 @@ use Laudis\Neo4j\TestkitBackend\MainRepository;
 use Laudis\Neo4j\TestkitBackend\Requests\VerifyConnectivityRequest;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverErrorResponse;
 use Laudis\Neo4j\TestkitBackend\Responses\DriverResponse;
-use Throwable;
 
 /**
  * @implements RequestHandlerInterface<VerifyConnectivityRequest>
@@ -48,7 +48,7 @@ final class VerifyConnectivity implements RequestHandlerInterface
             return new DriverResponse($request->getDriverId());
         } catch (Neo4jException $e) {
             return new DriverErrorResponse($request->getDriverId(), $e);
-        } catch (Throwable $e) {
+        } catch (BoltException $e) {
             $neo4jError = Neo4jError::fromMessageAndCode(
                 'Neo.ClientError.Database.DatabaseUnavailable',
                 $e->getMessage()

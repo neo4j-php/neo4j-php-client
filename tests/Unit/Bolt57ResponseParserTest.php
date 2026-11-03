@@ -46,11 +46,22 @@ final class Bolt57ResponseParserTest extends TestCase
         self::assertSame('Neo.ClientError.Security.Unauthorized', $error->getCode());
     }
 
-    public function testFailureWithoutACodeIsRejected(): void
+    public function testFailureWithoutACodeFallsBackToUnknownError(): void
+    {
+        $error = Neo4jError::fromBoltResponse(new Response(Message::LOGON, Signature::FAILURE, [
+            'message' => 'wrong password',
+        ]));
+
+        self::assertSame('Neo.DatabaseError.General.UnknownError', $error->getCode());
+        self::assertSame('wrong password', $error->getMessage());
+    }
+
+    public function testFailureWithNonStringCodeIsRejected(): void
     {
         $this->expectException(UnexpectedValueException::class);
 
         Neo4jError::fromBoltResponse(new Response(Message::LOGON, Signature::FAILURE, [
+            'neo4j_code' => 42,
             'message' => 'wrong password',
         ]));
     }
@@ -59,6 +70,7 @@ final class Bolt57ResponseParserTest extends TestCase
     {
         $method = new ReflectionMethod(SummarizedResultFormatter::class, 'boltNotifications');
         $method->setAccessible(true);
+        /** @var list<array<string, mixed>> $notifications */
         $notifications = $method->invoke(SummarizedResultFormatter::create(), [
             'statuses' => [
                 [
@@ -96,6 +108,7 @@ final class Bolt57ResponseParserTest extends TestCase
     {
         $method = new ReflectionMethod(SummarizedResultFormatter::class, 'boltNotifications');
         $method->setAccessible(true);
+        /** @var list<array<string, mixed>> $notifications */
         $notifications = $method->invoke(SummarizedResultFormatter::create(), [
             'statuses' => [
                 [
@@ -110,6 +123,7 @@ final class Bolt57ResponseParserTest extends TestCase
             ],
         ]);
 
-        self::assertSame('warn: cartesian product', $notifications[0]['description']);
+        self::assertCount(1, $notifications);
+        self::assertSame('warn: cartesian product', $notifications[0]['description'] ?? null);
     }
 }

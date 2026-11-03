@@ -67,11 +67,6 @@ class Connection
         $this->connection->disconnect();
     }
 
-    public function isDisconnected(): bool
-    {
-        return $this->disconnected;
-    }
-
     public function getIp(): string
     {
         return $this->connection->getIp();
