@@ -116,6 +116,9 @@ final class Neo4jConnectionPoolTest extends TestCase
 
     public function testSessionResolvesHomeDatabaseOncePerSession(): void
     {
+        // First session: ROUTE once, then pin — second begin reuses cache.
+        // Second session still has database === null, so it ROUTEs again (home DB /
+        // router liveness), matching TestKit TestLivenessCheckRouting.
         $this->protocol->expects($this->exactly(2))->method('route')->willReturnSelf();
 
         $session = new Session(SessionConfiguration::default(), $this->pool, SummarizedResultFormatter::create());
@@ -124,6 +127,16 @@ final class Neo4jConnectionPoolTest extends TestCase
 
         $other = new Session(SessionConfiguration::default(), $this->pool, SummarizedResultFormatter::create());
         $other->beginTransaction();
+    }
+
+    public function testNullDatabaseAcquireRefreshesRoutingTable(): void
+    {
+        $config = SessionConfiguration::default();
+
+        $this->protocol->expects($this->exactly(2))->method('route')->willReturnSelf();
+
+        $this->acquire($config);
+        $this->acquire($config);
     }
 
     public function testRoutingTableIsCachedForSessionWithDatabase(): void

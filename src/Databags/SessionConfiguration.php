@@ -35,7 +35,7 @@ final class SessionConfiguration
 
     /**
      * @param list<Bookmark>|null $bookmarks
-     * @param list<string>|null   $routingBookmarks
+     * @param list<string>|null   $routingBookmarks Internal ROUTE bookmarks; prefer withBookmarkManager()
      */
     public function __construct(
         private readonly ?string $database = null,
@@ -45,6 +45,7 @@ final class SessionConfiguration
         private readonly ?Neo4jLogger $logger = null,
         private readonly ?bool $bookmarksEnabled = null,
         private readonly ?BookmarkManagerInterface $bookmarkManager = null,
+        /** @internal */
         private readonly ?array $routingBookmarks = null,
     ) {
     }
@@ -130,6 +131,13 @@ final class SessionConfiguration
     }
 
     /**
+     * Internal: bookmarks sent on Bolt ROUTE rediscovery.
+     *
+     * Set by the driver on connection acquire. Application code should not call this;
+     * use {@see withBookmarkManager()} / {@see withBookmarks()} instead.
+     *
+     * @internal
+     *
      * @param list<string>|null $routingBookmarks
      */
     public function withRoutingBookmarks(?array $routingBookmarks): self
@@ -192,6 +200,10 @@ final class SessionConfiguration
     }
 
     /**
+     * Internal: bookmarks used for Bolt ROUTE rediscovery.
+     *
+     * @internal
+     *
      * @return list<string>
      */
     public function getRoutingBookmarks(): array

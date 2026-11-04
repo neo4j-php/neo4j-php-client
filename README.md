@@ -421,6 +421,7 @@ A driver, session and transaction can be configured using configuration objects.
 | access mode       | session     | The default mode when accessing the server.                                      | `SessionConfiguration`     |
 | bookmarks         | session     | The bookmarks used in the session. (experimental)                                | `SessionConfiguration`     |
 | bookmarks enabled | session     | Whether bookmarks are tracked and sent. Defaults to `true`. `false` drops causal consistency. | `SessionConfiguration`     |
+| bookmark manager  | session     | Shared bookmark manager for causal consistency across sessions.                  | `SessionConfiguration`     |
 | metadata          | transaction | The metadata used during the transaction. (experimental)                         | `TransactionConfiguration` |
 | timeout           | transaction | The maximum amount of time before timing out.                                    | `TransactionConfiguration` |
 
@@ -461,6 +462,47 @@ $tsx = $client->getDriver('default')
 $tsx->run('SOME REALLY LONG MANAGEMENT QUERY');
 
 $tsx->commit();
+```
+
+### Bookmark manager
+
+Use a bookmark manager when several sessions should share causal consistency (for example workers that hand work between sessions, or TestKit-style supplier/consumer hooks).
+
+```php
+use Laudis\Neo4j\BookmarkManagers;
+use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkManagerConfig;
+use Laudis\Neo4j\Databags\SessionConfiguration;
+
+$manager = BookmarkManagers::defaultManager(
+    BookmarkManagerConfig::default()
+        ->withInitialBookmarks([new Bookmark(['neo4j:bookmark:v1:tx42'])])
+        // Optional: notify your app when the managed set changes
+        ->withBookmarksConsumer(static function (array $bookmarks): void {
+            // persist / log bookmark strings from Bookmark::values()
+        })
+        // Optional: merge external bookmarks before each send
+        ->withBookmarksSupplier(static function (): array {
+            return []; // list of Bookmark
+        })
+);
+
+$session = $driver->createSession(
+    SessionConfiguration::default()->withBookmarkManager($manager)
+);
+```
+
+The same manager instance can be passed to multiple sessions. The driver updates it after successful commits and sends the managed bookmarks on `BEGIN` / auto-commit `RUN`, and on cluster `ROUTE` rediscovery.
+
+You can also set it as the client default:
+
+```php
+$client = ClientBuilder::create()
+    ->withDriver('default', 'neo4j://user:password@localhost')
+    ->withDefaultSessionConfiguration(
+        SessionConfiguration::default()->withBookmarkManager($manager)
+    )
+    ->build();
 ```
 
 ### Disabling bookmarks

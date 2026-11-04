@@ -150,10 +150,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $latestError = null;
 
-        // A session with no database resolves its home database here. Session pins the
-        // resolved database afterwards, so this happens once per session, not per acquire.
-        // The router connection stays in the pool so a later acquire can liveness-check it.
-        if ($table == null || $config->getDatabase() === null) {
+        // Fetch when there is no cached table, or when the session has not named a
+        // database yet (home-database resolution). Session pins the resolved name after
+        // the first acquire, so later acquires in that session reuse the cache. A new
+        // session with database === null still contacts the router: that refreshes home
+        // DB (e.g. after re-auth) and runs the pool liveness probe (RESET) on the router
+        // connection — required by TestKit TestLivenessCheckRouting.
+        if ($table === null || $config->getDatabase() === null) {
             $this->getLogger()?->log(LogLevel::DEBUG, 'Fetching routing table', [
                 'database' => $config->getDatabase(),
             ]);

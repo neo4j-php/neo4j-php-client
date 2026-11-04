@@ -74,7 +74,9 @@ final class Session implements SessionInterface
             $config->getBookmarks(),
         );
         $this->bookmarkHolder->onServerBookmark($this->bookmarkTracker->handleNewBookmark(...));
-        $this->sessionConfig = $config->withRoutingBookmarks($this->bookmarkTracker->getRediscoveryBookmarkValues());
+        // Routing bookmarks are refreshed on each acquire so mid-session BMM updates
+        // are visible to ROUTE; do not snapshot them only at construction.
+        $this->sessionConfig = $config;
     }
 
     /**
@@ -402,6 +404,11 @@ final class Session implements SessionInterface
     {
         $this->getLogger()?->log(LogLevel::INFO, 'Acquiring connection', ['config' => $config, 'sessionConfig' => $sessionConfig]);
         $this->bufferAutoCommitResult();
+
+        $routingBookmarks = $this->bookmarkTracker->bookmarksForRouting();
+        $sessionConfig = $sessionConfig->withRoutingBookmarks($routingBookmarks);
+        $this->sessionConfig = $this->sessionConfig->withRoutingBookmarks($routingBookmarks);
+
         $connectionGenerator = $this->pool->acquire($sessionConfig);
         /**
          * @var BoltConnection $connection

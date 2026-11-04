@@ -37,7 +37,9 @@ final class SessionBookmarkTracker
         array $sessionBookmarks,
     ) {
         $this->lastReceivedBookmarks = $sessionBookmarks;
-        $this->syncHolder(false);
+        // Defer the first bookmark-manager sync to bookmarksForRouting() /
+        // prepareForSend() so ROUTE and BEGIN each see a single supplier call
+        // rather than an eager construct-time sync plus another on acquire.
     }
 
     public function prepareForSend(bool $updateLastUsed): void
@@ -57,13 +59,18 @@ final class SessionBookmarkTracker
     }
 
     /**
-     * Bookmarks already synced into the holder (e.g., at session construction).
-     * Avoids a second bookmarks-supplier call when capturing routing bookmarks.
+     * Bookmark values for Bolt ROUTE rediscovery.
+     *
+     * Syncs from the bookmark manager so mid-session updates (shared manager /
+     * supplier) are visible, then returns the holder values without a second
+     * supplier call.
      *
      * @return list<string>
      */
-    public function getRediscoveryBookmarkValues(): array
+    public function bookmarksForRouting(): array
     {
+        $this->syncHolder(false);
+
         return $this->bookmarkHolder->getBookmark()->values();
     }
 
