@@ -27,6 +27,7 @@ final class NewSessionRequest
         public ?string $database,
         public ?int $fetchSize,
         public ?string $impersonatedUser,
+        public ?string $bookmarkManagerId = null,
     ) {
     }
 }

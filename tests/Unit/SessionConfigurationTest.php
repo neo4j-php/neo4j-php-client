@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 namespace Laudis\Neo4j\Tests\Unit;
 
+use Laudis\Neo4j\BookmarkManagers;
 use Laudis\Neo4j\Common\Neo4jLogger;
 use Laudis\Neo4j\Databags\Bookmark;
+use Laudis\Neo4j\Databags\BookmarkManagerConfig;
 use Laudis\Neo4j\Databags\SessionConfiguration;
 use Laudis\Neo4j\Enum\AccessMode;
 use PHPUnit\Framework\TestCase;
@@ -105,5 +107,32 @@ final class SessionConfigurationTest extends TestCase
         );
 
         self::assertFalse($config->areBookmarksEnabled());
+    }
+
+    public function testWithBookmarkManager(): void
+    {
+        $manager = BookmarkManagers::defaultManager(BookmarkManagerConfig::default());
+        $config = SessionConfiguration::default()->withBookmarkManager($manager);
+
+        self::assertSame($manager, $config->getBookmarkManager());
+    }
+
+    public function testMergePreservesBookmarkManager(): void
+    {
+        $manager = BookmarkManagers::defaultManager(BookmarkManagerConfig::default());
+        $base = SessionConfiguration::default()->withBookmarkManager($manager);
+        $override = SessionConfiguration::default()->withDatabase('neo4j');
+
+        $merged = $base->merge($override);
+
+        self::assertSame($manager, $merged->getBookmarkManager());
+        self::assertSame('neo4j', $merged->getDatabase());
+    }
+
+    public function testRoutingBookmarksDefaultEmpty(): void
+    {
+        $config = SessionConfiguration::default();
+
+        self::assertSame([], $config->getRoutingBookmarks());
     }
 }

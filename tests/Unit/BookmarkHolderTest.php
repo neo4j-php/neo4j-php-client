@@ -45,4 +45,57 @@ final class BookmarkHolderTest extends TestCase
 
         self::assertTrue($holder->getBookmark()->isEmpty());
     }
+
+    public function testSetBookmarkFromServerStoresBookmarkWithoutListener(): void
+    {
+        $holder = new BookmarkHolder(new Bookmark());
+        $fromServer = new Bookmark(['neo4j:bookmark:v1:tx2']);
+
+        $holder->setBookmarkFromServer($fromServer);
+
+        self::assertSame($fromServer, $holder->getBookmark());
+    }
+
+    public function testSetBookmarkFromServerInvokesListener(): void
+    {
+        $holder = new BookmarkHolder(new Bookmark());
+        $received = null;
+        $holder->onServerBookmark(static function (Bookmark $bookmark) use (&$received): void {
+            $received = $bookmark;
+        });
+        $fromServer = new Bookmark(['neo4j:bookmark:v1:tx3']);
+
+        $holder->setBookmarkFromServer($fromServer);
+
+        self::assertSame($fromServer, $holder->getBookmark());
+        self::assertSame($fromServer, $received);
+    }
+
+    public function testSetBookmarkFromServerSkipsListenerForEmptyBookmark(): void
+    {
+        $holder = new BookmarkHolder(new Bookmark(['neo4j:bookmark:v1:tx1']));
+        $calls = 0;
+        $holder->onServerBookmark(static function () use (&$calls): void {
+            ++$calls;
+        });
+
+        $holder->setBookmarkFromServer(new Bookmark());
+
+        self::assertTrue($holder->getBookmark()->isEmpty());
+        self::assertSame(0, $calls);
+    }
+
+    public function testDisabledIgnoresSetBookmarkFromServerAndListener(): void
+    {
+        $holder = new BookmarkHolder(new Bookmark(['neo4j:bookmark:v1:tx1']), false);
+        $calls = 0;
+        $holder->onServerBookmark(static function () use (&$calls): void {
+            ++$calls;
+        });
+
+        $holder->setBookmarkFromServer(new Bookmark(['neo4j:bookmark:v1:tx2']));
+
+        self::assertTrue($holder->getBookmark()->isEmpty());
+        self::assertSame(0, $calls);
+    }
 }

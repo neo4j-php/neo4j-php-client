@@ -150,10 +150,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
 
         $latestError = null;
 
-        // A session with no database resolves its home database here. Session pins the
-        // resolved database afterwards, so this happens once per session, not per acquire.
-        // The router connection stays in the pool so a later acquire can liveness-check it.
-        if ($table == null || $config->getDatabase() === null) {
+        // Fetch when there is no cached table, or when the session has not named a
+        // database yet (home-database resolution). Session pins the resolved name after
+        // the first acquire, so later acquires in that session reuse the cache. A new
+        // session with database === null still contacts the router: that refreshes home
+        // DB (e.g. after re-auth) and runs the pool liveness probe (RESET) on the router
+        // connection — required by TestKit TestLivenessCheckRouting.
+        if ($table === null || $config->getDatabase() === null) {
             $this->getLogger()?->log(LogLevel::DEBUG, 'Fetching routing table', [
                 'database' => $config->getDatabase(),
             ]);
@@ -172,7 +175,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
                      *
                      * @psalm-suppress UnnecessaryVarAnnotation
                      */
-                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($config));
+                    // Acquire with a database-agnostic config so the router connection can be
+                    // reused for later ROUTEs regardless of the requesting session database.
+                    $routerSessionConfig = SessionConfiguration::default();
+                    if ($config->getAccessMode() !== null) {
+                        $routerSessionConfig = $routerSessionConfig->withAccessMode($config->getAccessMode());
+                    }
+                    $connection = GeneratorHelper::getReturnFromGenerator($pool->acquire($routerSessionConfig));
                     $table = $this->routingTable($connection, $config);
 
                     $this->getLogger()?->log(LogLevel::DEBUG, 'Successfully fetched routing table', [
@@ -333,8 +342,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
         $bolt = $connection->protocol();
 
         $routeExtra = $this->buildRouteExtra($config);
-        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', ['db' => $routeExtra['db'] ?? null]);
-        $response = $bolt->route([], [], $routeExtra)->getResponse();
+        $bookmarks = array_values(array_unique($config->getRoutingBookmarks()));
+        $this->getLogger()?->log(LogLevel::DEBUG, 'ROUTE', [
+            'db' => $routeExtra['db'] ?? null,
+            'bookmarks' => $bookmarks,
+        ]);
+        // Bolt ROUTE is: routing map, bookmarks list, extra map (db/imp_user only).
+        $response = $bolt->route([], $bookmarks, $routeExtra)->getResponse();
         $connection->handleResponse($response);
 
         /** @var array{rt?: array{servers: list<array{addresses: list<string>, role:string}>, ttl: int, db?: string}} $route */
@@ -358,12 +372,13 @@ final class Neo4jConnectionPool implements ConnectionPoolInterface
      */
     private function buildRouteExtra(SessionConfiguration $config): array
     {
+        $extra = [];
         $database = $config->getDatabase();
-        if ($database === null) {
-            return [];
+        if ($database !== null) {
+            $extra['db'] = $database;
         }
 
-        return ['db' => $database];
+        return $extra;
     }
 
     public function release(ConnectionInterface $connection): void

@@ -21,5 +21,5 @@ interface RequestHandlerInterface
     /**
      * @param T $request
      */
-    public function handle($request): TestkitResponseInterface;
+    public function handle($request): ?TestkitResponseInterface;
 }

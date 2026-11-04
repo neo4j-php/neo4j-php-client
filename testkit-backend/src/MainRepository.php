@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\TestkitBackend;
 
 use Iterator;
+use Laudis\Neo4j\Contracts\BookmarkManagerInterface;
 use Laudis\Neo4j\Contracts\DriverInterface;
 use Laudis\Neo4j\Contracts\SessionInterface;
 use Laudis\Neo4j\Contracts\TransactionInterface;
@@ -23,6 +24,7 @@ use Laudis\Neo4j\Databags\TransactionConfiguration;
 use Laudis\Neo4j\Formatter\SummarizedResultFormatter;
 use Laudis\Neo4j\TestkitBackend\Contracts\TestkitResponseInterface;
 use Laudis\Neo4j\Types\CypherMap;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -67,6 +69,9 @@ final class MainRepository
      * @var array<string, TransactionConfiguration>
      */
     private array $transactionConfigs = [];
+
+    /** @var array<string, BookmarkManagerInterface> */
+    private array $bookmarkManagers = [];
 
     /**
      * @param array<string, DriverInterface<SummarizedResult<CypherMap<OGMTypes>>>>               $drivers
@@ -285,5 +290,28 @@ final class MainRepository
     public function tryGetTsxIdFromSession(Uuid $sessionId): ?Uuid
     {
         return $this->sessionToTransactions[$sessionId->toRfc4122()] ?? null;
+    }
+
+    public function addBookmarkManager(string $id, BookmarkManagerInterface $bookmarkManager): void
+    {
+        $this->bookmarkManagers[$id] = $bookmarkManager;
+    }
+
+    public function getBookmarkManager(string $id): BookmarkManagerInterface
+    {
+        if (!array_key_exists($id, $this->bookmarkManagers)) {
+            throw new RuntimeException('Could not find bookmark manager');
+        }
+
+        return $this->bookmarkManagers[$id];
+    }
+
+    public function removeBookmarkManager(string $id): void
+    {
+        if (!array_key_exists($id, $this->bookmarkManagers)) {
+            throw new RuntimeException('Could not find bookmark manager');
+        }
+
+        unset($this->bookmarkManagers[$id]);
     }
 }

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Laudis\Neo4j\Databags;
 
 use Laudis\Neo4j\Common\Neo4jLogger;
+use Laudis\Neo4j\Contracts\BookmarkManagerInterface;
 use Laudis\Neo4j\Enum\AccessMode;
 
 use function parse_str;
@@ -34,6 +35,7 @@ final class SessionConfiguration
 
     /**
      * @param list<Bookmark>|null $bookmarks
+     * @param list<string>|null   $routingBookmarks Internal ROUTE bookmarks; prefer withBookmarkManager()
      */
     public function __construct(
         private readonly ?string $database = null,
@@ -42,6 +44,9 @@ final class SessionConfiguration
         private readonly ?array $bookmarks = null,
         private readonly ?Neo4jLogger $logger = null,
         private readonly ?bool $bookmarksEnabled = null,
+        private readonly ?BookmarkManagerInterface $bookmarkManager = null,
+        /** @internal */
+        private readonly ?array $routingBookmarks = null,
     ) {
     }
 
@@ -68,7 +73,7 @@ final class SessionConfiguration
      */
     public function withDatabase(?string $database): self
     {
-        return new self($database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled);
+        return new self($database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -76,7 +81,7 @@ final class SessionConfiguration
      */
     public function withFetchSize(?int $size): self
     {
-        return new self($this->database, $size, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled);
+        return new self($this->database, $size, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -84,7 +89,7 @@ final class SessionConfiguration
      */
     public function withAccessMode(?AccessMode $defaultAccessMode): self
     {
-        return new self($this->database, $this->fetchSize, $defaultAccessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled);
+        return new self($this->database, $this->fetchSize, $defaultAccessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -94,7 +99,7 @@ final class SessionConfiguration
      */
     public function withBookmarks(?array $bookmarks): self
     {
-        return new self($this->database, $this->fetchSize, $this->accessMode, $bookmarks, $this->logger, $this->bookmarksEnabled);
+        return new self($this->database, $this->fetchSize, $this->accessMode, $bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -106,7 +111,7 @@ final class SessionConfiguration
      */
     public function withBookmarksEnabled(bool $enabled = true): self
     {
-        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $enabled);
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $enabled, $this->bookmarkManager, $this->routingBookmarks);
     }
 
     /**
@@ -114,7 +119,30 @@ final class SessionConfiguration
      */
     public function withLogger(?Neo4jLogger $logger): self
     {
-        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $logger, $this->bookmarksEnabled);
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $logger, $this->bookmarksEnabled, $this->bookmarkManager, $this->routingBookmarks);
+    }
+
+    /**
+     * Creates a new session with the provided bookmark manager.
+     */
+    public function withBookmarkManager(?BookmarkManagerInterface $bookmarkManager): self
+    {
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $bookmarkManager, $this->routingBookmarks);
+    }
+
+    /**
+     * Internal: bookmarks sent on Bolt ROUTE rediscovery.
+     *
+     * Set by the driver on connection acquire. Application code should not call this;
+     * use {@see withBookmarkManager()} / {@see withBookmarks()} instead.
+     *
+     * @internal
+     *
+     * @param list<string>|null $routingBookmarks
+     */
+    public function withRoutingBookmarks(?array $routingBookmarks): self
+    {
+        return new self($this->database, $this->fetchSize, $this->accessMode, $this->bookmarks, $this->logger, $this->bookmarksEnabled, $this->bookmarkManager, $routingBookmarks);
     }
 
     /**
@@ -166,6 +194,23 @@ final class SessionConfiguration
         return $this->logger;
     }
 
+    public function getBookmarkManager(): ?BookmarkManagerInterface
+    {
+        return $this->bookmarkManager;
+    }
+
+    /**
+     * Internal: bookmarks used for Bolt ROUTE rediscovery.
+     *
+     * @internal
+     *
+     * @return list<string>
+     */
+    public function getRoutingBookmarks(): array
+    {
+        return $this->routingBookmarks ?? [];
+    }
+
     /**
      * Creates a new configuration by merging the provided configuration with the current one.
      * The set values of the provided configuration will override the values of this configuration.
@@ -179,6 +224,8 @@ final class SessionConfiguration
             $config->bookmarks ?? $this->bookmarks,
             $config->logger ?? $this->logger,
             $config->bookmarksEnabled ?? $this->bookmarksEnabled,
+            $config->bookmarkManager ?? $this->bookmarkManager,
+            $config->routingBookmarks ?? $this->routingBookmarks,
         );
     }
 

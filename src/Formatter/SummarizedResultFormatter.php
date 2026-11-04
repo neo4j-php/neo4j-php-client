@@ -384,8 +384,8 @@ final class SummarizedResultFormatter
 
         $connection->subscribeResult($result);
         $result->addFinishedCallback(function (array $response) use ($holder) {
-            if (array_key_exists('bookmark', $response) && is_string($response['bookmark'])) {
-                $holder->setBookmark(new Bookmark([$response['bookmark']]));
+            if (array_key_exists('bookmark', $response) && is_string($response['bookmark']) && trim($response['bookmark']) !== '') {
+                $holder->setBookmarkFromServer(new Bookmark([$response['bookmark']]));
             }
         });
 
