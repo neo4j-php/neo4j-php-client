@@ -494,6 +494,8 @@ $session = $driver->createSession(
 
 The same manager instance can be passed to multiple sessions. The driver updates it after successful commits and sends the managed bookmarks on `BEGIN` / auto-commit `RUN`, and on cluster `ROUTE` rediscovery.
 
+`BookmarkManagers::defaultManager()` is not concurrency-safe. Sharing one manager across concurrent fibers, workers, or threads needs your own locking (or a custom `BookmarkManagerInterface`).
+
 You can also set it as the client default:
 
 ```php

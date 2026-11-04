@@ -22,6 +22,10 @@ use function sort;
 
 /**
  * A basic {@see BookmarkManagerInterface} implementation.
+ *
+ * Not concurrency-safe: do not share one instance across concurrent fibers,
+ * workers, or threads without external synchronization. Typical PHP request
+ * lifetimes (one session at a time on a shared manager) are fine.
  */
 final class Neo4jBookmarkManager implements BookmarkManagerInterface
 {

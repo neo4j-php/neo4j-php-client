@@ -18,6 +18,10 @@ use Laudis\Neo4j\Databags\Bookmark;
 /**
  * Keeps track of bookmarks and is used by the driver to ensure causal consistency between sessions and query executions.
  *
+ * Custom implementations used across concurrent contexts should synchronize
+ * {@see updateBookmarks()} / {@see getBookmarks()}. The default
+ * {@see \Laudis\Neo4j\Neo4jBookmarkManager} is not concurrency-safe.
+ *
  * @see SessionConfiguration::withBookmarkManager()
  */
 interface BookmarkManagerInterface

@@ -476,7 +476,9 @@ class BoltConnection implements ConnectionInterface
             $extra['bookmarks'] = $holder->getBookmark()->values();
         }
 
-        // Bolt defaults to write; only send mode for explicit read transactions.
+        // Bolt defaults to write, so omit mode for write/null. Only send mode for
+        // explicit read transactions (matches official drivers / TestKit stubs).
+        // Previously this also sent mode: 'w' for writes; that was redundant.
         if ($mode !== null && AccessMode::READ() === $mode) {
             $extra['mode'] = 'r';
         }
