@@ -19,7 +19,7 @@ jobs:
       CONNECTION: bolt://relate:testtest@127.0.0.1:7687
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
