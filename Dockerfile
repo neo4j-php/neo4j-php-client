@@ -8,10 +8,12 @@ ARG XDEBUG_VERSION=3.5.3
 
 RUN apt-get update \
     && apt-get install -y \
+        ca-certificates \
         libzip-dev \
         unzip \
         git \
         wget \
+    && update-ca-certificates \
     && docker-php-ext-install -j$(nproc) bcmath sockets \
     && curl -fsSL "https://github.com/xdebug/xdebug/archive/refs/tags/${XDEBUG_VERSION}.tar.gz" -o /tmp/xdebug.tar.gz \
     && tar -xzf /tmp/xdebug.tar.gz -C /tmp \
