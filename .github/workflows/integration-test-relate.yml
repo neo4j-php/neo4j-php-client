@@ -1,0 +1,53 @@
+name: Relate Integration Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  tests-relate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ["8.1.31", "8.3.17"]
+    name: "Running on PHP ${{ matrix.php }} against Relate Bolt"
+    env:
+      DO_NOT_TRACK: '1'
+      RELATE_AUTH: relate:testtest
+      CONNECTION: bolt://relate:testtest@127.0.0.1:7687
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+
+      - name: Cache PHP deps
+        id: cache-php-deps
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php }}-
+
+      - name: Install PHP deps
+        if: steps.cache-php-deps.outputs.cache-hit != 'true'
+        run: composer install
+
+      - name: Install Relate
+        run: curl -sSfL https://relatedb.ai/install.sh | bash
+
+      - name: Start Relate and run tests
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          relate serve --database :memory: --bolt 7687 --host 127.0.0.1 --auth "$RELATE_AUTH" &
+          for i in $(seq 1 60); do
+            (echo > /dev/tcp/127.0.0.1/7687) >/dev/null 2>&1 && break
+            sleep 0.5
+          done
+          php -d variables_order=EGPCS vendor/bin/phpunit -c phpunit.xml.dist --testsuite Relate --teamcity

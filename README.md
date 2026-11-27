@@ -15,6 +15,7 @@
 - Validated with [testkit](https://github.com/neo4j-drivers/testkit)
 - Fully typed with [psalm](https://psalm.dev/)
 - Bolt and Neo4j (auto-routed) drivers available
+- Verified Bolt compatibility with [Relate](https://relatedb.ai/) (in-memory graph database)
 
 ## See the driver in action
 
@@ -495,3 +496,51 @@ vendor/bin/phpunit --testsuite Unit --filter 'SessionConfigurationTest|BookmarkH
 CONNECTION='neo4j://neo4j:testtest@localhost:7687' vendor/bin/phpunit --filter BookmarkConfigurationIntegrationTest
 CONNECTION='neo4j+s://user:password@xxxx.databases.neo4j.io' vendor/bin/phpunit --filter BookmarkConfigurationIntegrationTest
 ```
+
+## Relate compatibility
+
+[Relate](https://relatedb.ai/) is an embedded / in-memory graph database that can serve Neo4j's Bolt protocol. This client has a dedicated PHPUnit suite (`--testsuite Relate`) that verifies Bolt connectivity against Relate.
+
+Compatibility claimed here is limited to what those tests cover: Bolt connection and protocol negotiation (4.4 or 5.4), basic Cypher reads/writes, nodes and relationships, result records, explicit transactions (BEGIN / COMMIT / ROLLBACK), basic authentication, and session cleanup.
+
+### Start Relate with Bolt
+
+Install the Relate CLI (see [Relate install docs](https://relatedb.ai/docs/get-started/install/)), then serve a store over Bolt:
+
+```bash
+export RELATE_AUTH='relate:testtest'
+relate serve --database :memory: --bolt 7687 --host 127.0.0.1 --auth "$RELATE_AUTH"
+```
+
+For a durable store, replace `:memory:` with a path such as `./graph.rl`.
+
+### Connect with this client
+
+```php
+use Laudis\Neo4j\ClientBuilder;
+
+$client = ClientBuilder::create()
+    ->withDriver('relate', 'bolt://relate:testtest@127.0.0.1:7687')
+    ->withDefaultDriver('relate')
+    ->build();
+
+$result = $client->run('RETURN 1 AS one');
+echo $result->first()->get('one'); // 1
+```
+
+Run the Relate suite locally:
+
+```bash
+CONNECTION='bolt://relate:testtest@127.0.0.1:7687' vendor/bin/phpunit --testsuite Relate
+```
+
+### Verified limitations
+
+Relate is not a Neo4j server. Notable differences that affect drivers:
+
+- Bolt versions **4.4 and 5.4 only** (no TLS / `bolt+s` on Relate itself)
+- Basic authentication only (or `--auth none`)
+- Relate's own Cypher dialect (no APOC/GDS; fixed namespaces `neo4j` / `system`)
+- Single process / single store — no clustering
+
+Do not run the Neo4j `Integration` testsuite against Relate; use `--testsuite Relate` instead.
