@@ -4,6 +4,9 @@
     <testsuite name="Integration">
       <directory>./tests/Integration</directory>
     </testsuite>
+    <testsuite name="Relate">
+      <directory>./tests/Relate</directory>
+    </testsuite>
     <testsuite name="Performance">
       <directory>./tests/Performance</directory>
     </testsuite>
